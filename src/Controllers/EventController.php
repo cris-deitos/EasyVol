@@ -204,4 +204,29 @@ class EventController {
             error_log("Errore log attività: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Elimina evento (soft delete)
+     */
+    public function delete($id, $userId) {
+        try {
+            // Get event details for log
+            $event = $this->get($id);
+            if (!$event) {
+                return ['success' => false, 'message' => 'Evento non trovato'];
+            }
+            
+            // Soft delete - mark as deleted
+            $sql = "UPDATE events SET deleted_at = NOW() WHERE id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            // Log activity
+            $this->logActivity($userId, 'events', 'delete', $id, "Eliminato evento: {$event['title']}");
+            
+            return ['success' => true];
+        } catch (\Exception $e) {
+            error_log("Errore eliminazione evento: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
 }
