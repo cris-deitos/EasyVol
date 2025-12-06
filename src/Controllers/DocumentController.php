@@ -197,9 +197,12 @@ class DocumentController {
             $sql = "DELETE FROM documents WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
-            // Elimina file fisico
-            $filePath = __DIR__ . '/../../' . $document['file_path'];
-            if (file_exists($filePath)) {
+            // Elimina file fisico - validate path to prevent directory traversal
+            $uploadsDir = realpath(__DIR__ . '/../../uploads/documents/');
+            $filePath = realpath(__DIR__ . '/../../' . $document['file_path']);
+            
+            // Only delete if the file is within the uploads directory
+            if ($filePath && strpos($filePath, $uploadsDir) === 0 && file_exists($filePath)) {
                 unlink($filePath);
             }
             

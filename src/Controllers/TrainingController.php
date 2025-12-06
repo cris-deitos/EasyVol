@@ -45,9 +45,11 @@ class TrainingController {
         $whereClause = implode(' AND ', $where);
         $offset = ($page - 1) * $perPage;
         
-        $sql = "SELECT * FROM training_courses 
+        $sql = "SELECT tc.*, 
+                    (SELECT COUNT(*) FROM training_participants WHERE course_id = tc.id) as participant_count
+                FROM training_courses tc
                 WHERE $whereClause 
-                ORDER BY start_date DESC 
+                ORDER BY tc.start_date DESC 
                 LIMIT ? OFFSET ?";
         
         $params[] = $perPage;

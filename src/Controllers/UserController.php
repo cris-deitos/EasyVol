@@ -217,11 +217,16 @@ class UserController {
             
             // Verifica se l'utente è l'unico admin
             $user = $this->get($id);
-            $sql = "SELECT COUNT(*) as count FROM users WHERE role_id = ? AND is_active = 1";
-            $adminCount = $this->db->fetchOne($sql, [$user['role_id']]);
             
-            if ($adminCount && $adminCount['count'] <= 1 && $user['role_name'] === 'admin') {
-                return ['error' => 'Non è possibile eliminare l\'ultimo amministratore attivo'];
+            // Check if user has admin role name
+            if ($user['role_name'] === 'admin') {
+                // Count active users with the same role
+                $sql = "SELECT COUNT(*) as count FROM users WHERE role_id = ? AND is_active = 1";
+                $adminCount = $this->db->fetchOne($sql, [$user['role_id']]);
+                
+                if ($adminCount && $adminCount['count'] <= 1) {
+                    return ['error' => 'Non è possibile eliminare l\'ultimo amministratore attivo'];
+                }
             }
             
             $sql = "DELETE FROM users WHERE id = ?";

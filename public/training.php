@@ -182,9 +182,7 @@ $pageTitle = 'Gestione Formazione';
                                                 <td><?php echo htmlspecialchars($course['instructor'] ?? '-'); ?></td>
                                                 <td>
                                                     <?php 
-                                                    $sql = "SELECT COUNT(*) as count FROM training_participants WHERE course_id = ?";
-                                                    $count = $db->fetchOne($sql, [$course['id']]);
-                                                    echo $count['count'] ?? 0;
+                                                    echo $course['participant_count'] ?? 0;
                                                     if ($course['max_participants']) {
                                                         echo ' / ' . $course['max_participants'];
                                                     }
