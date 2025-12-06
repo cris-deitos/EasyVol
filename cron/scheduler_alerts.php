@@ -91,6 +91,39 @@ try {
             }
         }
         
+        // Send to custom recipients for items not assigned to users
+        echo "Checking for custom recipients...\n";
+        foreach ($items as $item) {
+            if (!empty($item['custom_recipients'])) {
+                foreach ($item['custom_recipients'] as $recipient) {
+                    if (empty($recipient['email'])) {
+                        continue;
+                    }
+                    
+                    $body = "Gentile " . $recipient['name'] . ",\n\n";
+                    $body .= "Ti ricordiamo la seguente scadenza in arrivo:\n\n";
+                    $body .= "- " . $item['title'] . "\n";
+                    $body .= "  Scadenza: " . date('d/m/Y', strtotime($item['due_date'])) . "\n";
+                    $body .= "  Priorità: " . ucfirst($item['priority']) . "\n";
+                    if ($item['description']) {
+                        $body .= "  Descrizione: " . $item['description'] . "\n";
+                    }
+                    $body .= "\n";
+                    $body .= "Accedi al sistema per maggiori dettagli.\n\n";
+                    $body .= "Questo è un messaggio automatico, si prega di non rispondere.\n";
+                    
+                    $subject = "Promemoria Scadenza - " . $item['title'];
+                    
+                    if ($emailSender->send($recipient['email'], $subject, $body)) {
+                        $sentCount++;
+                        echo "  Sent reminder to {$recipient['email']}\n";
+                    } else {
+                        echo "  Failed to send reminder to {$recipient['email']}\n";
+                    }
+                }
+            }
+        }
+        
         echo "Sent $sentCount reminder emails\n";
     }
     
