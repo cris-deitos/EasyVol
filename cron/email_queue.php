@@ -3,7 +3,7 @@
  * Cron Job: Email Queue Processor
  * 
  * Processa la coda delle email da inviare
- * Eseguire ogni 5 minuti: */5 * * * * php /path/to/easyvol/cron/email_queue.php
+ * Eseguire ogni 5 minuti: * /5 * * * * php /path/to/easyvol/cron/email_queue.php
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
