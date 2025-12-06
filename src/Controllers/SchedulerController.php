@@ -87,7 +87,34 @@ class SchedulerController {
                 FROM scheduler_items s
                 LEFT JOIN users u ON s.assigned_to = u.id
                 WHERE s.id = ?";
-        return $this->db->fetchOne($sql, [$id]);
+        $item = $this->db->fetchOne($sql, [$id]);
+        
+        if ($item) {
+            // Get recipients
+            $item['recipients'] = $this->getRecipients($id);
+        }
+        
+        return $item;
+    }
+    
+    /**
+     * Ottieni destinatari email per una scadenza
+     */
+    public function getRecipients($schedulerItemId) {
+        $sql = "SELECT r.*, 
+                u.full_name as user_name, u.email as user_email,
+                m.first_name, m.last_name, 
+                mc.value as member_email
+                FROM scheduler_item_recipients r
+                LEFT JOIN users u ON r.user_id = u.id
+                LEFT JOIN members m ON r.member_id = m.id
+                LEFT JOIN member_contacts mc ON (
+                    r.member_id = mc.member_id AND mc.contact_type = 'email'
+                )
+                WHERE r.scheduler_item_id = ?
+                ORDER BY r.id";
+        
+        return $this->db->fetchAll($sql, [$schedulerItemId]);
     }
     
     /**
@@ -95,6 +122,8 @@ class SchedulerController {
      */
     public function create($data, $userId) {
         try {
+            $this->db->beginTransaction();
+            
             $sql = "INSERT INTO scheduler_items (
                 title, description, due_date, category, priority, 
                 status, reminder_days, assigned_to, created_at
@@ -114,15 +143,51 @@ class SchedulerController {
             $this->db->execute($sql, $params);
             $itemId = $this->db->lastInsertId();
             
+            // Add recipients if provided
+            if (!empty($data['recipients'])) {
+                $this->addRecipients($itemId, $data['recipients']);
+            }
+            
             // Log activity
             $this->logActivity($userId, 'scheduler', 'create', $itemId, 
                 "Creata scadenza: {$data['title']}");
             
+            $this->db->commit();
             return $itemId;
         } catch (\Exception $e) {
+            $this->db->rollback();
             error_log("Error creating scheduler item: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Aggiungi destinatari a una scadenza
+     */
+    public function addRecipients($schedulerItemId, $recipients) {
+        foreach ($recipients as $recipient) {
+            $sql = "INSERT INTO scheduler_item_recipients (
+                scheduler_item_id, recipient_type, user_id, member_id, external_email
+            ) VALUES (?, ?, ?, ?, ?)";
+            
+            $params = [
+                $schedulerItemId,
+                $recipient['type'],
+                $recipient['user_id'] ?? null,
+                $recipient['member_id'] ?? null,
+                $recipient['external_email'] ?? null
+            ];
+            
+            $this->db->execute($sql, $params);
+        }
+    }
+    
+    /**
+     * Rimuovi tutti i destinatari di una scadenza
+     */
+    public function removeAllRecipients($schedulerItemId) {
+        $sql = "DELETE FROM scheduler_item_recipients WHERE scheduler_item_id = ?";
+        $this->db->execute($sql, [$schedulerItemId]);
     }
     
     /**
@@ -130,6 +195,8 @@ class SchedulerController {
      */
     public function update($id, $data, $userId) {
         try {
+            $this->db->beginTransaction();
+            
             // Check if completing
             $completedAt = null;
             if (isset($data['status']) && $data['status'] === 'completato') {
@@ -164,12 +231,22 @@ class SchedulerController {
             
             $this->db->execute($sql, $params);
             
+            // Update recipients if provided
+            if (isset($data['recipients'])) {
+                $this->removeAllRecipients($id);
+                if (!empty($data['recipients'])) {
+                    $this->addRecipients($id, $data['recipients']);
+                }
+            }
+            
             // Log activity
             $this->logActivity($userId, 'scheduler', 'update', $id, 
                 "Aggiornata scadenza: {$data['title']}");
             
+            $this->db->commit();
             return true;
         } catch (\Exception $e) {
+            $this->db->rollback();
             error_log("Error updating scheduler item: " . $e->getMessage());
             return false;
         }
@@ -374,7 +451,40 @@ class SchedulerController {
                 AND s.due_date = DATE_ADD(CURDATE(), INTERVAL s.reminder_days DAY)
                 ORDER BY s.priority";
         
-        return $this->db->fetchAll($sql);
+        $items = $this->db->fetchAll($sql);
+        
+        // For each item, get custom recipients
+        foreach ($items as &$item) {
+            $item['custom_recipients'] = $this->getRecipientEmails($item['id']);
+        }
+        
+        return $items;
+    }
+    
+    /**
+     * Ottieni tutti gli indirizzi email dei destinatari per una scadenza
+     */
+    public function getRecipientEmails($schedulerItemId) {
+        $sql = "SELECT 
+                CASE 
+                    WHEN r.recipient_type = 'user' THEN u.email
+                    WHEN r.recipient_type = 'member' THEN mc.value
+                    WHEN r.recipient_type = 'external' THEN r.external_email
+                END as email,
+                CASE 
+                    WHEN r.recipient_type = 'user' THEN u.full_name
+                    WHEN r.recipient_type = 'member' THEN CONCAT(m.first_name, ' ', m.last_name)
+                    WHEN r.recipient_type = 'external' THEN r.external_email
+                END as name
+                FROM scheduler_item_recipients r
+                LEFT JOIN users u ON r.user_id = u.id
+                LEFT JOIN members m ON r.member_id = m.id
+                LEFT JOIN member_contacts mc ON (
+                    r.member_id = mc.member_id AND mc.contact_type = 'email'
+                )
+                WHERE r.scheduler_item_id = ?";
+        
+        return $this->db->fetchAll($sql, [$schedulerItemId]);
     }
     
     /**

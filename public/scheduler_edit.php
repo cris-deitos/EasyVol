@@ -55,6 +55,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'assigned_to' => !empty($_POST['assigned_to']) ? (int)$_POST['assigned_to'] : null
         ];
         
+        // Process recipients
+        $recipients = [];
+        if (!empty($_POST['recipient_users'])) {
+            foreach ($_POST['recipient_users'] as $userId) {
+                if (!empty($userId)) {
+                    $recipients[] = [
+                        'type' => 'user',
+                        'user_id' => (int)$userId,
+                        'member_id' => null,
+                        'external_email' => null
+                    ];
+                }
+            }
+        }
+        if (!empty($_POST['recipient_members'])) {
+            foreach ($_POST['recipient_members'] as $memberId) {
+                if (!empty($memberId)) {
+                    $recipients[] = [
+                        'type' => 'member',
+                        'user_id' => null,
+                        'member_id' => (int)$memberId,
+                        'external_email' => null
+                    ];
+                }
+            }
+        }
+        if (!empty($_POST['external_emails'])) {
+            $emails = array_filter(array_map('trim', explode(',', $_POST['external_emails'])));
+            foreach ($emails as $email) {
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $recipients[] = [
+                        'type' => 'external',
+                        'user_id' => null,
+                        'member_id' => null,
+                        'external_email' => $email
+                    ];
+                }
+            }
+        }
+        $data['recipients'] = $recipients;
+        
         // Validation
         if (empty($data['title'])) {
             $errors[] = 'Il titolo è obbligatorio';
@@ -83,6 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get users for assignment dropdown
 $users = $userController->index([], 1, 100);
+
+// Get members for recipients dropdown
+use EasyVol\Controllers\MemberController;
+$memberController = new MemberController($app->getDatabase(), $app->getConfig());
+$members = $memberController->index(['member_status' => 'attivo'], 1, 500);
 
 $pageTitle = $isEdit ? 'Modifica Scadenza' : 'Nuova Scadenza';
 ?>
@@ -220,6 +266,78 @@ $pageTitle = $isEdit ? 'Modifica Scadenza' : 'Nuova Scadenza';
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <h5 class="mb-3"><i class="bi bi-envelope"></i> Destinatari Email Promemoria</h5>
+                            <p class="text-muted small">Seleziona gli utenti o i soci che riceveranno una email di promemoria per questa scadenza, oppure inserisci email esterne.</p>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="recipient_users" class="form-label">Utenti Sistema</label>
+                                    <select class="form-select" id="recipient_users" name="recipient_users[]" multiple size="5">
+                                        <?php
+                                        $selectedUserRecipients = [];
+                                        if (isset($item['recipients'])) {
+                                            foreach ($item['recipients'] as $r) {
+                                                if ($r['recipient_type'] === 'user') {
+                                                    $selectedUserRecipients[] = $r['user_id'];
+                                                }
+                                            }
+                                        }
+                                        foreach ($users as $user):
+                                        ?>
+                                            <option value="<?php echo $user['id']; ?>" 
+                                                    <?php echo in_array($user['id'], $selectedUserRecipients) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($user['full_name'] ?? $user['username']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <small class="form-text text-muted">Tieni premuto Ctrl (Cmd su Mac) per selezionare più utenti</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="recipient_members" class="form-label">Soci</label>
+                                    <select class="form-select" id="recipient_members" name="recipient_members[]" multiple size="5">
+                                        <?php
+                                        $selectedMemberRecipients = [];
+                                        if (isset($item['recipients'])) {
+                                            foreach ($item['recipients'] as $r) {
+                                                if ($r['recipient_type'] === 'member') {
+                                                    $selectedMemberRecipients[] = $r['member_id'];
+                                                }
+                                            }
+                                        }
+                                        foreach ($members as $member):
+                                        ?>
+                                            <option value="<?php echo $member['id']; ?>" 
+                                                    <?php echo in_array($member['id'], $selectedMemberRecipients) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($member['last_name'] . ' ' . $member['first_name']); ?>
+                                                (<?php echo htmlspecialchars($member['registration_number']); ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <small class="form-text text-muted">Tieni premuto Ctrl (Cmd su Mac) per selezionare più soci</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="external_emails" class="form-label">Email Esterne</label>
+                                <input type="text" class="form-control" id="external_emails" name="external_emails" 
+                                       value="<?php 
+                                       if (isset($item['recipients'])) {
+                                           $externalEmails = [];
+                                           foreach ($item['recipients'] as $r) {
+                                               if ($r['recipient_type'] === 'external') {
+                                                   $externalEmails[] = $r['external_email'];
+                                               }
+                                           }
+                                           echo htmlspecialchars(implode(', ', $externalEmails));
+                                       }
+                                       ?>" 
+                                       placeholder="email1@esempio.com, email2@esempio.com">
+                                <small class="form-text text-muted">Inserisci più email separate da virgola</small>
                             </div>
                             
                             <div class="d-flex justify-content-between">

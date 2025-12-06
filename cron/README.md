@@ -22,7 +22,25 @@ Questo documento descrive i cron jobs necessari per il funzionamento automatico 
 0 8 * * * php /percorso/easyvol/cron/vehicle_alerts.php >> /var/log/easyvol/vehicle_alerts.log 2>&1
 ```
 
-### 3. Database Backup
+### 3. Scheduler Alerts
+**File**: `scheduler_alerts.php`
+**Frequenza**: Giornaliero alle 8:00
+**Descrizione**: Invia reminder per scadenze in arrivo e aggiorna scadenze scadute
+
+```bash
+0 8 * * * php /percorso/easyvol/cron/scheduler_alerts.php >> /var/log/easyvol/scheduler_alerts.log 2>&1
+```
+
+### 4. Annual Member Verification
+**File**: `annual_member_verification.php`
+**Frequenza**: Annuale, 7 gennaio alle 9:00
+**Descrizione**: Invia email di verifica dati anagrafici a tutti i soci attivi
+
+```bash
+0 9 7 1 * php /percorso/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
+```
+
+### 5. Database Backup
 **File**: `backup.php`
 **Frequenza**: Giornaliero alle 2:00
 **Descrizione**: Crea backup automatico del database (mantiene ultimi 30 giorni)
@@ -48,6 +66,12 @@ crontab -e
 # EasyVol - Vehicle Alerts
 0 8 * * * php /var/www/easyvol/cron/vehicle_alerts.php >> /var/log/easyvol/vehicle_alerts.log 2>&1
 
+# EasyVol - Scheduler Alerts
+0 8 * * * php /var/www/easyvol/cron/scheduler_alerts.php >> /var/log/easyvol/scheduler_alerts.log 2>&1
+
+# EasyVol - Annual Member Verification (January 7th)
+0 9 7 1 * php /var/www/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
+
 # EasyVol - Database Backup
 0 2 * * * php /var/www/easyvol/cron/backup.php >> /var/log/easyvol/backup.log 2>&1
 ```
@@ -72,6 +96,12 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Vehicle Alerts - Giornaliero alle 8:00
 0 8 * * * www-data php /var/www/easyvol/cron/vehicle_alerts.php >> /var/log/easyvol/vehicle_alerts.log 2>&1
+
+# Scheduler Alerts - Giornaliero alle 8:00
+0 8 * * * www-data php /var/www/easyvol/cron/scheduler_alerts.php >> /var/log/easyvol/scheduler_alerts.log 2>&1
+
+# Annual Member Verification - 7 gennaio alle 9:00
+0 9 7 1 * www-data php /var/www/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
 
 # Database Backup - Giornaliero alle 2:00
 0 2 * * * www-data php /var/www/easyvol/cron/backup.php >> /var/log/easyvol/backup.log 2>&1
@@ -167,7 +197,6 @@ grep email_queue /var/log/easyvol/email_queue.log
 Altri cron jobs previsti ma non ancora implementati:
 
 - **Training Alerts**: Alert scadenze attestati formativi
-- **Scheduler Alerts**: Promemoria scadenzario generale
 - **Warehouse Alerts**: Alert scorte minime magazzino
 - **Member Stats**: Statistiche periodiche soci
 

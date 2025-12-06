@@ -424,7 +424,11 @@ CREATE TABLE IF NOT EXISTS `meetings` (
   `location_type` enum('fisico', 'online') NOT NULL,
   `location_address` text,
   `online_details` text,
+  `location` varchar(255),
+  `convocator` varchar(255),
+  `description` text,
   `status` enum('scheduled', 'in_progress', 'completed', 'cancelled') DEFAULT 'scheduled',
+  `convocation_sent_at` timestamp NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
@@ -434,12 +438,20 @@ CREATE TABLE IF NOT EXISTS `meeting_participants` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `meeting_id` int(11) NOT NULL,
   `member_id` int(11),
+  `member_type` enum('adult', 'junior') DEFAULT 'adult',
+  `junior_member_id` int(11),
   `participant_name` varchar(255),
   `role` varchar(100) COMMENT 'presidente, segretario, auditore, socio',
   `present` tinyint(1) DEFAULT 0,
+  `attendance_status` enum('invited', 'present', 'absent', 'delegated') DEFAULT 'invited',
+  `delegated_to` int(11),
+  `invitation_sent_at` timestamp NULL,
+  `response_date` timestamp NULL,
   PRIMARY KEY (`id`),
   KEY `meeting_id` (`meeting_id`),
   KEY `member_id` (`member_id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  KEY `delegated_to` (`delegated_to`),
   FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -617,6 +629,42 @@ CREATE TABLE IF NOT EXISTS `scheduler_items` (
   PRIMARY KEY (`id`),
   KEY `due_date` (`due_date`),
   KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table for scheduler item email recipients
+CREATE TABLE IF NOT EXISTS `scheduler_item_recipients` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `scheduler_item_id` int(11) NOT NULL,
+  `recipient_type` enum('user', 'member', 'external') NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `member_id` int(11) DEFAULT NULL,
+  `external_email` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `scheduler_item_id` (`scheduler_item_id`),
+  KEY `user_id` (`user_id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`scheduler_item_id`) REFERENCES `scheduler_items`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table to track annual member data verification emails (sent January 7th each year)
+CREATE TABLE IF NOT EXISTS `annual_data_verification_emails` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) DEFAULT NULL,
+  `member_type` enum('adult', 'junior') NOT NULL DEFAULT 'adult',
+  `junior_member_id` int(11) DEFAULT NULL,
+  `email` varchar(255) NOT NULL,
+  `sent_at` timestamp NOT NULL,
+  `year` int(11) NOT NULL,
+  `status` enum('sent', 'failed', 'bounced') DEFAULT 'sent',
+  `error_message` text,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  KEY `year` (`year`),
+  KEY `sent_at` (`sent_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
