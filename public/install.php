@@ -86,8 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 // Connect to database
                 if (!isset($_SESSION['install'])) {
-                    $errors[] = "Session data not found. Please start from step 1.";
-                    throw new Exception("Session data not found");
+                    throw new Exception("Session data not found. Please start from step 1.");
                 }
                 $installData = $_SESSION['install'];
                 $dsn = "mysql:host={$installData['db_host']};port={$installData['db_port']};dbname={$installData['db_name']};charset=utf8mb4";
