@@ -1,0 +1,116 @@
+<?php
+namespace EasyVol;
+
+use PDO;
+use PDOException;
+
+/**
+ * Database Connection Manager
+ */
+class Database {
+    private static $instance = null;
+    private $connection;
+    
+    private function __construct($config) {
+        try {
+            $dsn = sprintf(
+                "mysql:host=%s;port=%d;dbname=%s;charset=%s",
+                $config['host'],
+                $config['port'],
+                $config['name'],
+                $config['charset']
+            );
+            
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ];
+            
+            $this->connection = new PDO(
+                $dsn,
+                $config['username'],
+                $config['password'],
+                $options
+            );
+        } catch (PDOException $e) {
+            throw new \Exception("Database connection failed: " . $e->getMessage());
+        }
+    }
+    
+    public static function getInstance($config = null) {
+        if (self::$instance === null) {
+            if ($config === null) {
+                throw new \Exception("Database configuration required for first initialization");
+            }
+            self::$instance = new self($config);
+        }
+        return self::$instance;
+    }
+    
+    public function getConnection() {
+        return $this->connection;
+    }
+    
+    public function query($sql, $params = []) {
+        try {
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new \Exception("Query failed: " . $e->getMessage());
+        }
+    }
+    
+    public function fetchAll($sql, $params = []) {
+        $stmt = $this->query($sql, $params);
+        return $stmt->fetchAll();
+    }
+    
+    public function fetchOne($sql, $params = []) {
+        $stmt = $this->query($sql, $params);
+        return $stmt->fetch();
+    }
+    
+    public function insert($table, $data) {
+        $columns = implode(', ', array_keys($data));
+        $placeholders = ':' . implode(', :', array_keys($data));
+        
+        $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+        $this->query($sql, $data);
+        
+        return $this->connection->lastInsertId();
+    }
+    
+    public function update($table, $data, $where, $whereParams = []) {
+        $set = [];
+        foreach (array_keys($data) as $key) {
+            $set[] = "$key = :$key";
+        }
+        $setClause = implode(', ', $set);
+        
+        $sql = "UPDATE $table SET $setClause WHERE $where";
+        $params = array_merge($data, $whereParams);
+        
+        $stmt = $this->query($sql, $params);
+        return $stmt->rowCount();
+    }
+    
+    public function delete($table, $where, $params = []) {
+        $sql = "DELETE FROM $table WHERE $where";
+        $stmt = $this->query($sql, $params);
+        return $stmt->rowCount();
+    }
+    
+    public function beginTransaction() {
+        return $this->connection->beginTransaction();
+    }
+    
+    public function commit() {
+        return $this->connection->commit();
+    }
+    
+    public function rollback() {
+        return $this->connection->rollBack();
+    }
+}
