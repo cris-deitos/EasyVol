@@ -364,7 +364,7 @@ php /var/www/easyvol/cron/annual_member_verification.php
 ### Compatibilità
 
 - PHP 8.3+
-- MySQL 5.7+ / MariaDB 10.3+
+- MySQL 5.6+ o MySQL 8.x o MariaDB 10.3+
 - PHPMailer 7.0+
 - Bootstrap 5.3+
 

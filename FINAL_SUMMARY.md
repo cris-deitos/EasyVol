@@ -132,7 +132,7 @@ Il sistema **EasyVol** è ora completamente implementato e pronto per l'utilizzo
 
 ### Stack Tecnologico
 - **Backend**: PHP 8.3+
-- **Database**: MySQL 8.0+
+- **Database**: MySQL 5.6+ o MySQL 8.x o MariaDB 10.3+
 - **Frontend**: Bootstrap 5, HTML5, JavaScript
 - **Libraries**: 
   - mPDF (generazione PDF)
