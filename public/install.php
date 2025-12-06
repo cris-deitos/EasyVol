@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
@@ -84,6 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 // Connect to database
+                if (!isset($_SESSION['install'])) {
+                    throw new Exception("Session data not found. Please start from step 1.");
+                }
                 $installData = $_SESSION['install'];
                 $dsn = "mysql:host={$installData['db_host']};port={$installData['db_port']};dbname={$installData['db_name']};charset=utf8mb4";
                 $pdo = new PDO($dsn, $installData['db_user'], $installData['db_pass'], [
@@ -149,8 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
-session_start();
 ?>
 <!DOCTYPE html>
 <html lang="it">
