@@ -12,6 +12,10 @@ class MeetingController {
     private $db;
     private $config;
     
+    // Constants for member types
+    const MEMBER_TYPE_ADULT = 'adult';
+    const MEMBER_TYPE_JUNIOR = 'junior';
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -241,8 +245,8 @@ class MeetingController {
                 foreach ($adultMembers as $member) {
                     $sql = "INSERT IGNORE INTO meeting_participants 
                             (meeting_id, member_id, member_type, attendance_status) 
-                            VALUES (?, ?, 'adult', 'invited')";
-                    $this->db->execute($sql, [$meetingId, $member['id']]);
+                            VALUES (?, ?, ?, 'invited')";
+                    $this->db->execute($sql, [$meetingId, $member['id'], self::MEMBER_TYPE_ADULT]);
                 }
             }
             
@@ -254,8 +258,8 @@ class MeetingController {
                 foreach ($juniorMembers as $member) {
                     $sql = "INSERT IGNORE INTO meeting_participants 
                             (meeting_id, junior_member_id, member_type, attendance_status) 
-                            VALUES (?, ?, 'junior', 'invited')";
-                    $this->db->execute($sql, [$meetingId, $member['id']]);
+                            VALUES (?, ?, ?, 'invited')";
+                    $this->db->execute($sql, [$meetingId, $member['id'], self::MEMBER_TYPE_JUNIOR]);
                 }
             }
             
@@ -271,7 +275,7 @@ class MeetingController {
     /**
      * Aggiungi singolo partecipante
      */
-    public function addParticipant($meetingId, $memberId, $memberType = 'adult', $role = null) {
+    public function addParticipant($meetingId, $memberId, $memberType = self::MEMBER_TYPE_ADULT, $role = null) {
         try {
             $sql = "INSERT INTO meeting_participants 
                     (meeting_id, member_id, junior_member_id, member_type, role, attendance_status) 
@@ -279,8 +283,8 @@ class MeetingController {
             
             $params = [
                 $meetingId,
-                $memberType === 'adult' ? $memberId : null,
-                $memberType === 'junior' ? $memberId : null,
+                $memberType === self::MEMBER_TYPE_ADULT ? $memberId : null,
+                $memberType === self::MEMBER_TYPE_JUNIOR ? $memberId : null,
                 $memberType,
                 $role
             ];
@@ -298,14 +302,16 @@ class MeetingController {
      */
     public function updateAttendance($participantId, $status, $delegatedTo = null) {
         try {
+            $isPresent = ($status === 'present') ? 1 : 0;
+            
             $sql = "UPDATE meeting_participants 
                     SET attendance_status = ?, 
                         delegated_to = ?,
                         response_date = NOW(),
-                        present = CASE WHEN ? = 'present' THEN 1 ELSE 0 END
+                        present = ?
                     WHERE id = ?";
             
-            $this->db->execute($sql, [$status, $delegatedTo, $status, $participantId]);
+            $this->db->execute($sql, [$status, $delegatedTo, $isPresent, $participantId]);
             return true;
         } catch (\Exception $e) {
             error_log("Errore aggiornamento presenza: " . $e->getMessage());

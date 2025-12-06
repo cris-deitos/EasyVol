@@ -652,7 +652,7 @@ CREATE TABLE IF NOT EXISTS `scheduler_item_recipients` (
 -- Table to track annual member data verification emails (sent January 7th each year)
 CREATE TABLE IF NOT EXISTS `annual_data_verification_emails` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `member_id` int(11) NOT NULL,
+  `member_id` int(11) DEFAULT NULL,
   `member_type` enum('adult', 'junior') NOT NULL DEFAULT 'adult',
   `junior_member_id` int(11) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
@@ -664,9 +664,7 @@ CREATE TABLE IF NOT EXISTS `annual_data_verification_emails` (
   KEY `member_id` (`member_id`),
   KEY `junior_member_id` (`junior_member_id`),
   KEY `year` (`year`),
-  KEY `sent_at` (`sent_at`),
-  KEY `idx_member_year` (`member_id`, `year`),
-  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+  KEY `sent_at` (`sent_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================

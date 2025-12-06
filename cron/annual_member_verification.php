@@ -139,7 +139,7 @@ try {
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, junior_member_id, email, sent_at, year, status) 
-                VALUES (0, 'junior', ?, ?, NOW(), ?, 'sent')",
+                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'sent')",
                 [$member['id'], $email, $currentYear]
             );
             $sentCount++;
@@ -149,7 +149,7 @@ try {
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, junior_member_id, email, sent_at, year, status, error_message) 
-                VALUES (0, 'junior', ?, ?, NOW(), ?, 'failed', 'Email send failed')",
+                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'failed', 'Email send failed')",
                 [$member['id'], $email, $currentYear]
             );
             $failedCount++;
