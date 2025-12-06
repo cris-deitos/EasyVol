@@ -1,0 +1,40 @@
+<?php
+require_once '../src/Autoloader.php';
+require_once '../src/App.php';
+
+use EasyVol\App;
+use EasyVol\Controllers\SchedulerController;
+
+$app = new App();
+
+// Check authentication and permissions
+if (!$app->isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+if (!$app->hasPermission('scheduler', 'edit')) {
+    die('Accesso negato');
+}
+
+$controller = new SchedulerController($app->getDatabase(), $app->getConfig());
+
+// Get item ID
+$itemId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if (!$itemId) {
+    $_SESSION['error'] = 'ID scadenza non valido';
+    header('Location: scheduler.php');
+    exit;
+}
+
+$result = $controller->complete($itemId, $app->getUserId());
+
+if ($result) {
+    $_SESSION['success'] = 'Scadenza segnata come completata';
+} else {
+    $_SESSION['error'] = 'Errore durante il completamento';
+}
+
+header('Location: scheduler.php');
+exit;

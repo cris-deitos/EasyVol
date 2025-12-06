@@ -326,4 +326,39 @@ class WarehouseController {
             error_log("Errore log attività: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Elimina articolo magazzino
+     */
+    public function delete($id, $userId) {
+        try {
+            // Get item details for log
+            $sql = "SELECT item_name FROM warehouse_items WHERE id = ?";
+            $item = $this->db->fetchOne($sql, [$id]);
+            
+            if (!$item) {
+                return ['success' => false, 'message' => 'Articolo non trovato'];
+            }
+            
+            // Check if item has movements
+            $sql = "SELECT COUNT(*) as count FROM warehouse_movements WHERE item_id = ?";
+            $result = $this->db->fetchOne($sql, [$id]);
+            
+            if ($result['count'] > 0) {
+                return ['success' => false, 'message' => 'Impossibile eliminare: articolo ha movimenti registrati'];
+            }
+            
+            // Delete item
+            $sql = "DELETE FROM warehouse_items WHERE id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            // Log activity
+            $this->logActivity($userId, 'warehouse', 'delete', $id, "Eliminato articolo: {$item['item_name']}");
+            
+            return ['success' => true];
+        } catch (\Exception $e) {
+            error_log("Errore eliminazione articolo: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
 }

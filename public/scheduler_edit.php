@@ -1,0 +1,242 @@
+<?php
+require_once '../src/Autoloader.php';
+require_once '../src/App.php';
+
+use EasyVol\App;
+use EasyVol\Controllers\SchedulerController;
+use EasyVol\Controllers\UserController;
+use EasyVol\Middleware\CsrfProtection;
+
+$app = new App();
+
+// Check authentication and permissions
+if (!$app->isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$isEdit = isset($_GET['id']);
+$requiredPermission = $isEdit ? 'edit' : 'create';
+
+if (!$app->hasPermission('scheduler', $requiredPermission)) {
+    die('Accesso negato');
+}
+
+$controller = new SchedulerController($app->getDatabase(), $app->getConfig());
+$userController = new UserController($app->getDatabase(), $app->getConfig());
+$csrf = new CsrfProtection();
+
+$item = null;
+$errors = [];
+$success = false;
+
+// Load item if editing
+if ($isEdit) {
+    $item = $controller->get($_GET['id']);
+    if (!$item) {
+        die('Scadenza non trovata');
+    }
+}
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verify CSRF token
+    if (!$csrf->validateToken($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Token di sicurezza non valido';
+    } else {
+        $data = [
+            'title' => trim($_POST['title'] ?? ''),
+            'description' => trim($_POST['description'] ?? ''),
+            'due_date' => $_POST['due_date'] ?? '',
+            'category' => trim($_POST['category'] ?? ''),
+            'priority' => $_POST['priority'] ?? 'media',
+            'status' => $_POST['status'] ?? 'in_attesa',
+            'reminder_days' => (int)($_POST['reminder_days'] ?? 7),
+            'assigned_to' => !empty($_POST['assigned_to']) ? (int)$_POST['assigned_to'] : null
+        ];
+        
+        // Validation
+        if (empty($data['title'])) {
+            $errors[] = 'Il titolo è obbligatorio';
+        }
+        if (empty($data['due_date'])) {
+            $errors[] = 'La data di scadenza è obbligatoria';
+        }
+        
+        if (empty($errors)) {
+            if ($isEdit) {
+                $result = $controller->update($_GET['id'], $data, $app->getUserId());
+            } else {
+                $result = $controller->create($data, $app->getUserId());
+            }
+            
+            if ($result) {
+                $success = true;
+                header('Location: scheduler.php?success=1');
+                exit;
+            } else {
+                $errors[] = 'Errore durante il salvataggio';
+            }
+        }
+    }
+}
+
+// Get users for assignment dropdown
+$users = $userController->index([], 1, 100);
+
+$pageTitle = $isEdit ? 'Modifica Scadenza' : 'Nuova Scadenza';
+?>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($pageTitle); ?> - EasyVol</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+    <?php include '../src/Views/includes/navbar.php'; ?>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <?php include '../src/Views/includes/sidebar.php'; ?>
+            
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2"><i class="bi bi-calendar-check"></i> <?php echo htmlspecialchars($pageTitle); ?></h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <a href="scheduler.php" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Torna alla lista
+                        </a>
+                    </div>
+                </div>
+
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-danger">
+                        <strong>Errore:</strong>
+                        <ul class="mb-0">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo htmlspecialchars($error); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($success): ?>
+                    <div class="alert alert-success">
+                        Scadenza salvata con successo!
+                    </div>
+                <?php endif; ?>
+
+                <div class="card">
+                    <div class="card-body">
+                        <form method="POST" action="">
+                            <input type="hidden" name="csrf_token" value="<?php echo $csrf->generateToken(); ?>">
+                            
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="title" class="form-label">Titolo *</label>
+                                    <input type="text" class="form-control" id="title" name="title" 
+                                           value="<?php echo htmlspecialchars($item['title'] ?? $_POST['title'] ?? ''); ?>" 
+                                           required maxlength="255">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="due_date" class="form-label">Data Scadenza *</label>
+                                    <input type="date" class="form-control" id="due_date" name="due_date" 
+                                           value="<?php echo htmlspecialchars($item['due_date'] ?? $_POST['due_date'] ?? ''); ?>" 
+                                           required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Descrizione</label>
+                                <textarea class="form-control" id="description" name="description" 
+                                          rows="4"><?php echo htmlspecialchars($item['description'] ?? $_POST['description'] ?? ''); ?></textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="category" class="form-label">Categoria</label>
+                                    <input type="text" class="form-control" id="category" name="category" 
+                                           value="<?php echo htmlspecialchars($item['category'] ?? $_POST['category'] ?? ''); ?>" 
+                                           maxlength="100"
+                                           placeholder="Es: Assicurazione, Revisione...">
+                                    <small class="form-text text-muted">Opzionale</small>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label for="priority" class="form-label">Priorità</label>
+                                    <select class="form-select" id="priority" name="priority" required>
+                                        <?php
+                                        $currentPriority = $item['priority'] ?? $_POST['priority'] ?? 'media';
+                                        $priorities = ['bassa' => 'Bassa', 'media' => 'Media', 'alta' => 'Alta', 'urgente' => 'Urgente'];
+                                        foreach ($priorities as $value => $label):
+                                        ?>
+                                            <option value="<?php echo $value; ?>" <?php echo $currentPriority === $value ? 'selected' : ''; ?>>
+                                                <?php echo $label; ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label for="status" class="form-label">Stato</label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <?php
+                                        $currentStatus = $item['status'] ?? $_POST['status'] ?? 'in_attesa';
+                                        $statuses = ['in_attesa' => 'In Attesa', 'in_corso' => 'In Corso', 'completato' => 'Completato', 'scaduto' => 'Scaduto'];
+                                        foreach ($statuses as $value => $label):
+                                        ?>
+                                            <option value="<?php echo $value; ?>" <?php echo $currentStatus === $value ? 'selected' : ''; ?>>
+                                                <?php echo $label; ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label for="reminder_days" class="form-label">Promemoria (giorni prima)</label>
+                                    <input type="number" class="form-control" id="reminder_days" name="reminder_days" 
+                                           value="<?php echo htmlspecialchars($item['reminder_days'] ?? $_POST['reminder_days'] ?? 7); ?>" 
+                                           min="0" max="365">
+                                    <small class="form-text text-muted">0 = nessun promemoria</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="assigned_to" class="form-label">Assegnato a</label>
+                                <select class="form-select" id="assigned_to" name="assigned_to">
+                                    <option value="">Nessuno</option>
+                                    <?php
+                                    $currentAssignedTo = $item['assigned_to'] ?? $_POST['assigned_to'] ?? null;
+                                    foreach ($users as $user):
+                                    ?>
+                                        <option value="<?php echo $user['id']; ?>" 
+                                                <?php echo $currentAssignedTo == $user['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($user['full_name'] ?? $user['username']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <a href="scheduler.php" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Annulla
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Salva
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

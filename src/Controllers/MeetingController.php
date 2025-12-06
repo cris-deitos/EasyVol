@@ -181,4 +181,44 @@ class MeetingController {
             error_log("Errore log attività: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Elimina riunione
+     */
+    public function delete($id, $userId) {
+        try {
+            // Get meeting details for log
+            $meeting = $this->get($id);
+            if (!$meeting) {
+                return ['success' => false, 'message' => 'Riunione non trovata'];
+            }
+            
+            $this->db->beginTransaction();
+            
+            // Delete related records
+            $sql = "DELETE FROM meeting_participants WHERE meeting_id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            $sql = "DELETE FROM meeting_agenda WHERE meeting_id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            $sql = "DELETE FROM meeting_attachments WHERE meeting_id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            // Delete meeting
+            $sql = "DELETE FROM meetings WHERE id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            $this->db->commit();
+            
+            // Log activity
+            $this->logActivity($userId, 'meetings', 'delete', $id, "Eliminata riunione: {$meeting['title']}");
+            
+            return ['success' => true];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Errore eliminazione riunione: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
 }

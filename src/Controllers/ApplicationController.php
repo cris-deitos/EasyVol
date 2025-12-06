@@ -502,4 +502,40 @@ class ApplicationController {
         
         return str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
     }
+    
+    /**
+     * Elimina domanda di iscrizione
+     */
+    public function delete($id, $userId) {
+        try {
+            // Get application details for log
+            $application = $this->get($id);
+            if (!$application) {
+                return ['success' => false, 'message' => 'Domanda non trovata'];
+            }
+            
+            // Prevent deletion of approved applications
+            if ($application['status'] === 'approvata') {
+                return ['success' => false, 'message' => 'Impossibile eliminare: domanda già approvata'];
+            }
+            
+            // Delete application
+            $sql = "DELETE FROM member_applications WHERE id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            // Log activity
+            $this->logActivity(
+                $userId, 
+                'applications', 
+                'delete', 
+                $id, 
+                "Eliminata domanda: {$application['first_name']} {$application['last_name']}"
+            );
+            
+            return ['success' => true];
+        } catch (\Exception $e) {
+            error_log("Errore eliminazione domanda: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
 }
