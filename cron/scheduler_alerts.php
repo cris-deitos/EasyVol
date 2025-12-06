@@ -67,7 +67,7 @@ try {
             $body = "Gentile " . $data['user']['name'] . ",\n\n";
             $body .= "Ti ricordiamo le seguenti scadenze in arrivo:\n\n";
             
-            foreach ($data['items']['items'] as $item) {
+            foreach ($data['items'] as $item) {
                 $body .= "- " . $item['title'] . "\n";
                 $body .= "  Scadenza: " . date('d/m/Y', strtotime($item['due_date'])) . "\n";
                 $body .= "  Priorità: " . ucfirst($item['priority']) . "\n";

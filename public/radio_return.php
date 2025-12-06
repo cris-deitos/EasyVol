@@ -19,9 +19,15 @@ if (!$app->hasPermission('operations_center', 'edit')) {
 
 $controller = new OperationsCenterController($app->getDatabase(), $app->getConfig());
 
-// Get assignment ID
-$assignmentId = isset($_GET['assignment_id']) ? (int)$_GET['assignment_id'] : 0;
-$notes = $_GET['notes'] ?? '';
+// Handle POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $assignmentId = isset($_POST['assignment_id']) ? (int)$_POST['assignment_id'] : 0;
+    $notes = $_POST['notes'] ?? '';
+} else {
+    // Fallback to GET for backward compatibility
+    $assignmentId = isset($_GET['assignment_id']) ? (int)$_GET['assignment_id'] : 0;
+    $notes = $_GET['notes'] ?? '';
+}
 
 if (!$assignmentId) {
     $_SESSION['error'] = 'ID assegnazione non valido';

@@ -309,10 +309,14 @@ $pageTitle = 'Centrale Operativa';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-refresh every 60 seconds
-        setTimeout(function() {
-            location.reload();
-        }, 60000);
+        // Auto-refresh every 60 seconds (can be disabled by user if needed)
+        // Note: In production, consider implementing AJAX updates instead
+        const autoRefreshEnabled = true;
+        if (autoRefreshEnabled) {
+            setTimeout(function() {
+                location.reload();
+            }, 60000);
+        }
     </script>
 </body>
 </html>

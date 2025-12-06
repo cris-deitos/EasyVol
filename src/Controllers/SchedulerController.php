@@ -202,6 +202,13 @@ class SchedulerController {
      */
     public function complete($id, $userId) {
         try {
+            // Get item for log before updating
+            $item = $this->get($id);
+            
+            if (!$item) {
+                return false;
+            }
+            
             $sql = "UPDATE scheduler_items SET 
                     status = 'completato', 
                     completed_at = NOW(),
@@ -209,9 +216,6 @@ class SchedulerController {
                     WHERE id = ?";
             
             $this->db->execute($sql, [$id]);
-            
-            // Get item for log
-            $item = $this->get($id);
             
             // Log activity
             $this->logActivity($userId, 'scheduler', 'complete', $id, 

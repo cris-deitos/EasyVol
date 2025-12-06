@@ -181,18 +181,18 @@ $pageTitle = 'Dettaglio Radio';
                             </div>
                         </div>
 
-                        <!-- QR Code for serial scan (if available) -->
+                        <!-- Serial Number Display -->
                         <?php if ($radio['serial_number']): ?>
                             <div class="card mt-3">
                                 <div class="card-header">
-                                    <h5 class="mb-0">Scan Seriale</h5>
+                                    <h5 class="mb-0">Numero Seriale</h5>
                                 </div>
                                 <div class="card-body text-center">
-                                    <p class="mb-2">Scansiona il codice a barre per identificare rapidamente questa radio</p>
-                                    <img src="https://barcode.tec-it.com/barcode.ashx?data=<?php echo urlencode($radio['serial_number']); ?>&code=Code128&multiplebarcodes=false&translate-esc=false&unit=Fit&dpi=96&imagetype=Gif&rotation=0&color=%23000000&bgcolor=%23ffffff&qunit=Mm&quiet=0" 
-                                         alt="Barcode" style="max-width: 100%;">
-                                    <br>
-                                    <code><?php echo htmlspecialchars($radio['serial_number']); ?></code>
+                                    <p class="mb-2">Numero seriale per identificazione:</p>
+                                    <h3><code><?php echo htmlspecialchars($radio['serial_number']); ?></code></h3>
+                                    <small class="text-muted">
+                                        Nota: Per generare barcode, utilizzare una libreria locale come Endroid QR Code
+                                    </small>
                                 </div>
                             </div>
                         <?php endif; ?>
@@ -292,7 +292,27 @@ $pageTitle = 'Dettaglio Radio';
         function returnRadio(assignmentId) {
             const notes = prompt('Note sulla restituzione (opzionale):');
             if (notes !== null) {  // null means cancelled
-                window.location.href = 'radio_return.php?assignment_id=' + assignmentId + '&notes=' + encodeURIComponent(notes);
+                // Create a form and submit via POST instead of GET
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'radio_return.php';
+                
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'assignment_id';
+                idInput.value = assignmentId;
+                form.appendChild(idInput);
+                
+                if (notes) {
+                    const notesInput = document.createElement('input');
+                    notesInput.type = 'hidden';
+                    notesInput.name = 'notes';
+                    notesInput.value = notes;
+                    form.appendChild(notesInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
             }
         }
     </script>
