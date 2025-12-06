@@ -106,12 +106,18 @@ class QrCodeGenerator {
     /**
      * Decodifica QR code da immagine
      * 
-     * @param string $imagePath Percorso immagine
-     * @return string|false Dati decodificati o false
+     * Note: This functionality requires the zxing/zxing library which is not included
+     * in the default dependencies. To implement QR code decoding, install:
+     * composer require zxing/zxing
+     * 
+     * @param string $imagePath Path to the QR code image file
+     * @return string|false Decoded data from QR code, or false if not implemented/failed
+     * @deprecated Not yet implemented. Install zxing/zxing library to use this feature.
      */
     public static function decode($imagePath) {
         // Note: Decoding requires additional library (zxing/zxing)
         // For now, return false as decoding is not implemented
+        trigger_error('QR code decoding not yet implemented. Install zxing/zxing library.', E_USER_NOTICE);
         return false;
     }
 }

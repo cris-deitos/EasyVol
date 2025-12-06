@@ -418,8 +418,88 @@ class ApplicationController {
      * @return int ID cadetto creato
      */
     private function createJuniorMember($application, $userId) {
-        // TODO: Implement junior member creation
-        // For now, create as regular member
-        return $this->createMember($application, $userId);
+        // Insert into junior_members table
+        $sql = "INSERT INTO junior_members (
+            registration_number, member_status,
+            last_name, first_name, birth_date, birth_place, birth_province,
+            tax_code, gender, nationality,
+            registration_date,
+            created_at, created_by
+        ) VALUES (?, 'attivo', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+        
+        // Generate registration number
+        $regNumber = $this->generateRegistrationNumber('junior');
+        
+        $params = [
+            $regNumber,
+            $application['last_name'],
+            $application['first_name'],
+            $application['birth_date'],
+            $application['birth_place'],
+            $application['birth_province'],
+            $application['tax_code'],
+            $application['gender'],
+            $application['nationality'],
+            date('Y-m-d'),
+            $userId
+        ];
+        
+        $this->db->execute($sql, $params);
+        $juniorMemberId = $this->db->lastInsertId();
+        
+        // Add guardian data if exists
+        $guardian = $this->db->fetchOne(
+            "SELECT * FROM member_application_guardians WHERE application_id = ?",
+            [$application['id']]
+        );
+        
+        if ($guardian) {
+            $sql = "INSERT INTO junior_member_guardians (
+                junior_member_id, guardian_type,
+                last_name, first_name, birth_date, birth_place,
+                tax_code, phone, email
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $params = [
+                $juniorMemberId,
+                $guardian['guardian_type'] ?? 'parent',
+                $guardian['last_name'],
+                $guardian['first_name'],
+                $guardian['birth_date'],
+                $guardian['birth_place'],
+                $guardian['tax_code'],
+                $guardian['phone'],
+                $guardian['email']
+            ];
+            
+            $this->db->execute($sql, $params);
+        }
+        
+        return $juniorMemberId;
+    }
+    
+    /**
+     * Genera numero registrazione per soci o cadetti
+     * 
+     * @param string $type 'member' o 'junior'
+     * @return string
+     */
+    private function generateRegistrationNumber($type = 'member') {
+        $table = $type === 'junior' ? 'junior_members' : 'members';
+        
+        $sql = "SELECT registration_number FROM $table 
+                WHERE registration_number REGEXP '^[0-9]+$' 
+                ORDER BY CAST(registration_number AS UNSIGNED) DESC 
+                LIMIT 1";
+        
+        $last = $this->db->fetchOne($sql);
+        
+        if ($last && is_numeric($last['registration_number'])) {
+            $nextNumber = intval($last['registration_number']) + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        return str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
     }
 }
