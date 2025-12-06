@@ -6,7 +6,7 @@ Questa guida ti aiuterà a installare e configurare EasyVol in 5 minuti.
 
 ### Requisiti Minimi
 - PHP 8.4 o superiore
-- MySQL 5.7+ o MariaDB 10.3+
+- MySQL 5.6+ o MySQL 8.x o MariaDB 10.3+
 - Web server (Apache o Nginx)
 - 50MB spazio disco
 

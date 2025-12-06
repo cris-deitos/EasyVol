@@ -37,7 +37,7 @@ EasyVol è un sistema di gestione completo progettato specificamente per le asso
 
 ### Requisiti
 - PHP 8.4 o superiore
-- MySQL 5.7+ o MariaDB 10.3+
+- MySQL 5.6+ o MySQL 8.x o MariaDB 10.3+
 - Web server (Apache, Nginx)
 - Estensioni PHP: PDO, mbstring, json, gd, zip
 
