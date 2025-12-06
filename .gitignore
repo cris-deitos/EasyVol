@@ -1,0 +1,37 @@
+# Configuration
+/config/config.php
+
+# Uploads
+/uploads/*
+!/uploads/.gitkeep
+
+# Vendor (if using Composer)
+/vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+/logs/
+
+# Temporary files
+/tmp/
+*.tmp
+
+# Backups
+*.bak
+*.backup
+*.sql
+
+# Cache
+/cache/
+*.cache
