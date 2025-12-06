@@ -31,6 +31,7 @@ Thumbs.db
 *.bak
 *.backup
 *.sql
+!database_schema.sql
 
 # Cache
 /cache/

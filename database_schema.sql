@@ -1,0 +1,883 @@
+-- EasyVol Database Schema
+-- PHP 8.4 + MySQL Management System for Volunteer Associations
+-- Version 1.0
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+-- =============================================
+-- CONFIGURATION AND SYSTEM TABLES
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `config` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `config_key` varchar(100) NOT NULL,
+  `config_value` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `config_key` (`config_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `association` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `logo` varchar(255),
+  `address_street` varchar(255),
+  `address_number` varchar(20),
+  `address_city` varchar(100),
+  `address_province` varchar(5),
+  `address_cap` varchar(10),
+  `email` varchar(255),
+  `pec` varchar(255),
+  `tax_code` varchar(50),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- USER MANAGEMENT
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `full_name` varchar(255),
+  `member_id` int(11) DEFAULT NULL,
+  `role_id` int(11) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `last_login` timestamp NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `email` (`email`),
+  KEY `member_id` (`member_id`),
+  KEY `role_id` (`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `roles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `permissions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `module` varchar(100) NOT NULL,
+  `action` varchar(50) NOT NULL COMMENT 'view, create, edit, delete, report',
+  `description` text,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `module_action` (`module`, `action`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `role_permissions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `role_id` int(11) NOT NULL,
+  `permission_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `role_permission` (`role_id`, `permission_id`),
+  KEY `permission_id` (`permission_id`),
+  FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- ACTIVITY LOGGING
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `activity_logs` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11),
+  `action` varchar(100) NOT NULL,
+  `module` varchar(100),
+  `record_id` int(11),
+  `description` text,
+  `ip_address` varchar(45),
+  `user_agent` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `created_at` (`created_at`),
+  KEY `module_record` (`module`, `record_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- MEMBERS (SOCI MAGGIORENNI)
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `members` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `registration_number` varchar(50) UNIQUE,
+  `member_type` enum('ordinario', 'fondatore') DEFAULT 'ordinario',
+  `member_status` enum('attivo', 'decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo') DEFAULT 'attivo',
+  `volunteer_status` enum('operativo', 'non_operativo', 'in_formazione') DEFAULT 'in_formazione',
+  `last_name` varchar(100) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `birth_place` varchar(255),
+  `birth_date` date,
+  `tax_code` varchar(50),
+  `registration_date` date,
+  `approval_date` date,
+  `photo` varchar(255),
+  `notes` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `last_name` (`last_name`),
+  KEY `member_status` (`member_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_addresses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `address_type` enum('residenza', 'domicilio') NOT NULL,
+  `street` varchar(255),
+  `number` varchar(20),
+  `city` varchar(100),
+  `province` varchar(5),
+  `cap` varchar(10),
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_contacts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `contact_type` enum('telefono_fisso', 'cellulare', 'email', 'pec') NOT NULL,
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_education` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `degree_type` varchar(100),
+  `institution` varchar(255),
+  `year` int(11),
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_employment` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `employer_name` varchar(255),
+  `employer_address` varchar(255),
+  `employer_city` varchar(100),
+  `employer_phone` varchar(50),
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_licenses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `license_type` varchar(100) NOT NULL COMMENT 'patente A, B, C, D, E, nautica, muletto, etc',
+  `license_number` varchar(100),
+  `issue_date` date,
+  `expiry_date` date,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_courses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `course_name` varchar(255) NOT NULL,
+  `course_type` varchar(100) COMMENT 'base, DGR 1190/2019, altro',
+  `completion_date` date,
+  `expiry_date` date,
+  `certificate_file` varchar(255),
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_roles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `role_name` varchar(255) NOT NULL,
+  `assigned_date` date,
+  `end_date` date,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_availability` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `availability_type` enum('comunale', 'provinciale', 'regionale', 'nazionale', 'internazionale') NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_fees` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `year` int(11) NOT NULL,
+  `payment_date` date,
+  `amount` decimal(10,2),
+  `receipt_file` varchar(255),
+  `verified` tinyint(1) DEFAULT 0,
+  `verified_by` int(11),
+  `verified_at` timestamp NULL,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  KEY `year` (`year`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_health` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `health_type` enum('vegano', 'vegetariano', 'allergie', 'intolleranze', 'patologie') NOT NULL,
+  `description` text,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_sanctions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `sanction_date` date NOT NULL,
+  `sanction_type` enum('decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo') NOT NULL,
+  `reason` text,
+  `created_by` int(11),
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `member_attachments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `file_type` varchar(100),
+  `description` text,
+  `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- JUNIOR MEMBERS (SOCI MINORENNI - CADETTI)
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `junior_members` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `registration_number` varchar(50) UNIQUE,
+  `member_status` enum('attivo', 'decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo') DEFAULT 'attivo',
+  `last_name` varchar(100) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `birth_place` varchar(255),
+  `birth_date` date,
+  `tax_code` varchar(50),
+  `registration_date` date,
+  `approval_date` date,
+  `photo` varchar(255),
+  `notes` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `junior_member_guardians` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `junior_member_id` int(11) NOT NULL,
+  `guardian_type` enum('padre', 'madre', 'tutore') NOT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `tax_code` varchar(50),
+  `phone` varchar(50),
+  `email` varchar(255),
+  PRIMARY KEY (`id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `junior_member_addresses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `junior_member_id` int(11) NOT NULL,
+  `address_type` enum('residenza', 'domicilio') NOT NULL,
+  `street` varchar(255),
+  `number` varchar(20),
+  `city` varchar(100),
+  `province` varchar(5),
+  `cap` varchar(10),
+  PRIMARY KEY (`id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `junior_member_contacts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `junior_member_id` int(11) NOT NULL,
+  `contact_type` enum('telefono_fisso', 'cellulare', 'email') NOT NULL,
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `junior_member_health` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `junior_member_id` int(11) NOT NULL,
+  `health_type` enum('vegano', 'vegetariano', 'allergie', 'intolleranze', 'patologie') NOT NULL,
+  `description` text,
+  PRIMARY KEY (`id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `junior_member_fees` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `junior_member_id` int(11) NOT NULL,
+  `year` int(11) NOT NULL,
+  `payment_date` date,
+  `amount` decimal(10,2),
+  `receipt_file` varchar(255),
+  `verified` tinyint(1) DEFAULT 0,
+  `verified_by` int(11),
+  `verified_at` timestamp NULL,
+  PRIMARY KEY (`id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `junior_member_attachments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `junior_member_id` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `file_type` varchar(100),
+  `description` text,
+  `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- REGISTRATION REQUESTS (PENDING APPLICATIONS)
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `member_applications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `application_code` varchar(50) UNIQUE NOT NULL,
+  `application_type` enum('adult', 'junior') NOT NULL,
+  `status` enum('pending', 'approved', 'rejected') DEFAULT 'pending',
+  `application_data` longtext NOT NULL COMMENT 'JSON data',
+  `pdf_file` varchar(255),
+  `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `processed_at` timestamp NULL,
+  `processed_by` int(11),
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `fee_payment_requests` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `registration_number` varchar(50),
+  `last_name` varchar(100),
+  `payment_year` int(11),
+  `payment_date` date,
+  `receipt_file` varchar(255),
+  `status` enum('pending', 'approved', 'rejected') DEFAULT 'pending',
+  `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `processed_at` timestamp NULL,
+  `processed_by` int(11),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- MEETINGS AND ASSEMBLIES
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `meetings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `meeting_type` enum('assemblea_ordinaria', 'assemblea_straordinaria', 'consiglio_direttivo', 'altra_riunione') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `meeting_date` date NOT NULL,
+  `start_time` time,
+  `end_time` time,
+  `location_type` enum('fisico', 'online') NOT NULL,
+  `location_address` text,
+  `online_details` text,
+  `status` enum('scheduled', 'in_progress', 'completed', 'cancelled') DEFAULT 'scheduled',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `meeting_participants` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `meeting_id` int(11) NOT NULL,
+  `member_id` int(11),
+  `participant_name` varchar(255),
+  `role` varchar(100) COMMENT 'presidente, segretario, auditore, socio',
+  `present` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `meeting_id` (`meeting_id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `meeting_agenda` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `meeting_id` int(11) NOT NULL,
+  `order_number` int(11) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `description` text,
+  `discussion` text,
+  `voting_result` varchar(255),
+  PRIMARY KEY (`id`),
+  KEY `meeting_id` (`meeting_id`),
+  FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `meeting_minutes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `meeting_id` int(11) NOT NULL,
+  `content_html` longtext,
+  `pdf_file` varchar(255),
+  `is_draft` tinyint(1) DEFAULT 1,
+  `finalized_at` timestamp NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `meeting_id` (`meeting_id`),
+  FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `meeting_attachments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `meeting_id` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `file_type` varchar(100),
+  `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `meeting_id` (`meeting_id`),
+  FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- VEHICLES MANAGEMENT
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `vehicles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `vehicle_type` enum('veicolo', 'natante', 'rimorchio') NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `license_plate` varchar(50),
+  `brand` varchar(100),
+  `model` varchar(100),
+  `year` int(11),
+  `serial_number` varchar(100),
+  `status` enum('operativo', 'in_manutenzione', 'fuori_servizio', 'dismesso') DEFAULT 'operativo',
+  `insurance_expiry` date,
+  `inspection_expiry` date,
+  `notes` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `vehicle_maintenance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `vehicle_id` int(11) NOT NULL,
+  `maintenance_type` enum('ordinaria', 'straordinaria', 'guasto', 'riparazione', 'sostituzione', 'danno', 'incidente') NOT NULL,
+  `date` date NOT NULL,
+  `description` text NOT NULL,
+  `cost` decimal(10,2),
+  `performed_by` varchar(255),
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `vehicle_id` (`vehicle_id`),
+  FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `vehicle_documents` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `vehicle_id` int(11) NOT NULL,
+  `document_type` varchar(100) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `expiry_date` date,
+  `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `vehicle_id` (`vehicle_id`),
+  FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- WAREHOUSE MANAGEMENT
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `warehouse_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(100) UNIQUE,
+  `name` varchar(255) NOT NULL,
+  `category` varchar(100),
+  `description` text,
+  `quantity` int(11) DEFAULT 0,
+  `minimum_quantity` int(11) DEFAULT 0,
+  `unit` varchar(50),
+  `location` varchar(255),
+  `qr_code` varchar(255),
+  `barcode` varchar(255),
+  `status` enum('disponibile', 'in_manutenzione', 'fuori_servizio') DEFAULT 'disponibile',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `warehouse_movements` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `item_id` int(11) NOT NULL,
+  `movement_type` enum('carico', 'scarico', 'assegnazione', 'restituzione', 'trasferimento') NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `member_id` int(11),
+  `destination` varchar(255),
+  `notes` text,
+  `created_by` int(11),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `item_id` (`item_id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`item_id`) REFERENCES `warehouse_items`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `warehouse_maintenance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `item_id` int(11) NOT NULL,
+  `maintenance_type` enum('ordinaria', 'straordinaria', 'guasto', 'riparazione', 'sostituzione') NOT NULL,
+  `date` date NOT NULL,
+  `description` text NOT NULL,
+  `cost` decimal(10,2),
+  `performed_by` varchar(255),
+  PRIMARY KEY (`id`),
+  KEY `item_id` (`item_id`),
+  FOREIGN KEY (`item_id`) REFERENCES `warehouse_items`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `dpi_assignments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `item_id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
+  `assignment_date` date NOT NULL,
+  `return_date` date,
+  `status` enum('assegnato', 'restituito') DEFAULT 'assegnato',
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `item_id` (`item_id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`item_id`) REFERENCES `warehouse_items`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- SCHEDULER AND DEADLINES
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `scheduler_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `due_date` date NOT NULL,
+  `category` varchar(100),
+  `priority` enum('bassa', 'media', 'alta', 'urgente') DEFAULT 'media',
+  `status` enum('in_attesa', 'in_corso', 'completato', 'scaduto') DEFAULT 'in_attesa',
+  `reminder_days` int(11) DEFAULT 7,
+  `assigned_to` int(11),
+  `completed_at` timestamp NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `due_date` (`due_date`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- TRAINING MANAGEMENT
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `training_courses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `course_name` varchar(255) NOT NULL,
+  `course_type` varchar(100),
+  `description` text,
+  `location` varchar(255),
+  `start_date` date,
+  `end_date` date,
+  `instructor` varchar(255),
+  `max_participants` int(11),
+  `status` enum('pianificato', 'in_corso', 'completato', 'annullato') DEFAULT 'pianificato',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `training_participants` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
+  `registration_date` date,
+  `attendance_status` enum('iscritto', 'presente', 'assente', 'ritirato') DEFAULT 'iscritto',
+  `final_grade` varchar(50),
+  `certificate_issued` tinyint(1) DEFAULT 0,
+  `certificate_file` varchar(255),
+  PRIMARY KEY (`id`),
+  KEY `course_id` (`course_id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`course_id`) REFERENCES `training_courses`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `training_attendance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `present` tinyint(1) DEFAULT 0,
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `course_id` (`course_id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`course_id`) REFERENCES `training_courses`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- EVENTS AND INTERVENTIONS
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `events` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `event_type` enum('emergenza', 'esercitazione', 'attivita') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `start_date` datetime NOT NULL,
+  `end_date` datetime,
+  `location` varchar(255),
+  `status` enum('aperto', 'in_corso', 'concluso', 'annullato') DEFAULT 'aperto',
+  `created_by` int(11),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `event_type` (`event_type`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `interventions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `event_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime,
+  `location` varchar(255),
+  `status` enum('in_corso', 'concluso', 'sospeso') DEFAULT 'in_corso',
+  `report` text,
+  PRIMARY KEY (`id`),
+  KEY `event_id` (`event_id`),
+  FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `intervention_members` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `intervention_id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
+  `role` varchar(100),
+  `hours_worked` decimal(5,2),
+  PRIMARY KEY (`id`),
+  KEY `intervention_id` (`intervention_id`),
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`intervention_id`) REFERENCES `interventions`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `intervention_vehicles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `intervention_id` int(11) NOT NULL,
+  `vehicle_id` int(11) NOT NULL,
+  `km_start` int(11),
+  `km_end` int(11),
+  PRIMARY KEY (`id`),
+  KEY `intervention_id` (`intervention_id`),
+  KEY `vehicle_id` (`vehicle_id`),
+  FOREIGN KEY (`intervention_id`) REFERENCES `interventions`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- OPERATIONS CENTER (CENTRALE OPERATIVA)
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `radio_directory` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `identifier` varchar(100),
+  `device_type` varchar(100),
+  `brand` varchar(100),
+  `model` varchar(100),
+  `serial_number` varchar(100),
+  `notes` text,
+  `status` enum('disponibile', 'assegnata', 'manutenzione', 'fuori_servizio') DEFAULT 'disponibile',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `radio_assignments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `radio_id` int(11) NOT NULL,
+  `assignee_first_name` varchar(100) NOT NULL,
+  `assignee_last_name` varchar(100) NOT NULL,
+  `assignee_phone` varchar(50),
+  `assignee_organization` varchar(255),
+  `assigned_by` int(11) NOT NULL,
+  `assignment_date` datetime NOT NULL,
+  `return_by` int(11),
+  `return_date` datetime,
+  `status` enum('assegnata', 'restituita') DEFAULT 'assegnata',
+  PRIMARY KEY (`id`),
+  KEY `radio_id` (`radio_id`),
+  FOREIGN KEY (`radio_id`) REFERENCES `radio_directory`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- DOCUMENT MANAGEMENT
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `documents` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `category` varchar(100) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `file_size` bigint(20),
+  `mime_type` varchar(100),
+  `tags` varchar(255),
+  `uploaded_by` int(11),
+  `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- EMAIL TEMPLATES AND NOTIFICATIONS
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `email_templates` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `template_name` varchar(100) NOT NULL UNIQUE,
+  `subject` varchar(255) NOT NULL,
+  `body_html` longtext NOT NULL,
+  `placeholders` text COMMENT 'JSON array of available placeholders',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `email_queue` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `recipient` varchar(255) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `body_html` longtext NOT NULL,
+  `attachments` text COMMENT 'JSON array of attachment paths',
+  `status` enum('pending', 'sent', 'failed') DEFAULT 'pending',
+  `attempts` int(11) DEFAULT 0,
+  `error_message` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `sent_at` timestamp NULL,
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `type` varchar(50) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `message` text,
+  `link` varchar(255),
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `is_read` (`is_read`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- PRINT TEMPLATES
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `print_templates` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `template_name` varchar(100) NOT NULL UNIQUE,
+  `template_type` varchar(50) NOT NULL COMMENT 'verbale, tesserino, scheda_socio, etc',
+  `header_html` text,
+  `body_template` longtext NOT NULL,
+  `footer_html` text,
+  `css_styles` text,
+  `font_family` varchar(100) DEFAULT 'Arial, sans-serif',
+  `page_size` varchar(20) DEFAULT 'A4',
+  `orientation` enum('portrait', 'landscape') DEFAULT 'portrait',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- STATISTICS AND REPORTS
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `statistics_cache` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `stat_key` varchar(100) NOT NULL,
+  `stat_value` text,
+  `generated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `stat_key` (`stat_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- SESSIONS
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `id` varchar(255) NOT NULL,
+  `user_id` int(11),
+  `ip_address` varchar(45),
+  `user_agent` text,
+  `payload` longtext NOT NULL,
+  `last_activity` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `last_activity` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+COMMIT;
