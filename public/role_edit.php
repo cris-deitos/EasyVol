@@ -81,23 +81,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($result === true || is_numeric($result)) {
                 $finalRoleId = $isEdit ? $roleId : $result;
                 
-                // Update role permissions
-                // First, remove all existing permissions
-                $db->execute("DELETE FROM role_permissions WHERE role_id = ?", [$finalRoleId]);
-                
-                // Add selected permissions
-                if (isset($_POST['permissions']) && is_array($_POST['permissions'])) {
-                    foreach ($_POST['permissions'] as $permissionId) {
-                        $permissionId = intval($permissionId);
-                        $db->insert('role_permissions', [
-                            'role_id' => $finalRoleId,
-                            'permission_id' => $permissionId
-                        ]);
+                // Update role permissions within a transaction
+                try {
+                    $db->beginTransaction();
+                    
+                    // First, remove all existing permissions
+                    $db->execute("DELETE FROM role_permissions WHERE role_id = ?", [$finalRoleId]);
+                    
+                    // Add selected permissions
+                    if (isset($_POST['permissions']) && is_array($_POST['permissions'])) {
+                        foreach ($_POST['permissions'] as $permissionId) {
+                            $permissionId = intval($permissionId);
+                            $db->insert('role_permissions', [
+                                'role_id' => $finalRoleId,
+                                'permission_id' => $permissionId
+                            ]);
+                        }
                     }
+                    
+                    $db->commit();
+                    
+                    header('Location: roles.php?success=1');
+                    exit;
+                } catch (Exception $e) {
+                    $db->rollback();
+                    $errors[] = 'Errore durante l\'aggiornamento dei permessi';
+                    error_log("Error updating role permissions: " . $e->getMessage());
                 }
-                
-                header('Location: roles.php?success=1');
-                exit;
             } else {
                 $errors[] = 'Errore durante il salvataggio del ruolo';
             }

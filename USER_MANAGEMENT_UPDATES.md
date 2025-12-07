@@ -235,7 +235,14 @@ Ensure your `config/config.php` has email properly configured:
 - Password reset always requires password change
 
 ### Email Security
-- Passwords are sent via encrypted email (if SMTP with TLS/SSL configured)
+- **Important Security Note**: Passwords are sent via email per requirements
+  - Email transmission has inherent security risks (interception, server storage)
+  - Mitigations in place:
+    - Passwords are temporary/default only
+    - Forced password change on first login
+    - SMTP with TLS/SSL encryption should be configured
+    - Users must change password immediately
+    - Token-based reset is recommended for future enhancement
 - No password display in browser during reset
 - All password changes are logged in activity logs
 

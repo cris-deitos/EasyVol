@@ -88,6 +88,7 @@ try {
             echo "\nContinue with remaining statements? (y/n): ";
             $handle = fopen("php://stdin", "r");
             $line = fgets($handle);
+            fclose($handle);
             if (trim($line) != 'y') {
                 echo "Migration aborted.\n";
                 exit(1);
