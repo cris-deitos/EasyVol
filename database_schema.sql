@@ -478,7 +478,12 @@ CREATE TABLE IF NOT EXISTS `meeting_agenda` (
   `subject` varchar(255) NOT NULL,
   `description` text,
   `discussion` text,
-  `voting_result` varchar(255),
+  `has_voting` tinyint(1) DEFAULT 0,
+  `voting_total` int(11) DEFAULT 0,
+  `voting_in_favor` int(11) DEFAULT 0,
+  `voting_against` int(11) DEFAULT 0,
+  `voting_abstentions` int(11) DEFAULT 0,
+  `voting_result` enum('approvato', 'respinto', 'non_votato') DEFAULT 'non_votato',
   PRIMARY KEY (`id`),
   KEY `meeting_id` (`meeting_id`),
   FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE

@@ -16,15 +16,11 @@ $user = $app->getCurrentUser();
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-bell"></i>
-                        <span class="badge bg-danger">3</span>
+                        <!-- Notification badge removed - notifications will be implemented dynamically -->
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header">Notifiche</h6></li>
-                        <li><a class="dropdown-item" href="#">Nuova domanda di iscrizione</a></li>
-                        <li><a class="dropdown-item" href="#">Scadenza revisione mezzo</a></li>
-                        <li><a class="dropdown-item" href="#">Prossima assemblea</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-center" href="#">Vedi tutte</a></li>
+                        <li><a class="dropdown-item text-center text-muted">Nessuna notifica</a></li>
                     </ul>
                 </li>
                 <li class="nav-item dropdown">
