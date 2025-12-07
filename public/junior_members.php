@@ -43,9 +43,9 @@ $members = $controller->index($filters, $page, $perPage);
 
 // Conteggi per status
 $statusCounts = [
-    'attivo' => $db->fetchOne("SELECT COUNT(*) as count FROM junior_members WHERE member_status = 'attivo' AND deleted_at IS NULL")['count'] ?? 0,
-    'sospeso' => $db->fetchOne("SELECT COUNT(*) as count FROM junior_members WHERE member_status = 'sospeso' AND deleted_at IS NULL")['count'] ?? 0,
-    'dimesso' => $db->fetchOne("SELECT COUNT(*) as count FROM junior_members WHERE member_status = 'dimesso' AND deleted_at IS NULL")['count'] ?? 0,
+    'attivo' => $db->fetchOne("SELECT COUNT(*) as count FROM junior_members WHERE member_status = 'attivo'")['count'] ?? 0,
+    'sospeso' => $db->fetchOne("SELECT COUNT(*) as count FROM junior_members WHERE member_status = 'sospeso'")['count'] ?? 0,
+    'dimesso' => $db->fetchOne("SELECT COUNT(*) as count FROM junior_members WHERE member_status = 'dimesso'")['count'] ?? 0,
 ];
 
 $pageTitle = 'Gestione Soci Minorenni';

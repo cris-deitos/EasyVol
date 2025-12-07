@@ -177,12 +177,10 @@ class MemberController {
     public function delete($id, $userId) {
         try {
             $sql = "UPDATE members SET 
-                    member_status = 'cancellato',
-                    deleted_at = NOW(),
-                    deleted_by = ?
+                    member_status = 'dimesso'
                     WHERE id = ?";
             
-            $this->db->execute($sql, [$userId, $id]);
+            $this->db->execute($sql, [$id]);
             
             // Log attività
             $this->logActivity($userId, 'member', 'delete', $id, 'Eliminato socio');
