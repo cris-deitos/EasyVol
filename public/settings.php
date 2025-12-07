@@ -63,42 +63,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     // Allowed MIME types for logo
                     $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
                     
-                    // Delete old logo files if exist
-                    $uploadDir = __DIR__ . '/../uploads/logo/';
-                    $oldFiles = glob($uploadDir . 'logo_associazione.*');
-                    foreach ($oldFiles as $oldFile) {
-                        if (file_exists($oldFile)) {
-                            unlink($oldFile);
-                        }
-                    }
-                    
                     // Determine file extension from MIME type for consistent naming
                     $finfo = new \finfo(FILEINFO_MIME_TYPE);
                     $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
                     
+                    // Only allow specific MIME types, reject unknown
                     $ext = match($mimeType) {
                         'image/png' => 'png',
                         'image/jpeg' => 'jpg',
                         'image/svg+xml' => 'svg',
-                        default => pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION)
+                        default => null
                     };
                     
-                    $newFileName = 'logo_associazione.' . $ext;
-                    
-                    // Use FileUploader for consistent and secure upload
-                    $uploader = new FileUploader(__DIR__ . '/../uploads/logo/', $allowedMimeTypes, 5 * 1024 * 1024);
-                    $uploadResult = $uploader->upload($_FILES['logo'], '', $newFileName);
-                    
-                    if ($uploadResult['success']) {
-                        $associationData['logo'] = 'uploads/logo/' . $newFileName;
+                    if ($ext === null) {
+                        $errors[] = 'Tipo di file non valido. Sono ammessi solo PNG, JPEG, SVG';
                     } else {
-                        $errors[] = 'Errore upload logo: ' . $uploadResult['error'];
+                        // Delete old logo files only after validation
+                        $uploadDir = __DIR__ . '/../uploads/logo/';
+                        $oldFiles = glob($uploadDir . 'logo_associazione.*');
+                        foreach ($oldFiles as $oldFile) {
+                            if (file_exists($oldFile)) {
+                                unlink($oldFile);
+                            }
+                        }
+                        
+                        $newFileName = 'logo_associazione.' . $ext;
+                        
+                        // Use FileUploader for consistent and secure upload
+                        $uploader = new FileUploader(__DIR__ . '/../uploads/logo/', $allowedMimeTypes, 5 * 1024 * 1024);
+                        $uploadResult = $uploader->upload($_FILES['logo'], '', $newFileName);
+                        
+                        if ($uploadResult['success']) {
+                            $associationData['logo'] = 'uploads/logo/' . $newFileName;
+                        } else {
+                            $errors[] = 'Errore upload logo: ' . $uploadResult['error'];
+                        }
                     }
                 } elseif (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
                     $errors[] = 'Errore durante l\'upload del file';
                 }
                 
                 if (empty($errors)) {
+                    // Whitelist of allowed columns to prevent SQL injection
+                    $allowedColumns = [
+                        'name', 'logo', 'address_street', 'address_number', 
+                        'address_city', 'address_province', 'address_cap', 
+                        'email', 'pec', 'tax_code'
+                    ];
+                    
+                    // Filter associationData to only include whitelisted columns
+                    $safeData = array_filter(
+                        $associationData,
+                        fn($key) => in_array($key, $allowedColumns),
+                        ARRAY_FILTER_USE_KEY
+                    );
+                    
                     // Check if association record exists
                     $existingAssociation = $db->fetchOne("SELECT id FROM association LIMIT 1");
                     
@@ -106,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         // Update existing record
                         $setParts = [];
                         $params = [];
-                        foreach ($associationData as $key => $value) {
+                        foreach ($safeData as $key => $value) {
                             $setParts[] = "$key = ?";
                             $params[] = $value;
                         }
@@ -116,10 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         $db->execute($sql, $params);
                     } else {
                         // Insert new record
-                        $columns = implode(', ', array_keys($associationData));
-                        $placeholders = implode(', ', array_fill(0, count($associationData), '?'));
+                        $columns = implode(', ', array_keys($safeData));
+                        $placeholders = implode(', ', array_fill(0, count($safeData), '?'));
                         $sql = "INSERT INTO association ($columns) VALUES ($placeholders)";
-                        $db->execute($sql, array_values($associationData));
+                        $db->execute($sql, array_values($safeData));
                     }
                     
                     $success = true;
@@ -278,9 +297,11 @@ $pageTitle = 'Impostazioni Sistema';
                                                     str_starts_with($logoPath, 'uploads/logo/') && 
                                                     file_exists(__DIR__ . '/../' . $logoPath);
                                         if ($showLogo): 
+                                            // Build absolute URL from web root
+                                            $logoUrl = '/' . ltrim($logoPath, '/');
                                         ?>
                                             <div class="mb-2">
-                                                <img src="../<?php echo htmlspecialchars($logoPath); ?>" 
+                                                <img src="<?php echo htmlspecialchars($logoUrl); ?>" 
                                                      alt="Logo Associazione" 
                                                      style="max-height: 150px; border: 1px solid #ddd; padding: 5px;">
                                             </div>
