@@ -48,6 +48,12 @@ return [
         'chat_id' => '',
     ],
     
+    'recaptcha' => [
+        'enabled' => false,
+        'site_key' => '',
+        'secret_key' => '',
+    ],
+    
     'uploads' => [
         'max_file_size' => 10485760, // 10MB in bytes
         'allowed_extensions' => ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'],
