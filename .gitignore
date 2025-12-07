@@ -4,6 +4,7 @@
 # Uploads
 /uploads/*
 !/uploads/.gitkeep
+!/uploads/**/.htaccess
 
 # Vendor (if using Composer)
 /vendor/
