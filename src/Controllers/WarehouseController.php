@@ -82,10 +82,16 @@ class WarehouseController {
      * Crea nuovo articolo
      */
     public function create($data, $userId) {
+        error_log("=== WAREHOUSE CREATE START ===");
+        error_log("User ID: " . $userId);
+        error_log("Data received: " . json_encode($data));
+        
         try {
             $this->db->beginTransaction();
+            error_log("Transaction started");
             
             $this->validateItemData($data);
+            error_log("Validation passed");
             
             $sql = "INSERT INTO warehouse_items (
                 code, name, category, description, quantity, minimum_quantity,
@@ -104,22 +110,33 @@ class WarehouseController {
                 $data['status'] ?? 'disponibile'
             ];
             
+            error_log("SQL: " . $sql);
+            error_log("Params: " . json_encode($params));
+            
             $this->db->execute($sql, $params);
             $itemId = $this->db->lastInsertId();
+            error_log("Item inserted with ID: " . $itemId);
             
             // Genera QR code se richiesto
             if (!empty($data['generate_qr'])) {
+                error_log("Generating QR code");
                 $this->generateQrCode($itemId);
             }
             
             $this->logActivity($userId, 'warehouse_item', 'create', $itemId, 'Creato nuovo articolo: ' . $data['name']);
+            error_log("Activity logged");
             
             $this->db->commit();
+            error_log("Transaction committed");
+            error_log("=== WAREHOUSE CREATE SUCCESS === Item ID: " . $itemId);
+            
             return $itemId;
             
         } catch (\Exception $e) {
             $this->db->rollBack();
-            error_log("Errore creazione articolo: " . $e->getMessage());
+            error_log("=== WAREHOUSE CREATE FAILED ===");
+            error_log("Error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }

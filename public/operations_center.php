@@ -247,12 +247,27 @@ $pageTitle = 'Centrale Operativa';
                                                     <strong>
                                                         <?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>
                                                     </strong>
-                                                    <?php if ($member['badge_number']): ?>
+                                                    <?php if (!empty($member['badge_number'])): ?>
                                                         <br><small class="text-muted">Matricola: <?php echo htmlspecialchars($member['badge_number']); ?></small>
                                                     <?php endif; ?>
                                                 </div>
-                                                <span class="badge bg-<?php echo $member['availability_type'] === 'reperibile' ? 'warning' : 'success'; ?>">
-                                                    <?php echo ucfirst($member['availability_type']); ?>
+                                                <?php 
+                                                $availabilityType = $member['availability_type'] ?? 'available';
+                                                $availabilityLabel = match($availabilityType) {
+                                                    'available' => 'Disponibile',
+                                                    'limited' => 'Limitato',
+                                                    'unavailable' => 'Non disponibile',
+                                                    default => 'Disponibile'
+                                                };
+                                                $badgeColor = match($availabilityType) {
+                                                    'available' => 'success',
+                                                    'limited' => 'warning',
+                                                    'unavailable' => 'secondary',
+                                                    default => 'success'
+                                                };
+                                                ?>
+                                                <span class="badge bg-<?php echo $badgeColor; ?>">
+                                                    <?php echo htmlspecialchars($availabilityLabel); ?>
                                                 </span>
                                             </div>
                                         </div>
