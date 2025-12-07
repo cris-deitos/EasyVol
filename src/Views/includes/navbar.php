@@ -6,7 +6,7 @@ $user = $app->getCurrentUser();
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="dashboard.php">
-            <img src="../assets/images/easyvol-logo.svg" alt="Protezione Civile Logo" class="navbar-logo">
+            <img src="../assets/images/easyvol-logo.svg" alt="" class="navbar-logo">
             <strong>EasyVol</strong>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
