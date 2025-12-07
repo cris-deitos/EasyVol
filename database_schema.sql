@@ -403,13 +403,16 @@ CREATE TABLE IF NOT EXISTS `member_applications` (
   `application_code` varchar(50) UNIQUE NOT NULL,
   `application_type` enum('adult', 'junior') NOT NULL,
   `status` enum('pending', 'approved', 'rejected') DEFAULT 'pending',
-  `application_data` longtext NOT NULL COMMENT 'JSON data',
+  `application_data` longtext NOT NULL COMMENT 'JSON data with all member information',
   `pdf_file` varchar(255),
   `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `processed_at` timestamp NULL,
   `processed_by` int(11),
+  `approved_at` timestamp NULL,
+  `member_id` int(11) DEFAULT NULL COMMENT 'ID of created member after approval',
   PRIMARY KEY (`id`),
-  KEY `status` (`status`)
+  KEY `status` (`status`),
+  KEY `application_type` (`application_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `fee_payment_requests` (
