@@ -12,6 +12,12 @@ class Autoloader {
             return;
         }
         
+        // Load Composer's vendor autoloader for third-party dependencies
+        $vendorAutoload = __DIR__ . '/../vendor/autoload.php';
+        if (file_exists($vendorAutoload)) {
+            require_once $vendorAutoload;
+        }
+        
         spl_autoload_register(function ($class) {
             // Project namespace
             $prefix = 'EasyVol\\';
