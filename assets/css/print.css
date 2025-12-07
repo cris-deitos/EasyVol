@@ -1,0 +1,525 @@
+/**
+ * Print Styles for EasyVol
+ * 
+ * CSS per ottimizzare la stampa dei documenti
+ */
+
+/* ===================================
+   GENERAL PRINT STYLES
+   =================================== */
+
+@media print {
+    /* Hide elements not needed in print */
+    .no-print,
+    .navbar,
+    .sidebar,
+    .btn-toolbar,
+    .dropdown,
+    .modal,
+    .alert,
+    .breadcrumb,
+    .pagination {
+        display: none !important;
+    }
+    
+    /* Expand main content to full width */
+    main {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    .container,
+    .container-fluid {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+    
+    /* Remove backgrounds and borders */
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Optimize tables for print */
+    table {
+        page-break-inside: auto;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    thead {
+        display: table-header-group;
+    }
+    
+    tfoot {
+        display: table-footer-group;
+    }
+    
+    /* Prevent orphans and widows */
+    p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+    }
+    
+    /* Links */
+    a[href]:after {
+        content: none !important;
+    }
+}
+
+/* ===================================
+   PAGE FORMATS
+   =================================== */
+
+@page {
+    margin: 2cm;
+}
+
+@page :first {
+    margin-top: 2.5cm;
+}
+
+/* A4 Portrait */
+@media print and (orientation: portrait) {
+    @page {
+        size: A4 portrait;
+        margin: 2cm;
+    }
+}
+
+/* A4 Landscape */
+@media print and (orientation: landscape) {
+    @page {
+        size: A4 landscape;
+        margin: 1.5cm;
+    }
+}
+
+/* ===================================
+   DOCUMENT HEADER & FOOTER
+   =================================== */
+
+.document-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 1cm;
+    border-bottom: 2px solid #333;
+    background: white;
+}
+
+.document-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5cm 1cm;
+    border-top: 1px solid #ccc;
+    font-size: 9pt;
+    text-align: center;
+    background: white;
+}
+
+/* ===================================
+   PAGE BREAKS
+   =================================== */
+
+.page-break {
+    page-break-after: always;
+}
+
+.page-break-before {
+    page-break-before: always;
+}
+
+.avoid-page-break {
+    page-break-inside: avoid;
+}
+
+/* ===================================
+   TABLES
+   =================================== */
+
+.print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+}
+
+.print-table th {
+    background: #333 !important;
+    color: white !important;
+    padding: 0.3cm;
+    text-align: left;
+    font-weight: bold;
+    border: 1px solid #000;
+}
+
+.print-table td {
+    padding: 0.2cm;
+    border: 1px solid #ccc;
+}
+
+.print-table tr:nth-child(even) {
+    background: #f5f5f5 !important;
+}
+
+/* ===================================
+   CERTIFICATES AND CARDS
+   =================================== */
+
+.certificate {
+    margin: 2cm auto;
+    padding: 2cm;
+    border: 3px double #333;
+    text-align: center;
+}
+
+.certificate-title {
+    font-size: 24pt;
+    font-weight: bold;
+    margin-bottom: 2cm;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5cm;
+}
+
+.certificate-content {
+    font-size: 14pt;
+    line-height: 1.8;
+    text-align: left;
+    max-width: 15cm;
+    margin: 0 auto;
+}
+
+.member-card {
+    width: 8.5cm;
+    height: 5.4cm;
+    border: 2px solid #000;
+    border-radius: 0.3cm;
+    padding: 0.3cm;
+    margin: 2cm auto;
+    page-break-inside: avoid;
+}
+
+.member-card-header {
+    text-align: center;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.2cm;
+    margin-bottom: 0.3cm;
+    font-weight: bold;
+    font-size: 12pt;
+}
+
+.member-card-content {
+    font-size: 10pt;
+}
+
+/* ===================================
+   WATERMARK
+   =================================== */
+
+.watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 120px;
+    color: rgba(0, 0, 0, 0.05);
+    z-index: -1;
+    white-space: nowrap;
+}
+
+/* ===================================
+   LISTS AND REPORTS
+   =================================== */
+
+.report-header {
+    text-align: center;
+    margin-bottom: 1cm;
+    border-bottom: 3px solid #333;
+    padding-bottom: 0.5cm;
+}
+
+.report-title {
+    font-size: 20pt;
+    font-weight: bold;
+    margin: 0;
+}
+
+.report-subtitle {
+    font-size: 12pt;
+    color: #666;
+    margin: 0.3cm 0 0 0;
+}
+
+.report-section {
+    margin-top: 1cm;
+}
+
+.report-section-title {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #333;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.2cm;
+    margin-bottom: 0.5cm;
+}
+
+/* ===================================
+   SIGNATURES
+   =================================== */
+
+.signature-block {
+    margin-top: 2cm;
+    display: flex;
+    justify-content: space-between;
+}
+
+.signature-line {
+    text-align: center;
+}
+
+.signature-label {
+    font-weight: bold;
+    margin-bottom: 0.5cm;
+}
+
+.signature-space {
+    border-top: 1px solid #000;
+    width: 6cm;
+    margin-top: 2cm;
+}
+
+/* ===================================
+   QR CODES
+   =================================== */
+
+.qr-code-container {
+    text-align: center;
+    margin: 1cm auto;
+    page-break-inside: avoid;
+}
+
+.qr-code-label {
+    font-size: 10pt;
+    margin-top: 0.3cm;
+}
+
+/* ===================================
+   UTILITIES
+   =================================== */
+
+.text-center-print {
+    text-align: center !important;
+}
+
+.text-right-print {
+    text-align: right !important;
+}
+
+.bold-print {
+    font-weight: bold !important;
+}
+
+.border-top-print {
+    border-top: 1px solid #000 !important;
+}
+
+.border-bottom-print {
+    border-bottom: 1px solid #000 !important;
+}
+
+.margin-top-print {
+    margin-top: 1cm !important;
+}
+
+.margin-bottom-print {
+    margin-bottom: 1cm !important;
+}
+
+.padding-print {
+    padding: 0.5cm !important;
+}
+
+/* ===================================
+   SPECIFIC DOCUMENT TYPES
+   =================================== */
+
+/* Meeting Minutes */
+.meeting-minutes {
+    font-family: "Times New Roman", serif;
+    font-size: 12pt;
+    line-height: 1.6;
+}
+
+.meeting-header {
+    margin-bottom: 1cm;
+}
+
+.meeting-header p {
+    margin: 0.2cm 0;
+}
+
+.agenda-list {
+    list-style-type: decimal;
+    padding-left: 1cm;
+}
+
+.agenda-item {
+    margin-bottom: 0.8cm;
+}
+
+.agenda-item-title {
+    font-weight: bold;
+    margin-bottom: 0.3cm;
+}
+
+/* Attendance Sheet */
+.attendance-sheet {
+    font-family: Arial, sans-serif;
+}
+
+.attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1cm;
+}
+
+.attendance-table th,
+.attendance-table td {
+    border: 1px solid #000;
+    padding: 0.5cm;
+}
+
+.attendance-table th {
+    background: #333;
+    color: white;
+    font-weight: bold;
+}
+
+.attendance-table .signature-cell {
+    width: 40%;
+    min-height: 1.5cm;
+}
+
+/* Vehicle Sheet */
+.vehicle-sheet {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+}
+
+.vehicle-info-table {
+    width: 100%;
+    margin-bottom: 1cm;
+}
+
+.vehicle-info-table td {
+    padding: 0.2cm;
+}
+
+.vehicle-info-table td:first-child {
+    width: 30%;
+    font-weight: bold;
+}
+
+.maintenance-history {
+    margin-top: 1cm;
+}
+
+/* Member Sheet */
+.member-sheet {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+}
+
+.member-section {
+    margin-bottom: 1cm;
+}
+
+.member-section-title {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #555;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.2cm;
+    margin-bottom: 0.5cm;
+}
+
+.member-info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.member-info-table tr {
+    border-bottom: 1px solid #eee;
+}
+
+.member-info-table td {
+    padding: 0.2cm;
+}
+
+.member-info-table td:first-child {
+    width: 30%;
+    font-weight: bold;
+}
+
+.member-info-table tr:nth-child(even) {
+    background: #f5f5f5;
+}
+
+/* ===================================
+   RESPONSIVE PRINT
+   =================================== */
+
+@media print and (max-width: 21cm) {
+    body {
+        font-size: 10pt;
+    }
+    
+    h1 {
+        font-size: 16pt;
+    }
+    
+    h2 {
+        font-size: 14pt;
+    }
+    
+    table {
+        font-size: 9pt;
+    }
+}
+
+/* ===================================
+   BROWSER-SPECIFIC FIXES
+   =================================== */
+
+/* Chrome/Safari */
+@media print and (-webkit-min-device-pixel-ratio: 0) {
+    .page-break {
+        display: block;
+        page-break-after: always;
+    }
+}
+
+/* Firefox */
+@-moz-document url-prefix() {
+    @media print {
+        body {
+            margin: 0;
+        }
+    }
+}

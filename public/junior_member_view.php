@@ -77,9 +77,23 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
                             <?php endif; ?>
-                            <button type="button" class="btn btn-info" onclick="printCard()">
-                                <i class="bi bi-printer"></i> Stampa Tesserino
-                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-printer"></i> Stampa
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('card', <?php echo $member['id']; ?>); return false;">
+                                        <i class="bi bi-credit-card"></i> Tessera Socio
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('full', <?php echo $member['id']; ?>); return false;">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> Scheda Completa
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
+                                        <i class="bi bi-gear"></i> Scegli Template...
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -420,6 +434,70 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                 window.location.href = 'junior_member_data.php?action=delete_health&id=' + id + '&member_id=' + memberId;
             }
         }
+        
+        // Print functionality
+        function printTemplate(type, recordId) {
+            let templateId = null;
+            
+            // Map template types to default template IDs for junior members
+            switch(type) {
+                case 'card':
+                    templateId = 2; // Tessera Socio (can work for junior too)
+                    break;
+                case 'full':
+                    templateId = 3; // Scheda Completa
+                    break;
+            }
+            
+            if (templateId) {
+                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=junior_members';
+                window.open(url, '_blank');
+            } else {
+                showPrintModal();
+            }
+        }
+        
+        function showPrintModal() {
+            const modal = new bootstrap.Modal(document.getElementById('printModal'));
+            modal.show();
+        }
+        
+        function generateFromModal() {
+            const templateId = document.getElementById('templateSelect').value;
+            if (templateId) {
+                const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $member['id']; ?>&entity=junior_members';
+                window.open(url, '_blank');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
+                modal.hide();
+            }
+        }
     </script>
+
+    <!-- Print Template Selection Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template di Stampa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select id="templateSelect" class="form-select">
+                            <option value="2">Tessera Socio</option>
+                            <option value="3">Scheda Completa</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                        <i class="bi bi-printer"></i> Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
