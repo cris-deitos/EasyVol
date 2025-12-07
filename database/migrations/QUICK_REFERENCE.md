@@ -1,259 +1,125 @@
-# Quick Reference: Import Cadetti Script
+# Quick Reference - Import Soci
 
-## Files Created
+## Comandi Rapidi
 
-1. **`import_cadetti_completo.sql`** - Main import script
-2. **`README_IMPORT_CADETTI.md`** - Complete documentation
-3. **`QUICK_REFERENCE.md`** - This file
-
-## Current Status
-
-✅ **COMPLETED:**
-- Database schema analysis
-- Complete field mapping CSV → Database
-- SQL script structure with transaction support
-- Example import for ORLANDO GAIA (Registration #2)
-- Template for remaining 52 cadetti
-- Statistics and verification queries
-- Comprehensive documentation
-
-⏳ **TO BE COMPLETED:**
-- Add remaining 52 cadetti from CSV file `gestionaleweb_worktable16.csv`
-
-## Quick Start
-
-### 1. Get the CSV File
-Obtain `gestionaleweb_worktable16.csv` with all 53 junior members data.
-
-### 2. Add Remaining Cadetti
-Open `import_cadetti_completo.sql` and follow the template starting at line ~160.
-
-### 3. Test
+### Generare SQL da CSV
 ```bash
-# Test on development database
-mysql -u username -p database_test < import_cadetti_completo.sql
+cd database/migrations
+python3 generate_import_sql.py soci.csv > generated_inserts.sql
 ```
 
-### 4. Deploy to Production
+### Creare Script Completo
 ```bash
-# Backup first!
-mysqldump -u username -p easyvol_production > backup_$(date +%Y%m%d).sql
-
-# Import
-mysql -u username -p easyvol_production < import_cadetti_completo.sql
+head -n 120 import_soci_completo.sql > import_finale.sql
+cat generated_inserts.sql >> import_finale.sql
+tail -n 50 import_soci_completo.sql >> import_finale.sql
 ```
 
-## Database Schema
+### Backup Database
+```bash
+mysqldump -u root -p easyvol > backup_$(date +%Y%m%d).sql
+```
 
-### Tables Involved
+### Eseguire Import
+```bash
+mysql -u root -p easyvol < import_finale.sql
+```
 
-1. **`junior_members`** - Main table
-   - Fields: registration_number, member_status, last_name, first_name, birth_date, birth_place, tax_code, registration_date, approval_date, photo, notes, created_at, updated_at
+### Verifiche Rapide
+```sql
+-- Totale soci
+SELECT COUNT(*) FROM members;
 
-2. **`junior_member_guardians`** - Parents/tutors
-   - Fields: junior_member_id (FK), guardian_type (padre/madre/tutore), last_name, first_name, tax_code, phone, email
+-- Per status
+SELECT member_status, COUNT(*) FROM members GROUP BY member_status;
 
-3. **`junior_member_addresses`** - Addresses
-   - Fields: junior_member_id (FK), address_type (residenza/domicilio), street, number, city, province, cap
+-- Senza contatti
+SELECT COUNT(*) FROM members m 
+LEFT JOIN member_contacts mc ON m.id = mc.member_id 
+WHERE mc.id IS NULL;
+```
 
-4. **`junior_member_contacts`** - Contacts
-   - Fields: junior_member_id (FK), contact_type (telefono_fisso/cellulare/email), value
+## Mappatura Rapida Campi
 
-5. **`junior_member_health`** - Health info
-   - Fields: junior_member_id (FK), health_type (vegano/vegetariano/allergie/intolleranze/patologie), description
+| CSV | Database | Note |
+|-----|----------|------|
+| matr | registration_number | Matricola univoca |
+| tipo_socio | member_type | FONDATORE→fondatore, ORDINARIO→ordinario |
+| stato | member_status | OPERATIVO→attivo, DIMESSO→dimesso, DECADUTO→decaduto |
+| cognome | last_name | MAIUSCOLO |
+| nome | first_name | MAIUSCOLO |
+| codicefiscale | tax_code | - |
+| problemialimentari | gender | MASCHIO→M, FEMMINA→F |
+| cellulare | member_contacts | tipo='cellulare' |
+| e_mail | member_contacts | tipo='email' |
+| ind_resid | member_addresses | tipo='residenza' |
 
-## Template Structure for Each Cadetto
+## Gestione Errori Comuni
+
+### Colonna duplicata
+```sql
+-- Commentare nel script SQL:
+-- ALTER TABLE members ADD COLUMN birth_province...
+```
+
+### Colonna 'value' non esiste
+```sql
+-- Commentare nel script SQL:
+-- ALTER TABLE member_contacts CHANGE COLUMN value...
+```
+
+### Date non valide
+Modificare formato in `generate_import_sql.py` riga ~40
+
+### Encoding problemi
+```bash
+iconv -f ISO-8859-1 -t UTF-8 input.csv > output.csv
+```
+
+## Validazione Post-Import
 
 ```sql
--- CADETTO [N]: [LAST_NAME] [FIRST_NAME]
-INSERT INTO junior_members (...) VALUES (...);
-SET @junior_[REG_NUM]_id = LAST_INSERT_ID();
+-- Deve essere 175
+SELECT COUNT(*) FROM members;
 
--- Guardian (padre)
-INSERT INTO junior_member_guardians (...) VALUES (...);
+-- Verifica distribuzione
+SELECT 
+    member_status,
+    member_type,
+    COUNT(*) 
+FROM members 
+GROUP BY member_status, member_type;
 
--- Guardian (madre)
-INSERT INTO junior_member_guardians (...) VALUES (...);
-
--- Contacts (if available)
-INSERT INTO junior_member_contacts (...) VALUES (...);
-
--- Address
-INSERT INTO junior_member_addresses (...) VALUES (...);
-
--- Health/Allergie (if available)
-INSERT INTO junior_member_health (...) VALUES (...);
+-- Integrità referenziale
+SELECT COUNT(*) FROM member_contacts mc
+LEFT JOIN members m ON mc.member_id = m.id
+WHERE m.id IS NULL;  -- Deve essere 0
 ```
 
-## Field Mapping Cheat Sheet
+## Rollback
 
-### Junior Member Core Data
-| CSV Field | Database | Notes |
-|-----------|----------|-------|
-| nuovocampo | registration_number | Unique ID |
-| nuovocampo1 | last_name | |
-| nuovocampo2 | first_name | |
-| nuovocampo6 | birth_date | Format: YYYY-MM-DD |
-| nuovocampo4 | birth_place | |
-| nuovocampo7 | tax_code | Codice Fiscale |
-| nuovocampo61 | registration_date | Format: YYYY-MM-DD |
-| nuovocampo64 | member_status | SOCIO ORDINARIO→attivo, *DECADUTO*→decaduto |
-
-### Info in Notes Field
-- nuovocampo3 → Gender (M/F)
-- nuovocampo5 → Birth Province
-- nuovocampo25 → Anno corso
-- nuovocampo17 → Lingue
-- nuovocampo18 → Allergie cadetto
-- nuovocampo58 → Allergie genitore
-- Mother's complete data
-
-### Guardian 1 (Padre)
-| CSV Field | Database |
-|-----------|----------|
-| nuovocampo33 | last_name |
-| nuovocampo34 | first_name |
-| nuovocampo38 | tax_code |
-| nuovocampo44 | phone (preferire) |
-| nuovocampo43 | phone (alternativo) |
-| nuovocampo45 | email |
-
-### Guardian 2 (Madre)
-| CSV Field | Database |
-|-----------|----------|
-| nuovocampo46 | last_name |
-| nuovocampo47 | first_name |
-| nuovocampo51 | tax_code |
-| nuovocampo60 | phone (preferire) |
-| nuovocampo59 | phone (alternativo) |
-| nuovocampo56 | email |
-
-### Address
-| CSV Field | Database |
-|-----------|----------|
-| nuovocampo9 | street (extract via/number) |
-| nuovocampo10 | cap |
-| nuovocampo11 | city |
-| nuovocampo12 | province |
-
-### Contacts
-| CSV Field | Type | Database |
-|-----------|------|----------|
-| nuovocampo14 | cellulare | junior_member_contacts |
-| nuovocampo15 | email | junior_member_contacts |
-
-### Health
-| CSV Field | Type | Database |
-|-----------|------|----------|
-| nuovocampo18 | allergie | junior_member_health |
-| nuovocampo58 | allergie (genitore) | junior_member_health |
-
-## Common Issues & Solutions
-
-### Issue: Special Characters
-**Solution:** Escape apostrophes
-```sql
-'D'ANGELO' → 'D\'ANGELO'
+```bash
+# Se qualcosa va male:
+mysql -u root -p easyvol < backup_$(date +%Y%m%d).sql
 ```
 
-### Issue: NULL Values
-**Solution:** Use NULL, not empty strings
-```sql
--- Good
-'ROSSI', 'MARIO', NULL, '3331234567'
-
--- Bad
-'ROSSI', 'MARIO', '', '3331234567'
-```
-
-### Issue: Date Format
-**Solution:** Always use YYYY-MM-DD
-```sql
--- Good
-'2003-12-02'
-
--- Bad
-'02/12/2003'
-'02-12-2003'
-```
-
-### Issue: Member Status
-**Solution:** Map correctly
-- "SOCIO ORDINARIO" → `'attivo'`
-- "*DECADUTO*" → `'decaduto'`
-
-## Verification Queries
-
-After import, check:
+## Performance
 
 ```sql
--- Total count
-SELECT COUNT(*) FROM junior_members WHERE registration_number IS NOT NULL;
--- Expected: 53
+-- Disabilita chiavi (prima import)
+SET FOREIGN_KEY_CHECKS = 0;
+SET AUTOCOMMIT = 0;
 
--- Status distribution
-SELECT member_status, COUNT(*) FROM junior_members GROUP BY member_status;
+-- [esegui import]
 
--- Check guardians
-SELECT COUNT(*) FROM junior_member_guardians;
--- Expected: ~106 (2 per cadetto if both parents present)
-
--- Check addresses
-SELECT COUNT(*) FROM junior_member_addresses;
-
--- Check contacts
-SELECT COUNT(*) FROM junior_member_contacts;
-
--- Check health records
-SELECT COUNT(*) FROM junior_member_health;
-
--- Find issues
-SELECT * FROM junior_members jm
-LEFT JOIN junior_member_guardians jmg ON jm.id = jmg.junior_member_id
-WHERE jmg.id IS NULL;
+-- Riabilita
+COMMIT;
+SET FOREIGN_KEY_CHECKS = 1;
+ANALYZE TABLE members, member_contacts, member_addresses;
 ```
 
-## Script Safety Features
-
-✅ Transaction support (can ROLLBACK on error)
-✅ Foreign key checks disabled during import
-✅ NULL value handling
-✅ Unique constraint on registration_number (prevents duplicates)
-✅ Verification queries at end
-
-## Support
-
-For issues:
-1. Check MySQL error log
-2. Verify CSV data format
-3. Test on development database first
-4. Review README_IMPORT_CADETTI.md for detailed docs
-
-## Example: Complete Import Entry
-
-```sql
--- CADETTO 1: ORLANDO GAIA (Registration Number: 2)
-INSERT INTO junior_members (
-    registration_number, member_status, last_name, first_name,
-    birth_date, birth_place, tax_code, registration_date,
-    notes, created_at, updated_at
-) VALUES (
-    '2', 'decaduto', 'ORLANDO', 'GAIA',
-    '2003-12-02', 'BRESCIA', 'RLNGAI03T42B157A', '2019-01-12',
-    'Gender: F - Birth Province: BS - Anno corso: 2022 - Nazionalità: Italiana - Madre: ROSSELLI PATRIZIA (Tel: 3491307297, Email: patroselli69@gmail.com)',
-    '2019-01-13 10:17:37', '2025-05-01 10:14:34'
-);
-SET @junior_2_id = LAST_INSERT_ID();
-
-INSERT INTO junior_member_guardians (
-    junior_member_id, guardian_type, last_name, first_name,
-    tax_code, phone, email
-) VALUES 
-(@junior_2_id, 'padre', 'ORLANDO', 'GIUSEPPE', NULL, '3478823850', NULL),
-(@junior_2_id, 'madre', 'ROSSELLI', 'PATRIZIA', NULL, '3491307297', 'patroselli69@gmail.com');
+## File di Test
+```bash
+# Testare con esempio fornito
+python3 generate_import_sql.py soci_example.csv | mysql -u root -p easyvol_test
 ```
-
----
-
-**Last Updated:** 2025-12-07
-**Status:** Ready for data population from CSV

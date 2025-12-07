@@ -39,7 +39,7 @@ try {
         "SELECT al.*, u.username, u.full_name 
         FROM activity_logs al 
         LEFT JOIN users u ON al.user_id = u.id 
-        ORDER BY al.created_at DESC LIMIT 10"
+        ORDER BY al.created_at DESC LIMIT 5"
     );
     
     // Upcoming deadlines
