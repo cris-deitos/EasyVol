@@ -34,7 +34,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <i class="bi bi-inbox"></i> Domande Iscrizione
                     <?php
                     // Count pending applications
-                    $pendingCount = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'pending'")['count'] ?? 0;
+                    $pendingCount = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM member_applications WHERE status = 'pending'")['count'] ?? 0;
                     if ($pendingCount > 0):
                     ?>
                         <span class="badge bg-warning rounded-pill"><?= $pendingCount ?></span>
