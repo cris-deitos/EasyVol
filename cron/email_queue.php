@@ -32,7 +32,7 @@ try {
     echo "Processed $sent emails\n";
     
     // Log activity
-    $sql = "INSERT INTO activity_logs (user_id, module, action, details, created_at) 
+    $sql = "INSERT INTO activity_logs (user_id, module, action, description, created_at) 
             VALUES (NULL, 'cron', 'email_queue', ?, NOW())";
     $db->execute($sql, ["Processed $sent emails"]);
     

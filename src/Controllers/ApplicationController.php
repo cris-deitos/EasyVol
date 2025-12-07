@@ -538,4 +538,29 @@ class ApplicationController {
             return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
         }
     }
+    
+    /**
+     * Registra attività nel log
+     */
+    private function logActivity($userId, $module, $action, $recordId, $details) {
+        try {
+            $sql = "INSERT INTO activity_logs 
+                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+            
+            $params = [
+                $userId,
+                $module,
+                $action,
+                $recordId,
+                $details,
+                $_SERVER['REMOTE_ADDR'] ?? null,
+                $_SERVER['HTTP_USER_AGENT'] ?? null
+            ];
+            
+            $this->db->execute($sql, $params);
+        } catch (\Exception $e) {
+            error_log("Errore log attività: " . $e->getMessage());
+        }
+    }
 }

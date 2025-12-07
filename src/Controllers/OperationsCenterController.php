@@ -435,7 +435,7 @@ class OperationsCenterController {
      * Log activity
      */
     private function logActivity($userId, $module, $action, $recordId, $details) {
-        $sql = "INSERT INTO activity_logs (user_id, module, action, record_id, details, created_at) 
+        $sql = "INSERT INTO activity_logs (user_id, module, action, record_id, description, created_at) 
                 VALUES (?, ?, ?, ?, ?, NOW())";
         $this->db->execute($sql, [$userId, $module, $action, $recordId, $details]);
     }

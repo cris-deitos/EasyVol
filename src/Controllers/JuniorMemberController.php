@@ -451,7 +451,7 @@ class JuniorMemberController {
     private function logActivity($userId, $module, $action, $recordId, $details) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, details, ip_address, user_agent, created_at) 
+                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [

@@ -61,7 +61,7 @@ try {
         
         // Log activity
         $db = $app->getDatabase();
-        $sql = "INSERT INTO activity_logs (user_id, module, action, details, created_at) 
+        $sql = "INSERT INTO activity_logs (user_id, module, action, description, created_at) 
                 VALUES (NULL, 'cron', 'backup', ?, NOW())";
         $db->execute($sql, ["Database backup created: $filename.gz"]);
         
