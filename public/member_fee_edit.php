@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $memberModel->addFee($memberId, $data);
                 }
                 
-                header('Location: member_view.php?id=' . $memberId . 'header('Location: member_view.php?id=' . $memberId . '&success=1');tab=feesheader('Location: member_view.php?id=' . $memberId . '&success=1');success=1');
+                header('Location: member_view.php?id=' . $memberId . '&tab=fees&success=1');
                 exit;
             } catch (\Exception $e) {
                 $errors[] = $e->getMessage();

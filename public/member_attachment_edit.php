@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         $memberModel->addAttachment($memberId, $data);
                         
-                        header('Location: member_view.php?id=' . $memberId . 'header('Location: member_view.php?id=' . $memberId . '&success=1');tab=attachmentsheader('Location: member_view.php?id=' . $memberId . '&success=1');success=1');
+                        header('Location: member_view.php?id=' . $memberId . '&tab=attachments&success=1');
                         exit;
                     } else {
                         $errors[] = 'Errore durante il salvataggio del file';

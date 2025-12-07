@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $memberModel->addHealth($memberId, $data);
             }
-            header('Location: member_view.php?id=' . $memberId . 'header('Location: member_view.php?id=' . $memberId . '&success=1');tab=healthheader('Location: member_view.php?id=' . $memberId . '&success=1');success=1');
+            header('Location: member_view.php?id=' . $memberId . '&tab=health&success=1');
             exit;
         } catch (\Exception $e) {
             $errors[] = $e->getMessage();
