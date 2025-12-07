@@ -23,11 +23,36 @@ cd EasyVol
 2. Clicca su "Code" > "Download ZIP"
 3. Estrai il file ZIP
 
-### Passo 2: Upload
+### Passo 2: Installa Dipendenze (OBBLIGATORIO)
+
+**⚠️ IMPORTANTE**: Prima di procedere con l'upload, devi installare le dipendenze PHP:
+
+```bash
+# Entra nella directory del progetto
+cd EasyVol
+
+# Installa le dipendenze con Composer
+composer install --no-dev --optimize-autoloader
+```
+
+**Nota**: Se non hai Composer installato:
+- **Linux/Mac**: `curl -sS https://getcomposer.org/installer | php && sudo mv composer.phar /usr/local/bin/composer`
+- **Windows**: Scarica l'installer da [getcomposer.org](https://getcomposer.org/download/)
+
+Questo comando installerà:
+- PHPMailer (invio email) ✉️
+- mPDF (generazione PDF) 📄
+- PHPSpreadsheet (Excel) 📊
+- QR Code generator (badge) 🔲
+- E altre librerie necessarie
+
+**❌ Senza questo passaggio, l'applicazione NON funzionerà!**
+
+### Passo 3: Upload
 
 **Via FTP:**
 1. Connettiti al tuo hosting via FTP
-2. Carica tutti i file nella directory web (es. `public_html/`)
+2. Carica tutti i file nella directory web (es. `public_html/`) **inclusa la cartella `vendor/`**
 3. Assicurati che la cartella `uploads/` sia scrivibile (chmod 755 o 777)
 
 **Oppure copia in locale:**
@@ -44,7 +69,7 @@ sudo chmod -R 755 /var/www/html/easyvol
 sudo chmod -R 777 /var/www/html/easyvol/uploads
 ```
 
-### Passo 3: Installazione
+### Passo 4: Installazione Web
 
 1. Apri il browser e vai su: `http://tuosito.com/public/install.php`
 
@@ -80,7 +105,7 @@ sudo chmod -R 777 /var/www/html/easyvol/uploads
    - Crea l'utente amministratore
    - Configura i permessi
 
-### Passo 4: Primo Accesso
+### Passo 5: Primo Accesso
 
 1. Vai su: `http://tuosito.com/public/login.php`
 2. Inserisci username e password dell'admin
@@ -211,8 +236,11 @@ chmod -R 777 /path/to/easyvol/uploads
 - Verifica permessi cartelle
 - Controlla sessioni PHP configurate
 
-### Email non funzionano
-- Verifica configurazione SMTP
+### Errore: "PHPMailer not found" o email non funzionano
+- **Causa principale**: Dipendenze Composer non installate
+- **Soluzione**: Esegui `composer install --no-dev --optimize-autoloader` nella directory del progetto
+- Verifica che esista la cartella `vendor/phpmailer/`
+- Verifica configurazione SMTP in `config/config.php`
 - Testa con script PHP semplice
 - Controlla firewall non blocchi porta 587/465
 
