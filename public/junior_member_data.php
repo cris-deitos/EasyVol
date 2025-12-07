@@ -35,13 +35,28 @@ try {
     switch ($action) {
         case 'add_contact':
             $type = $_GET['type'] ?? '';
-            $value = $_GET['value'] ?? '';
-            if ($type && $value) {
-                $memberModel->addContact($memberId, [
-                    'contact_type' => $type,
-                    'value' => $value
-                ]);
+            $value = trim($_GET['value'] ?? '');
+            
+            // Validate contact type
+            $validTypes = ['telefono_fisso', 'cellulare', 'email'];
+            if (!in_array($type, $validTypes)) {
+                throw new \Exception('Tipo di contatto non valido');
             }
+            
+            // Validate value
+            if (empty($value)) {
+                throw new \Exception('Valore contatto obbligatorio');
+            }
+            
+            // Validate email format for email types
+            if ($type === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                throw new \Exception('Formato email non valido');
+            }
+            
+            $memberModel->addContact($memberId, [
+                'contact_type' => $type,
+                'value' => $value
+            ]);
             break;
             
         case 'delete_contact':

@@ -21,9 +21,13 @@ Create a script to run the migration:
 
 ```php
 <?php
-require_once 'src/Database.php';
+require_once 'src/Autoloader.php';
+EasyVol\Autoloader::register();
 
-$db = new EasyVol\Database($config['database']);
+use EasyVol\App;
+
+$app = App::getInstance();
+$db = $app->getDb();
 
 $sql = file_get_contents('migrations/add_member_fields.sql');
 $db->execute($sql);

@@ -124,9 +124,16 @@ class JuniorMember {
      * Generate unique registration number
      */
     private function generateRegistrationNumber() {
-        $result = $this->db->fetchOne("SELECT MAX(CAST(registration_number AS UNSIGNED)) as max_num FROM junior_members");
-        $nextNum = ($result['max_num'] ?? 0) + 1;
-        return 'J' . str_pad($nextNum, 6, '0', STR_PAD_LEFT);
+        // Get the highest numeric part from existing registration numbers
+        $result = $this->db->fetchOne("SELECT registration_number FROM junior_members WHERE registration_number REGEXP '^[0-9]+$' ORDER BY CAST(registration_number AS UNSIGNED) DESC LIMIT 1");
+        
+        if ($result && is_numeric($result['registration_number'])) {
+            $nextNum = intval($result['registration_number']) + 1;
+        } else {
+            $nextNum = 1;
+        }
+        
+        return str_pad($nextNum, 6, '0', STR_PAD_LEFT);
     }
     
     // Guardians
