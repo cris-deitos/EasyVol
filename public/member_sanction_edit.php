@@ -91,8 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Check if there's a previous suspending sanction
                     $hasPreviousSuspension = false;
+                    $currentDate = strtotime($data['sanction_date']);
+                    
                     foreach ($allSanctions as $s) {
-                        if ($s['sanction_date'] < $data['sanction_date'] && 
+                        $sanctionDate = strtotime($s['sanction_date']);
+                        if ($sanctionDate < $currentDate && 
                             in_array($s['sanction_type'], ['in_aspettativa', 'sospeso', 'in_congedo'])) {
                             $hasPreviousSuspension = true;
                             break;
@@ -106,8 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Apply status consolidation logic
-                // If in_aspettativa, sospeso, or in_congedo -> set status to sospeso
-                if (in_array($data['sanction_type'], ['in_aspettativa', 'in_congedo']) && $newStatus !== 'attivo') {
+                // If in_aspettativa or in_congedo -> set status to sospeso (unless already set to attivo by operativo)
+                if (in_array($data['sanction_type'], ['in_aspettativa', 'in_congedo']) && $newStatus === $data['sanction_type']) {
                     $newStatus = 'sospeso';
                 }
                 
