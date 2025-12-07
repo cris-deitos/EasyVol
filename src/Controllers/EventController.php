@@ -48,10 +48,7 @@ class EventController {
         $sql = "SELECT * FROM events 
                 WHERE $whereClause 
                 ORDER BY start_date DESC 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }

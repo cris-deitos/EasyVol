@@ -115,9 +115,7 @@ class FeePaymentController {
         
         // Pagination
         $offset = ($page - 1) * $perPage;
-        $sql .= " LIMIT ? OFFSET ?";
-        $params[] = $perPage;
-        $params[] = $offset;
+        $sql .= " LIMIT $perPage OFFSET $offset";
         
         $stmt = $this->db->query($sql, $params);
         $requests = $stmt->fetchAll();

@@ -71,10 +71,7 @@ class SchedulerController {
                         WHEN 'bassa' THEN 4 
                     END,
                     s.due_date ASC
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }

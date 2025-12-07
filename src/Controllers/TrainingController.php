@@ -50,10 +50,7 @@ class TrainingController {
                 FROM training_courses tc
                 WHERE $whereClause 
                 ORDER BY tc.start_date DESC 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }

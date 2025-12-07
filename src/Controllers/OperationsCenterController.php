@@ -95,10 +95,7 @@ class OperationsCenterController {
         $sql = "SELECT * FROM radio_directory 
                 WHERE $whereClause 
                 ORDER BY name 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }
