@@ -137,9 +137,21 @@ class AutoLogger {
             }
             
             // If there are other parameters not yet captured
-            $remainingParams = array_diff_key($params, array_flip(['search', 'status', 'volunteer_status', 'type', 'date_from', 'date_to', 'page', 'id']));
+            // Filter out sensitive parameters before logging
+            $sensitiveParams = ['password', 'pwd', 'pass', 'token', 'csrf_token', 'api_key', 'secret', 'tax_code', 'codice_fiscale', 'ssn'];
+            $remainingParams = array_diff_key($params, array_flip(array_merge(
+                ['search', 'status', 'volunteer_status', 'type', 'date_from', 'date_to', 'page', 'id'],
+                $sensitiveParams
+            )));
             if (!empty($remainingParams)) {
-                $parts[] = "Parametri: " . json_encode($remainingParams, JSON_UNESCAPING_UNICODE);
+                // Sanitize values for logging
+                $sanitizedParams = array_map(function($value) {
+                    if (is_string($value) && strlen($value) > 100) {
+                        return substr($value, 0, 100) . '...';
+                    }
+                    return $value;
+                }, $remainingParams);
+                $parts[] = "Parametri: " . json_encode($sanitizedParams, JSON_UNESCAPING_UNICODE);
             }
         }
         

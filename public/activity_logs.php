@@ -3,7 +3,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
-use EasyVol\Middleware\ActivityLogger;
+use EasyVol\Utils\AutoLogger;
 
 $app = App::getInstance();
 $app->requireLogin();
@@ -17,9 +17,8 @@ if (!isset($user['role_name']) || $user['role_name'] !== 'admin') {
 
 $db = $app->getDb();
 
-// Log this page view
-$logger = new ActivityLogger();
-$logger->logPageView('activity_logs');
+// Log this page view - using AutoLogger for consistency
+AutoLogger::logPageAccess();
 
 // Get filter parameters
 $filterUserId = $_GET['user_id'] ?? '';

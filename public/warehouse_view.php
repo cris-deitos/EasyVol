@@ -22,11 +22,11 @@ if (!$app->isLoggedIn()) {
 
 // Verifica permessi
 if (!$app->checkPermission('warehouse', 'view')) {
+    die('Accesso negato');
+}
 
 // Log page access
 AutoLogger::logPageAccess();
-    die('Accesso negato');
-}
 
 $itemId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 

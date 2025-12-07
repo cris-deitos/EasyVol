@@ -3,6 +3,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 
 $app = App::getInstance();
 $app->requireLogin();
@@ -62,7 +63,6 @@ try {
 }
 
 // Log page access
-use EasyVol\Utils\AutoLogger;
 AutoLogger::logPageAccess();
 ?>
 <!DOCTYPE html>

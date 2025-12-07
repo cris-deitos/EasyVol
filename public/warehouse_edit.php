@@ -26,14 +26,14 @@ $isEdit = $itemId > 0;
 
 // Verifica permessi
 if ($isEdit && !$app->checkPermission('warehouse', 'edit')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 if (!$isEdit && !$app->checkPermission('warehouse', 'create')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $db = $app->getDb();
 $config = $app->getConfig();
