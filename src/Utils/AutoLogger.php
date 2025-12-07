@@ -164,7 +164,7 @@ class AutoLogger {
                     }
                     return $value;
                 }, $remainingParams);
-                $parts[] = "Parametri: " . json_encode($sanitizedParams, JSON_UNESCAPING_UNICODE);
+                $parts[] = "Parametri: " . json_encode($sanitizedParams, JSON_UNESCAPED_UNICODE);
             }
         }
         
@@ -202,7 +202,7 @@ class AutoLogger {
         
         $description = "Ricerca: {$searchTerm}";
         if (!empty($filters)) {
-            $description .= ", Filtri: " . json_encode($filters, JSON_UNESCAPING_UNICODE);
+            $description .= ", Filtri: " . json_encode($filters, JSON_UNESCAPED_UNICODE);
         }
         
         self::$app->logActivity('search', $module, null, $description);

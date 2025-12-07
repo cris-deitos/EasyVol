@@ -30,7 +30,7 @@ class ActivityLogger {
         
         if (!empty($queryParams)) {
             unset($queryParams['PHPSESSID']); // Remove session ID
-            $description = 'Parametri: ' . json_encode($queryParams, JSON_UNESCAPING_UNICODE);
+            $description = 'Parametri: ' . json_encode($queryParams, JSON_UNESCAPED_UNICODE);
         }
         
         $this->app->logActivity('page_view', $pageName, null, $description);
@@ -40,7 +40,7 @@ class ActivityLogger {
      * Log a search action
      */
     public function logSearch($module, $searchParams) {
-        $description = 'Ricerca: ' . json_encode($searchParams, JSON_UNESCAPING_UNICODE);
+        $description = 'Ricerca: ' . json_encode($searchParams, JSON_UNESCAPED_UNICODE);
         $this->app->logActivity('search', $module, null, $description);
     }
     
@@ -48,7 +48,7 @@ class ActivityLogger {
      * Log a filter action
      */
     public function logFilter($module, $filterParams) {
-        $description = 'Filtri: ' . json_encode($filterParams, JSON_UNESCAPING_UNICODE);
+        $description = 'Filtri: ' . json_encode($filterParams, JSON_UNESCAPED_UNICODE);
         $this->app->logActivity('filter', $module, null, $description);
     }
     
