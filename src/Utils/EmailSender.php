@@ -385,22 +385,33 @@ class EmailSender {
     }
     
     /**
+     * Estrae l'indirizzo email primario da un valore string o array
+     * 
+     * @param string|array $to Destinatario/i
+     * @return string Indirizzo email primario
+     */
+    private function extractPrimaryEmailAddress($to) {
+        if (is_array($to)) {
+            // If array has string keys (email => name), get first key
+            $firstKey = array_key_first($to);
+            return is_numeric($firstKey) ? reset($to) : $firstKey;
+        }
+        
+        return $to;
+    }
+    
+    /**
      * Fallback: Invia email usando la funzione mail() nativa di PHP
      * 
      * @param string|array $to Destinatario/i
      * @param string $subject Oggetto
      * @param string $body Corpo HTML
      * @return bool
+     * @throws \Exception Se l'indirizzo email non è valido o l'invio fallisce
      */
     private function sendWithNativeMail($to, $subject, $body) {
         // Get the primary recipient email
-        if (is_array($to)) {
-            // If array has string keys (email => name), get first key
-            $firstKey = array_key_first($to);
-            $toEmail = is_numeric($firstKey) ? reset($to) : $firstKey;
-        } else {
-            $toEmail = $to;
-        }
+        $toEmail = $this->extractPrimaryEmailAddress($to);
         
         // Validate email
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {

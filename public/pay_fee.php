@@ -123,7 +123,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if ($uploadResult['success']) {
                     // Convert absolute path to relative path for storage
-                    $relativePath = str_replace(__DIR__ . '/../', '', $uploadResult['path']);
+                    // Get the document root path
+                    $docRoot = realpath(__DIR__ . '/..');
+                    $uploadedFile = realpath($uploadResult['path']);
+                    
+                    // Calculate relative path from document root
+                    if ($uploadedFile && strpos($uploadedFile, $docRoot) === 0) {
+                        $relativePath = substr($uploadedFile, strlen($docRoot) + 1);
+                        // Normalize path separators for cross-platform compatibility
+                        $relativePath = str_replace('\\', '/', $relativePath);
+                    } else {
+                        // Fallback: use the original method if realpath fails
+                        $relativePath = str_replace(__DIR__ . '/../', '', $uploadResult['path']);
+                    }
                     
                     // Create payment request
                     $requestData = [

@@ -6,19 +6,19 @@ use EasyVol\App;
 /**
  * Notification Helper
  * 
- * Gestisce le notifiche del sistema in modo efficiente con caching
+ * Gestisce le notifiche del sistema in modo efficiente con memorizzazione nella cache
  */
 class NotificationHelper {
     private static $cachedNotifications = null;
     private static $cachedCount = null;
     
     /**
-     * Ottieni tutte le notifiche con cache per request
+     * Ottieni tutte le notifiche con cache per richiesta
      * 
      * @return array Array di notifiche
      */
     public static function getNotifications() {
-        // Return cached result if available
+        // Restituisci il risultato dalla cache se disponibile
         if (self::$cachedNotifications !== null) {
             return self::$cachedNotifications;
         }
@@ -55,7 +55,7 @@ class NotificationHelper {
             }
         }
         
-        // Cache for this request
+        // Memorizza nella cache per questa richiesta
         self::$cachedNotifications = $notifications;
         
         return $notifications;
@@ -67,7 +67,7 @@ class NotificationHelper {
      * @return int
      */
     public static function getNotificationCount() {
-        // Return cached result if available
+        // Restituisci il risultato dalla cache se disponibile
         if (self::$cachedCount !== null) {
             return self::$cachedCount;
         }
@@ -75,7 +75,7 @@ class NotificationHelper {
         $notifications = self::getNotifications();
         $count = array_sum(array_column($notifications, 'count'));
         
-        // Cache for this request
+        // Memorizza nella cache per questa richiesta
         self::$cachedCount = $count;
         
         return $count;
@@ -100,7 +100,7 @@ class NotificationHelper {
     }
     
     /**
-     * Reset cache (utile per testing o dopo modifiche)
+     * Azzera la cache (utile per testing o dopo modifiche)
      */
     public static function resetCache() {
         self::$cachedNotifications = null;
