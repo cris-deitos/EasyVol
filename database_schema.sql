@@ -447,6 +447,7 @@ CREATE TABLE IF NOT EXISTS `fee_payment_requests` (
   `last_name` varchar(100),
   `payment_year` int(11),
   `payment_date` date,
+  `amount` decimal(10,2) DEFAULT NULL COMMENT 'Importo pagato',
   `receipt_file` varchar(255),
   `status` enum('pending', 'approved', 'rejected') DEFAULT 'pending',
   `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
