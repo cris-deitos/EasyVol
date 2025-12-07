@@ -27,10 +27,6 @@ try {
     $result = $db->fetchOne("SELECT COUNT(*) as count FROM member_applications WHERE status = 'pending'");
     $stats['pending_applications'] = $result['count'] ?? 0;
     
-    // Active vehicles
-    $result = $db->fetchOne("SELECT COUNT(*) as count FROM vehicles WHERE status = 'operativo'");
-    $stats['active_vehicles'] = $result['count'] ?? 0;
-    
     // Upcoming events
     $result = $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status IN ('aperto', 'in_corso') AND start_date >= NOW()");
     $stats['upcoming_events'] = $result['count'] ?? 0;
@@ -137,6 +133,7 @@ AutoLogger::logPageAccess();
                     </div>
 
                     <div class="col-xl-3 col-md-6 mb-4">
+					<a href="applications.php" class="text-decoration-none">
                         <div class="card border-left-warning shadow h-100 py-2">
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
@@ -152,29 +149,9 @@ AutoLogger::logPageAccess();
                                 </div>
                             </div>
                         </div>
+					</a>
                     </div>
 
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-info shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                            Mezzi Operativi
-                                        </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['active_vehicles'] ?></div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="bi bi-truck fs-2 text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Second Row of Statistics Cards -->
-                <div class="row mb-4">
                     <div class="col-xl-3 col-md-6 mb-4">
                         <a href="fee_payments.php?status=pending" class="text-decoration-none">
                             <div class="card border-left-warning shadow h-100 py-2">
