@@ -53,10 +53,7 @@ class WarehouseController {
         $sql = "SELECT * FROM warehouse_items 
                 WHERE $whereClause 
                 ORDER BY name 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }

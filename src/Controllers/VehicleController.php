@@ -50,10 +50,7 @@ class VehicleController {
         $sql = "SELECT * FROM vehicles 
                 WHERE $whereClause 
                 ORDER BY name 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }

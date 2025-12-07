@@ -43,10 +43,7 @@ class DocumentController {
         $sql = "SELECT * FROM documents 
                 WHERE $whereClause 
                 ORDER BY uploaded_at DESC 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }

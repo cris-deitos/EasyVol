@@ -254,9 +254,7 @@ class ApplicationController {
         $sql .= " ORDER BY submitted_at DESC";
         
         $offset = ($page - 1) * $perPage;
-        $sql .= " LIMIT ? OFFSET ?";
-        $params[] = $perPage;
-        $params[] = $offset;
+        $sql .= " LIMIT $perPage OFFSET $offset";
         
         $applications = $this->db->fetchAll($sql, $params);
         

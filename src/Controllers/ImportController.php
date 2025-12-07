@@ -918,9 +918,7 @@ class ImportController {
         
         // Get logs
         $offset = ($page - 1) * $perPage;
-        $sql = "SELECT * FROM import_logs $whereClause ORDER BY started_at DESC LIMIT ? OFFSET ?";
-        $params[] = $perPage;
-        $params[] = $offset;
+        $sql = "SELECT * FROM import_logs $whereClause ORDER BY started_at DESC LIMIT $perPage OFFSET $offset";
         $stmt = $this->db->getConnection()->prepare($sql);
         $stmt->execute($params);
         $logs = $stmt->fetchAll();

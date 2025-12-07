@@ -61,10 +61,7 @@ class JuniorMemberController {
                 FROM junior_members jm
                 WHERE $whereClause
                 ORDER BY jm.last_name, jm.first_name
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }

@@ -46,10 +46,7 @@ class MeetingController {
         $sql = "SELECT * FROM meetings 
                 WHERE $whereClause 
                 ORDER BY meeting_date DESC 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
+                LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
     }
