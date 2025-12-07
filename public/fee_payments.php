@@ -212,6 +212,7 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                                         <th>Socio</th>
                                         <th>Anno</th>
                                         <th>Data Pagamento</th>
+                                        <th>Importo</th>
                                         <th>Data Invio</th>
                                         <th>Stato</th>
                                         <th>Ricevuta</th>
@@ -233,6 +234,13 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                                         </td>
                                         <td><?php echo htmlspecialchars($request['payment_year']); ?></td>
                                         <td><?php echo date('d/m/Y', strtotime($request['payment_date'])); ?></td>
+                                        <td>
+                                            <?php if (!empty($request['amount'])): ?>
+                                            €<?php echo number_format($request['amount'], 2, ',', '.'); ?>
+                                            <?php else: ?>
+                                            <span class="text-muted">N/A</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?php echo date('d/m/Y H:i', strtotime($request['submitted_at'])); ?></td>
                                         <td>
                                             <?php

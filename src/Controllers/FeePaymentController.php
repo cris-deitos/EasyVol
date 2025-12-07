@@ -56,14 +56,15 @@ class FeePaymentController {
         try {
             $sql = "INSERT INTO fee_payment_requests (
                 registration_number, last_name, payment_year, 
-                payment_date, receipt_file, status, submitted_at
-            ) VALUES (?, ?, ?, ?, ?, 'pending', NOW())";
+                payment_date, amount, receipt_file, status, submitted_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())";
             
             $params = [
                 $data['registration_number'],
                 $data['last_name'],
                 $data['payment_year'],
                 $data['payment_date'],
+                $data['amount'] ?? null,
                 $data['receipt_file']
             ];
             
@@ -184,14 +185,15 @@ class FeePaymentController {
             
             // Insert into member_fees
             $sql = "INSERT INTO member_fees (
-                member_id, year, payment_date, receipt_file, 
+                member_id, year, payment_date, amount, receipt_file, 
                 verified, verified_by, verified_at
-            ) VALUES (?, ?, ?, ?, 1, ?, NOW())";
+            ) VALUES (?, ?, ?, ?, ?, 1, ?, NOW())";
             
             $this->db->execute($sql, [
                 $request['member_id'],
                 $request['payment_year'],
                 $request['payment_date'],
+                $request['amount'] ?? null,
                 $request['receipt_file'],
                 $userId
             ]);
@@ -274,6 +276,7 @@ class FeePaymentController {
             // Email to member
             if (!empty($member['email'])) {
                 $memberSubject = "Ricevuta di pagamento quota ricevuta";
+                $amountText = !empty($request['amount']) ? "<li>Importo: €" . number_format($request['amount'], 2, ',', '.') . "</li>" : "";
                 $memberBody = "
                     <h2>Conferma Ricezione Ricevuta</h2>
                     <p>Gentile {$member['first_name']} {$member['last_name']},</p>
@@ -283,6 +286,7 @@ class FeePaymentController {
                         <li>Matricola: {$member['registration_number']}</li>
                         <li>Anno: {$request['payment_year']}</li>
                         <li>Data pagamento: {$request['payment_date']}</li>
+                        {$amountText}
                     </ul>
                     <p>La tua richiesta è in attesa di verifica. Riceverai una conferma via email non appena sarà approvata.</p>
                     <p>Grazie per la collaborazione.</p>
@@ -293,6 +297,7 @@ class FeePaymentController {
             
             // Email to association
             if (!empty($assocEmail)) {
+                $amountTextAssoc = !empty($request['amount']) ? "<li>Importo: €" . number_format($request['amount'], 2, ',', '.') . "</li>" : "";
                 $assocSubject = "Nuova ricevuta pagamento quota da verificare";
                 $assocBody = "
                     <h2>Nuova Richiesta Pagamento Quota</h2>
@@ -303,6 +308,7 @@ class FeePaymentController {
                         <li>Matricola: {$member['registration_number']}</li>
                         <li>Anno: {$request['payment_year']}</li>
                         <li>Data pagamento: {$request['payment_date']}</li>
+                        {$amountTextAssoc}
                         <li>Data invio: " . date('d/m/Y H:i') . "</li>
                     </ul>
                     <p>Accedi al gestionale per verificare e approvare la richiesta.</p>

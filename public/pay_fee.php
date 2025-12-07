@@ -102,12 +102,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $member = $_SESSION['fee_payment_member'];
             $paymentDate = $_POST['payment_date'] ?? '';
             $paymentYear = $_POST['payment_year'] ?? '';
+            $amount = $_POST['amount'] ?? '';
             
             if (empty($paymentDate)) {
                 $errors[] = 'La data di pagamento è obbligatoria';
             }
             if (empty($paymentYear) || !is_numeric($paymentYear)) {
                 $errors[] = 'L\'anno di riferimento è obbligatorio';
+            }
+            if (empty($amount) || !is_numeric($amount) || floatval($amount) <= 0) {
+                $errors[] = 'L\'importo pagato è obbligatorio e deve essere maggiore di zero';
             }
             if (empty($_FILES['receipt_file']['name'])) {
                 $errors[] = 'La ricevuta di pagamento è obbligatoria';
@@ -143,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'last_name' => $member['last_name'],
                         'payment_year' => $paymentYear,
                         'payment_date' => $paymentDate,
+                        'amount' => floatval($amount),
                         'receipt_file' => $relativePath
                     ];
                     
@@ -338,11 +343,27 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
                     Matricola: <?php echo htmlspecialchars($member['registration_number']); ?>
                 </div>
                 
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>Attenzione:</strong><br>
+                    Nel caso in cui un pagamento unico copra la quota di due o più soci, 
+                    la ricevuta dovrà essere caricata per ogni socio singolarmente.
+                </div>
+                
                 <div class="mb-3">
                     <label for="payment_date" class="form-label">Data Pagamento *</label>
                     <input type="date" class="form-control" id="payment_date" 
                            name="payment_date" required
                            value="<?php echo htmlspecialchars($_POST['payment_date'] ?? ''); ?>">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="amount" class="form-label">Importo Pagato (€) *</label>
+                    <input type="number" class="form-control" id="amount" 
+                           name="amount" required step="0.01" min="0.01"
+                           value="<?php echo htmlspecialchars($_POST['amount'] ?? ''); ?>">
+                    <div class="form-text">
+                        Inserire l'importo effettivamente pagato per questa quota
+                    </div>
                 </div>
                 
                 <div class="mb-3">
