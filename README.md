@@ -51,19 +51,33 @@ EasyVol è un sistema di gestione completo progettato specificamente per le asso
    # Oppure scarica il file ZIP e estrailo
    ```
 
-2. **Upload via FTP**
-   - Carica tutti i file nella directory del tuo hosting
+2. **Installa le Dipendenze (OBBLIGATORIO)**
+   ```bash
+   # Entra nella directory del progetto
+   cd EasyVol
+   
+   # Installa le dipendenze con Composer
+   composer install --no-dev --optimize-autoloader
+   ```
+   
+   **Nota importante**: Questo passaggio è **obbligatorio** per il corretto funzionamento dell'applicazione. 
+   Le librerie come PHPMailer, mPDF, PHPSpreadsheet e altre sono gestite tramite Composer e non sono incluse nel repository.
+   
+   Se non hai Composer installato, scaricalo da [getcomposer.org](https://getcomposer.org/download/)
+
+3. **Upload via FTP**
+   - Carica tutti i file nella directory del tuo hosting (inclusa la cartella `vendor/` generata da Composer)
    - Assicurati che la cartella `uploads/` sia scrivibile (chmod 755 o 777)
    - Assicurati che la cartella `config/` sia scrivibile per la configurazione iniziale
 
-3. **Installazione Web**
+4. **Installazione Web**
    - Vai su `http://tuosito.com/public/install.php`
    - Segui la procedura guidata:
      * Passo 1: Configura database MySQL
      * Passo 2: Inserisci dati associazione e amministratore
      * Passo 3: Installazione completata!
 
-4. **Primo Accesso**
+5. **Primo Accesso**
    - Vai su `http://tuosito.com/public/login.php`
    - Accedi con le credenziali amministratore create durante l'installazione
 
