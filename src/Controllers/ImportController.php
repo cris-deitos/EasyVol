@@ -259,6 +259,9 @@ class ImportController {
      * @return array Risultato import
      */
     public function import($filePath, $importType, $columnMapping, $delimiter = ',', $userId = null) {
+        // Aumenta tempo esecuzione per import grandi
+        set_time_limit(300); // 5 minuti
+        
         // Inizio log
         $this->logId = $this->startImportLog($filePath, $importType, $userId);
         
@@ -274,6 +277,11 @@ class ImportController {
             // Prima riga = header
             $headers = array_shift($rows);
             $headers = array_map('trim', $headers);
+            
+            // Valida che headers non siano tutti vuoti
+            if (empty(array_filter($headers))) {
+                throw new \Exception("Header CSV non valido: tutte le colonne sono vuote");
+            }
             
             // Update log encoding
             $this->updateImportLog($this->logId, [
@@ -633,7 +641,7 @@ class ImportController {
             'license_plate' => $data['license_plate'] ?? null,
             'brand' => $data['brand'] ?? null,
             'model' => $data['model'] ?? null,
-            'year' => !empty($data['year']) ? (int)$data['year'] : null,
+            'year' => $this->parseInteger($data['year'] ?? null, null),
             'serial_number' => $data['serial_number'] ?? null,
             'status' => $this->parseVehicleStatus($data['status'] ?? ''),
             'insurance_expiry' => $this->parseDate($data['insurance_expiry'] ?? ''),
@@ -677,8 +685,8 @@ class ImportController {
             'name' => $data['name'] ?? '',
             'category' => $data['category'] ?? null,
             'description' => $data['description'] ?? null,
-            'quantity' => !empty($data['quantity']) ? (int)$data['quantity'] : 0,
-            'minimum_quantity' => !empty($data['minimum_quantity']) ? (int)$data['minimum_quantity'] : 0,
+            'quantity' => $this->parseInteger($data['quantity'] ?? null, 0),
+            'minimum_quantity' => $this->parseInteger($data['minimum_quantity'] ?? null, 0),
             'unit' => $data['unit'] ?? null,
             'location' => $data['location'] ?? null,
             'status' => $this->parseWarehouseStatus($data['status'] ?? '')
@@ -695,6 +703,30 @@ class ImportController {
         $itemId = $conn->lastInsertId();
         
         return ['status' => 'imported', 'id' => $itemId];
+    }
+    
+    /**
+     * Helper: Parse integer con validazione
+     */
+    private function parseInteger($value, $default = null) {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+        
+        // Rimuovi spazi
+        $value = trim($value);
+        
+        // Valida che sia un intero valido
+        if (filter_var($value, FILTER_VALIDATE_INT) !== false) {
+            return (int)$value;
+        }
+        
+        // Se contiene solo cifre, converti
+        if (preg_match('/^\d+$/', $value)) {
+            return (int)$value;
+        }
+        
+        return $default;
     }
     
     /**

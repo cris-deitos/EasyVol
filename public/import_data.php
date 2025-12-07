@@ -63,10 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mkdir($uploadDir, 0750, true);
                 }
                 
-                // Sanitizza nome file
+                // Sanitizza nome file (rimuovi caratteri pericolosi e dots per prevenire directory traversal)
                 $originalName = $_FILES['csv_file']['name'];
-                $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($originalName));
-                $fileName = 'import_' . time() . '_' . $safeName;
+                $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+                $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+                $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $baseName);
+                // Limita lunghezza e forza estensione .csv
+                $safeName = substr($safeName, 0, 50);
+                $fileName = 'import_' . time() . '_' . $safeName . '.csv';
                 $filePath = $uploadDir . '/' . $fileName;
                 
                 if (!move_uploaded_file($_FILES['csv_file']['tmp_name'], $filePath)) {
