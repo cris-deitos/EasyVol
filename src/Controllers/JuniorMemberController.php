@@ -35,7 +35,7 @@ class JuniorMemberController {
      * @return array
      */
     public function index($filters = [], $page = 1, $perPage = 20) {
-        $where = ["jm.deleted_at IS NULL"];
+        $where = ["jm.member_status != 'decaduto'"];
         $params = [];
         
         // Filtro status
@@ -80,7 +80,7 @@ class JuniorMemberController {
                 CONCAT(jm.first_name, ' ', jm.last_name) as full_name,
                 TIMESTAMPDIFF(YEAR, jm.birth_date, CURDATE()) as age
                 FROM junior_members jm
-                WHERE jm.id = ? AND jm.deleted_at IS NULL";
+                WHERE jm.id = ? AND jm.member_status != 'decaduto'";
         
         $member = $this->db->fetchOne($sql, [$id]);
         
@@ -240,12 +240,11 @@ class JuniorMemberController {
     public function delete($id, $userId) {
         try {
             $sql = "UPDATE junior_members SET 
-                    member_status = 'cancellato',
-                    deleted_at = NOW(),
-                    deleted_by = ?
+                    member_status = 'decaduto',
+                    updated_at = NOW()
                     WHERE id = ?";
             
-            $this->db->execute($sql, [$userId, $id]);
+            $this->db->execute($sql, [$id]);
             
             // Log attività
             $this->logActivity($userId, 'junior_member', 'delete', $id, 'Eliminato socio minorenne');

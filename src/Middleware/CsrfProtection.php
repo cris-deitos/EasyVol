@@ -44,6 +44,17 @@ class CsrfProtection {
     }
     
     /**
+     * Valida token CSRF dalla richiesta corrente (POST/GET)
+     * Metodo di convenienza che recupera il token automaticamente
+     * 
+     * @return bool
+     */
+    public static function validate() {
+        $token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
+        return self::validateToken($token);
+    }
+    
+    /**
      * Verifica token CSRF dalla richiesta POST
      * 
      * @throws \Exception Se token non valido
