@@ -289,6 +289,10 @@ class Member {
         return $this->db->insert('member_health', $data);
     }
     
+    public function updateHealth($id, $data) {
+        return $this->db->update('member_health', $data, 'id = ?', [$id]);
+    }
+    
     public function deleteHealth($id) {
         return $this->db->delete('member_health', 'id = ?', [$id]);
     }

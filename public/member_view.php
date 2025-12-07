@@ -522,9 +522,9 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <h5 class="card-title mb-0">Allergie e Informazioni Sanitarie</h5>
                                             <?php if ($app->checkPermission('members', 'edit')): ?>
-                                                <button class="btn btn-sm btn-primary" onclick="addHealth()">
+                                                <a href="member_health_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
                                                     <i class="bi bi-plus"></i> Aggiungi Informazione
-                                                </button>
+                                                </a>
                                             <?php endif; ?>
                                         </div>
                                         <?php if (!empty($member['health'])): ?>
@@ -544,6 +544,10 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                                 <td><?php echo htmlspecialchars($health['description'] ?? 'N/D'); ?></td>
                                                                 <td>
                                                                     <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                                        <a href="member_health_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $health['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
                                                                         <button class="btn btn-sm btn-danger" onclick="deleteHealth(<?php echo $health['id']; ?>)">
                                                                             <i class="bi bi-trash"></i>
                                                                         </button>
@@ -856,10 +860,6 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
             if (confirm('Sei sicuro di voler eliminare questa patente?')) {
                 window.location.href = 'member_data.php?action=delete_license&id=' + id + '&member_id=' + memberId;
             }
-        }
-        
-        function addHealth() {
-            window.location.href = 'member_health_edit.php?member_id=' + memberId;
         }
         
         function deleteHealth(id) {

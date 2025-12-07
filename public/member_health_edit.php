@@ -10,8 +10,20 @@ if (!$app->checkPermission('members', 'edit')) { die('Accesso negato'); }
 $db = $app->getDb();
 $memberModel = new Member($db);
 $memberId = intval($_GET['member_id'] ?? 0);
+$healthId = intval($_GET['id'] ?? 0);
 if ($memberId <= 0) { header('Location: members.php'); exit; }
 $errors = [];
+$health = ['health_type' => '', 'description' => ''];
+// Load existing health info if editing
+if ($healthId > 0) {
+    $healthRecords = $memberModel->getHealth($memberId);
+    foreach ($healthRecords as $h) {
+        if ($h['id'] == $healthId) {
+            $health = $h;
+            break;
+        }
+    }
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token non valido';
@@ -21,7 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => trim($_POST['description'] ?? '')
         ];
         try {
-            $memberModel->addHealth($memberId, $data);
+            if ($healthId > 0) {
+                $memberModel->updateHealth($healthId, $data);
+            } else {
+                $memberModel->addHealth($memberId, $data);
+            }
             header('Location: member_view.php?id=' . $memberId . '&success=1');
             exit;
         } catch (\Exception $e) {
@@ -47,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
                         <a href="member_view.php?id=<?php echo $memberId; ?>" class="text-decoration-none text-muted"><i class="bi bi-arrow-left"></i></a>
-                        Aggiungi Informazione Sanitaria
+                        <?php echo $healthId > 0 ? 'Modifica' : 'Aggiungi'; ?> Informazione Sanitaria
                     </h1>
                 </div>
                 <?php if (!empty($errors)): ?>
@@ -61,16 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label for="health_type" class="form-label">Tipo *</label>
                                 <select class="form-select" id="health_type" name="health_type" required>
                                     <option value="">Seleziona...</option>
-                                    <option value="allergie">Allergie</option>
-                                    <option value="intolleranze">Intolleranze</option>
-                                    <option value="patologie">Patologie</option>
-                                    <option value="vegano">Dieta Vegana</option>
-                                    <option value="vegetariano">Dieta Vegetariana</option>
+                                    <option value="allergie" <?php echo $health['health_type'] === 'allergie' ? 'selected' : ''; ?>>Allergie</option>
+                                    <option value="intolleranze" <?php echo $health['health_type'] === 'intolleranze' ? 'selected' : ''; ?>>Intolleranze</option>
+                                    <option value="patologie" <?php echo $health['health_type'] === 'patologie' ? 'selected' : ''; ?>>Patologie</option>
+                                    <option value="vegano" <?php echo $health['health_type'] === 'vegano' ? 'selected' : ''; ?>>Dieta Vegana</option>
+                                    <option value="vegetariano" <?php echo $health['health_type'] === 'vegetariano' ? 'selected' : ''; ?>>Dieta Vegetariana</option>
                                 </select>
                             </div>
                             <div class="mb-3">
                                 <label for="description" class="form-label">Descrizione *</label>
-                                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                                <textarea class="form-control" id="description" name="description" rows="3" required><?php echo htmlspecialchars($health['description']); ?></textarea>
                             </div>
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                 <a href="member_view.php?id=<?php echo $memberId; ?>" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Annulla</a>

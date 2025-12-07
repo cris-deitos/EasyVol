@@ -109,6 +109,53 @@ try {
                 $memberModel->deleteHealth($id);
             }
             break;
+            
+        case 'delete_availability':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteAvailability($id);
+            }
+            break;
+            
+        case 'delete_fee':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteFee($id);
+            }
+            break;
+            
+        case 'delete_sanction':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteSanction($id);
+            }
+            break;
+            
+        case 'delete_note':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteNote($id);
+            }
+            break;
+            
+        case 'delete_attachment':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                // Get attachment details to delete file
+                $attachments = $memberModel->getAttachments($memberId);
+                foreach ($attachments as $att) {
+                    if ($att['id'] == $id) {
+                        // Delete physical file
+                        $filePath = __DIR__ . '/' . $att['file_path'];
+                        if (file_exists($filePath)) {
+                            unlink($filePath);
+                        }
+                        break;
+                    }
+                }
+                $memberModel->deleteAttachment($id);
+            }
+            break;
     }
     
     header('Location: member_view.php?id=' . $memberId . '&success=1');
