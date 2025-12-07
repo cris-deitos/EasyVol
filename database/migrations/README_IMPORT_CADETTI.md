@@ -119,11 +119,19 @@ INSERT INTO junior_member_contacts (...) VALUES (...);
 INSERT INTO junior_member_health (...) VALUES (...);
 ```
 
-### Passo 3: Gestire Caratteri Speciali
+### Passo 3: Gestire Caratteri Speciali (IMPORTANTE)
+
+⚠️ **SICUREZZA**: Prestare massima attenzione all'escape dei caratteri per prevenire SQL injection.
 
 Assicurarsi di fare l'escape di:
 - Apostrofi: `D'ANGELO` → `D\'ANGELO`
-- Virgolette: sostituire `"` con `\"`
+- Backslash: `\` → `\\`
+- Virgolette doppie: `"` → `\"`
+
+**Raccomandazioni**:
+- Usare editor di testo con funzione SQL escape automatica
+- Verificare ogni valore prima dell'inserimento
+- Considerare alternative più sicure per grandi volumi (vedi sotto)
 
 ### Passo 4: Formati Date
 
@@ -183,10 +191,43 @@ mysql -u username -p easyvol_production < import_cadetti_completo.sql
 ## Note Importanti
 
 1. **Backup**: Fare sempre un backup del database prima dell'importazione
-2. **Foreign Keys**: Lo script disabilita temporaneamente i vincoli di chiave esterna
+2. **Foreign Keys**: Lo script usa `SESSION FOREIGN_KEY_CHECKS = 0` per limitare la disabilitazione alla sessione corrente
 3. **Transaction**: L'intera importazione è in una transazione, quindi si può fare rollback in caso di errori
-4. **Duplicati**: Se il `registration_number` esiste già, l'inserimento fallirà (campo UNIQUE)
-5. **Campo Notes**: Viene usato per consolidare informazioni non mappabili direttamente
+4. **Validazione Pre-Commit**: Lo script include query di validazione dell'integrità referenziale prima del COMMIT
+5. **Duplicati**: Se il `registration_number` esiste già, l'inserimento fallirà (campo UNIQUE)
+6. **Campo Notes**: Viene usato per consolidare informazioni non mappabili direttamente
+
+## Alternative Più Sicure (per grandi volumi)
+
+Per importazioni di grandi volumi o se si desidera maggiore sicurezza, considerare:
+
+### 1. Script PHP con PDO e Prepared Statements
+```php
+$stmt = $pdo->prepare('INSERT INTO junior_members (registration_number, last_name, ...) VALUES (?, ?, ...)');
+$stmt->execute([$regNum, $lastName, ...]);
+```
+
+### 2. Script Python con Parametrizzazione
+```python
+cursor.execute('INSERT INTO junior_members VALUES (?, ?, ...)', (reg_num, last_name, ...))
+```
+
+### 3. LOAD DATA INFILE (MySQL nativo)
+```sql
+LOAD DATA INFILE '/path/to/file.csv'
+INTO TABLE junior_members
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;
+```
+
+### Vantaggi degli Approcci Alternativi:
+- ✅ Escape automatico dei caratteri speciali
+- ✅ Protezione da SQL injection
+- ✅ Più veloce per grandi volumi
+- ✅ Gestione errori più robusta
+- ⚠️ Richiede più setup iniziale
 
 ## Struttura File nella Repository
 
