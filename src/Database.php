@@ -109,16 +109,22 @@ class Database {
     }
     
     public function beginTransaction() {
-        return $this->connection->beginTransaction();
-    }
-    
-    public function commit() {
-        return $this->connection->commit();
-    }
-    
-    public function rollback() {
-        return $this->connection->rollBack();
-    }
+    return $this->connection->beginTransaction();
+}
+
+public function commit() {
+    return $this->connection->commit();
+}
+
+// Metodo principale
+public function rollBack() {
+    return $this->connection->rollBack();
+}
+
+// Alias per retrocompatibilità
+public function rollback() {
+    return $this->rollBack();
+}
     
     /**
      * Alias per query() per compatibilità con codice esistente
