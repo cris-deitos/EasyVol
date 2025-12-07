@@ -41,9 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'La password deve essere di almeno 8 caratteri.';
     } elseif ($newPassword !== $confirmPassword) {
         $error = 'Le password non coincidono.';
-    } elseif ($newPassword === App::DEFAULT_PASSWORD) {
-        $error = 'Non puoi utilizzare la password predefinita. Scegli una password diversa.';
     } else {
+        // Verify the new password is not the same as the default
+        // Check against current hashed password (which is the default password)
+        if (password_verify($newPassword, $user['password'])) {
+            // If the new password matches their current password (which is default), reject it
+            $error = 'Non puoi utilizzare la password predefinita. Scegli una password diversa.';
+        }
+    }
+    
+    if (empty($error)) {
         try {
             $config = $app->getConfig();
             $controller = new UserController($db, $config);

@@ -66,7 +66,7 @@ INSERT INTO `email_templates` (`template_name`, `subject`, `body_html`, `placeho
         <p><strong>Per motivi di sicurezza, ti verrà richiesto di cambiare la password al primo accesso.</strong></p>
         <p>Puoi accedere al sistema utilizzando il seguente link:</p>
         <p><a href="{{login_url}}" style="display: inline-block; padding: 10px 20px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px;">Accedi al Sistema</a></p>
-        <p>Se non hai richiesto questo reset, contatta immediatamente l\'amministratore del sistema.</p>
+        <p>Se non hai richiesto questo reset, contatta immediatamente l''amministratore del sistema.</p>
         <p>Cordiali saluti,<br>Il Team di {{app_name}}</p>
     </div>
 </body>

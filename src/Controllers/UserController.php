@@ -111,6 +111,8 @@ class UserController {
             
             // Set default password if not provided
             $password = $data['password'] ?? \EasyVol\App::DEFAULT_PASSWORD;
+            // Check if password is default to set must_change_password flag
+            // This is done before hashing to determine if password change is required
             $mustChangePassword = !isset($data['password']) || $data['password'] === \EasyVol\App::DEFAULT_PASSWORD ? 1 : 0;
             
             $sql = "INSERT INTO users (
