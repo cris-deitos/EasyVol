@@ -218,7 +218,7 @@ $pageTitle = 'Centrale Operativa';
                                         <div class="resource-item">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
-                                                    <strong><?php echo htmlspecialchars($vehicle['vehicle_name']); ?></strong>
+                                                    <strong><?php echo htmlspecialchars($vehicle['name']); ?></strong>
                                                     <br><small class="text-muted"><?php echo htmlspecialchars($vehicle['vehicle_type']); ?></small>
                                                 </div>
                                                 <span class="badge bg-success">Operativo</span>

@@ -369,7 +369,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                             <tbody>
                                                 <?php foreach ($event['vehicles'] as $vehicle): ?>
                                                     <tr>
-                                                        <td><?php echo htmlspecialchars($vehicle['vehicle_name']); ?></td>
+                                                        <td><?php echo htmlspecialchars($vehicle['name']); ?></td>
                                                         <td><?php echo htmlspecialchars($vehicle['license_plate'] ?? '-'); ?></td>
                                                         <td><?php echo htmlspecialchars($vehicle['driver_name'] ?? '-'); ?></td>
                                                         <td><?php echo htmlspecialchars($vehicle['hours'] ?? 0); ?></td>
