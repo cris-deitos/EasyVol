@@ -121,10 +121,6 @@ public function rollBack() {
     return $this->connection->rollBack();
 }
 
-// Alias per retrocompatibilità
-public function rollback() {
-    return $this->rollBack();
-}
     
     /**
      * Alias per query() per compatibilità con codice esistente
