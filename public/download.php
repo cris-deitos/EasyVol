@@ -131,11 +131,11 @@ switch ($type) {
         break;
         
     case 'member_photo':
-        $sql = "SELECT photo, user_id FROM members WHERE id = ?";
+        $sql = "SELECT photo_path, user_id FROM members WHERE id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
-        if ($file && !empty($file['photo'])) {
-            $filePath = $file['photo'];
+        if ($file && !empty($file['photo_path'])) {
+            $filePath = $file['photo_path'];
             
             // Photos can be viewed by anyone with member access
             if ($app->checkPermission('members', 'view')) {
@@ -160,11 +160,11 @@ switch ($type) {
         break;
         
     case 'junior_member_photo':
-        $sql = "SELECT photo, user_id FROM junior_members WHERE id = ?";
+        $sql = "SELECT photo_path, user_id FROM junior_members WHERE id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
-        if ($file && !empty($file['photo'])) {
-            $filePath = $file['photo'];
+        if ($file && !empty($file['photo_path'])) {
+            $filePath = $file['photo_path'];
             
             // Photos can be viewed by anyone with member access
             if ($app->checkPermission('members', 'view')) {
@@ -222,8 +222,15 @@ if (empty($filePath)) {
     die('Percorso file non disponibile');
 }
 
-// Build full path
-$fullPath = __DIR__ . '/../' . ltrim($filePath, '/');
+// Build full path and validate it's within uploads directory
+$baseDir = realpath(__DIR__ . '/../uploads');
+$fullPath = realpath(__DIR__ . '/../' . ltrim($filePath, '/'));
+
+// Security check: ensure the file is within the uploads directory
+if ($fullPath === false || strpos($fullPath, $baseDir) !== 0) {
+    http_response_code(403);
+    die('Accesso al percorso non consentito');
+}
 
 if (!file_exists($fullPath)) {
     http_response_code(404);
@@ -235,9 +242,13 @@ $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mimeType = finfo_file($finfo, $fullPath);
 finfo_close($finfo);
 
+// Sanitize filename for header
+$filename = basename($fullPath);
+$filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+
 // Serve file
 header('Content-Type: ' . $mimeType);
-header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+header('Content-Disposition: inline; filename="' . $filename . '"');
 header('Content-Length: ' . filesize($fullPath));
 header('Cache-Control: private, max-age=3600');
 header('X-Content-Type-Options: nosniff');
