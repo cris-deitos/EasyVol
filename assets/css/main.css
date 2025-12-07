@@ -13,7 +13,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 12.6px; /* Reduced by 10% from 14px */
+    font-size: 0.875rem; /* Reduced by 10% from 1rem (14px) - equivalent to 12.6px */
 }
 
 .border-left-primary {

@@ -85,9 +85,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->query("UPDATE meetings SET meeting_type = ?, title = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
                     [$data['meeting_type'], $data['title'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $meetingId]);
             } else {
-                // Create new meeting
-                $db->query("INSERT INTO meetings (meeting_type, title, meeting_date, start_time, end_time, location, convocator, description, location_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'fisico', NOW())",
-                    [$data['meeting_type'], $data['title'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description']]);
+                // Create new meeting (location_type defaults to 'fisico' for physical meetings)
+                $locationType = 'fisico'; // Physical meeting default
+                $db->query("INSERT INTO meetings (meeting_type, title, meeting_date, start_time, end_time, location, convocator, description, location_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [$data['meeting_type'], $data['title'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $locationType]);
                 $meetingId = $db->lastInsertId();
             }
             

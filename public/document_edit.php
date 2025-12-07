@@ -84,10 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploadResult = $uploader->upload($_FILES['document_file']);
             
             if ($uploadResult['success']) {
+                // Get MIME type from finfo for better reliability
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $finfo->file($uploadResult['path']);
+                
                 $data['file_name'] = basename($_FILES['document_file']['name']);
                 $data['file_path'] = $uploadResult['path'];
                 $data['file_size'] = $_FILES['document_file']['size'];
-                $data['mime_type'] = mime_content_type($uploadResult['path']);
+                $data['mime_type'] = $mimeType;
             } else {
                 $errors[] = 'Errore upload file: ' . $uploadResult['error'];
             }
