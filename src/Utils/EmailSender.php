@@ -151,7 +151,25 @@ class EmailSender {
             return $result;
             
         } catch (Exception $e) {
-            error_log("Email send failed: " . $e->getMessage());
+            error_log("PHPMailer send failed: " . $e->getMessage());
+            
+            // Try fallback to PHP's native mail() function
+            try {
+                $fallbackResult = $this->sendWithNativeMail($to, $subject, $body);
+                
+                if ($fallbackResult) {
+                    error_log("Email sent successfully using fallback mail() function");
+                    
+                    // Log success
+                    if ($this->db) {
+                        $this->logEmail($to, $subject, $body, 'sent_fallback', 'Sent using fallback mail() after PHPMailer failed');
+                    }
+                    
+                    return true;
+                }
+            } catch (\Exception $fallbackException) {
+                error_log("Fallback mail() also failed: " . $fallbackException->getMessage());
+            }
             
             // Log failure
             if ($this->db) {
@@ -364,5 +382,61 @@ class EmailSender {
         }
         
         return $sent;
+    }
+    
+    /**
+     * Estrae l'indirizzo email primario da un valore string o array
+     * 
+     * @param string|array $to Destinatario/i
+     * @return string Indirizzo email primario
+     */
+    private function extractPrimaryEmailAddress($to) {
+        if (is_array($to)) {
+            // If array has string keys (email => name), get first key
+            $firstKey = array_key_first($to);
+            return is_numeric($firstKey) ? reset($to) : $firstKey;
+        }
+        
+        return $to;
+    }
+    
+    /**
+     * Fallback: Invia email usando la funzione mail() nativa di PHP
+     * 
+     * @param string|array $to Destinatario/i
+     * @param string $subject Oggetto
+     * @param string $body Corpo HTML
+     * @return bool
+     * @throws \Exception Se l'indirizzo email non è valido o l'invio fallisce
+     */
+    private function sendWithNativeMail($to, $subject, $body) {
+        // Get the primary recipient email
+        $toEmail = $this->extractPrimaryEmailAddress($to);
+        
+        // Validate email
+        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            throw new \Exception("Invalid email address: $toEmail");
+        }
+        
+        // Prepare headers - use configured values or reasonable defaults
+        $fromEmail = $this->config['email']['from_email'] ?? 'noreply@localhost';
+        $fromName = $this->config['email']['from_name'] ?? 'EasyVol';
+        
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-type: text/html; charset=UTF-8',
+            "From: $fromName <$fromEmail>",
+            "Reply-To: $fromEmail",
+            'X-Mailer: PHP/' . phpversion()
+        ];
+        
+        // Send email
+        $result = mail($toEmail, $subject, $body, implode("\r\n", $headers));
+        
+        if (!$result) {
+            throw new \Exception("mail() function returned false");
+        }
+        
+        return true;
     }
 }
