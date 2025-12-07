@@ -83,18 +83,24 @@ class Database {
     }
     
     public function update($table, $data, $where, $whereParams = []) {
-        $set = [];
-        foreach (array_keys($data) as $key) {
-            $set[] = "$key = :$key";
-        }
-        $setClause = implode(', ', $set);
-        
-        $sql = "UPDATE $table SET $setClause WHERE $where";
-        $params = array_merge($data, $whereParams);
-        
-        $stmt = $this->query($sql, $params);
-        return $stmt->rowCount();
+    $set = [];
+    $params = [];
+    $i = 1;
+    
+    foreach ($data as $key => $value) {
+        $set[] = "$key = ? ";
+        $params[] = $value;
     }
+    $setClause = implode(', ', $set);
+    
+    // Aggiungi i parametri WHERE
+    $params = array_merge($params, $whereParams);
+    
+    $sql = "UPDATE $table SET $setClause WHERE $where";
+    
+    $stmt = $this->query($sql, $params);
+    return $stmt->rowCount();
+}
     
     public function delete($table, $where, $params = []) {
         $sql = "DELETE FROM $table WHERE $where";
