@@ -236,7 +236,7 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                                         <td><?php echo date('d/m/Y', strtotime($request['payment_date'])); ?></td>
                                         <td>
                                             <?php if (!empty($request['amount'])): ?>
-                                            €<?php echo number_format($request['amount'], 2, ',', '.'); ?>
+                                            €<?php echo htmlspecialchars(number_format($request['amount'], 2, ',', '.'), ENT_QUOTES, 'UTF-8'); ?>
                                             <?php else: ?>
                                             <span class="text-muted">N/A</span>
                                             <?php endif; ?>

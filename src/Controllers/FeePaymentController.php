@@ -276,7 +276,7 @@ class FeePaymentController {
             // Email to member
             if (!empty($member['email'])) {
                 $memberSubject = "Ricevuta di pagamento quota ricevuta";
-                $amountText = !empty($request['amount']) ? "<li>Importo: €" . number_format($request['amount'], 2, ',', '.') . "</li>" : "";
+                $amountText = !empty($request['amount']) ? "<li>Importo: €" . htmlspecialchars(number_format($request['amount'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') . "</li>" : "";
                 $memberBody = "
                     <h2>Conferma Ricezione Ricevuta</h2>
                     <p>Gentile {$member['first_name']} {$member['last_name']},</p>
@@ -297,7 +297,7 @@ class FeePaymentController {
             
             // Email to association
             if (!empty($assocEmail)) {
-                $amountTextAssoc = !empty($request['amount']) ? "<li>Importo: €" . number_format($request['amount'], 2, ',', '.') . "</li>" : "";
+                $amountTextAssoc = !empty($request['amount']) ? "<li>Importo: €" . htmlspecialchars(number_format($request['amount'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') . "</li>" : "";
                 $assocSubject = "Nuova ricevuta pagamento quota da verificare";
                 $assocBody = "
                     <h2>Nuova Richiesta Pagamento Quota</h2>
