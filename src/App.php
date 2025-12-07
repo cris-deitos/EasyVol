@@ -55,6 +55,8 @@ class App {
                     'address' => 'N/D',
                     'city' => 'N/D',
                     'email' => 'N/D',
+                    'pec' => 'N/D',
+                    'tax_code' => 'N/D',
                 ];
             }
         } catch (\Exception $e) {
@@ -64,6 +66,8 @@ class App {
                 'address' => 'N/D',
                 'city' => 'N/D',
                 'email' => 'N/D',
+                'pec' => 'N/D',
+                'tax_code' => 'N/D',
             ];
         }
     }

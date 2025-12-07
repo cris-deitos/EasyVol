@@ -129,11 +129,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Aggiungi i nuovi permessi selezionati
                 if (isset($_POST['user_permissions']) && is_array($_POST['user_permissions'])) {
+                    // Get all valid permission IDs to validate against
+                    $validPermissions = $db->fetchAll("SELECT id FROM permissions");
+                    $validPermissionIds = array_column($validPermissions, 'id');
+                    
                     foreach ($_POST['user_permissions'] as $permissionId) {
-                        $db->insert('user_permissions', [
-                            'user_id' => $finalUserId,
-                            'permission_id' => intval($permissionId)
-                        ]);
+                        $permissionId = intval($permissionId);
+                        // Only insert if it's a valid permission ID
+                        if (in_array($permissionId, $validPermissionIds)) {
+                            $db->insert('user_permissions', [
+                                'user_id' => $finalUserId,
+                                'permission_id' => $permissionId
+                            ]);
+                        }
                     }
                 }
                 

@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $userPermissions = $stmt->fetchAll();
                 
-                // Merge permissions (user-specific permissions override role permissions)
+                // Merge permissions (user-specific permissions supplement role permissions)
                 $permissionsMap = [];
                 foreach ($rolePermissions as $perm) {
                     $key = $perm['module'] . '_' . $perm['action'];
