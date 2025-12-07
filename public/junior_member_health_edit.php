@@ -2,15 +2,15 @@
 require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 use EasyVol\App;
-use EasyVol\Models\Member;
+use EasyVol\Models\JuniorMember;
 use EasyVol\Middleware\CsrfProtection;
 $app = App::getInstance();
 if (!$app->isLoggedIn()) { header('Location: login.php'); exit; }
-if (!$app->checkPermission('members', 'edit')) { die('Accesso negato'); }
+if (!$app->checkPermission('junior_members', 'edit')) { die('Accesso negato'); }
 $db = $app->getDb();
-$memberModel = new Member($db);
-$memberId = intval($_GET['junior_member_id'] ?? 0);
-if ($memberId <= 0) { header('Location: members.php'); exit; }
+$memberModel = new JuniorMember($db);
+$memberId = intval($_GET['member_id'] ?? 0);
+if ($memberId <= 0) { header('Location: junior_members.php'); exit; }
 $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
