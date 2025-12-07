@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\FileUploader;
 
 $app = App::getInstance();
 
@@ -33,15 +34,146 @@ $config = $app->getConfig();
 
 $errors = [];
 $success = false;
+$successMessage = '';
 
 // Gestione salvataggio impostazioni
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', 'edit')) {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token di sicurezza non valido';
     } else {
-        // TODO: Implement settings save functionality
-        $success = true;
+        $formType = $_POST['form_type'] ?? '';
+        
+        if ($formType === 'association') {
+            // Handle association data update
+            try {
+                $associationData = [
+                    'name' => trim($_POST['name'] ?? ''),
+                    'address_street' => trim($_POST['address_street'] ?? ''),
+                    'address_number' => trim($_POST['address_number'] ?? ''),
+                    'address_city' => trim($_POST['address_city'] ?? ''),
+                    'address_province' => trim($_POST['address_province'] ?? ''),
+                    'address_cap' => trim($_POST['address_cap'] ?? ''),
+                    'email' => trim($_POST['email'] ?? ''),
+                    'pec' => trim($_POST['pec'] ?? ''),
+                    'tax_code' => trim($_POST['tax_code'] ?? ''),
+                ];
+                
+                // Handle logo upload
+                if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+                    // Allowed MIME types for logo
+                    $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
+                    
+                    // Determine file extension from MIME type for consistent naming
+                    try {
+                        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                        $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
+                    } catch (\Exception $e) {
+                        $errors[] = 'Errore durante la verifica del tipo di file';
+                        $mimeType = null;
+                    }
+                    
+                    // Only allow specific MIME types, reject unknown
+                    $ext = null;
+                    if ($mimeType !== null) {
+                        $ext = match($mimeType) {
+                            'image/png' => 'png',
+                            'image/jpeg' => 'jpg',
+                            'image/svg+xml' => 'svg',
+                            default => null
+                        };
+                    }
+                    
+                    if ($ext === null) {
+                        $errors[] = 'Tipo di file non valido. Sono ammessi solo PNG, JPEG, SVG';
+                    } else {
+                        $newFileName = 'logo_associazione.' . $ext;
+                        
+                        // Use FileUploader for consistent and secure upload
+                        $uploader = new FileUploader(__DIR__ . '/../uploads/logo/', $allowedMimeTypes, 5 * 1024 * 1024);
+                        $uploadResult = $uploader->upload($_FILES['logo'], '', $newFileName);
+                        
+                        if ($uploadResult['success']) {
+                            // Delete old logo files only after successful upload
+                            $uploadDir = __DIR__ . '/../uploads/logo/';
+                            $oldFiles = glob($uploadDir . 'logo_associazione.*');
+                            $newFilePath = realpath($uploadResult['path']);
+                            
+                            // Only proceed if realpath succeeded
+                            if ($newFilePath !== false) {
+                                foreach ($oldFiles as $oldFile) {
+                                    $oldFilePath = realpath($oldFile);
+                                    // Don't delete the file we just uploaded
+                                    if ($oldFilePath !== false && file_exists($oldFile) && $oldFilePath !== $newFilePath) {
+                                        unlink($oldFile);
+                                    }
+                                }
+                            }
+                            
+                            $associationData['logo'] = 'uploads/logo/' . $newFileName;
+                        } else {
+                            $errors[] = 'Errore upload logo: ' . $uploadResult['error'];
+                        }
+                    }
+                } elseif (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $errors[] = 'Errore durante l\'upload del file';
+                }
+                
+                if (empty($errors)) {
+                    // Whitelist of allowed columns to prevent SQL injection
+                    $allowedColumns = [
+                        'name', 'logo', 'address_street', 'address_number', 
+                        'address_city', 'address_province', 'address_cap', 
+                        'email', 'pec', 'tax_code'
+                    ];
+                    
+                    // Filter associationData to only include whitelisted columns
+                    $safeData = array_filter(
+                        $associationData,
+                        fn($key) => in_array($key, $allowedColumns),
+                        ARRAY_FILTER_USE_KEY
+                    );
+                    
+                    // Check if association record exists
+                    $existingAssociation = $db->fetchOne("SELECT id FROM association LIMIT 1");
+                    
+                    if ($existingAssociation) {
+                        // Update existing record
+                        $setParts = [];
+                        $params = [];
+                        foreach ($safeData as $key => $value) {
+                            $setParts[] = "$key = ?";
+                            $params[] = $value;
+                        }
+                        $params[] = $existingAssociation['id'];
+                        
+                        $sql = "UPDATE association SET " . implode(', ', $setParts) . " WHERE id = ?";
+                        $db->execute($sql, $params);
+                    } else {
+                        // Insert new record
+                        $columns = implode(', ', array_keys($safeData));
+                        $placeholders = implode(', ', array_fill(0, count($safeData), '?'));
+                        $sql = "INSERT INTO association ($columns) VALUES ($placeholders)";
+                        $db->execute($sql, array_values($safeData));
+                    }
+                    
+                    $success = true;
+                    $successMessage = 'Dati associazione salvati con successo!';
+                    
+                    // Reload config to show updated data
+                    header('Location: settings.php?success=association');
+                    exit;
+                }
+            } catch (\Exception $e) {
+                $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
+            }
+        }
     }
+}
+
+// Check for success message in URL
+if (isset($_GET['success']) && $_GET['success'] === 'association') {
+    $success = true;
+    $successMessage = 'Dati associazione salvati con successo!';
 }
 
 $pageTitle = 'Impostazioni Sistema';
@@ -70,7 +202,7 @@ $pageTitle = 'Impostazioni Sistema';
                 
                 <?php if ($success): ?>
                     <div class="alert alert-success alert-dismissible fade show">
-                        Impostazioni salvate con successo!
+                        <?php echo htmlspecialchars($successMessage ?: 'Impostazioni salvate con successo!'); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
@@ -158,29 +290,133 @@ $pageTitle = 'Impostazioni Sistema';
                                 <h5 class="mb-0">Dati Associazione</h5>
                             </div>
                             <div class="card-body">
-                                <dl class="row">
-                                    <dt class="col-sm-3">Nome</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['name'] ?? 'N/D'); ?></dd>
+                                <?php
+                                // Load current association data from database
+                                $associationData = $db->fetchOne("SELECT * FROM association ORDER BY id ASC LIMIT 1");
+                                if (!$associationData) {
+                                    $associationData = [];
+                                }
+                                ?>
+                                
+                                <form method="POST" enctype="multipart/form-data">
+                                    <?php echo CsrfProtection::getHiddenField(); ?>
+                                    <input type="hidden" name="form_type" value="association">
                                     
-                                    <dt class="col-sm-3">Indirizzo</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['address'] ?? 'N/D'); ?></dd>
+                                    <!-- Logo Upload -->
+                                    <div class="mb-3">
+                                        <label for="logo" class="form-label">Logo Associazione</label>
+                                        <?php 
+                                        // Validate logo path for security
+                                        $logoPath = $associationData['logo'] ?? '';
+                                        $showLogo = false;
+                                        $logoUrl = '';
+                                        if (!empty($logoPath) && str_starts_with($logoPath, 'uploads/logo/')) {
+                                            $fullPath = __DIR__ . '/../' . $logoPath;
+                                            if (file_exists($fullPath)) {
+                                                // Use realpath to resolve any path manipulation attempts
+                                                $realPath = realpath($fullPath);
+                                                $expectedDir = realpath(__DIR__ . '/../uploads/logo/');
+                                                // Verify the file is actually in the uploads/logo directory
+                                                // Add trailing slash to prevent partial directory name matches
+                                                if ($realPath && $expectedDir && str_starts_with($realPath, $expectedDir . DIRECTORY_SEPARATOR)) {
+                                                    $showLogo = true;
+                                                    // Use relative path that works regardless of installation directory
+                                                    // Since this page is in /public/, the logo in /uploads/ is one level up
+                                                    $logoUrl = '../' . $logoPath;
+                                                }
+                                            }
+                                        }
+                                        if ($showLogo):
+                                        ?>
+                                            <div class="mb-2">
+                                                <img src="<?php echo htmlspecialchars($logoUrl); ?>" 
+                                                     alt="Logo Associazione" 
+                                                     style="max-height: 150px; border: 1px solid #ddd; padding: 5px;">
+                                            </div>
+                                        <?php endif; ?>
+                                        <input type="file" class="form-control" id="logo" name="logo" 
+                                               accept="image/png,image/jpeg,image/svg+xml"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                        <small class="text-muted">Formati consentiti: PNG, JPEG, SVG. Dimensione massima: 5MB</small>
+                                    </div>
                                     
-                                    <dt class="col-sm-3">Città</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['city'] ?? 'N/D'); ?></dd>
+                                    <!-- Association Name -->
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Nome Associazione</label>
+                                        <input type="text" class="form-control" id="name" name="name" 
+                                               value="<?php echo htmlspecialchars($associationData['name'] ?? ''); ?>"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
                                     
-                                    <dt class="col-sm-3">Codice Fiscale</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['tax_code'] ?? 'N/D'); ?></dd>
+                                    <!-- Address -->
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label for="address_street" class="form-label">Via</label>
+                                            <input type="text" class="form-control" id="address_street" name="address_street" 
+                                                   value="<?php echo htmlspecialchars($associationData['address_street'] ?? ''); ?>"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="address_number" class="form-label">Numero</label>
+                                            <input type="text" class="form-control" id="address_number" name="address_number" 
+                                                   value="<?php echo htmlspecialchars($associationData['address_number'] ?? ''); ?>"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        </div>
+                                    </div>
                                     
-                                    <dt class="col-sm-3">Email</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['email'] ?? 'N/D'); ?></dd>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="address_city" class="form-label">Città</label>
+                                            <input type="text" class="form-control" id="address_city" name="address_city" 
+                                                   value="<?php echo htmlspecialchars($associationData['address_city'] ?? ''); ?>"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label for="address_province" class="form-label">Provincia</label>
+                                            <input type="text" class="form-control" id="address_province" name="address_province" 
+                                                   value="<?php echo htmlspecialchars($associationData['address_province'] ?? ''); ?>"
+                                                   maxlength="5"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label for="address_cap" class="form-label">CAP</label>
+                                            <input type="text" class="form-control" id="address_cap" name="address_cap" 
+                                                   value="<?php echo htmlspecialchars($associationData['address_cap'] ?? ''); ?>"
+                                                   maxlength="10"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        </div>
+                                    </div>
                                     
-                                    <dt class="col-sm-3">PEC</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['pec'] ?? 'N/D'); ?></dd>
-                                </dl>
-                                <p class="text-muted">
-                                    <i class="bi bi-info-circle"></i>
-                                    Questi dati sono stati configurati durante l'installazione. Per modificarli, edita il file <code>config/config.php</code>.
-                                </p>
+                                    <!-- Email -->
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" 
+                                               value="<?php echo htmlspecialchars($associationData['email'] ?? ''); ?>"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <!-- PEC -->
+                                    <div class="mb-3">
+                                        <label for="pec" class="form-label">PEC</label>
+                                        <input type="email" class="form-control" id="pec" name="pec" 
+                                               value="<?php echo htmlspecialchars($associationData['pec'] ?? ''); ?>"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <!-- Tax Code -->
+                                    <div class="mb-3">
+                                        <label for="tax_code" class="form-label">Codice Fiscale</label>
+                                        <input type="text" class="form-control" id="tax_code" name="tax_code" 
+                                               value="<?php echo htmlspecialchars($associationData['tax_code'] ?? ''); ?>"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Salva Modifiche
+                                        </button>
+                                    <?php endif; ?>
+                                </form>
                             </div>
                         </div>
                     </div>
