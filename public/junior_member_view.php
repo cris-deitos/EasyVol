@@ -242,9 +242,9 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <h5 class="card-title mb-0">Contatti</h5>
                                             <?php if ($app->checkPermission('junior_members', 'edit')): ?>
-                                                <button class="btn btn-sm btn-primary" onclick="addContact()">
+                                                <a href="junior_member_contact_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
                                                     <i class="bi bi-plus"></i> Aggiungi Contatto
-                                                </button>
+                                                </a>
                                             <?php endif; ?>
                                         </div>
                                         <?php if (!empty($member['contacts'])): ?>
@@ -264,6 +264,10 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                                                 <td><?php echo htmlspecialchars($contact['value']); ?></td>
                                                                 <td>
                                                                     <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                                        <a href="junior_member_contact_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $contact['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
                                                                         <button class="btn btn-sm btn-danger" onclick="deleteContact(<?php echo $contact['id']; ?>)">
                                                                             <i class="bi bi-trash"></i>
                                                                         </button>
@@ -388,17 +392,6 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
             if (confirm('Sei sicuro di voler eliminare questo tutore?')) {
                 window.location.href = 'junior_member_data.php?action=delete_guardian&id=' + id + '&member_id=' + memberId;
             }
-        }
-        
-        function addContact() {
-            const type = prompt('Tipo di contatto (telefono_fisso, cellulare, email):');
-            if (!type) return;
-            const value = prompt('Valore:');
-            if (!value) return;
-            
-            window.location.href = 'junior_member_data.php?action=add_contact&member_id=' + memberId + 
-                                   '&type=' + encodeURIComponent(type) + 
-                                   '&value=' + encodeURIComponent(value);
         }
         
         function deleteContact(id) {

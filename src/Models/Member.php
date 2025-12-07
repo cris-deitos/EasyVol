@@ -99,6 +99,7 @@ class Member {
             $member['fees'] = $this->getFees($id);
             $member['health'] = $this->getHealth($id);
             $member['sanctions'] = $this->getSanctions($id);
+            $member['notes'] = $this->getNotes($id);
             $member['attachments'] = $this->getAttachments($id);
         }
         
@@ -242,6 +243,10 @@ class Member {
         return $this->db->insert('member_roles', $data);
     }
     
+    public function updateRole($id, $data) {
+        return $this->db->update('member_roles', $data, 'id = ?', [$id]);
+    }
+    
     public function deleteRole($id) {
         return $this->db->delete('member_roles', 'id = ?', [$id]);
     }
@@ -284,6 +289,10 @@ class Member {
         return $this->db->insert('member_health', $data);
     }
     
+    public function updateHealth($id, $data) {
+        return $this->db->update('member_health', $data, 'id = ?', [$id]);
+    }
+    
     public function deleteHealth($id) {
         return $this->db->delete('member_health', 'id = ?', [$id]);
     }
@@ -298,6 +307,24 @@ class Member {
         return $this->db->insert('member_sanctions', $data);
     }
     
+    // Notes
+    public function getNotes($memberId) {
+        return $this->db->fetchAll("SELECT * FROM member_notes WHERE member_id = ? ORDER BY created_at DESC", [$memberId]);
+    }
+    
+    public function addNote($memberId, $data) {
+        $data['member_id'] = $memberId;
+        return $this->db->insert('member_notes', $data);
+    }
+    
+    public function updateNote($id, $data) {
+        return $this->db->update('member_notes', $data, 'id = ?', [$id]);
+    }
+    
+    public function deleteNote($id) {
+        return $this->db->delete('member_notes', 'id = ?', [$id]);
+    }
+    
     // Attachments
     public function getAttachments($memberId) {
         return $this->db->fetchAll("SELECT * FROM member_attachments WHERE member_id = ? ORDER BY uploaded_at DESC", [$memberId]);
@@ -310,5 +337,22 @@ class Member {
     
     public function deleteAttachment($id) {
         return $this->db->delete('member_attachments', 'id = ?', [$id]);
+    }
+    
+    // Update methods for other entities
+    public function updateAvailability($id, $data) {
+        return $this->db->update('member_availability', $data, 'id = ?', [$id]);
+    }
+    
+    public function updateFee($id, $data) {
+        return $this->db->update('member_fees', $data, 'id = ?', [$id]);
+    }
+    
+    public function updateSanction($id, $data) {
+        return $this->db->update('member_sanctions', $data, 'id = ?', [$id]);
+    }
+    
+    public function deleteSanction($id) {
+        return $this->db->delete('member_sanctions', 'id = ?', [$id]);
     }
 }
