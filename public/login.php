@@ -303,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <div class="login-card">
             <div class="logo-container">
-                <img src="../assets/images/easyvol-logo.svg" alt="Protezione Civile Logo">
+                <img src="../assets/images/easyvol-logo.svg" alt="">
                 <h2>EasyVol</h2>
                 <p>Sistema Gestionale Protezione Civile</p>
             </div>
