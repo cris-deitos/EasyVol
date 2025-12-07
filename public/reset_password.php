@@ -3,6 +3,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\UserController;
 
 $app = App::getInstance();
@@ -15,6 +16,9 @@ if ($app->isLoggedIn()) {
 
 $error = '';
 $success = false;
+
+// Log page access
+AutoLogger::logPageAccess();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usernameOrEmail = trim($_POST['username_or_email'] ?? '');

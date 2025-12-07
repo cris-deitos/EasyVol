@@ -7,6 +7,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Models\JuniorMember;
 
 $app = App::getInstance();
@@ -17,6 +18,9 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('junior_members', 'edit')) {
+
+// Log page access
+AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

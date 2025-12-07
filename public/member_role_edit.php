@@ -2,11 +2,15 @@
 require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Models\Member;
 use EasyVol\Middleware\CsrfProtection;
 $app = App::getInstance();
 if (!$app->isLoggedIn()) { header('Location: login.php'); exit; }
 if (!$app->checkPermission('members', 'edit')) { die('Accesso negato'); }
+
+// Log page access
+AutoLogger::logPageAccess();
 $db = $app->getDb();
 $memberModel = new Member($db);
 $memberId = intval($_GET['member_id'] ?? 0);

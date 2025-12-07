@@ -10,6 +10,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\ApplicationController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -18,6 +19,9 @@ $app = App::getInstance(); // Public page - no authentication required
 $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new ApplicationController($db, $config);
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $errors = [];
 $success = false;

@@ -4,6 +4,7 @@ EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\SchedulerController;
 
 $app = App::getInstance();
@@ -15,6 +16,9 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('scheduler', 'edit')) {
+
+// Log page access
+AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

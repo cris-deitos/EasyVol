@@ -61,7 +61,9 @@ try {
     error_log($e->getMessage());
 }
 
-$app->logActivity('dashboard_view', 'dashboard');
+// Log page access
+use EasyVol\Utils\AutoLogger;
+AutoLogger::logPageAccess();
 ?>
 <!DOCTYPE html>
 <html lang="it">

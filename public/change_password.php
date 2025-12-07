@@ -3,6 +3,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\UserController;
 
 $app = App::getInstance();
@@ -22,6 +23,9 @@ if (!isset($_SESSION['must_change_password_user_id'])) {
 $userId = $_SESSION['must_change_password_user_id'];
 $error = '';
 $success = false;
+
+// Log page access
+AutoLogger::logPageAccess();
 
 // Get user info
 $user = $db->fetchOne("SELECT * FROM users WHERE id = ?", [$userId]);

@@ -136,6 +136,18 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </li>
             <?php endif; ?>
             
+            <?php
+            // Show Activity Logs only for admin users
+            $user = $app->getCurrentUser();
+            if (isset($user['role_name']) && $user['role_name'] === 'admin'):
+            ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'activity_logs.php' ? 'active' : '' ?>" href="activity_logs.php">
+                    <i class="bi bi-journal-text"></i> Registro Attività
+                </a>
+            </li>
+            <?php endif; ?>
+            
             <?php if ($app->checkPermission('settings', 'view')): ?>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'settings.php' ? 'active' : '' ?>" href="settings.php">

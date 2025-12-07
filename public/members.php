@@ -10,6 +10,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\MemberController;
+use EasyVol\Utils\AutoLogger;
 
 $app = App::getInstance();
 
@@ -41,6 +42,12 @@ $perPage = 20;
 
 // Ottieni membri
 $members = $controller->index($filters, $page, $perPage);
+
+// Log page access with filters
+AutoLogger::logPageAccess();
+if (!empty($filters['search'])) {
+    AutoLogger::logSearch('members', $filters['search'], $filters);
+}
 
 // Conteggi per status
 $statusCounts = [

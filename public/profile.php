@@ -9,6 +9,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
@@ -22,6 +23,9 @@ if (!$app->isLoggedIn()) {
 $db = $app->getDb();
 $userId = $app->getUserId();
 $user = $app->getCurrentUser();
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $errors = [];
 $success = false;

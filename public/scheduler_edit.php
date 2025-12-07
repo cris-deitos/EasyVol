@@ -4,6 +4,7 @@ EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\SchedulerController;
 use EasyVol\Controllers\UserController;
 use EasyVol\Middleware\CsrfProtection;
@@ -20,6 +21,9 @@ $isEdit = isset($_GET['id']);
 $requiredPermission = $isEdit ? 'edit' : 'create';
 
 if (!$app->checkPermission('scheduler', $requiredPermission)) {
+
+// Log page access
+AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

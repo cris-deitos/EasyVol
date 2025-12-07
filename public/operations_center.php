@@ -4,6 +4,7 @@ EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\OperationsCenterController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -16,6 +17,9 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('operations_center', 'view')) {
+
+// Log page access
+AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 
