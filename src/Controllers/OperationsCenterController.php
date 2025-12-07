@@ -48,15 +48,13 @@ class OperationsCenterController {
                 ORDER BY name";
         $dashboard['available_vehicles'] = $this->db->fetchAll($sql);
         
-        // Volontari reperibili
-        $sql = "SELECT m.*, ma.availability_type, ma.start_date, ma.end_date 
+                // Volontari attivi e operativi
+        $sql = "SELECT m.* 
                 FROM members m
-                INNER JOIN member_availability ma ON m.id = ma.member_id
-                WHERE m.status = 'attivo' 
-                AND ma.availability_type IN ('reperibile', 'disponibile')
-                AND ma.start_date <= CURDATE()
-                AND (ma.end_date IS NULL OR ma.end_date >= CURDATE())
-                ORDER BY m.last_name, m.first_name";
+                WHERE m.member_status = 'attivo' 
+                AND m.volunteer_status = 'operativo'
+                ORDER BY m.last_name, m.first_name
+                LIMIT 50";
         $dashboard['available_members'] = $this->db->fetchAll($sql);
         
         return $dashboard;
@@ -414,14 +412,11 @@ class OperationsCenterController {
         $result = $this->db->fetchOne($sql);
         $counts['available_vehicles'] = $result['count'];
         
-        // Available members
-        $sql = "SELECT COUNT(DISTINCT m.id) as count 
-                FROM members m
-                INNER JOIN member_availability ma ON m.id = ma.member_id
-                WHERE m.status = 'attivo' 
-                AND ma.availability_type IN ('reperibile', 'disponibile')
-                AND ma.start_date <= CURDATE()
-                AND (ma.end_date IS NULL OR ma.end_date >= CURDATE())";
+                // Available members
+        $sql = "SELECT COUNT(*) as count 
+                FROM members 
+                WHERE member_status = 'attivo' 
+                AND volunteer_status = 'operativo'";
         $result = $this->db->fetchOne($sql);
         $counts['available_members'] = $result['count'];
         
