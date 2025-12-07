@@ -71,7 +71,7 @@ class ImportController {
         }
         
         try {
-            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            while (($row = fgetcsv($handle, 0, $delimiter, '"', '\\')) !== false) {
                 if ($encoding !== 'UTF-8') {
                     // Converti da encoding rilevato a UTF-8
                     $row = array_map(function($cell) use ($encoding) {
@@ -118,6 +118,135 @@ class ImportController {
             'total_rows' => count($rows),
             'encoding' => $encoding
         ];
+    }
+    
+    /**
+     * Ottieni campi disponibili per tipo import con tabella di appartenenza
+     * 
+     * @param string $importType Tipo import
+     * @return array Lista campi con tabella
+     */
+    public function getAvailableFields($importType) {
+        $fields = [
+            'soci' => [
+                'members' => [
+                    'registration_number' => 'Numero Matricola',
+                    'first_name' => 'Nome',
+                    'last_name' => 'Cognome',
+                    'birth_date' => 'Data di Nascita',
+                    'birth_place' => 'Luogo di Nascita',
+                    'birth_province' => 'Provincia di Nascita',
+                    'tax_code' => 'Codice Fiscale',
+                    'gender' => 'Sesso (M/F)',
+                    'nationality' => 'Nazionalità',
+                    'registration_date' => 'Data Iscrizione',
+                    'approval_date' => 'Data Approvazione',
+                    'member_type' => 'Tipo Socio (ordinario/fondatore)',
+                    'member_status' => 'Stato Socio',
+                    'volunteer_status' => 'Stato Volontario',
+                    'notes' => 'Note'
+                ],
+                'member_contacts' => [
+                    'contact_email' => 'Email',
+                    'contact_telefono' => 'Telefono Fisso',
+                    'contact_cellulare' => 'Cellulare',
+                    'contact_pec' => 'PEC'
+                ],
+                'member_addresses (residenza)' => [
+                    'residenza_street' => 'Via Residenza',
+                    'residenza_number' => 'Numero Residenza',
+                    'residenza_city' => 'Città Residenza',
+                    'residenza_province' => 'Provincia Residenza',
+                    'residenza_cap' => 'CAP Residenza'
+                ],
+                'member_addresses (domicilio)' => [
+                    'domicilio_street' => 'Via Domicilio',
+                    'domicilio_number' => 'Numero Domicilio',
+                    'domicilio_city' => 'Città Domicilio',
+                    'domicilio_province' => 'Provincia Domicilio',
+                    'domicilio_cap' => 'CAP Domicilio'
+                ],
+                'member_employment' => [
+                    'employer_name' => 'Datore di Lavoro',
+                    'employer_address' => 'Indirizzo Lavoro',
+                    'employer_city' => 'Città Lavoro',
+                    'employer_phone' => 'Telefono Lavoro'
+                ]
+            ],
+            'cadetti' => [
+                'junior_members' => [
+                    'registration_number' => 'Numero Matricola',
+                    'first_name' => 'Nome',
+                    'last_name' => 'Cognome',
+                    'birth_date' => 'Data di Nascita',
+                    'birth_place' => 'Luogo di Nascita',
+                    'birth_province' => 'Provincia di Nascita',
+                    'tax_code' => 'Codice Fiscale',
+                    'gender' => 'Sesso (M/F)',
+                    'nationality' => 'Nazionalità',
+                    'registration_date' => 'Data Iscrizione',
+                    'approval_date' => 'Data Approvazione',
+                    'member_status' => 'Stato Socio',
+                    'notes' => 'Note'
+                ],
+                'junior_member_contacts' => [
+                    'contact_email' => 'Email',
+                    'contact_telefono' => 'Telefono Fisso',
+                    'contact_cellulare' => 'Cellulare'
+                ],
+                'junior_member_addresses' => [
+                    'residenza_street' => 'Via Residenza',
+                    'residenza_number' => 'Numero Residenza',
+                    'residenza_city' => 'Città Residenza',
+                    'residenza_province' => 'Provincia Residenza',
+                    'residenza_cap' => 'CAP Residenza'
+                ],
+                'junior_member_guardians (padre)' => [
+                    'guardian_padre_first_name' => 'Nome Padre',
+                    'guardian_padre_last_name' => 'Cognome Padre',
+                    'guardian_padre_tax_code' => 'CF Padre',
+                    'guardian_padre_phone' => 'Telefono Padre',
+                    'guardian_padre_email' => 'Email Padre'
+                ],
+                'junior_member_guardians (madre)' => [
+                    'guardian_madre_first_name' => 'Nome Madre',
+                    'guardian_madre_last_name' => 'Cognome Madre',
+                    'guardian_madre_tax_code' => 'CF Madre',
+                    'guardian_madre_phone' => 'Telefono Madre',
+                    'guardian_madre_email' => 'Email Madre'
+                ]
+            ],
+            'mezzi' => [
+                'vehicles' => [
+                    'vehicle_type' => 'Tipo Veicolo (veicolo/natante/rimorchio)',
+                    'name' => 'Nome',
+                    'license_plate' => 'Targa',
+                    'brand' => 'Marca',
+                    'model' => 'Modello',
+                    'year' => 'Anno',
+                    'serial_number' => 'Numero di Serie',
+                    'status' => 'Stato',
+                    'insurance_expiry' => 'Scadenza Assicurazione',
+                    'inspection_expiry' => 'Scadenza Revisione',
+                    'notes' => 'Note'
+                ]
+            ],
+            'attrezzature' => [
+                'warehouse_items' => [
+                    'code' => 'Codice',
+                    'name' => 'Nome',
+                    'category' => 'Categoria',
+                    'description' => 'Descrizione',
+                    'quantity' => 'Quantità',
+                    'minimum_quantity' => 'Quantità Minima',
+                    'unit' => 'Unità di Misura',
+                    'location' => 'Posizione',
+                    'status' => 'Stato'
+                ]
+            ]
+        ];
+        
+        return $fields[$importType] ?? [];
     }
     
     /**
