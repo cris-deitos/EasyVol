@@ -6,24 +6,25 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\ApplicationController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('applications', 'view')) {
+if (!$app->checkPermission('applications', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new ApplicationController($db, $config);
 
@@ -31,11 +32,11 @@ $controller = new ApplicationController($db, $config);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $applicationId = intval($_POST['application_id'] ?? 0);
     
-    if ($_POST['action'] === 'approve' && $app->hasPermission('applications', 'edit')) {
+    if ($_POST['action'] === 'approve' && $app->checkPermission('applications', 'edit')) {
         $controller->approve($applicationId, $app->getUserId());
         header('Location: applications.php?success=approved');
         exit;
-    } elseif ($_POST['action'] === 'reject' && $app->hasPermission('applications', 'edit')) {
+    } elseif ($_POST['action'] === 'reject' && $app->checkPermission('applications', 'edit')) {
         $reason = $_POST['rejection_reason'] ?? '';
         $controller->reject($applicationId, $app->getUserId(), $reason);
         header('Location: applications.php?success=rejected');
@@ -235,7 +236,7 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                                 title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </button>
-                                                        <?php if ($application['status'] === 'pending' && $app->hasPermission('applications', 'edit')): ?>
+                                                        <?php if ($application['status'] === 'pending' && $app->checkPermission('applications', 'edit')): ?>
                                                             <button type="button" class="btn btn-sm btn-success" 
                                                                     onclick="approveApplication(<?php echo $application['id']; ?>)"
                                                                     title="Approva">

@@ -6,15 +6,16 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\MeetingController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
@@ -23,14 +24,14 @@ $meetingId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $isEdit = $meetingId > 0;
 
 // Verifica permessi
-if ($isEdit && !$app->hasPermission('meetings', 'edit')) {
+if ($isEdit && !$app->checkPermission('meetings', 'edit')) {
     die('Accesso negato');
 }
-if (!$isEdit && !$app->hasPermission('meetings', 'create')) {
+if (!$isEdit && !$app->checkPermission('meetings', 'create')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MeetingController($db, $config);
 

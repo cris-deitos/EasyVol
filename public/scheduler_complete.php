@@ -1,11 +1,12 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\SchedulerController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -13,11 +14,11 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-if (!$app->hasPermission('scheduler', 'edit')) {
+if (!$app->checkPermission('scheduler', 'edit')) {
     die('Accesso negato');
 }
 
-$controller = new SchedulerController($app->getDatabase(), $app->getConfig());
+$controller = new SchedulerController($app->getDb(), $app->getConfig());
 
 // Get item ID
 $itemId = isset($_GET['id']) ? (int)$_GET['id'] : 0;

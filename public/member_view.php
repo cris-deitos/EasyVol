@@ -6,20 +6,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\MemberController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('members', 'view')) {
+if (!$app->checkPermission('members', 'view')) {
     die('Accesso negato');
 }
 
@@ -30,7 +31,7 @@ if ($memberId <= 0) {
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MemberController($db, $config);
 
@@ -70,7 +71,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <?php if ($app->hasPermission('members', 'edit')): ?>
+                            <?php if ($app->checkPermission('members', 'edit')): ?>
                                 <a href="member_edit.php?id=<?php echo $member['id']; ?>" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>

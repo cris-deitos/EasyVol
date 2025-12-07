@@ -1,12 +1,13 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\OperationsCenterController;
 use EasyVol\Controllers\MemberController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -14,12 +15,12 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-if (!$app->hasPermission('operations_center', 'view')) {
+if (!$app->checkPermission('operations_center', 'view')) {
     die('Accesso negato');
 }
 
-$controller = new OperationsCenterController($app->getDatabase(), $app->getConfig());
-$memberController = new MemberController($app->getDatabase(), $app->getConfig());
+$controller = new OperationsCenterController($app->getDb(), $app->getConfig());
+$memberController = new MemberController($app->getDb(), $app->getConfig());
 
 // Get radio ID
 $radioId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -72,7 +73,7 @@ $pageTitle = 'Dettaglio Radio';
                         <a href="radio_directory.php" class="btn btn-sm btn-outline-secondary me-2">
                             <i class="bi bi-arrow-left"></i> Torna alla rubrica
                         </a>
-                        <?php if ($app->hasPermission('operations_center', 'edit')): ?>
+                        <?php if ($app->checkPermission('operations_center', 'edit')): ?>
                             <a href="radio_edit.php?id=<?php echo $radio['id']; ?>" class="btn btn-sm btn-primary">
                                 <i class="bi bi-pencil"></i> Modifica
                             </a>
@@ -163,7 +164,7 @@ $pageTitle = 'Dettaglio Radio';
                                                 <small>Note: <?php echo htmlspecialchars($radio['current_assignment']['notes']); ?></small>
                                             </p>
                                         <?php endif; ?>
-                                        <?php if ($app->hasPermission('operations_center', 'edit')): ?>
+                                        <?php if ($app->checkPermission('operations_center', 'edit')): ?>
                                             <button type="button" class="btn btn-sm btn-success" 
                                                     onclick="returnRadio(<?php echo $radio['current_assignment']['id']; ?>)">
                                                 <i class="bi bi-check-circle"></i> Registra Restituzione
@@ -172,7 +173,7 @@ $pageTitle = 'Dettaglio Radio';
                                     </div>
                                 <?php else: ?>
                                     <p class="text-muted mb-3">Questa radio non è attualmente assegnata.</p>
-                                    <?php if ($radio['status'] === 'disponibile' && $app->hasPermission('operations_center', 'edit')): ?>
+                                    <?php if ($radio['status'] === 'disponibile' && $app->checkPermission('operations_center', 'edit')): ?>
                                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignModal">
                                             <i class="bi bi-person-plus"></i> Assegna Radio
                                         </button>

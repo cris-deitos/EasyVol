@@ -4,22 +4,23 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\VehicleController;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-if (!$app->hasPermission('vehicles', 'view')) {
+if (!$app->checkPermission('vehicles', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new VehicleController($db, $config);
 
@@ -64,7 +65,7 @@ $pageTitle = 'Gestione Mezzi';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('vehicles', 'create')): ?>
+                        <?php if ($app->checkPermission('vehicles', 'create')): ?>
                             <a href="vehicle_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Mezzo
                             </a>
@@ -240,7 +241,7 @@ $pageTitle = 'Gestione Mezzi';
                                                            class="btn btn-sm btn-info" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        <?php if ($app->hasPermission('vehicles', 'edit')): ?>
+                                                        <?php if ($app->checkPermission('vehicles', 'edit')): ?>
                                                             <a href="vehicle_edit.php?id=<?php echo $vehicle['id']; ?>" 
                                                                class="btn btn-sm btn-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>

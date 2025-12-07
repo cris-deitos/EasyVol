@@ -6,20 +6,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\VehicleController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('vehicles', 'view')) {
+if (!$app->checkPermission('vehicles', 'view')) {
     die('Accesso negato');
 }
 
@@ -30,7 +31,7 @@ if ($vehicleId <= 0) {
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new VehicleController($db, $config);
 
@@ -70,7 +71,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <?php if ($app->hasPermission('vehicles', 'edit')): ?>
+                            <?php if ($app->checkPermission('vehicles', 'edit')): ?>
                                 <a href="vehicle_edit.php?id=<?php echo $vehicle['id']; ?>" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
@@ -235,7 +236,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-wrench"></i> Storico Manutenzioni</h5>
-                                    <?php if ($app->hasPermission('vehicles', 'edit')): ?>
+                                    <?php if ($app->checkPermission('vehicles', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addMaintenanceModal">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Manutenzione
                                         </button>
@@ -285,7 +286,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-file-earmark"></i> Documenti</h5>
-                                    <?php if ($app->hasPermission('vehicles', 'edit')): ?>
+                                    <?php if ($app->checkPermission('vehicles', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
                                             <i class="bi bi-upload"></i> Carica Documento
                                         </button>

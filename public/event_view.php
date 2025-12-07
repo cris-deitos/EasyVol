@@ -6,20 +6,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\EventController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('events', 'view')) {
+if (!$app->checkPermission('events', 'view')) {
     die('Accesso negato');
 }
 
@@ -30,7 +31,7 @@ if ($eventId <= 0) {
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new EventController($db, $config);
 
@@ -70,7 +71,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <?php if ($app->hasPermission('events', 'edit')): ?>
+                            <?php if ($app->checkPermission('events', 'edit')): ?>
                                 <a href="event_edit.php?id=<?php echo $event['id']; ?>" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
@@ -252,7 +253,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-list-check"></i> Interventi</h5>
-                                    <?php if ($app->hasPermission('events', 'edit')): ?>
+                                    <?php if ($app->checkPermission('events', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addInterventionModal">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Intervento
                                         </button>
@@ -300,7 +301,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-people"></i> Volontari Partecipanti</h5>
-                                    <?php if ($app->hasPermission('events', 'edit')): ?>
+                                    <?php if ($app->checkPermission('events', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Partecipante
                                         </button>
@@ -344,7 +345,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-truck"></i> Mezzi Utilizzati</h5>
-                                    <?php if ($app->hasPermission('events', 'edit')): ?>
+                                    <?php if ($app->checkPermission('events', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Mezzo
                                         </button>

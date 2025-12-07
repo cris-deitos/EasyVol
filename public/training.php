@@ -4,22 +4,23 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\TrainingController;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-if (!$app->hasPermission('training', 'view')) {
+if (!$app->checkPermission('training', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new TrainingController($db, $config);
 
@@ -58,7 +59,7 @@ $pageTitle = 'Gestione Formazione';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('training', 'create')): ?>
+                        <?php if ($app->checkPermission('training', 'create')): ?>
                             <a href="training_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Corso
                             </a>
@@ -208,13 +209,13 @@ $pageTitle = 'Gestione Formazione';
                                                            class="btn btn-outline-primary" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        <?php if ($app->hasPermission('training', 'edit')): ?>
+                                                        <?php if ($app->checkPermission('training', 'edit')): ?>
                                                             <a href="training_edit.php?id=<?php echo $course['id']; ?>" 
                                                                class="btn btn-outline-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>
                                                         <?php endif; ?>
-                                                        <?php if ($app->hasPermission('training', 'delete')): ?>
+                                                        <?php if ($app->checkPermission('training', 'delete')): ?>
                                                             <button type="button" class="btn btn-outline-danger" 
                                                                     onclick="deleteCourse(<?php echo $course['id']; ?>)" title="Elimina">
                                                                 <i class="bi bi-trash"></i>

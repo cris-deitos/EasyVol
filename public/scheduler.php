@@ -1,11 +1,12 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\SchedulerController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -13,11 +14,11 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-if (!$app->hasPermission('scheduler', 'view')) {
+if (!$app->checkPermission('scheduler', 'view')) {
     die('Accesso negato');
 }
 
-$controller = new SchedulerController($app->getDatabase(), $app->getConfig());
+$controller = new SchedulerController($app->getDb(), $app->getConfig());
 
 // Handle filters
 $filters = [];
@@ -68,7 +69,7 @@ $pageTitle = 'Scadenzario';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><i class="bi bi-calendar-check"></i> <?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('scheduler', 'create')): ?>
+                        <?php if ($app->checkPermission('scheduler', 'create')): ?>
                             <a href="scheduler_edit.php" class="btn btn-sm btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuova Scadenza
                             </a>
@@ -252,7 +253,7 @@ $pageTitle = 'Scadenzario';
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <?php if ($app->hasPermission('scheduler', 'edit')): ?>
+                                                    <?php if ($app->checkPermission('scheduler', 'edit')): ?>
                                                         <a href="scheduler_edit.php?id=<?php echo $item['id']; ?>" 
                                                            class="btn btn-sm btn-outline-secondary" title="Modifica">
                                                             <i class="bi bi-pencil"></i>

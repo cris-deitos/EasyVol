@@ -6,15 +6,16 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\EventController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
@@ -23,14 +24,14 @@ $eventId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $isEdit = $eventId > 0;
 
 // Verifica permessi
-if ($isEdit && !$app->hasPermission('events', 'edit')) {
+if ($isEdit && !$app->checkPermission('events', 'edit')) {
     die('Accesso negato');
 }
-if (!$isEdit && !$app->hasPermission('events', 'create')) {
+if (!$isEdit && !$app->checkPermission('events', 'create')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new EventController($db, $config);
 

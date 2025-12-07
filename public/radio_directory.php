@@ -1,11 +1,12 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\OperationsCenterController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -13,11 +14,11 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-if (!$app->hasPermission('operations_center', 'view')) {
+if (!$app->checkPermission('operations_center', 'view')) {
     die('Accesso negato');
 }
 
-$controller = new OperationsCenterController($app->getDatabase(), $app->getConfig());
+$controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 
 // Handle filters
 $filters = [];
@@ -58,7 +59,7 @@ $pageTitle = 'Rubrica Radio';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><i class="bi bi-broadcast"></i> <?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('operations_center', 'create')): ?>
+                        <?php if ($app->checkPermission('operations_center', 'create')): ?>
                             <a href="radio_edit.php" class="btn btn-sm btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuova Radio
                             </a>
@@ -216,7 +217,7 @@ $pageTitle = 'Rubrica Radio';
                                                        class="btn btn-sm btn-outline-primary" title="Visualizza">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
-                                                    <?php if ($app->hasPermission('operations_center', 'edit')): ?>
+                                                    <?php if ($app->checkPermission('operations_center', 'edit')): ?>
                                                         <a href="radio_edit.php?id=<?php echo $radio['id']; ?>" 
                                                            class="btn btn-sm btn-outline-secondary" title="Modifica">
                                                             <i class="bi bi-pencil"></i>

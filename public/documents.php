@@ -4,22 +4,23 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\DocumentController;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-if (!$app->hasPermission('documents', 'view')) {
+if (!$app->checkPermission('documents', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new DocumentController($db, $config);
 
@@ -61,7 +62,7 @@ $pageTitle = 'Archivio Documenti';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('documents', 'create')): ?>
+                        <?php if ($app->checkPermission('documents', 'create')): ?>
                             <a href="document_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Carica Documento
                             </a>
@@ -211,13 +212,13 @@ $pageTitle = 'Archivio Documenti';
                                                            class="btn btn-outline-success" title="Download">
                                                             <i class="bi bi-download"></i>
                                                         </a>
-                                                        <?php if ($app->hasPermission('documents', 'edit')): ?>
+                                                        <?php if ($app->checkPermission('documents', 'edit')): ?>
                                                             <a href="document_edit.php?id=<?php echo $doc['id']; ?>" 
                                                                class="btn btn-outline-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>
                                                         <?php endif; ?>
-                                                        <?php if ($app->hasPermission('documents', 'delete')): ?>
+                                                        <?php if ($app->checkPermission('documents', 'delete')): ?>
                                                             <button type="button" class="btn btn-outline-danger" 
                                                                     onclick="deleteDocument(<?php echo $doc['id']; ?>)" title="Elimina">
                                                                 <i class="bi bi-trash"></i>

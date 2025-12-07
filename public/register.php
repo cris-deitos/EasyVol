@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\ApplicationController;
@@ -13,7 +14,7 @@ use EasyVol\Middleware\CsrfProtection;
 
 $app = new App(false); // No authentication required
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new ApplicationController($db, $config);
 

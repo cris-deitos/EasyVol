@@ -1,11 +1,12 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\OperationsCenterController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -13,11 +14,11 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-if (!$app->hasPermission('operations_center', 'edit')) {
+if (!$app->checkPermission('operations_center', 'edit')) {
     die('Accesso negato');
 }
 
-$controller = new OperationsCenterController($app->getDatabase(), $app->getConfig());
+$controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 
 // Handle POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

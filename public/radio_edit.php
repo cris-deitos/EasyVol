@@ -1,12 +1,13 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\OperationsCenterController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -17,11 +18,11 @@ if (!$app->isLoggedIn()) {
 $isEdit = isset($_GET['id']);
 $requiredPermission = $isEdit ? 'edit' : 'create';
 
-if (!$app->hasPermission('operations_center', $requiredPermission)) {
+if (!$app->checkPermission('operations_center', $requiredPermission)) {
     die('Accesso negato');
 }
 
-$controller = new OperationsCenterController($app->getDatabase(), $app->getConfig());
+$controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 $csrf = new CsrfProtection();
 
 $radio = null;

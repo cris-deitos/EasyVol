@@ -6,24 +6,25 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\MemberController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('members', 'view')) {
+if (!$app->checkPermission('members', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MemberController($db, $config);
 
@@ -71,7 +72,7 @@ $pageTitle = 'Gestione Soci';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('members', 'create')): ?>
+                        <?php if ($app->checkPermission('members', 'create')): ?>
                             <a href="member_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Socio
                             </a>
@@ -215,13 +216,13 @@ $pageTitle = 'Gestione Soci';
                                                            class="btn btn-sm btn-info" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        <?php if ($app->hasPermission('members', 'edit')): ?>
+                                                        <?php if ($app->checkPermission('members', 'edit')): ?>
                                                             <a href="member_edit.php?id=<?php echo $member['id']; ?>" 
                                                                class="btn btn-sm btn-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>
                                                         <?php endif; ?>
-                                                        <?php if ($app->hasPermission('members', 'delete')): ?>
+                                                        <?php if ($app->checkPermission('members', 'delete')): ?>
                                                             <button type="button" class="btn btn-sm btn-danger" 
                                                                     onclick="confirmDelete(<?php echo $member['id']; ?>)" 
                                                                     title="Elimina">

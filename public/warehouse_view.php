@@ -6,20 +6,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\WarehouseController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('warehouse', 'view')) {
+if (!$app->checkPermission('warehouse', 'view')) {
     die('Accesso negato');
 }
 
@@ -30,7 +31,7 @@ if ($itemId <= 0) {
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new WarehouseController($db, $config);
 
@@ -70,7 +71,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <?php if ($app->hasPermission('warehouse', 'edit')): ?>
+                            <?php if ($app->checkPermission('warehouse', 'edit')): ?>
                                 <a href="warehouse_edit.php?id=<?php echo $item['id']; ?>" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
@@ -218,7 +219,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-arrow-left-right"></i> Storico Movimenti</h5>
-                                    <?php if ($app->hasPermission('warehouse', 'edit')): ?>
+                                    <?php if ($app->checkPermission('warehouse', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addMovementModal">
                                             <i class="bi bi-plus-circle"></i> Nuovo Movimento
                                         </button>
