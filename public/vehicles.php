@@ -18,11 +18,11 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('vehicles', 'view')) {
+    die('Accesso negato');
+}
 
 // Log page access
 AutoLogger::logPageAccess();
-    die('Accesso negato');
-}
 
 $db = $app->getDb();
 $config = $app->getConfig();

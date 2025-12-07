@@ -43,8 +43,9 @@ $perPage = 20;
 // Ottieni membri
 $members = $controller->index($filters, $page, $perPage);
 
-// Log page access with filters
+// Log page access
 AutoLogger::logPageAccess();
+// Log search if performed
 if (!empty($filters['search'])) {
     AutoLogger::logSearch('members', $filters['search'], $filters);
 }

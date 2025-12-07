@@ -24,9 +24,6 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('meetings', 'edit')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

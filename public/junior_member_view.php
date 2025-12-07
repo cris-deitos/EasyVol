@@ -22,9 +22,6 @@ if (!$app->isLoggedIn()) {
 
 // Verifica permessi
 if (!$app->checkPermission('junior_members', 'view')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

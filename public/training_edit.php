@@ -28,9 +28,6 @@ $isEdit = $courseId > 0;
 
 // Verifica permessi
 if ($isEdit && !$app->checkPermission('training', 'edit')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 if (!$isEdit && !$app->checkPermission('training', 'create')) {

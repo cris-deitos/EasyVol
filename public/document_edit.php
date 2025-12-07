@@ -29,9 +29,6 @@ $isEdit = $documentId > 0;
 
 // Verifica permessi
 if ($isEdit && !$app->checkPermission('documents', 'edit')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 if (!$isEdit && !$app->checkPermission('documents', 'create')) {

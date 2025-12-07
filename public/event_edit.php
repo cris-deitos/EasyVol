@@ -26,14 +26,14 @@ $isEdit = $eventId > 0;
 
 // Verifica permessi
 if ($isEdit && !$app->checkPermission('events', 'edit')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 if (!$isEdit && !$app->checkPermission('events', 'create')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $db = $app->getDb();
 $config = $app->getConfig();

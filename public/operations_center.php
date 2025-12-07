@@ -17,9 +17,6 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('operations_center', 'view')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

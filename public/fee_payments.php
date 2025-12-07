@@ -23,11 +23,11 @@ if (!$app->isLoggedIn()) {
 
 // Verifica permessi (requires members management permission)
 if (!$app->checkPermission('members', 'edit')) {
+    die('Accesso negato');
+}
 
 // Log page access
 AutoLogger::logPageAccess();
-    die('Accesso negato');
-}
 
 $db = $app->getDb();
 $config = $app->getConfig();

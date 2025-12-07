@@ -22,9 +22,6 @@ if (!$app->isLoggedIn()) {
 
 // Verifica permessi
 if (!$app->checkPermission('events', 'view')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

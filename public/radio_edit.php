@@ -20,9 +20,6 @@ $isEdit = isset($_GET['id']);
 $requiredPermission = $isEdit ? 'edit' : 'create';
 
 if (!$app->checkPermission('operations_center', $requiredPermission)) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

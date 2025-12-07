@@ -21,9 +21,6 @@ $isEdit = isset($_GET['id']);
 $requiredPermission = $isEdit ? 'edit' : 'create';
 
 if (!$app->checkPermission('scheduler', $requiredPermission)) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

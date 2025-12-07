@@ -18,9 +18,6 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('training', 'view')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

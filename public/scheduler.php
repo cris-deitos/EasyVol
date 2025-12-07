@@ -16,9 +16,6 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('scheduler', 'view')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

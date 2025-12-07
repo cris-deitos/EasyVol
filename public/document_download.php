@@ -18,9 +18,6 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('documents', 'view')) {
-
-// Log page access
-AutoLogger::logPageAccess();
     die('Accesso negato');
 }
 

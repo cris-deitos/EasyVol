@@ -138,7 +138,9 @@ class AutoLogger {
             
             // If there are other parameters not yet captured
             // Filter out sensitive parameters before logging
-            $sensitiveParams = ['password', 'pwd', 'pass', 'token', 'csrf_token', 'api_key', 'secret', 'tax_code', 'codice_fiscale', 'ssn'];
+            $sensitiveParams = ['password', 'pwd', 'pass', 'token', 'csrf_token', 'api_key', 'secret', 
+                               'tax_code', 'codice_fiscale', 'fiscal_code', 'cf', 
+                               'ssn', 'social_security', 'card_number', 'cvv', 'pin'];
             $remainingParams = array_diff_key($params, array_flip(array_merge(
                 ['search', 'status', 'volunteer_status', 'type', 'date_from', 'date_to', 'page', 'id'],
                 $sensitiveParams

@@ -19,11 +19,11 @@ if (!$app->isLoggedIn()) {
 }
 
 if (!$app->checkPermission('users', 'edit')) {
+    die('Accesso negato');
+}
 
 // Log page access
 AutoLogger::logPageAccess();
-    die('Accesso negato');
-}
 
 $db = $app->getDb();
 $config = $app->getConfig();
