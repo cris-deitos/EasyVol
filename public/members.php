@@ -51,10 +51,11 @@ if (!empty($filters['search'])) {
 }
 
 // Conteggi per status
+// Note: in_aspettativa and in_congedo are counted as sospeso
 $statusCounts = [
     'attivo' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status = 'attivo'")['count'] ?? 0,
-    'sospeso' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status = 'sospeso'")['count'] ?? 0,
-    'dimesso' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status = 'dimesso'")['count'] ?? 0,
+    'sospeso' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status IN ('sospeso', 'in_aspettativa', 'in_congedo')")['count'] ?? 0,
+    'dimessi_decaduti' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status IN ('dimesso', 'decaduto')")['count'] ?? 0,
 ];
 
 $pageTitle = 'Gestione Soci';
@@ -123,14 +124,15 @@ $pageTitle = 'Gestione Soci';
                             <div class="card-body">
                                 <h5 class="card-title">Soci Sospesi</h5>
                                 <h2><?php echo number_format($statusCounts['sospeso']); ?></h2>
+                                <small>Include: In Aspettativa, In Congedo</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="card bg-secondary text-white">
                             <div class="card-body">
-                                <h5 class="card-title">Soci Dimessi</h5>
-                                <h2><?php echo number_format($statusCounts['dimesso']); ?></h2>
+                                <h5 class="card-title">Dimessi/Decaduti</h5>
+                                <h2><?php echo number_format($statusCounts['dimessi_decaduti']); ?></h2>
                             </div>
                         </div>
                     </div>

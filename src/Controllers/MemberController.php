@@ -219,9 +219,12 @@ class MemberController {
             $thumbPath = dirname($result['path']) . '/thumb_' . basename($result['path']);
             ImageProcessor::createThumbnail($result['path'], $thumbPath, 200);
             
+            // Convert absolute path to relative path for web display
+            $relativePath = str_replace(__DIR__ . '/../../', '../', $result['path']);
+            
             // Aggiorna database
             $sql = "UPDATE members SET photo_path = ?, updated_at = NOW(), updated_by = ? WHERE id = ?";
-            $this->db->execute($sql, [$result['path'], $userId, $memberId]);
+            $this->db->execute($sql, [$relativePath, $userId, $memberId]);
             
             // Log attività
             $this->logActivity($userId, 'member', 'upload_photo', $memberId, 'Caricata foto socio');

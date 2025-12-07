@@ -90,6 +90,13 @@ try {
                 $memberModel->deleteHealth($id);
             }
             break;
+            
+        case 'delete_sanction':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteSanction($id);
+            }
+            break;
     }
     
     header('Location: junior_member_view.php?id=' . $memberId . '&success=1');
