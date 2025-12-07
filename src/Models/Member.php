@@ -216,7 +216,8 @@ class Member {
         
         // Sincronizza con lo scadenziario se c'è una data di scadenza
         if ($licenseId && !empty($data['expiry_date'])) {
-            $config = require __DIR__ . '/../../config/config.php';
+            $app = \EasyVol\App::getInstance();
+            $config = $app->getConfig();
             $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
             $syncController->syncLicenseExpiry($licenseId, $memberId);
         }
@@ -239,7 +240,8 @@ class Member {
         
         // Sincronizza con lo scadenziario se c'è una data di scadenza
         if ($courseId && !empty($data['expiry_date'])) {
-            $config = require __DIR__ . '/../../config/config.php';
+            $app = \EasyVol\App::getInstance();
+            $config = $app->getConfig();
             $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
             $syncController->syncQualificationExpiry($courseId, $memberId);
         }

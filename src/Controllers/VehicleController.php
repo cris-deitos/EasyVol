@@ -3,6 +3,7 @@ namespace EasyVol\Controllers;
 
 use EasyVol\Database;
 use EasyVol\Utils\QrCodeGenerator;
+use EasyVol\Controllers\SchedulerSyncController;
 
 /**
  * Vehicle Controller
