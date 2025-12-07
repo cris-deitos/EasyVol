@@ -98,11 +98,14 @@ $users = $db->fetchAll("SELECT id, username, full_name FROM users ORDER BY usern
 $actions = $db->fetchAll("SELECT DISTINCT action FROM activity_logs WHERE action IS NOT NULL ORDER BY action");
 $modules = $db->fetchAll("SELECT DISTINCT module FROM activity_logs WHERE module IS NOT NULL ORDER BY module");
 
-// Get statistics
+// Get statistics - optimized queries for better index usage
 $stats = [];
 $stats['total_logs'] = $totalRecords;
-$stats['today_logs'] = $db->fetchOne("SELECT COUNT(*) as count FROM activity_logs WHERE DATE(created_at) = CURDATE()")['count'] ?? 0;
-$stats['this_week_logs'] = $db->fetchOne("SELECT COUNT(*) as count FROM activity_logs WHERE YEARWEEK(created_at) = YEARWEEK(NOW())")['count'] ?? 0;
+// Today's logs - using range query instead of DATE() for better index usage
+$stats['today_logs'] = $db->fetchOne("SELECT COUNT(*) as count FROM activity_logs WHERE created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY")['count'] ?? 0;
+// This week's logs - using range query instead of YEARWEEK() for better index usage
+$weekStart = date('Y-m-d', strtotime('monday this week'));
+$stats['this_week_logs'] = $db->fetchOne("SELECT COUNT(*) as count FROM activity_logs WHERE created_at >= ?", [$weekStart])['count'] ?? 0;
 $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count FROM activity_logs WHERE user_id IS NOT NULL")['count'] ?? 0;
 ?>
 <!DOCTYPE html>

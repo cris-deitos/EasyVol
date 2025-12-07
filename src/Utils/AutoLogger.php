@@ -13,6 +13,20 @@ class AutoLogger {
     private static $logged = false;
     
     /**
+     * Sensitive parameters that should never be logged
+     */
+    private const SENSITIVE_PARAMS = [
+        'password', 'pwd', 'pass', 'token', 'csrf_token', 'api_key', 'secret', 
+        'tax_code', 'codice_fiscale', 'fiscal_code', 'cf', 
+        'ssn', 'social_security', 'card_number', 'cvv', 'pin'
+    ];
+    
+    /**
+     * Maximum length for parameter values in logs
+     */
+    private const MAX_PARAM_LENGTH = 100;
+    
+    /**
      * Initialize and log page access automatically
      */
     public static function logPageAccess() {
@@ -138,18 +152,15 @@ class AutoLogger {
             
             // If there are other parameters not yet captured
             // Filter out sensitive parameters before logging
-            $sensitiveParams = ['password', 'pwd', 'pass', 'token', 'csrf_token', 'api_key', 'secret', 
-                               'tax_code', 'codice_fiscale', 'fiscal_code', 'cf', 
-                               'ssn', 'social_security', 'card_number', 'cvv', 'pin'];
             $remainingParams = array_diff_key($params, array_flip(array_merge(
                 ['search', 'status', 'volunteer_status', 'type', 'date_from', 'date_to', 'page', 'id'],
-                $sensitiveParams
+                self::SENSITIVE_PARAMS
             )));
             if (!empty($remainingParams)) {
                 // Sanitize values for logging
                 $sanitizedParams = array_map(function($value) {
-                    if (is_string($value) && strlen($value) > 100) {
-                        return substr($value, 0, 100) . '...';
+                    if (is_string($value) && strlen($value) > self::MAX_PARAM_LENGTH) {
+                        return substr($value, 0, self::MAX_PARAM_LENGTH) . '...';
                     }
                     return $value;
                 }, $remainingParams);
