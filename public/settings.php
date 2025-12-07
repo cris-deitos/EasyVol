@@ -88,9 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                             // Delete old logo files only after successful upload
                             $uploadDir = __DIR__ . '/../uploads/logo/';
                             $oldFiles = glob($uploadDir . 'logo_associazione.*');
+                            $newFilePath = realpath($uploadResult['path']);
                             foreach ($oldFiles as $oldFile) {
+                                $oldFilePath = realpath($oldFile);
                                 // Don't delete the file we just uploaded
-                                if (file_exists($oldFile) && $oldFile !== $uploadResult['path']) {
+                                if (file_exists($oldFile) && $oldFilePath !== $newFilePath) {
                                     unlink($oldFile);
                                 }
                             }
@@ -294,9 +296,19 @@ $pageTitle = 'Impostazioni Sistema';
                                         <?php 
                                         // Validate logo path for security
                                         $logoPath = $associationData['logo'] ?? '';
-                                        $showLogo = !empty($logoPath) && 
-                                                    str_starts_with($logoPath, 'uploads/logo/') && 
-                                                    file_exists(__DIR__ . '/../' . $logoPath);
+                                        $showLogo = false;
+                                        if (!empty($logoPath) && str_starts_with($logoPath, 'uploads/logo/')) {
+                                            $fullPath = __DIR__ . '/../' . $logoPath;
+                                            if (file_exists($fullPath)) {
+                                                // Use realpath to resolve any path manipulation attempts
+                                                $realPath = realpath($fullPath);
+                                                $expectedDir = realpath(__DIR__ . '/../uploads/logo/');
+                                                // Verify the file is actually in the uploads/logo directory
+                                                if ($realPath && $expectedDir && str_starts_with($realPath, $expectedDir)) {
+                                                    $showLogo = true;
+                                                }
+                                            }
+                                        }
                                         if ($showLogo): 
                                             // Use relative path that works regardless of installation directory
                                             // Since this page is in /public/, the logo in /uploads/ is one level up
