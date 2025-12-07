@@ -157,6 +157,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     font-weight: 500;
     color: #333;
     padding: 10px 15px;
+    font-size: 14px;
 }
 
 .sidebar .nav-link:hover {
@@ -170,6 +171,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 .sidebar .nav-link i {
     margin-right: 8px;
+    font-size: 16px;
+    width: 20px;
+    display: inline-block;
+    text-align: center;
 }
 
 .sidebar-heading {

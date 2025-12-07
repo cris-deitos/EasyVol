@@ -48,6 +48,22 @@ if ($isEdit) {
     }
 }
 
+// Get active members for participants selection
+$activeMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
+$activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name FROM junior_members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
+
+// Get existing participants if editing
+$existingParticipants = [];
+if ($isEdit) {
+    $existingParticipants = $db->fetchAll("SELECT * FROM meeting_participants WHERE meeting_id = ?", [$meetingId]);
+}
+
+// Get existing agenda items if editing
+$existingAgendaItems = [];
+if ($isEdit) {
+    $existingAgendaItems = $db->fetchAll("SELECT * FROM meeting_agenda WHERE meeting_id = ? ORDER BY order_number", [$meetingId]);
+}
+
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verifica CSRF
@@ -58,6 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'meeting_type' => $_POST['meeting_type'] ?? 'consiglio_direttivo',
             'title' => trim($_POST['title'] ?? ''),
             'meeting_date' => $_POST['meeting_date'] ?? '',
+            'start_time' => $_POST['start_time'] ?? '',
+            'end_time' => $_POST['end_time'] ?? '',
             'location' => trim($_POST['location'] ?? ''),
             'convened_by' => trim($_POST['convened_by'] ?? ''),
             'president' => trim($_POST['president'] ?? ''),
@@ -154,13 +172,27 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             </div>
                             
                             <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="meeting_date" class="form-label">Data e Ora <span class="text-danger">*</span></label>
-                                    <input type="datetime-local" class="form-control" id="meeting_date" name="meeting_date" 
-                                           value="<?php echo !empty($meeting['meeting_date']) ? date('Y-m-d\TH:i', strtotime($meeting['meeting_date'])) : ''; ?>" required>
+                                <div class="col-md-4 mb-3">
+                                    <label for="meeting_date" class="form-label">Data <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="meeting_date" name="meeting_date" 
+                                           value="<?php echo !empty($meeting['meeting_date']) ? date('Y-m-d', strtotime($meeting['meeting_date'])) : ''; ?>" required>
                                 </div>
                                 
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
+                                    <label for="start_time" class="form-label">Ora Inizio</label>
+                                    <input type="time" class="form-control" id="start_time" name="start_time" 
+                                           value="<?php echo !empty($meeting['start_time']) ? date('H:i', strtotime($meeting['start_time'])) : ''; ?>">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="end_time" class="form-label">Ora Fine</label>
+                                    <input type="time" class="form-control" id="end_time" name="end_time" 
+                                           value="<?php echo !empty($meeting['end_time']) ? date('H:i', strtotime($meeting['end_time'])) : ''; ?>">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
                                     <label for="location" class="form-label">Luogo</label>
                                     <input type="text" class="form-control" id="location" name="location" 
                                            value="<?php echo htmlspecialchars($meeting['location'] ?? ''); ?>"
@@ -197,6 +229,92 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             </div>
                         </div>
                     </div>
+                    
+                    <?php if ($isEdit): ?>
+                    <!-- Participants Section -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-people-fill"></i> Partecipanti</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted"><small>Gestisci i partecipanti dalla pagina di visualizzazione o usa il link dedicato.</small></p>
+                            <a href="meeting_participants.php?meeting_id=<?php echo $meetingId; ?>" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-person-plus"></i> Gestisci Partecipanti
+                            </a>
+                            
+                            <?php if (!empty($existingParticipants)): ?>
+                                <hr>
+                                <h6>Partecipanti attuali: <?php echo count($existingParticipants); ?></h6>
+                                <div class="list-group mt-2">
+                                    <?php foreach (array_slice($existingParticipants, 0, 5) as $participant): ?>
+                                        <div class="list-group-item">
+                                            <?php if ($participant['member_type'] === 'adult' && $participant['member_id']): ?>
+                                                <?php 
+                                                $memberInfo = $db->fetchOne("SELECT first_name, last_name FROM members WHERE id = ?", [$participant['member_id']]);
+                                                echo htmlspecialchars($memberInfo['first_name'] . ' ' . $memberInfo['last_name']);
+                                                ?>
+                                            <?php elseif ($participant['member_type'] === 'junior' && $participant['junior_member_id']): ?>
+                                                <?php 
+                                                $juniorInfo = $db->fetchOne("SELECT first_name, last_name FROM junior_members WHERE id = ?", [$participant['junior_member_id']]);
+                                                echo htmlspecialchars($juniorInfo['first_name'] . ' ' . $juniorInfo['last_name']) . ' <span class="badge bg-info">Cadetto</span>';
+                                                ?>
+                                            <?php else: ?>
+                                                <?php echo htmlspecialchars($participant['participant_name'] ?? 'N/A'); ?>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($participant['role']): ?>
+                                                - <em><?php echo htmlspecialchars($participant['role']); ?></em>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <?php if (count($existingParticipants) > 5): ?>
+                                        <div class="list-group-item text-muted">
+                                            <small>... e altri <?php echo count($existingParticipants) - 5; ?> partecipanti</small>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <!-- Agenda Items Section -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-list-ol"></i> Ordini del Giorno</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted"><small>Gli ordini del giorno possono essere gestiti in dettaglio dalla pagina di visualizzazione della riunione.</small></p>
+                            
+                            <?php if (!empty($existingAgendaItems)): ?>
+                                <div class="list-group">
+                                    <?php foreach ($existingAgendaItems as $item): ?>
+                                        <div class="list-group-item">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1"><?php echo $item['order_number']; ?>. <?php echo htmlspecialchars($item['subject']); ?></h6>
+                                            </div>
+                                            <?php if ($item['description']): ?>
+                                                <p class="mb-1"><small><?php echo nl2br(htmlspecialchars(substr($item['description'], 0, 150))); ?><?php echo strlen($item['description']) > 150 ? '...' : ''; ?></small></p>
+                                            <?php endif; ?>
+                                            <?php if ($item['voting_outcome']): ?>
+                                                <span class="badge bg-<?php echo $item['voting_outcome'] === 'approvato' ? 'success' : 'warning'; ?>">
+                                                    <?php echo ucfirst($item['voting_outcome']); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-muted">Nessun ordine del giorno ancora inserito.</p>
+                            <?php endif; ?>
+                            
+                            <div class="mt-3">
+                                <a href="meeting_view.php?id=<?php echo $meetingId; ?>#agenda" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Gestisci Ordini del Giorno
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     
                     <div class="card mb-3">
                         <div class="card-header bg-secondary text-white">

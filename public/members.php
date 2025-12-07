@@ -31,7 +31,7 @@ $controller = new MemberController($db, $config);
 // Gestione filtri
 $filters = [
     'status' => $_GET['status'] ?? '',
-    'volunteer_status' => $_GET['volunteer_status'] ?? '',
+    'member_type' => $_GET['member_type'] ?? '',
     'search' => $_GET['search'] ?? ''
 ];
 
@@ -125,17 +125,15 @@ $pageTitle = 'Gestione Soci';
                                     <option value="attivo" <?php echo $filters['status'] === 'attivo' ? 'selected' : ''; ?>>Attivo</option>
                                     <option value="sospeso" <?php echo $filters['status'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                     <option value="dimesso" <?php echo $filters['status'] === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
-                                    <option value="deceduto" <?php echo $filters['status'] === 'deceduto' ? 'selected' : ''; ?>>Deceduto</option>
+                                    <option value="decaduto" <?php echo $filters['status'] === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="volunteer_status" class="form-label">Qualifica</label>
-                                <select class="form-select" id="volunteer_status" name="volunteer_status">
-                                    <option value="">Tutte</option>
-                                    <option value="aspirante" <?php echo $filters['volunteer_status'] === 'aspirante' ? 'selected' : ''; ?>>Aspirante</option>
-                                    <option value="volontario" <?php echo $filters['volunteer_status'] === 'volontario' ? 'selected' : ''; ?>>Volontario</option>
-                                    <option value="operatore" <?php echo $filters['volunteer_status'] === 'operatore' ? 'selected' : ''; ?>>Operatore</option>
-                                    <option value="coordinatore" <?php echo $filters['volunteer_status'] === 'coordinatore' ? 'selected' : ''; ?>>Coordinatore</option>
+                                <label for="member_type" class="form-label">Tipo Socio</label>
+                                <select class="form-select" id="member_type" name="member_type">
+                                    <option value="">Tutti</option>
+                                    <option value="ordinario" <?php echo ($filters['member_type'] ?? '') === 'ordinario' ? 'selected' : ''; ?>>Ordinario</option>
+                                    <option value="fondatore" <?php echo ($filters['member_type'] ?? '') === 'fondatore' ? 'selected' : ''; ?>>Fondatore</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -165,8 +163,8 @@ $pageTitle = 'Gestione Soci';
                                         <th>Cognome</th>
                                         <th>Nome</th>
                                         <th>Data Nascita</th>
+                                        <th>Tipo Socio</th>
                                         <th>Stato</th>
-                                        <th>Qualifica</th>
                                         <th>Azioni</th>
                                     </tr>
                                 </thead>
@@ -196,12 +194,17 @@ $pageTitle = 'Gestione Soci';
                                                 <td><?php echo htmlspecialchars($member['first_name']); ?></td>
                                                 <td><?php echo date('d/m/Y', strtotime($member['birth_date'])); ?></td>
                                                 <td>
+                                                    <span class="badge bg-<?php echo $member['member_type'] === 'fondatore' ? 'primary' : 'info'; ?>">
+                                                        <?php echo ucfirst($member['member_type'] ?? 'ordinario'); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
                                                     <?php
                                                     $statusColors = [
                                                         'attivo' => 'success',
                                                         'sospeso' => 'warning',
                                                         'dimesso' => 'secondary',
-                                                        'deceduto' => 'dark'
+                                                        'decaduto' => 'dark'
                                                     ];
                                                     $color = $statusColors[$member['member_status']] ?? 'secondary';
                                                     ?>
@@ -209,7 +212,6 @@ $pageTitle = 'Gestione Soci';
                                                         <?php echo ucfirst($member['member_status']); ?>
                                                     </span>
                                                 </td>
-                                                <td><?php echo ucfirst($member['volunteer_status']); ?></td>
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <a href="member_view.php?id=<?php echo $member['id']; ?>" 

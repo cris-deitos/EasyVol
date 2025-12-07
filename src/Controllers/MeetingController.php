@@ -82,13 +82,15 @@ class MeetingController {
             $this->db->beginTransaction();
             
             $sql = "INSERT INTO meetings (
-                meeting_type, title, meeting_date, location, convocator, description, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                meeting_type, title, meeting_date, start_time, end_time, location, convocator, description, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['meeting_type'],
                 $data['title'],
                 $data['meeting_date'],
+                $data['start_time'] ?? null,
+                $data['end_time'] ?? null,
                 $data['location'] ?? null,
                 $data['convocator'] ?? null,
                 $data['description'] ?? null
@@ -115,7 +117,7 @@ class MeetingController {
     public function update($id, $data, $userId) {
         try {
             $sql = "UPDATE meetings SET
-                meeting_type = ?, title = ?, meeting_date = ?, location = ?,
+                meeting_type = ?, title = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?,
                 convocator = ?, description = ?, updated_at = NOW()
                 WHERE id = ?";
             
@@ -123,6 +125,8 @@ class MeetingController {
                 $data['meeting_type'],
                 $data['title'],
                 $data['meeting_date'],
+                $data['start_time'] ?? null,
+                $data['end_time'] ?? null,
                 $data['location'] ?? null,
                 $data['convocator'] ?? null,
                 $data['description'] ?? null,
