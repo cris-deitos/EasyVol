@@ -151,7 +151,25 @@ class EmailSender {
             return $result;
             
         } catch (Exception $e) {
-            error_log("Email send failed: " . $e->getMessage());
+            error_log("PHPMailer send failed: " . $e->getMessage());
+            
+            // Try fallback to PHP's native mail() function
+            try {
+                $fallbackResult = $this->sendWithNativeMail($to, $subject, $body);
+                
+                if ($fallbackResult) {
+                    error_log("Email sent successfully using fallback mail() function");
+                    
+                    // Log success
+                    if ($this->db) {
+                        $this->logEmail($to, $subject, $body, 'sent_fallback', 'Sent using fallback mail() after PHPMailer failed');
+                    }
+                    
+                    return true;
+                }
+            } catch (\Exception $fallbackException) {
+                error_log("Fallback mail() also failed: " . $fallbackException->getMessage());
+            }
             
             // Log failure
             if ($this->db) {
@@ -364,5 +382,44 @@ class EmailSender {
         }
         
         return $sent;
+    }
+    
+    /**
+     * Fallback: Invia email usando la funzione mail() nativa di PHP
+     * 
+     * @param string|array $to Destinatario/i
+     * @param string $subject Oggetto
+     * @param string $body Corpo HTML
+     * @return bool
+     */
+    private function sendWithNativeMail($to, $subject, $body) {
+        // Get the primary recipient email
+        $toEmail = is_array($to) ? (is_numeric(array_key_first($to)) ? reset($to) : array_key_first($to)) : $to;
+        
+        // Validate email
+        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            throw new \Exception("Invalid email address: $toEmail");
+        }
+        
+        // Prepare headers
+        $fromEmail = $this->config['email']['from_email'] ?? 'noreply@example.com';
+        $fromName = $this->config['email']['from_name'] ?? 'EasyVol';
+        
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-type: text/html; charset=UTF-8',
+            "From: $fromName <$fromEmail>",
+            "Reply-To: $fromEmail",
+            'X-Mailer: PHP/' . phpversion()
+        ];
+        
+        // Send email
+        $result = mail($toEmail, $subject, $body, implode("\r\n", $headers));
+        
+        if (!$result) {
+            throw new \Exception("mail() function returned false");
+        }
+        
+        return true;
     }
 }

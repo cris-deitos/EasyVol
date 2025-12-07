@@ -14,13 +14,59 @@ $user = $app->getCurrentUser();
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item dropdown">
+                    <?php
+                    // Get notification counts
+                    $notificationCount = 0;
+                    $notifications = [];
+                    
+                    // Pending applications
+                    if ($app->checkPermission('applications', 'view')) {
+                        $pendingApps = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM member_applications WHERE status = 'pending'")['count'] ?? 0;
+                        if ($pendingApps > 0) {
+                            $notificationCount += $pendingApps;
+                            $notifications[] = [
+                                'text' => "Domande iscrizione in sospeso: $pendingApps",
+                                'link' => 'applications.php',
+                                'icon' => 'bi-inbox'
+                            ];
+                        }
+                    }
+                    
+                    // Pending fee payments
+                    if ($app->checkPermission('members', 'edit')) {
+                        $pendingFees = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM fee_payment_requests WHERE status = 'pending'")['count'] ?? 0;
+                        if ($pendingFees > 0) {
+                            $notificationCount += $pendingFees;
+                            $notifications[] = [
+                                'text' => "Quote associative da verificare: $pendingFees",
+                                'link' => 'fee_payments.php',
+                                'icon' => 'bi-receipt-cutoff'
+                            ];
+                        }
+                    }
+                    ?>
                     <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-bell"></i>
-                        <!-- Notification badge removed - notifications will be implemented dynamically -->
+                        <?php if ($notificationCount > 0): ?>
+                            <span class="badge bg-danger rounded-pill"><?= $notificationCount ?></span>
+                        <?php endif; ?>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
                         <li><h6 class="dropdown-header">Notifiche</h6></li>
-                        <li><a class="dropdown-item text-center text-muted">Nessuna notifica</a></li>
+                        <?php if (empty($notifications)): ?>
+                            <li><a class="dropdown-item text-center text-muted">Nessuna notifica</a></li>
+                        <?php else: ?>
+                            <?php foreach ($notifications as $notification): ?>
+                                <li>
+                                    <a class="dropdown-item" href="<?= htmlspecialchars($notification['link']) ?>">
+                                        <i class="bi <?= htmlspecialchars($notification['icon']) ?>"></i>
+                                        <?= htmlspecialchars($notification['text']) ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center text-primary" href="dashboard.php">Vedi tutte</a></li>
+                        <?php endif; ?>
                     </ul>
                 </li>
                 <li class="nav-item dropdown">

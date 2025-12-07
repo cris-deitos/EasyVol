@@ -47,6 +47,13 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'fee_payments.php' ? 'active' : '' ?>" href="fee_payments.php">
                     <i class="bi bi-receipt-cutoff"></i> Quote Associative
+                    <?php
+                    // Count pending fee payment requests
+                    $pendingFeeCount = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM fee_payment_requests WHERE status = 'pending'")['count'] ?? 0;
+                    if ($pendingFeeCount > 0):
+                    ?>
+                        <span class="badge bg-warning rounded-pill"><?= $pendingFeeCount ?></span>
+                    <?php endif; ?>
                 </a>
             </li>
             <?php endif; ?>

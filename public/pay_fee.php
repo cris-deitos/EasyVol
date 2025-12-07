@@ -122,13 +122,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $uploadResult = $uploader->upload($_FILES['receipt_file'], date('Y'));
                 
                 if ($uploadResult['success']) {
+                    // Convert absolute path to relative path for storage
+                    $relativePath = str_replace(__DIR__ . '/../', '', $uploadResult['path']);
+                    
                     // Create payment request
                     $requestData = [
                         'registration_number' => $member['registration_number'],
                         'last_name' => $member['last_name'],
                         'payment_year' => $paymentYear,
                         'payment_date' => $paymentDate,
-                        'receipt_file' => $uploadResult['path']
+                        'receipt_file' => $relativePath
                     ];
                     
                     $requestId = $controller->createPaymentRequest($requestData);
