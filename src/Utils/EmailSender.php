@@ -394,15 +394,21 @@ class EmailSender {
      */
     private function sendWithNativeMail($to, $subject, $body) {
         // Get the primary recipient email
-        $toEmail = is_array($to) ? (is_numeric(array_key_first($to)) ? reset($to) : array_key_first($to)) : $to;
+        if (is_array($to)) {
+            // If array has string keys (email => name), get first key
+            $firstKey = array_key_first($to);
+            $toEmail = is_numeric($firstKey) ? reset($to) : $firstKey;
+        } else {
+            $toEmail = $to;
+        }
         
         // Validate email
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
             throw new \Exception("Invalid email address: $toEmail");
         }
         
-        // Prepare headers
-        $fromEmail = $this->config['email']['from_email'] ?? 'noreply@example.com';
+        // Prepare headers - use configured values or reasonable defaults
+        $fromEmail = $this->config['email']['from_email'] ?? 'noreply@localhost';
         $fromName = $this->config['email']['from_name'] ?? 'EasyVol';
         
         $headers = [

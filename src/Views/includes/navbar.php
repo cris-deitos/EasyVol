@@ -15,35 +15,9 @@ $user = $app->getCurrentUser();
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item dropdown">
                     <?php
-                    // Get notification counts
-                    $notificationCount = 0;
-                    $notifications = [];
-                    
-                    // Pending applications
-                    if ($app->checkPermission('applications', 'view')) {
-                        $pendingApps = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM member_applications WHERE status = 'pending'")['count'] ?? 0;
-                        if ($pendingApps > 0) {
-                            $notificationCount += $pendingApps;
-                            $notifications[] = [
-                                'text' => "Domande iscrizione in sospeso: $pendingApps",
-                                'link' => 'applications.php',
-                                'icon' => 'bi-inbox'
-                            ];
-                        }
-                    }
-                    
-                    // Pending fee payments
-                    if ($app->checkPermission('members', 'edit')) {
-                        $pendingFees = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM fee_payment_requests WHERE status = 'pending'")['count'] ?? 0;
-                        if ($pendingFees > 0) {
-                            $notificationCount += $pendingFees;
-                            $notifications[] = [
-                                'text' => "Quote associative da verificare: $pendingFees",
-                                'link' => 'fee_payments.php',
-                                'icon' => 'bi-receipt-cutoff'
-                            ];
-                        }
-                    }
+                    // Get notifications using helper (cached for performance)
+                    $notifications = \EasyVol\Utils\NotificationHelper::getNotifications();
+                    $notificationCount = \EasyVol\Utils\NotificationHelper::getNotificationCount();
                     ?>
                     <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-bell"></i>

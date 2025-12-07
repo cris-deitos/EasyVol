@@ -33,8 +33,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <a class="nav-link <?= $currentPage === 'applications.php' ? 'active' : '' ?>" href="applications.php">
                     <i class="bi bi-inbox"></i> Domande Iscrizione
                     <?php
-                    // Count pending applications
-                    $pendingCount = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM member_applications WHERE status = 'pending'")['count'] ?? 0;
+                    // Get pending applications count using helper (cached for performance)
+                    $pendingCount = \EasyVol\Utils\NotificationHelper::getNotificationCountByType('applications');
                     if ($pendingCount > 0):
                     ?>
                         <span class="badge bg-warning rounded-pill"><?= $pendingCount ?></span>
@@ -48,8 +48,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <a class="nav-link <?= $currentPage === 'fee_payments.php' ? 'active' : '' ?>" href="fee_payments.php">
                     <i class="bi bi-receipt-cutoff"></i> Quote Associative
                     <?php
-                    // Count pending fee payment requests
-                    $pendingFeeCount = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM fee_payment_requests WHERE status = 'pending'")['count'] ?? 0;
+                    // Get pending fee payment count using helper (cached for performance)
+                    $pendingFeeCount = \EasyVol\Utils\NotificationHelper::getNotificationCountByType('fee_payments');
                     if ($pendingFeeCount > 0):
                     ?>
                         <span class="badge bg-warning rounded-pill"><?= $pendingFeeCount ?></span>
