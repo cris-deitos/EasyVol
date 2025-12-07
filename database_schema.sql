@@ -292,9 +292,7 @@ CREATE TABLE IF NOT EXISTS `member_sanctions` (
 CREATE TABLE IF NOT EXISTS `member_notes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `member_id` int(11) NOT NULL,
-  `note_text` text NOT NULL,
-  `note_type` enum('generale', 'amministrativa', 'disciplinare', 'formazione') DEFAULT 'generale',
-  `is_important` tinyint(1) DEFAULT 0,
+  `note` text NOT NULL,
   `created_by` int(11),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
