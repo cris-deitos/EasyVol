@@ -110,7 +110,7 @@ class EventController {
             return $eventId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione evento: " . $e->getMessage());
             return false;
         }

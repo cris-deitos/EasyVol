@@ -103,7 +103,7 @@ class MeetingController {
             return $meetingId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione riunione: " . $e->getMessage());
             return false;
         }
@@ -266,7 +266,7 @@ class MeetingController {
             $this->db->commit();
             return true;
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore aggiunta partecipanti: " . $e->getMessage());
             return false;
         }

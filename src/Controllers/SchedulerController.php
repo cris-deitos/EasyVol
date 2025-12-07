@@ -155,7 +155,7 @@ class SchedulerController {
             $this->db->commit();
             return $itemId;
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Error creating scheduler item: " . $e->getMessage());
             return false;
         }
@@ -246,7 +246,7 @@ class SchedulerController {
             $this->db->commit();
             return true;
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Error updating scheduler item: " . $e->getMessage());
             return false;
         }

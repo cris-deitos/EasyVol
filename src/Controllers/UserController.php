@@ -143,7 +143,7 @@ class UserController {
             return $userId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione utente: " . $e->getMessage());
             return false;
         }

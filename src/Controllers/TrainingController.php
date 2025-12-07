@@ -158,7 +158,7 @@ class TrainingController {
             return $courseId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione corso: " . $e->getMessage());
             return false;
         }

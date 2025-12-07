@@ -121,7 +121,7 @@ class VehicleController {
             return $vehicleId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione mezzo: " . $e->getMessage());
             return false;
         }
@@ -166,7 +166,7 @@ class VehicleController {
             return true;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore aggiornamento mezzo: " . $e->getMessage());
             return false;
         }

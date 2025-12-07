@@ -106,7 +106,7 @@ class MemberController {
             return $memberId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione socio: " . $e->getMessage());
             return false;
         }
@@ -161,7 +161,7 @@ class MemberController {
             return true;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore aggiornamento socio: " . $e->getMessage());
             return false;
         }

@@ -147,7 +147,7 @@ class DocumentController {
             return $documentId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione documento: " . $e->getMessage());
             return false;
         }

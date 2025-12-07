@@ -121,7 +121,7 @@ class WarehouseController {
             return $itemId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione articolo: " . $e->getMessage());
             return false;
         }
@@ -163,7 +163,7 @@ class WarehouseController {
             return true;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore aggiornamento articolo: " . $e->getMessage());
             return false;
         }
@@ -208,7 +208,7 @@ class WarehouseController {
             return $movementId;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore registrazione movimento: " . $e->getMessage());
             return false;
         }

@@ -91,7 +91,7 @@ class ApplicationController {
             ];
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione domanda: " . $e->getMessage());
             return [
                 'success' => false,
@@ -149,7 +149,7 @@ class ApplicationController {
             ];
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione domanda adulto: " . $e->getMessage());
             return [
                 'success' => false,
@@ -207,7 +207,7 @@ class ApplicationController {
             ];
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore creazione domanda minorenne: " . $e->getMessage());
             return [
                 'success' => false,
@@ -336,7 +336,7 @@ class ApplicationController {
             return true;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             error_log("Errore approvazione domanda: " . $e->getMessage());
             return false;
         }
