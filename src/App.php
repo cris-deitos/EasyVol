@@ -33,6 +33,38 @@ class App {
         // Initialize database if configured
         if ($this->isInstalled()) {
             $this->db = Database::getInstance($this->config['database']);
+            $this->loadAssociationData();
+        }
+    }
+    
+    private function loadAssociationData() {
+        try {
+            $association = $this->db->fetchOne("SELECT * FROM association ORDER BY id ASC LIMIT 1");
+            if ($association) {
+                $this->config['association'] = [
+                    'name' => $association['name'] ?? '',
+                    'address' => trim(($association['address_street'] ?? '') . ' ' . ($association['address_number'] ?? '')),
+                    'city' => trim(($association['address_city'] ?? '') . ' (' . ($association['address_province'] ?? '') . ') ' . ($association['address_cap'] ?? '')),
+                    'email' => $association['email'] ?? '',
+                    'pec' => $association['pec'] ?? '',
+                    'tax_code' => $association['tax_code'] ?? '',
+                ];
+            } else {
+                $this->config['association'] = [
+                    'name' => 'N/D',
+                    'address' => 'N/D',
+                    'city' => 'N/D',
+                    'email' => 'N/D',
+                ];
+            }
+        } catch (\Exception $e) {
+            error_log("Failed to load association data: " . $e->getMessage());
+            $this->config['association'] = [
+                'name' => 'N/D',
+                'address' => 'N/D',
+                'city' => 'N/D',
+                'email' => 'N/D',
+            ];
         }
     }
     
@@ -99,6 +131,11 @@ class App {
     
     public function getCurrentUser() {
         return isset($_SESSION['user']) ? $_SESSION['user'] : null;
+    }
+    
+    public function getUserId() {
+        $user = $this->getCurrentUser();
+        return $user['id'] ?? null;
     }
     
     public function isLoggedIn() {

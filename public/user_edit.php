@@ -47,6 +47,16 @@ if ($isEdit) {
 
 $roles = $controller->getRoles();
 
+// Ottieni tutti i permessi disponibili
+$allPermissions = $db->fetchAll("SELECT * FROM permissions ORDER BY module, action");
+
+// Ottieni i permessi specifici dell'utente (se in modifica)
+$userPermissions = [];
+if ($isEdit) {
+    $stmt = $db->query("SELECT permission_id FROM user_permissions WHERE user_id = ?", [$userId]);
+    $userPermissions = array_column($stmt->fetchAll(), 'permission_id');
+}
+
 // Ottieni membri per collegamento
 $members = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members ORDER BY last_name, first_name");
 
@@ -111,6 +121,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if ($result === true || is_numeric($result)) {
+                // Salva i permessi specifici dell'utente
+                $finalUserId = $isEdit ? $userId : $result;
+                
+                // Rimuovi tutti i permessi esistenti
+                $db->query("DELETE FROM user_permissions WHERE user_id = ?", [$finalUserId]);
+                
+                // Aggiungi i nuovi permessi selezionati
+                if (isset($_POST['user_permissions']) && is_array($_POST['user_permissions'])) {
+                    foreach ($_POST['user_permissions'] as $permissionId) {
+                        $db->insert('user_permissions', [
+                            'user_id' => $finalUserId,
+                            'permission_id' => intval($permissionId)
+                        ]);
+                    }
+                }
+                
                 $success = true;
                 header('Location: users.php?success=1');
                 exit;
@@ -247,6 +273,77 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                 <label class="form-check-label" for="is_active">
                                     Utente Attivo
                                 </label>
+                            </div>
+                            
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-shield-check"></i> Permessi Specifici Utente
+                                    <small class="text-muted">(Oltre ai permessi del ruolo)</small>
+                                </h6>
+                                <p class="text-muted small mb-3">
+                                    Seleziona i permessi aggiuntivi specifici per questo utente. 
+                                    Questi si aggiungono ai permessi già concessi dal ruolo assegnato.
+                                </p>
+                                
+                                <?php
+                                // Raggruppa i permessi per modulo
+                                $permissionsByModule = [];
+                                foreach ($allPermissions as $perm) {
+                                    $permissionsByModule[$perm['module']][] = $perm;
+                                }
+                                
+                                // Traduzioni moduli
+                                $moduleLabels = [
+                                    'members' => 'Soci',
+                                    'junior_members' => 'Soci Minorenni',
+                                    'users' => 'Utenti',
+                                    'meetings' => 'Riunioni',
+                                    'vehicles' => 'Mezzi',
+                                    'warehouse' => 'Magazzino',
+                                    'training' => 'Corsi',
+                                    'events' => 'Eventi',
+                                    'documents' => 'Documenti',
+                                    'scheduler' => 'Scadenze',
+                                    'operations_center' => 'Centrale Operativa',
+                                    'applications' => 'Domande Iscrizione',
+                                    'reports' => 'Report',
+                                    'settings' => 'Impostazioni'
+                                ];
+                                
+                                $actionLabels = [
+                                    'view' => 'Visualizza',
+                                    'create' => 'Crea',
+                                    'edit' => 'Modifica',
+                                    'delete' => 'Elimina',
+                                    'report' => 'Report'
+                                ];
+                                ?>
+                                
+                                <div class="row">
+                                    <?php foreach ($permissionsByModule as $module => $permissions): ?>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card">
+                                                <div class="card-header bg-secondary text-white py-1">
+                                                    <small><strong><?php echo htmlspecialchars($moduleLabels[$module] ?? $module); ?></strong></small>
+                                                </div>
+                                                <div class="card-body p-2">
+                                                    <?php foreach ($permissions as $perm): ?>
+                                                        <div class="form-check form-check-inline">
+                                                            <input class="form-check-input" type="checkbox" 
+                                                                   name="user_permissions[]" 
+                                                                   value="<?php echo $perm['id']; ?>"
+                                                                   id="perm_<?php echo $perm['id']; ?>"
+                                                                   <?php echo in_array($perm['id'], $userPermissions) ? 'checked' : ''; ?>>
+                                                            <label class="form-check-label" for="perm_<?php echo $perm['id']; ?>">
+                                                                <small><?php echo htmlspecialchars($actionLabels[$perm['action']] ?? $perm['action']); ?></small>
+                                                            </label>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                             
                             <div class="border-top pt-3 mt-4">

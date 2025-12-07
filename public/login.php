@@ -42,14 +42,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $stmt->fetch();
             
             if ($user && password_verify($password, $user['password'])) {
-                // Get user permissions
+                // Get role-based permissions
+                $rolePermissions = [];
+                if ($user['role_id']) {
+                    $stmt = $db->query(
+                        "SELECT p.* FROM permissions p
+                        INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                        WHERE rp.role_id = ?",
+                        [$user['role_id']]
+                    );
+                    $rolePermissions = $stmt->fetchAll();
+                }
+                
+                // Get user-specific permissions
                 $stmt = $db->query(
                     "SELECT p.* FROM permissions p
-                    INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                    WHERE rp.role_id = ?",
-                    [$user['role_id']]
+                    INNER JOIN user_permissions up ON p.id = up.permission_id
+                    WHERE up.user_id = ?",
+                    [$user['id']]
                 );
-                $user['permissions'] = $stmt->fetchAll();
+                $userPermissions = $stmt->fetchAll();
+                
+                // Merge permissions (user-specific permissions override role permissions)
+                $permissionsMap = [];
+                foreach ($rolePermissions as $perm) {
+                    $key = $perm['module'] . '_' . $perm['action'];
+                    $permissionsMap[$key] = $perm;
+                }
+                foreach ($userPermissions as $perm) {
+                    $key = $perm['module'] . '_' . $perm['action'];
+                    $permissionsMap[$key] = $perm;
+                }
+                $user['permissions'] = array_values($permissionsMap);
                 
                 // Update last login
                 $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
