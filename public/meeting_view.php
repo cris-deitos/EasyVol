@@ -77,9 +77,23 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
                             <?php endif; ?>
-                            <button type="button" class="btn btn-info" onclick="printMinutes()">
-                                <i class="bi bi-printer"></i> Stampa Verbale
-                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-printer"></i> Stampa
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('minutes', <?php echo $meeting['id']; ?>); return false;">
+                                        <i class="bi bi-file-earmark-text"></i> Verbale
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('attendance', <?php echo $meeting['id']; ?>); return false;">
+                                        <i class="bi bi-clipboard-check"></i> Foglio Presenze
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
+                                        <i class="bi bi-gear"></i> Scegli Template...
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -352,9 +366,73 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function printMinutes() {
-            // Implementare generazione e stampa verbale
-            alert('Funzionalità in sviluppo');
+            // Deprecated - use printTemplate instead
+            printTemplate('minutes', <?php echo $meeting['id']; ?>);
+        }
+        
+        // Print functionality
+        function printTemplate(type, recordId) {
+            let templateId = null;
+            
+            // Map template types to default template IDs for meetings
+            switch(type) {
+                case 'minutes':
+                    templateId = 9; // Verbale di Riunione
+                    break;
+                case 'attendance':
+                    templateId = 10; // Foglio Presenze
+                    break;
+            }
+            
+            if (templateId) {
+                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=meetings';
+                window.open(url, '_blank');
+            } else {
+                showPrintModal();
+            }
+        }
+        
+        function showPrintModal() {
+            const modal = new bootstrap.Modal(document.getElementById('printModal'));
+            modal.show();
+        }
+        
+        function generateFromModal() {
+            const templateId = document.getElementById('templateSelect').value;
+            if (templateId) {
+                const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $meeting['id']; ?>&entity=meetings';
+                window.open(url, '_blank');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
+                modal.hide();
+            }
         }
     </script>
+
+    <!-- Print Template Selection Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template di Stampa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select id="templateSelect" class="form-select">
+                            <option value="9">Verbale di Riunione</option>
+                            <option value="10">Foglio Presenze</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                        <i class="bi bi-printer"></i> Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

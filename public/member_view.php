@@ -77,9 +77,26 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
                             <?php endif; ?>
-                            <button type="button" class="btn btn-info" onclick="printCard()">
-                                <i class="bi bi-printer"></i> Stampa Tesserino
-                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-printer"></i> Stampa
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('single', <?php echo $member['id']; ?>); return false;">
+                                        <i class="bi bi-file-earmark-text"></i> Certificato Iscrizione
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('card', <?php echo $member['id']; ?>); return false;">
+                                        <i class="bi bi-credit-card"></i> Tessera Socio
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('full', <?php echo $member['id']; ?>); return false;">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> Scheda Completa
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
+                                        <i class="bi bi-gear"></i> Scegli Template...
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -898,6 +915,90 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                 window.location.href = 'member_data.php?action=delete_attachment&id=' + id + '&member_id=' + memberId;
             }
         }
+        
+        // Print functionality
+        function printTemplate(type, recordId) {
+            let templateId = null;
+            
+            // Map template types to default template IDs (will be auto-selected if available)
+            switch(type) {
+                case 'single':
+                    templateId = 1; // Certificato Iscrizione
+                    break;
+                case 'card':
+                    templateId = 2; // Tessera Socio
+                    break;
+                case 'full':
+                    templateId = 3; // Scheda Completa
+                    break;
+            }
+            
+            if (templateId) {
+                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=members';
+                window.open(url, '_blank');
+            } else {
+                showPrintModal();
+            }
+        }
+        
+        function showPrintModal() {
+            // Create and show modal for template selection
+            const modal = new bootstrap.Modal(document.getElementById('printModal'));
+            
+            // Load available templates
+            fetch('print_generate.php?format=json&entity=members&action=list_templates')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.templates) {
+                        const select = document.getElementById('templateSelect');
+                        select.innerHTML = '';
+                        data.templates.forEach(template => {
+                            const option = document.createElement('option');
+                            option.value = template.id;
+                            option.textContent = template.name;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading templates:', error));
+            
+            modal.show();
+        }
+        
+        function generateFromModal() {
+            const templateId = document.getElementById('templateSelect').value;
+            if (templateId) {
+                printTemplate(null, <?php echo $member['id']; ?>);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
+                modal.hide();
+            }
+        }
     </script>
+
+    <!-- Print Template Selection Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template di Stampa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select id="templateSelect" class="form-select">
+                            <option value="">Caricamento...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                        <i class="bi bi-printer"></i> Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

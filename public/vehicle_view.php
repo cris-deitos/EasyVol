@@ -80,9 +80,23 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
                             <?php endif; ?>
-                            <button type="button" class="btn btn-info" onclick="printQrCode()">
-                                <i class="bi bi-qr-code"></i> Stampa QR Code
-                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-printer"></i> Stampa
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('technical', <?php echo $vehicle['id']; ?>); return false;">
+                                        <i class="bi bi-file-earmark-text"></i> Scheda Tecnica
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="printQrCode(); return false;">
+                                        <i class="bi bi-qr-code"></i> QR Code
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
+                                        <i class="bi bi-gear"></i> Scegli Template...
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -342,6 +356,67 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
             // Implementare generazione e stampa QR code
             alert('Funzionalità in sviluppo');
         }
+        
+        // Print functionality
+        function printTemplate(type, recordId) {
+            let templateId = null;
+            
+            // Map template types to default template IDs for vehicles
+            switch(type) {
+                case 'technical':
+                    templateId = 7; // Scheda Tecnica Mezzo
+                    break;
+            }
+            
+            if (templateId) {
+                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=vehicles';
+                window.open(url, '_blank');
+            } else {
+                showPrintModal();
+            }
+        }
+        
+        function showPrintModal() {
+            const modal = new bootstrap.Modal(document.getElementById('printModal'));
+            modal.show();
+        }
+        
+        function generateFromModal() {
+            const templateId = document.getElementById('templateSelect').value;
+            if (templateId) {
+                const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $vehicle['id']; ?>&entity=vehicles';
+                window.open(url, '_blank');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
+                modal.hide();
+            }
+        }
     </script>
+
+    <!-- Print Template Selection Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template di Stampa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select id="templateSelect" class="form-select">
+                            <option value="7">Scheda Tecnica Mezzo</option>
+                            <option value="8">Elenco Mezzi</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                        <i class="bi bi-printer"></i> Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
