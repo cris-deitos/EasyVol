@@ -158,6 +158,11 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                     <i class="bi bi-heart-pulse"></i> Allergie/Salute
                                 </button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="sanctions-tab" data-bs-toggle="tab" data-bs-target="#sanctions" type="button" role="tab">
+                                    <i class="bi bi-exclamation-triangle"></i> Provvedimenti
+                                </button>
+                            </li>
                         </ul>
                         
                         <div class="tab-content" id="memberTabsContent">
@@ -384,6 +389,70 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Provvedimenti -->
+                            <div class="tab-pane fade" id="sanctions" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Provvedimenti Disciplinari</h5>
+                                            <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                <a href="junior_member_sanction_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Aggiungi Provvedimento
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['sanctions'])): ?>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Data</th>
+                                                            <th>Tipo</th>
+                                                            <th>Motivazione</th>
+                                                            <th>Azioni</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($member['sanctions'] as $sanction): ?>
+                                                            <tr>
+                                                                <td><?php echo date('d/m/Y', strtotime($sanction['sanction_date'])); ?></td>
+                                                                <td>
+                                                                    <?php
+                                                                    $sanctionLabels = [
+                                                                        'decaduto' => 'Decaduto',
+                                                                        'dimesso' => 'Dimesso',
+                                                                        'in_aspettativa' => 'In Aspettativa',
+                                                                        'sospeso' => 'Sospeso',
+                                                                        'in_congedo' => 'In Congedo',
+                                                                        'operativo' => 'Operativo'
+                                                                    ];
+                                                                    echo $sanctionLabels[$sanction['sanction_type']] ?? ucfirst($sanction['sanction_type']);
+                                                                    ?>
+                                                                </td>
+                                                                <td><?php echo htmlspecialchars($sanction['reason'] ?? '-'); ?></td>
+                                                                <td>
+                                                                    <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                                        <a href="junior_member_sanction_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $sanction['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
+                                                                        <button class="btn btn-sm btn-danger" onclick="deleteSanction(<?php echo $sanction['id']; ?>)">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessun provvedimento inserito</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -432,6 +501,12 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
         function deleteHealth(id) {
             if (confirm('Sei sicuro di voler eliminare questa informazione sanitaria?')) {
                 window.location.href = 'junior_member_data.php?action=delete_health&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function deleteSanction(id) {
+            if (confirm('Sei sicuro di voler eliminare questo provvedimento?')) {
+                window.location.href = 'junior_member_data.php?action=delete_sanction&id=' + id + '&member_id=' + memberId;
             }
         }
         

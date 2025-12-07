@@ -88,6 +88,7 @@ class JuniorMember {
             $member['contacts'] = $this->getContacts($id);
             $member['health'] = $this->getHealth($id);
             $member['fees'] = $this->getFees($id);
+            $member['sanctions'] = $this->getSanctions($id);
             $member['attachments'] = $this->getAttachments($id);
         }
         
@@ -230,5 +231,23 @@ class JuniorMember {
     
     public function deleteAttachment($id) {
         return $this->db->delete('junior_member_attachments', 'id = ?', [$id]);
+    }
+    
+    // Sanctions
+    public function getSanctions($juniorMemberId) {
+        return $this->db->fetchAll("SELECT * FROM junior_member_sanctions WHERE junior_member_id = ? ORDER BY sanction_date DESC", [$juniorMemberId]);
+    }
+    
+    public function addSanction($juniorMemberId, $data) {
+        $data['junior_member_id'] = $juniorMemberId;
+        return $this->db->insert('junior_member_sanctions', $data);
+    }
+    
+    public function updateSanction($id, $data) {
+        return $this->db->update('junior_member_sanctions', $data, 'id = ?', [$id]);
+    }
+    
+    public function deleteSanction($id) {
+        return $this->db->delete('junior_member_sanctions', 'id = ?', [$id]);
     }
 }
