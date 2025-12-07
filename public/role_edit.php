@@ -7,6 +7,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\UserController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -20,6 +21,9 @@ if (!$app->isLoggedIn()) {
 if (!$app->checkPermission('users', 'edit')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $db = $app->getDb();
 $config = $app->getConfig();

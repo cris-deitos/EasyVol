@@ -9,6 +9,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\MeetingController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -30,6 +31,9 @@ if ($isEdit && !$app->checkPermission('meetings', 'edit')) {
 if (!$isEdit && !$app->checkPermission('meetings', 'create')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $db = $app->getDb();
 $config = $app->getConfig();

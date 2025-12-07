@@ -3,6 +3,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 
 $app = App::getInstance();
 $app->requireLogin();
@@ -61,7 +62,8 @@ try {
     error_log($e->getMessage());
 }
 
-$app->logActivity('dashboard_view', 'dashboard');
+// Log page access
+AutoLogger::logPageAccess();
 ?>
 <!DOCTYPE html>
 <html lang="it">

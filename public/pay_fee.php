@@ -9,6 +9,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\FeePaymentController;
 use EasyVol\Middleware\CsrfProtection;
 use EasyVol\Utils\FileUploader;
@@ -19,6 +20,9 @@ $app = App::getInstance();
 $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new FeePaymentController($db, $config);
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $errors = [];
 $success = false;

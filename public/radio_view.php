@@ -4,6 +4,7 @@ EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\OperationsCenterController;
 use EasyVol\Controllers\MemberController;
 

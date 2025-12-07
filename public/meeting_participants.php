@@ -9,6 +9,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\MeetingController;
 use EasyVol\Controllers\MemberController;
 use EasyVol\Controllers\JuniorMemberController;

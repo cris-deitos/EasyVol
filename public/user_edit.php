@@ -7,6 +7,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\UserController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -32,6 +33,9 @@ if ($isEdit && !$app->checkPermission('users', 'edit')) {
 if (!$isEdit && !$app->checkPermission('users', 'create')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $user = null;
 $errors = [];

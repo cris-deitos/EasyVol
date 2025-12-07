@@ -9,6 +9,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\EventController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -30,6 +31,9 @@ if ($isEdit && !$app->checkPermission('events', 'edit')) {
 if (!$isEdit && !$app->checkPermission('events', 'create')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $db = $app->getDb();
 $config = $app->getConfig();
