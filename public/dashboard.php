@@ -40,21 +40,21 @@ try {
         "SELECT al.*, u.username, u.full_name 
         FROM activity_logs al 
         LEFT JOIN users u ON al.user_id = u.id 
-        ORDER BY al.created_at DESC LIMIT 5"
+        ORDER BY al.created_at DESC LIMIT 7"
     );
     
     // Upcoming deadlines
     $upcomingDeadlines = $db->fetchAll(
         "SELECT * FROM scheduler_items 
         WHERE status != 'completato' AND due_date >= CURDATE() 
-        ORDER BY due_date ASC LIMIT 5"
+        ORDER BY due_date ASC LIMIT 7"
     );
     
     // Recent notifications
     $notifications = $db->fetchAll(
         "SELECT * FROM notifications 
         WHERE user_id = ? AND is_read = 0 
-        ORDER BY created_at DESC LIMIT 5",
+        ORDER BY created_at DESC LIMIT 7",
         [$user['id']]
     );
     
