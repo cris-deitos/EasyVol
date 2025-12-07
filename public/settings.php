@@ -63,7 +63,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     // Allowed MIME types for logo
                     $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
                     
-                    // Determine file extension from MIME type
+                    // Delete old logo files if exist
+                    $uploadDir = __DIR__ . '/../uploads/logo/';
+                    $oldFiles = glob($uploadDir . 'logo_associazione.*');
+                    foreach ($oldFiles as $oldFile) {
+                        if (file_exists($oldFile)) {
+                            unlink($oldFile);
+                        }
+                    }
+                    
+                    // Determine file extension from MIME type for consistent naming
                     $finfo = new \finfo(FILEINFO_MIME_TYPE);
                     $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
                     
@@ -71,32 +80,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         'image/png' => 'png',
                         'image/jpeg' => 'jpg',
                         'image/svg+xml' => 'svg',
-                        default => null
+                        default => pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION)
                     };
                     
-                    if ($ext === null) {
-                        $errors[] = 'Tipo di file non valido. Sono ammessi solo PNG, JPG, SVG';
+                    $newFileName = 'logo_associazione.' . $ext;
+                    
+                    // Use FileUploader for consistent and secure upload
+                    $uploader = new FileUploader(__DIR__ . '/../uploads/logo/', $allowedMimeTypes, 5 * 1024 * 1024);
+                    $uploadResult = $uploader->upload($_FILES['logo'], '', $newFileName);
+                    
+                    if ($uploadResult['success']) {
+                        $associationData['logo'] = 'uploads/logo/' . $newFileName;
                     } else {
-                        $newFileName = 'logo_associazione.' . $ext;
-                        
-                        // Delete old logo files if exist
-                        $uploadDir = __DIR__ . '/../uploads/logo/';
-                        $oldFiles = glob($uploadDir . 'logo_associazione.*');
-                        foreach ($oldFiles as $oldFile) {
-                            if (file_exists($oldFile)) {
-                                unlink($oldFile);
-                            }
-                        }
-                        
-                        // Use FileUploader for consistent and secure upload
-                        $uploader = new FileUploader(__DIR__ . '/../uploads/logo/', $allowedMimeTypes, 5 * 1024 * 1024);
-                        $uploadResult = $uploader->upload($_FILES['logo'], '', $newFileName);
-                        
-                        if ($uploadResult['success']) {
-                            $associationData['logo'] = 'uploads/logo/' . $newFileName;
-                        } else {
-                            $errors[] = 'Errore upload logo: ' . $uploadResult['error'];
-                        }
+                        $errors[] = 'Errore upload logo: ' . $uploadResult['error'];
                     }
                 } elseif (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
                     $errors[] = 'Errore durante l\'upload del file';
@@ -275,9 +271,16 @@ $pageTitle = 'Impostazioni Sistema';
                                     <!-- Logo Upload -->
                                     <div class="mb-3">
                                         <label for="logo" class="form-label">Logo Associazione</label>
-                                        <?php if (!empty($associationData['logo']) && file_exists(__DIR__ . '/../' . $associationData['logo'])): ?>
+                                        <?php 
+                                        // Validate logo path for security
+                                        $logoPath = $associationData['logo'] ?? '';
+                                        $showLogo = !empty($logoPath) && 
+                                                    str_starts_with($logoPath, 'uploads/logo/') && 
+                                                    file_exists(__DIR__ . '/../' . $logoPath);
+                                        if ($showLogo): 
+                                        ?>
                                             <div class="mb-2">
-                                                <img src="../<?php echo htmlspecialchars($associationData['logo']); ?>" 
+                                                <img src="../<?php echo htmlspecialchars($logoPath); ?>" 
                                                      alt="Logo Associazione" 
                                                      style="max-height: 150px; border: 1px solid #ddd; padding: 5px;">
                                             </div>
@@ -285,7 +288,7 @@ $pageTitle = 'Impostazioni Sistema';
                                         <input type="file" class="form-control" id="logo" name="logo" 
                                                accept="image/png,image/jpeg,image/svg+xml"
                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
-                                        <small class="text-muted">Formati consentiti: PNG, JPG, JPEG, SVG. Dimensione massima: 5MB</small>
+                                        <small class="text-muted">Formati consentiti: PNG, JPEG, SVG. Dimensione massima: 5MB</small>
                                     </div>
                                     
                                     <!-- Association Name -->
