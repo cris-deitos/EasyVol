@@ -13,6 +13,7 @@ use PHPMailer\PHPMailer\Exception;
 class EmailSender {
     private $config;
     private $db;
+    private $emailLogsTableExists = null;
     
     /**
      * Constructor
@@ -256,6 +257,27 @@ class EmailSender {
     }
     
     /**
+     * Check if email_logs table exists (cached)
+     * 
+     * @return bool
+     */
+    private function emailLogsTableExists() {
+        if ($this->emailLogsTableExists === null) {
+            try {
+                $tableCheck = $this->db->fetchOne(
+                    "SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES 
+                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'email_logs'"
+                );
+                $this->emailLogsTableExists = ($tableCheck && $tableCheck['count'] > 0);
+            } catch (\Exception $e) {
+                // If check fails, assume table doesn't exist
+                $this->emailLogsTableExists = false;
+            }
+        }
+        return $this->emailLogsTableExists;
+    }
+    
+    /**
      * Registra email inviata nel database
      * 
      * @param string|array $to Destinatario
@@ -266,13 +288,8 @@ class EmailSender {
      */
     private function logEmail($to, $subject, $body, $status, $error) {
         try {
-            // Check if email_logs table exists using INFORMATION_SCHEMA for better performance
-            $tableCheck = $this->db->fetchOne(
-                "SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES 
-                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'email_logs'"
-            );
-            
-            if (!$tableCheck || $tableCheck['count'] == 0) {
+            // Check if email_logs table exists (cached check)
+            if (!$this->emailLogsTableExists()) {
                 // Table doesn't exist, skip logging silently
                 return;
             }
