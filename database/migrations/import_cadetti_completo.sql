@@ -7,6 +7,24 @@
 -- NOTA IMPORTANTE:
 -- Questo script importa i dati dal file CSV: gestionaleweb_worktable16.csv
 -- 
+-- ⚠️  AVVISO SICUREZZA:
+-- Questo è uno script SQL statico che richiede l'inserimento manuale dei dati.
+-- Durante la compilazione dello script, prestare MASSIMA ATTENZIONE a:
+--   1. Escape corretto di caratteri speciali (apostrofi, backslash, ecc.)
+--   2. Validazione dei dati di input prima dell'inserimento
+--   3. Test su database di sviluppo prima della produzione
+-- 
+-- ALTERNATIVA PIÙ SICURA (Raccomandato per grandi volumi):
+-- Considerare l'uso di script di importazione con prepared statements:
+--   - PHP PDO con bindParam()
+--   - Python con parametrizzazione
+--   - LOAD DATA INFILE (richiede privilegi FILE)
+-- 
+-- Questo script SQL è fornito per:
+--   - Trasparenza totale del processo di importazione
+--   - Possibilità di revisione manuale dei dati
+--   - Controllo granulare su ogni record importato
+-- 
 -- MAPPATURA CAMPI CSV → DATABASE:
 -- DATI CADETTO:
 --   nuovocampo    → registration_number
@@ -74,7 +92,8 @@
 --   '*DECADUTO*'       → 'decaduto'
 -- =====================================================
 
-SET FOREIGN_KEY_CHECKS = 0;
+-- Limitare la disabilitazione delle foreign key alla sessione corrente
+SET SESSION FOREIGN_KEY_CHECKS = 0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 
@@ -350,9 +369,15 @@ INSERT INTO junior_member_guardians (
 --    - Usare NULL per campi vuoti nel CSV
 --    - Non usare stringhe vuote ''
 -- 
--- 2. ESCAPE CARATTERI SPECIALI:
---    - Sostituire ' con \' nelle stringhe
---    - Es: "D'ANGELO" → 'D\'ANGELO'
+-- 2. ESCAPE CARATTERI SPECIALI (IMPORTANTE PER SICUREZZA):
+--    ⚠️  ATTENZIONE: Fare escape corretto per prevenire SQL injection
+--    - Apostrofi: ' deve diventare \'
+--      Es: "D'ANGELO" → 'D\'ANGELO'
+--    - Backslash: \ deve diventare \\
+--    - Virgolette doppie nel valore: " deve diventare \"
+--    - RACCOMANDAZIONE: Usare editor con funzione di escape SQL automatico
+--    - ALTERNATIVA SICURA: Usare script di importazione con prepared statements
+--      invece di questo file SQL statico
 -- 
 -- 3. FORMATI DATE:
 --    - birth_date: formato YYYY-MM-DD
@@ -373,15 +398,24 @@ INSERT INTO junior_member_guardians (
 --    - Se birth_place indica paese estero, adattare
 -- 
 -- 7. CAMPO NOTES:
---    - Consolidare informazioni non mappabili:
---      * Gender
---      * Birth Province
---      * Anno corso
---      * Lingue conosciute
---      * Allergie cadetto
---      * Dati completi madre (se non in guardian table)
---      * Allergie genitore
+--    NOTA: Il campo notes viene usato per consolidare informazioni non mappabili
+--    direttamente nelle tabelle esistenti. Questo è un compromesso per la migrazione
+--    dai vecchi dati. Per coerenza, seguire questo formato strutturato:
+--    
+--    Formato: "Campo1: valore - Campo2: valore - Campo3: valore"
+--    
+--    Campi da includere (se disponibili):
+--      * Gender: M/F
+--      * Birth Province: XX
+--      * Anno corso: YYYY
+--      * Lingue: LINGUA1, LINGUA2
+--      * Allergie cadetto: LISTA
+--      * Nazionalità: PAESE (solo se non Italiana)
+--      * Madre: COGNOME NOME (CF: XXX, Tel: XXX, Email: XXX) - se non in guardians
+--      * Allergie genitore: LISTA
 --      * Altre note rilevanti
+--    
+--    RACCOMANDAZIONE: Mantenere ordine consistente per facilitare parsing futuro
 -- 
 -- 8. INDIRIZZI:
 --    - Estrarre numero civico da street (es: "Via Roma 10" → street="Via Roma", number="10")
@@ -406,7 +440,50 @@ INSERT INTO junior_member_guardians (
 -- FINE IMPORTAZIONE
 -- =====================================================
 
-SET FOREIGN_KEY_CHECKS = 1;
+-- Riabilitare i controlli di foreign key
+SET SESSION FOREIGN_KEY_CHECKS = 1;
+
+-- =====================================================
+-- VALIDAZIONE INTEGRITÀ REFERENZIALE PRE-COMMIT
+-- =====================================================
+-- Verificare che non ci siano violazioni di foreign key
+-- prima di fare il commit
+
+-- Verifica: tutti i guardian hanno un junior_member_id valido
+SELECT 
+    'VALIDAZIONE: Guardian orphan check' as Test,
+    CASE 
+        WHEN COUNT(*) = 0 THEN 'PASS'
+        ELSE CONCAT('FAIL - Found ', COUNT(*), ' orphan guardians')
+    END as Result
+FROM junior_member_guardians jmg
+LEFT JOIN junior_members jm ON jmg.junior_member_id = jm.id
+WHERE jm.id IS NULL;
+
+-- Verifica: tutti gli indirizzi hanno un junior_member_id valido
+SELECT 
+    'VALIDAZIONE: Address orphan check' as Test,
+    CASE 
+        WHEN COUNT(*) = 0 THEN 'PASS'
+        ELSE CONCAT('FAIL - Found ', COUNT(*), ' orphan addresses')
+    END as Result
+FROM junior_member_addresses jma
+LEFT JOIN junior_members jm ON jma.junior_member_id = jm.id
+WHERE jm.id IS NULL;
+
+-- Verifica: tutti i contatti hanno un junior_member_id valido
+SELECT 
+    'VALIDAZIONE: Contact orphan check' as Test,
+    CASE 
+        WHEN COUNT(*) = 0 THEN 'PASS'
+        ELSE CONCAT('FAIL - Found ', COUNT(*), ' orphan contacts')
+    END as Result
+FROM junior_member_contacts jmc
+LEFT JOIN junior_members jm ON jmc.junior_member_id = jm.id
+WHERE jm.id IS NULL;
+
+-- SE TUTTE LE VALIDAZIONI PASSANO, procedere con il commit
+-- ALTRIMENTI fare ROLLBACK e correggere gli errori
 COMMIT;
 
 -- =====================================================
