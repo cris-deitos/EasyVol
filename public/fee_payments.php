@@ -261,7 +261,7 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                                         </td>
                                         <td>
                                             <?php if ($request['receipt_file'] && file_exists(__DIR__ . '/../' . $request['receipt_file'])): ?>
-                                            <a href="../<?php echo htmlspecialchars($request['receipt_file']); ?>" 
+                                            <a href="download.php?type=fee_receipt&id=<?php echo $request['id']; ?>" 
                                                target="_blank" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-file-earmark-pdf"></i> Visualizza
                                             </a>

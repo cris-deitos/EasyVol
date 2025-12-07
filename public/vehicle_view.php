@@ -330,7 +330,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                                                         <td><?php echo htmlspecialchars($doc['document_type']); ?></td>
                                                         <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($doc['uploaded_at']))); ?></td>
                                                         <td>
-                                                            <a href="<?php echo htmlspecialchars($doc['file_path']); ?>" class="btn btn-sm btn-info" target="_blank">
+                                                            <a href="download.php?type=vehicle_attachment&id=<?php echo $doc['id']; ?>" class="btn btn-sm btn-info" target="_blank">
                                                                 <i class="bi bi-download"></i> Scarica
                                                             </a>
                                                         </td>

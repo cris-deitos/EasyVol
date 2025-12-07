@@ -107,7 +107,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                         <div class="card mb-4">
                             <div class="card-body text-center">
                                 <?php if (!empty($member['photo_path']) && file_exists($member['photo_path'])): ?>
-                                    <img src="<?php echo htmlspecialchars($member['photo_path']); ?>" 
+                                    <img src="download.php?type=member_photo&id=<?php echo $member['id']; ?>" 
                                          alt="Foto socio" class="img-fluid rounded mb-3" style="max-width: 200px;">
                                 <?php else: ?>
                                     <div class="bg-secondary text-white rounded mb-3 d-inline-flex align-items-center justify-content-center" 
@@ -792,7 +792,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                                 <td><?php echo htmlspecialchars($attachment['description'] ?? 'N/D'); ?></td>
                                                                 <td><?php echo date('d/m/Y', strtotime($attachment['uploaded_at'])); ?></td>
                                                                 <td>
-                                                                    <a href="<?php echo htmlspecialchars($attachment['file_path']); ?>" 
+                                                                    <a href="download.php?type=member_attachment&id=<?php echo $attachment['id']; ?>" 
                                                                        class="btn btn-sm btn-info" target="_blank">
                                                                         <i class="bi bi-download"></i>
                                                                     </a>

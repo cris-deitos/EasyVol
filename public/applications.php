@@ -254,19 +254,13 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                             </button>
                                                         <?php endif; ?>
                                                         <?php if (!empty($application['pdf_file'])): ?>
-                                                            <?php 
-                                                            // Validate PDF path to prevent directory traversal
-                                                            $pdfPath = $application['pdf_file'];
-                                                            if (strpos($pdfPath, 'uploads/applications/') === 0 && strpos($pdfPath, '..') === false) {
-                                                                $safePath = '../' . htmlspecialchars($pdfPath);
-                                                            ?>
-                                                            <a href="<?php echo $safePath; ?>" 
+                                                            <a href="download.php?type=application_pdf&id=<?php echo $application['id']; ?>" 
                                                                class="btn btn-sm btn-secondary" 
                                                                target="_blank"
                                                                title="PDF">
                                                                 <i class="bi bi-file-pdf"></i>
                                                             </a>
-                                                            <?php } endif; ?>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -465,19 +459,12 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                             <?php endif; ?>
                                                             
                                                             <?php if (!empty($application['pdf_file'])): ?>
-                                                                <?php 
-                                                                // Validate PDF path to prevent directory traversal
-                                                                $pdfPath = $application['pdf_file'];
-                                                                if (strpos($pdfPath, 'uploads/applications/') === 0 && strpos($pdfPath, '..') === false):
-                                                                    $safePath = '../' . htmlspecialchars($pdfPath);
-                                                                ?>
                                                                 <div class="alert alert-info mt-3">
                                                                     <i class="bi bi-file-pdf"></i>
-                                                                    <a href="<?php echo $safePath; ?>" target="_blank" class="alert-link">
+                                                                    <a href="download.php?type=application_pdf&id=<?php echo $application['id']; ?>" target="_blank" class="alert-link">
                                                                         Visualizza PDF completo
                                                                     </a>
                                                                 </div>
-                                                                <?php endif; ?>
                                                             <?php endif; ?>
                                                         </div>
                                                         <div class="modal-footer">
