@@ -66,11 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Merge permissions (user-specific permissions supplement role permissions)
                 $permissionsMap = [];
                 foreach ($rolePermissions as $perm) {
-                    $key = $perm['module'] . '_' . $perm['action'];
+                    $key = $perm['module'] . '::' . $perm['action'];
                     $permissionsMap[$key] = $perm;
                 }
                 foreach ($userPermissions as $perm) {
-                    $key = $perm['module'] . '_' . $perm['action'];
+                    $key = $perm['module'] . '::' . $perm['action'];
                     $permissionsMap[$key] = $perm;
                 }
                 $user['permissions'] = array_values($permissionsMap);

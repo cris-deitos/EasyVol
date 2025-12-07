@@ -41,10 +41,33 @@ class App {
         try {
             $association = $this->db->fetchOne("SELECT * FROM association ORDER BY id ASC LIMIT 1");
             if ($association) {
+                // Build address string
+                $addressParts = array_filter([
+                    $association['address_street'] ?? '',
+                    $association['address_number'] ?? ''
+                ]);
+                $address = !empty($addressParts) ? implode(' ', $addressParts) : '';
+                
+                // Build city string
+                $cityParts = [];
+                if (!empty($association['address_city'])) {
+                    $cityParts[] = $association['address_city'];
+                }
+                if (!empty($association['address_province']) || !empty($association['address_cap'])) {
+                    $provinceCap = array_filter([
+                        $association['address_province'] ?? '',
+                        $association['address_cap'] ?? ''
+                    ]);
+                    if (!empty($provinceCap)) {
+                        $cityParts[] = '(' . implode(') ', $provinceCap) . ')';
+                    }
+                }
+                $city = !empty($cityParts) ? implode(' ', $cityParts) : '';
+                
                 $this->config['association'] = [
                     'name' => $association['name'] ?? '',
-                    'address' => trim(($association['address_street'] ?? '') . ' ' . ($association['address_number'] ?? '')),
-                    'city' => trim(($association['address_city'] ?? '') . ' (' . ($association['address_province'] ?? '') . ') ' . ($association['address_cap'] ?? '')),
+                    'address' => $address,
+                    'city' => $city,
                     'email' => $association['email'] ?? '',
                     'pec' => $association['pec'] ?? '',
                     'tax_code' => $association['tax_code'] ?? '',
