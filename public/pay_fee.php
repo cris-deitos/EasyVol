@@ -13,7 +13,7 @@ use EasyVol\Controllers\FeePaymentController;
 use EasyVol\Middleware\CsrfProtection;
 use EasyVol\Utils\FileUploader;
 
-$app = App::getInstance(); // Public page - no authentication required
+$app = App::getInstance();
 
 // Get app configuration for CAPTCHA
 $db = $app->getDb();
@@ -53,10 +53,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($recaptchaResponse)) {
                 $errors[] = 'Completa la verifica CAPTCHA';
             } else {
-                $verify = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret={$recaptchaSecret}&response={$recaptchaResponse}");
-                $captchaSuccess = json_decode($verify);
-                if (!$captchaSuccess->success) {
-                    $errors[] = 'Verifica CAPTCHA fallita';
+                // Verify reCAPTCHA with cURL for better error handling
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, "https://www.google.com/recaptcha/api/siteverify");
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+                    'secret' => $recaptchaSecret,
+                    'response' => $recaptchaResponse
+                ]));
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                
+                $verify = curl_exec($ch);
+                $curlError = curl_error($ch);
+                curl_close($ch);
+                
+                if ($curlError) {
+                    $errors[] = 'Errore nella verifica CAPTCHA. Riprova.';
+                } else {
+                    $captchaSuccess = json_decode($verify);
+                    if (!$captchaSuccess || !$captchaSuccess->success) {
+                        $errors[] = 'Verifica CAPTCHA fallita';
+                    }
                 }
             }
         }

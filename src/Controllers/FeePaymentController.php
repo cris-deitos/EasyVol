@@ -397,4 +397,20 @@ class FeePaymentController {
             return false;
         }
     }
+    
+    /**
+     * Ottieni statistiche richieste pagamento
+     * 
+     * @return array
+     */
+    public function getStatistics() {
+        $sql = "SELECT 
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+                COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count,
+                COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected_count
+                FROM fee_payment_requests";
+        
+        $stmt = $this->db->query($sql);
+        return $stmt->fetch();
+    }
 }

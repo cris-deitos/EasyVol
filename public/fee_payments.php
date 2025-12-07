@@ -160,15 +160,13 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                 <!-- Statistics -->
                 <div class="row mb-4">
                     <?php
-                    $pendingCount = $controller->getPaymentRequests(['status' => 'pending'], 1, 1)['total'];
-                    $approvedCount = $controller->getPaymentRequests(['status' => 'approved'], 1, 1)['total'];
-                    $rejectedCount = $controller->getPaymentRequests(['status' => 'rejected'], 1, 1)['total'];
+                    $stats = $controller->getStatistics();
                     ?>
                     <div class="col-md-4">
                         <div class="card text-bg-warning">
                             <div class="card-body">
                                 <h5 class="card-title">In Sospeso</h5>
-                                <h2><?php echo $pendingCount; ?></h2>
+                                <h2><?php echo $stats['pending_count'] ?? 0; ?></h2>
                             </div>
                         </div>
                     </div>
@@ -176,7 +174,7 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                         <div class="card text-bg-success">
                             <div class="card-body">
                                 <h5 class="card-title">Approvate</h5>
-                                <h2><?php echo $approvedCount; ?></h2>
+                                <h2><?php echo $stats['approved_count'] ?? 0; ?></h2>
                             </div>
                         </div>
                     </div>
@@ -184,7 +182,7 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                         <div class="card text-bg-danger">
                             <div class="card-body">
                                 <h5 class="card-title">Rifiutate</h5>
-                                <h2><?php echo $rejectedCount; ?></h2>
+                                <h2><?php echo $stats['rejected_count'] ?? 0; ?></h2>
                             </div>
                         </div>
                     </div>
