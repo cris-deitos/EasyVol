@@ -297,7 +297,7 @@ INSERT INTO `junior_members` (
 ) VALUES (
     'C004',
     'attivo',
-    'D\'ANGELO',                       -- escape di apostrofo
+    'D\'ANGELO',                       -- escape dell'apostrofo
     'MARIA CHIARA',
     '2012-03-25',
     'FIRENZE',
@@ -340,7 +340,7 @@ INSERT INTO `junior_member_guardians` (
 ) VALUES (
     @junior_id,
     'padre',
-    'D\'ANGELO',                       -- escape di apostrofo
+    'D\'ANGELO',                       -- escape dell'apostrofo
     'FRANCESCO',
     'DNGFNC86A20D612N',
     '3373334455',

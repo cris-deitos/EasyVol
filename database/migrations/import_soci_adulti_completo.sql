@@ -276,7 +276,7 @@ INSERT INTO `members` (
     'ordinario',
     'attivo',
     'operativo',
-    'D\'AQUINO',                      -- escape di apostrofo
+    'D\'AQUINO',                      -- escape dell'apostrofo
     'LUCA',
     '1982-07-18',
     'FIRENZE',

@@ -33,9 +33,15 @@ from typing import Dict, List, Optional
 def escape_sql_string(value: Optional[str]) -> str:
     """Escape a string for SQL insertion.
     
-    Note: This function uses basic escaping for single quotes and backslashes.
-    For production use with user input, consider using parameterized queries instead.
-    This is safe for CSV data conversion where the input is controlled.
+    Note: This function is designed for one-time CSV data migration where the source
+    data is controlled and trusted. It handles the most common cases (quotes, backslashes).
+    
+    For production applications with user input, always use parameterized queries.
+    
+    Security assumptions:
+    - Input comes from controlled CSV files (not user input)
+    - CSV data doesn't contain binary data or null bytes
+    - Newlines/carriage returns in data are intentional multiline text
     """
     if value is None or value == '':
         return 'NULL'
@@ -43,6 +49,8 @@ def escape_sql_string(value: Optional[str]) -> str:
     escaped = value.replace("\\", "\\\\")
     # Then escape single quotes
     escaped = escaped.replace("'", "\\'")
+    # Note: Newlines and carriage returns are preserved as-is for multiline text fields
+    # like notes. If your data contains these unintentionally, clean the CSV first.
     return f"'{escaped}'"
 
 
@@ -192,8 +200,8 @@ INSERT INTO `members` (
     {escape_sql_string(row.get('codicefiscale'))},
     {parse_date(row.get('anno_iscrizione'))},
     {escape_sql_string(notes)},
-    {escape_sql_string(row.get('created', datetime.now().strftime('%Y-%m-%d %H:%M:%S')))},
-    {escape_sql_string(row.get('last_upd', datetime.now().strftime('%Y-%m-%d %H:%M:%S')))}
+    {escape_sql_string(row.get('created')) if row.get('created') else 'NULL'},
+    {escape_sql_string(row.get('last_upd')) if row.get('last_upd') else 'NULL'}
 );
 SET @member_id = LAST_INSERT_ID();
 """
@@ -222,7 +230,9 @@ SET @member_id = LAST_INSERT_ID();
     if row.get('ind_resid', '').strip():
         street = row['ind_resid'].strip()
         number = ''
-        # Try to extract number from street
+        # Try to extract number from street (simple heuristic)
+        # Note: This may incorrectly extract numbers from street names like "Via Porta 2000"
+        # If your data has complex street names, consider extracting numbers manually in CSV
         parts = street.rsplit(' ', 1)
         if len(parts) == 2 and parts[1].replace(',', '').replace('.', '').isdigit():
             street = parts[0]
@@ -522,8 +532,10 @@ START TRANSACTION;
 """)
     
     # Read and process CSV
+    # Note: Using errors='strict' to fail fast on encoding issues
+    # If your CSV has encoding problems, convert it to UTF-8 first
     try:
-        with open(csv_file, 'r', encoding='utf-8', errors='replace') as f:
+        with open(csv_file, 'r', encoding='utf-8', errors='strict') as f:
             reader = csv.DictReader(f)
             for i, row in enumerate(reader, 1):
                 if is_cadetti:
