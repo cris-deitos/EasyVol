@@ -64,16 +64,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
                     
                     // Determine file extension from MIME type for consistent naming
-                    $finfo = new \finfo(FILEINFO_MIME_TYPE);
-                    $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
+                    try {
+                        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                        $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
+                    } catch (\Exception $e) {
+                        $errors[] = 'Errore durante la verifica del tipo di file';
+                        $mimeType = null;
+                    }
                     
                     // Only allow specific MIME types, reject unknown
-                    $ext = match($mimeType) {
-                        'image/png' => 'png',
-                        'image/jpeg' => 'jpg',
-                        'image/svg+xml' => 'svg',
-                        default => null
-                    };
+                    $ext = null;
+                    if ($mimeType !== null) {
+                        $ext = match($mimeType) {
+                            'image/png' => 'png',
+                            'image/jpeg' => 'jpg',
+                            'image/svg+xml' => 'svg',
+                            default => null
+                        };
+                    }
                     
                     if ($ext === null) {
                         $errors[] = 'Tipo di file non valido. Sono ammessi solo PNG, JPEG, SVG';
@@ -89,11 +97,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                             $uploadDir = __DIR__ . '/../uploads/logo/';
                             $oldFiles = glob($uploadDir . 'logo_associazione.*');
                             $newFilePath = realpath($uploadResult['path']);
-                            foreach ($oldFiles as $oldFile) {
-                                $oldFilePath = realpath($oldFile);
-                                // Don't delete the file we just uploaded
-                                if (file_exists($oldFile) && $oldFilePath !== $newFilePath) {
-                                    unlink($oldFile);
+                            
+                            // Only proceed if realpath succeeded
+                            if ($newFilePath !== false) {
+                                foreach ($oldFiles as $oldFile) {
+                                    $oldFilePath = realpath($oldFile);
+                                    // Don't delete the file we just uploaded
+                                    if ($oldFilePath !== false && file_exists($oldFile) && $oldFilePath !== $newFilePath) {
+                                        unlink($oldFile);
+                                    }
                                 }
                             }
                             
@@ -297,6 +309,7 @@ $pageTitle = 'Impostazioni Sistema';
                                         // Validate logo path for security
                                         $logoPath = $associationData['logo'] ?? '';
                                         $showLogo = false;
+                                        $logoUrl = '';
                                         if (!empty($logoPath) && str_starts_with($logoPath, 'uploads/logo/')) {
                                             $fullPath = __DIR__ . '/../' . $logoPath;
                                             if (file_exists($fullPath)) {
@@ -304,15 +317,16 @@ $pageTitle = 'Impostazioni Sistema';
                                                 $realPath = realpath($fullPath);
                                                 $expectedDir = realpath(__DIR__ . '/../uploads/logo/');
                                                 // Verify the file is actually in the uploads/logo directory
-                                                if ($realPath && $expectedDir && str_starts_with($realPath, $expectedDir)) {
+                                                // Add trailing slash to prevent partial directory name matches
+                                                if ($realPath && $expectedDir && str_starts_with($realPath, $expectedDir . DIRECTORY_SEPARATOR)) {
                                                     $showLogo = true;
+                                                    // Use relative path that works regardless of installation directory
+                                                    // Since this page is in /public/, the logo in /uploads/ is one level up
+                                                    $logoUrl = '../' . $logoPath;
                                                 }
                                             }
                                         }
-                                        if ($showLogo): 
-                                            // Use relative path that works regardless of installation directory
-                                            // Since this page is in /public/, the logo in /uploads/ is one level up
-                                            $logoUrl = '../' . $logoPath;
+                                        if ($showLogo):
                                         ?>
                                             <div class="mb-2">
                                                 <img src="<?php echo htmlspecialchars($logoUrl); ?>" 
