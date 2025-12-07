@@ -34,6 +34,7 @@ Thumbs.db
 *.sql
 !database_schema.sql
 !database/migrations/*.sql
+!migrations/*.sql
 
 # Cache
 /cache/
