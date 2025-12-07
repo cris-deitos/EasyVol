@@ -249,49 +249,235 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                                 <i class="bi bi-x-lg"></i>
                                                             </button>
                                                         <?php endif; ?>
-                                                        <?php if (!empty($application['pdf_path'])): ?>
-                                                            <a href="<?php echo htmlspecialchars($application['pdf_path']); ?>" 
+                                                        <?php if (!empty($application['pdf_file'])): ?>
+                                                            <?php 
+                                                            // Validate PDF path to prevent directory traversal
+                                                            $pdfPath = $application['pdf_file'];
+                                                            if (strpos($pdfPath, 'uploads/applications/') === 0 && strpos($pdfPath, '..') === false) {
+                                                                $safePath = '../' . htmlspecialchars($pdfPath);
+                                                            ?>
+                                                            <a href="<?php echo $safePath; ?>" 
                                                                class="btn btn-sm btn-secondary" 
                                                                target="_blank"
                                                                title="PDF">
                                                                 <i class="bi bi-file-pdf"></i>
                                                             </a>
-                                                        <?php endif; ?>
+                                                            <?php } endif; ?>
                                                     </div>
                                                 </td>
                                             </tr>
                                             
                                             <!-- Modal Visualizza -->
                                             <div class="modal fade" id="viewModal<?php echo $application['id']; ?>" tabindex="-1">
-                                                <div class="modal-dialog modal-lg">
+                                                <div class="modal-dialog modal-xl">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Dettaglio Domanda</h5>
+                                                            <h5 class="modal-title">Dettaglio Domanda - <?php echo htmlspecialchars($application['application_code']); ?></h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
-                                                        <div class="modal-body">
-                                                            <dl class="row">
-                                                                <dt class="col-sm-4">Codice</dt>
-                                                                <dd class="col-sm-8"><?php echo htmlspecialchars($application['application_code']); ?></dd>
+                                                        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                                                            <?php
+                                                            // Decode JSON data for full details
+                                                            $appData = json_decode($application['application_data'], true);
+                                                            if ($appData):
+                                                            ?>
+                                                            
+                                                            <h6 class="bg-light p-2 border-start border-primary border-4">Dati Anagrafici</h6>
+                                                            <dl class="row mb-3">
+                                                                <dt class="col-sm-3">Cognome</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['last_name'] ?? ''); ?></dd>
+                                                                <dt class="col-sm-3">Nome</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['first_name'] ?? ''); ?></dd>
                                                                 
-                                                                <dt class="col-sm-4">Cognome</dt>
-                                                                <dd class="col-sm-8"><?php echo htmlspecialchars($application['last_name']); ?></dd>
+                                                                <dt class="col-sm-3">Codice Fiscale</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['tax_code'] ?? 'N/D'); ?></dd>
+                                                                <dt class="col-sm-3">Data di Nascita</dt>
+                                                                <dd class="col-sm-3"><?php echo !empty($appData['birth_date']) ? date('d/m/Y', strtotime($appData['birth_date'])) : 'N/D'; ?></dd>
                                                                 
-                                                                <dt class="col-sm-4">Nome</dt>
-                                                                <dd class="col-sm-8"><?php echo htmlspecialchars($application['first_name']); ?></dd>
-                                                                
-                                                                <dt class="col-sm-4">Codice Fiscale</dt>
-                                                                <dd class="col-sm-8"><?php echo htmlspecialchars($application['tax_code'] ?? 'N/D'); ?></dd>
-                                                                
-                                                                <dt class="col-sm-4">Data di Nascita</dt>
-                                                                <dd class="col-sm-8"><?php echo date('d/m/Y', strtotime($application['birth_date'])); ?></dd>
-                                                                
-                                                                <dt class="col-sm-4">Email</dt>
-                                                                <dd class="col-sm-8"><?php echo htmlspecialchars($application['email']); ?></dd>
-                                                                
-                                                                <dt class="col-sm-4">Telefono</dt>
-                                                                <dd class="col-sm-8"><?php echo htmlspecialchars($application['phone'] ?? 'N/D'); ?></dd>
+                                                                <dt class="col-sm-3">Luogo di Nascita</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['birth_place'] ?? 'N/D'); ?></dd>
+                                                                <dt class="col-sm-3">Provincia</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['birth_province'] ?? 'N/D'); ?></dd>
                                                             </dl>
+                                                            
+                                                            <h6 class="bg-light p-2 border-start border-primary border-4">Residenza</h6>
+                                                            <dl class="row mb-3">
+                                                                <dt class="col-sm-3">Indirizzo</dt>
+                                                                <dd class="col-sm-9">
+                                                                    <?php 
+                                                                    echo htmlspecialchars($appData['residence_street'] ?? '') . ' ' . 
+                                                                         htmlspecialchars($appData['residence_number'] ?? '') . ', ' .
+                                                                         htmlspecialchars($appData['residence_city'] ?? '') . ' (' .
+                                                                         htmlspecialchars($appData['residence_province'] ?? '') . ') - ' .
+                                                                         htmlspecialchars($appData['residence_cap'] ?? '');
+                                                                    ?>
+                                                                </dd>
+                                                            </dl>
+                                                            
+                                                            <?php if (!empty($appData['domicile_street'])): ?>
+                                                            <h6 class="bg-light p-2 border-start border-primary border-4">Domicilio</h6>
+                                                            <dl class="row mb-3">
+                                                                <dt class="col-sm-3">Indirizzo</dt>
+                                                                <dd class="col-sm-9">
+                                                                    <?php 
+                                                                    echo htmlspecialchars($appData['domicile_street'] ?? '') . ' ' . 
+                                                                         htmlspecialchars($appData['domicile_number'] ?? '') . ', ' .
+                                                                         htmlspecialchars($appData['domicile_city'] ?? '') . ' (' .
+                                                                         htmlspecialchars($appData['domicile_province'] ?? '') . ') - ' .
+                                                                         htmlspecialchars($appData['domicile_cap'] ?? '');
+                                                                    ?>
+                                                                </dd>
+                                                            </dl>
+                                                            <?php endif; ?>
+                                                            
+                                                            <h6 class="bg-light p-2 border-start border-primary border-4">Recapiti</h6>
+                                                            <dl class="row mb-3">
+                                                                <?php if (!empty($appData['phone'])): ?>
+                                                                <dt class="col-sm-3">Telefono</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['phone']); ?></dd>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($appData['mobile'])): ?>
+                                                                <dt class="col-sm-3">Cellulare</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['mobile']); ?></dd>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($appData['email'])): ?>
+                                                                <dt class="col-sm-3">Email</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['email']); ?></dd>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($appData['pec'])): ?>
+                                                                <dt class="col-sm-3">PEC</dt>
+                                                                <dd class="col-sm-3"><?php echo htmlspecialchars($appData['pec']); ?></dd>
+                                                                <?php endif; ?>
+                                                            </dl>
+                                                            
+                                                            <?php if ($application['application_type'] === 'adult'): ?>
+                                                                
+                                                                <?php if (!empty($appData['licenses'])): ?>
+                                                                <h6 class="bg-light p-2 border-start border-primary border-4">Patenti e Abilitazioni</h6>
+                                                                <ul class="mb-3">
+                                                                    <?php foreach ($appData['licenses'] as $license): ?>
+                                                                        <li>
+                                                                            <strong><?php echo htmlspecialchars($license['type']); ?></strong>
+                                                                            <?php if (!empty($license['description'])): ?>
+                                                                                - <?php echo htmlspecialchars($license['description']); ?>
+                                                                            <?php endif; ?>
+                                                                            <?php if (!empty($license['number'])): ?>
+                                                                                - N. <?php echo htmlspecialchars($license['number']); ?>
+                                                                            <?php endif; ?>
+                                                                            <?php if (!empty($license['expiry_date'])): ?>
+                                                                                - Scad: <?php echo date('d/m/Y', strtotime($license['expiry_date'])); ?>
+                                                                            <?php endif; ?>
+                                                                        </li>
+                                                                    <?php endforeach; ?>
+                                                                </ul>
+                                                                <?php endif; ?>
+                                                                
+                                                                <?php if (!empty($appData['courses'])): ?>
+                                                                <h6 class="bg-light p-2 border-start border-primary border-4">Corsi e Specializzazioni</h6>
+                                                                <ul class="mb-3">
+                                                                    <?php foreach ($appData['courses'] as $course): ?>
+                                                                        <li>
+                                                                            <strong><?php echo htmlspecialchars($course['name']); ?></strong>
+                                                                            <?php if (!empty($course['completion_date'])): ?>
+                                                                                - Completato: <?php echo date('d/m/Y', strtotime($course['completion_date'])); ?>
+                                                                            <?php endif; ?>
+                                                                            <?php if (!empty($course['expiry_date'])): ?>
+                                                                                - Scad: <?php echo date('d/m/Y', strtotime($course['expiry_date'])); ?>
+                                                                            <?php endif; ?>
+                                                                        </li>
+                                                                    <?php endforeach; ?>
+                                                                </ul>
+                                                                <?php endif; ?>
+                                                                
+                                                                <?php if (!empty($appData['employer_name'])): ?>
+                                                                <h6 class="bg-light p-2 border-start border-primary border-4">Datore di Lavoro</h6>
+                                                                <dl class="row mb-3">
+                                                                    <dt class="col-sm-3">Ragione Sociale</dt>
+                                                                    <dd class="col-sm-9"><?php echo htmlspecialchars($appData['employer_name']); ?></dd>
+                                                                    <?php if (!empty($appData['employer_address'])): ?>
+                                                                    <dt class="col-sm-3">Indirizzo</dt>
+                                                                    <dd class="col-sm-9"><?php echo htmlspecialchars($appData['employer_address']); ?></dd>
+                                                                    <?php endif; ?>
+                                                                </dl>
+                                                                <?php endif; ?>
+                                                                
+                                                            <?php else: // Junior application ?>
+                                                                
+                                                                <?php if (!empty($appData['guardians'])): ?>
+                                                                <h6 class="bg-light p-2 border-start border-primary border-4">Genitori/Tutori</h6>
+                                                                <?php foreach ($appData['guardians'] as $guardian): ?>
+                                                                    <div class="card mb-2">
+                                                                        <div class="card-body">
+                                                                            <h6 class="card-title"><?php echo strtoupper($guardian['type']); ?></h6>
+                                                                            <dl class="row mb-0">
+                                                                                <dt class="col-sm-3">Nome Cognome</dt>
+                                                                                <dd class="col-sm-9"><?php echo htmlspecialchars($guardian['first_name'] . ' ' . $guardian['last_name']); ?></dd>
+                                                                                <?php if (!empty($guardian['tax_code'])): ?>
+                                                                                <dt class="col-sm-3">Codice Fiscale</dt>
+                                                                                <dd class="col-sm-9"><?php echo htmlspecialchars($guardian['tax_code']); ?></dd>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($guardian['phone'])): ?>
+                                                                                <dt class="col-sm-3">Telefono</dt>
+                                                                                <dd class="col-sm-9"><?php echo htmlspecialchars($guardian['phone']); ?></dd>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($guardian['email'])): ?>
+                                                                                <dt class="col-sm-3">Email</dt>
+                                                                                <dd class="col-sm-9"><?php echo htmlspecialchars($guardian['email']); ?></dd>
+                                                                                <?php endif; ?>
+                                                                            </dl>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                                <?php endif; ?>
+                                                                
+                                                            <?php endif; ?>
+                                                            
+                                                            <?php if (!empty($appData['health_allergies']) || !empty($appData['health_intolerances']) || !empty($appData['health_conditions'])): ?>
+                                                            <h6 class="bg-light p-2 border-start border-primary border-4">Informazioni Sanitarie</h6>
+                                                            <dl class="row mb-3">
+                                                                <?php if (!empty($appData['health_vegetarian'])): ?>
+                                                                <dd class="col-sm-12">✓ Vegetariano</dd>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($appData['health_vegan'])): ?>
+                                                                <dd class="col-sm-12">✓ Vegano</dd>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($appData['health_allergies'])): ?>
+                                                                <dt class="col-sm-3">Allergie</dt>
+                                                                <dd class="col-sm-9"><?php echo nl2br(htmlspecialchars($appData['health_allergies'])); ?></dd>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($appData['health_intolerances'])): ?>
+                                                                <dt class="col-sm-3">Intolleranze</dt>
+                                                                <dd class="col-sm-9"><?php echo nl2br(htmlspecialchars($appData['health_intolerances'])); ?></dd>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($appData['health_conditions'])): ?>
+                                                                <dt class="col-sm-3">Patologie</dt>
+                                                                <dd class="col-sm-9"><?php echo nl2br(htmlspecialchars($appData['health_conditions'])); ?></dd>
+                                                                <?php endif; ?>
+                                                            </dl>
+                                                            <?php endif; ?>
+                                                            
+                                                            <?php else: ?>
+                                                                <p class="text-muted">Dati non disponibili</p>
+                                                            <?php endif; ?>
+                                                            
+                                                            <?php if (!empty($application['pdf_file'])): ?>
+                                                                <?php 
+                                                                // Validate PDF path to prevent directory traversal
+                                                                $pdfPath = $application['pdf_file'];
+                                                                if (strpos($pdfPath, 'uploads/applications/') === 0 && strpos($pdfPath, '..') === false):
+                                                                    $safePath = '../' . htmlspecialchars($pdfPath);
+                                                                ?>
+                                                                <div class="alert alert-info mt-3">
+                                                                    <i class="bi bi-file-pdf"></i>
+                                                                    <a href="<?php echo $safePath; ?>" target="_blank" class="alert-link">
+                                                                        Visualizza PDF completo
+                                                                    </a>
+                                                                </div>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
                                                         </div>
                                                     </div>
                                                 </div>
