@@ -49,14 +49,15 @@ if ($filterModule) {
     $params[] = $filterModule;
 }
 
+// Optimized date filters - use range queries for better index usage
 if ($filterDateFrom) {
-    $where[] = "DATE(al.created_at) >= ?";
-    $params[] = $filterDateFrom;
+    $where[] = "al.created_at >= ?";
+    $params[] = $filterDateFrom . ' 00:00:00';
 }
 
 if ($filterDateTo) {
-    $where[] = "DATE(al.created_at) <= ?";
-    $params[] = $filterDateTo;
+    $where[] = "al.created_at < DATE_ADD(?, INTERVAL 1 DAY)";
+    $params[] = $filterDateTo . ' 00:00:00';
 }
 
 $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';

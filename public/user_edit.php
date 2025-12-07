@@ -34,6 +34,9 @@ if (!$isEdit && !$app->checkPermission('users', 'create')) {
     die('Accesso negato');
 }
 
+// Log page access
+AutoLogger::logPageAccess();
+
 $user = null;
 $errors = [];
 $success = false;
