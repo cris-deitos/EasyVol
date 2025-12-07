@@ -99,21 +99,22 @@ switch ($type) {
         break;
         
     case 'application_pdf':
-        $sql = "SELECT * FROM member_applications WHERE id = ?";
+        $sql = "SELECT ma.*, m.user_id 
+                FROM member_applications ma 
+                LEFT JOIN members m ON ma.member_id = m.id 
+                WHERE ma.id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
         if ($file) {
             $filePath = $file['pdf_file'];
             
-            // Admin or applicant can access
+            // Admin can access all applications
             if ($app->checkPermission('settings', 'view')) {
                 $canAccess = true;
             } else {
-                // Check if user submitted this application
+                // If application is approved and linked to a member, check if user owns that member
                 $userId = $app->getUserId();
-                $sqlMember = "SELECT id FROM members WHERE user_id = ? AND email = ?";
-                $member = $db->fetchOne($sqlMember, [$userId, $file['email']]);
-                if ($member) {
+                if ($file['member_id'] && $file['user_id'] == $userId) {
                     $canAccess = true;
                 }
             }
@@ -224,7 +225,12 @@ if (empty($filePath)) {
 
 // Build full path and validate it's within uploads directory
 $baseDir = realpath(__DIR__ . '/../uploads');
-$fullPath = realpath(__DIR__ . '/../' . ltrim($filePath, '/'));
+$sanitizedPath = ltrim($filePath, '/');
+if (empty($sanitizedPath)) {
+    http_response_code(404);
+    die('Percorso file non valido');
+}
+$fullPath = realpath(__DIR__ . '/../' . $sanitizedPath);
 
 // Security check: ensure the file is within the uploads directory
 if ($fullPath === false || strpos($fullPath, $baseDir) !== 0) {
@@ -242,13 +248,13 @@ $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mimeType = finfo_file($finfo, $fullPath);
 finfo_close($finfo);
 
-// Sanitize filename for header
+// Prepare filename for header (RFC 6266)
 $filename = basename($fullPath);
-$filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+$encodedFilename = rawurlencode($filename);
 
 // Serve file
 header('Content-Type: ' . $mimeType);
-header('Content-Disposition: inline; filename="' . $filename . '"');
+header("Content-Disposition: inline; filename*=UTF-8''" . $encodedFilename);
 header('Content-Length: ' . filesize($fullPath));
 header('Cache-Control: private, max-age=3600');
 header('X-Content-Type-Options: nosniff');
