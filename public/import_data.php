@@ -60,10 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Salva file temporaneo
                 $uploadDir = __DIR__ . '/../uploads/imports';
                 if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
+                    mkdir($uploadDir, 0750, true);
                 }
                 
-                $fileName = 'import_' . time() . '_' . basename($_FILES['csv_file']['name']);
+                // Sanitizza nome file
+                $originalName = $_FILES['csv_file']['name'];
+                $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($originalName));
+                $fileName = 'import_' . time() . '_' . $safeName;
                 $filePath = $uploadDir . '/' . $fileName;
                 
                 if (!move_uploaded_file($_FILES['csv_file']['tmp_name'], $filePath)) {

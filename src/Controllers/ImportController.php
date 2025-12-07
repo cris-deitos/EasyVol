@@ -33,15 +33,22 @@ class ImportController {
      * @return string Encoding rilevato
      */
     public function detectEncoding($filePath) {
-        $content = file_get_contents($filePath);
+        // Leggi solo i primi 8KB per rilevare encoding (più efficiente)
+        $handle = fopen($filePath, 'r');
+        if ($handle === false) {
+            return 'UTF-8';
+        }
+        
+        $sample = fread($handle, 8192);
+        fclose($handle);
         
         // Check BOM per UTF-8
-        if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
+        if (substr($sample, 0, 3) === "\xEF\xBB\xBF") {
             return 'UTF-8';
         }
         
         // Prova a rilevare encoding
-        $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+        $encoding = mb_detect_encoding($sample, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
         
         return $encoding ?: 'UTF-8';
     }
@@ -63,17 +70,19 @@ class ImportController {
             throw new \Exception("Impossibile aprire il file CSV");
         }
         
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            if ($encoding !== 'UTF-8') {
-                // Converti da encoding rilevato a UTF-8
-                $row = array_map(function($cell) use ($encoding) {
-                    return mb_convert_encoding($cell, 'UTF-8', $encoding);
-                }, $row);
+        try {
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+                if ($encoding !== 'UTF-8') {
+                    // Converti da encoding rilevato a UTF-8
+                    $row = array_map(function($cell) use ($encoding) {
+                        return mb_convert_encoding($cell, 'UTF-8', $encoding);
+                    }, $row);
+                }
+                $rows[] = $row;
             }
-            $rows[] = $row;
+        } finally {
+            fclose($handle);
         }
-        
-        fclose($handle);
         
         return ['rows' => $rows, 'encoding' => $encoding];
     }
@@ -431,16 +440,10 @@ class ImportController {
         
         foreach ($contacts as $type => $value) {
             if (!empty($value)) {
-                $contactType = $type;
-                if ($type === 'telefono_fisso') $contactType = 'telefono_fisso';
-                if ($type === 'email') $contactType = 'email';
-                if ($type === 'cellulare') $contactType = 'cellulare';
-                if ($type === 'pec') $contactType = 'pec';
-                
                 $stmt = $conn->prepare(
                     "INSERT INTO member_contacts (member_id, contact_type, value) VALUES (?, ?, ?)"
                 );
-                $stmt->execute([$memberId, $contactType, $value]);
+                $stmt->execute([$memberId, $type, $value]);
             }
         }
         
