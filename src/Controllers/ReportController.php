@@ -156,7 +156,7 @@ class ReportController {
                     category,
                     COUNT(*) as items,
                     SUM(quantity) as total_quantity,
-                    SUM(CASE WHEN quantity <= min_quantity THEN 1 ELSE 0 END) as low_stock_items
+                    SUM(CASE WHEN quantity <= minimum_quantity THEN 1 ELSE 0 END) as low_stock_items
                 FROM warehouse_items
                 GROUP BY category
                 ORDER BY category";
@@ -174,10 +174,10 @@ class ReportController {
                     name,
                     category,
                     quantity,
-                    min_quantity,
+                    minimum_quantity,
                     unit
                 FROM warehouse_items
-                WHERE quantity <= min_quantity
+                WHERE quantity <= minimum_quantity
                 ORDER BY category, name";
         
         return $this->db->fetchAll($sql);
