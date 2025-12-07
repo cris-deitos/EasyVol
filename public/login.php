@@ -192,8 +192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .logo-container img {
-            width: 100px;
-            height: 100px;
+            max-width: 150px;
+            width: auto;
+            height: auto;
             margin-bottom: 15px;
             animation: fadeInDown 0.8s ease;
         }
@@ -304,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <div class="login-card">
             <div class="logo-container">
-                <img src="../assets/images/easyvol-logo.svg" alt="Protezione Civile Logo" class="mb-4" style="max-width: 150px;">
+                <img src="../assets/images/easyvol-logo.svg" alt="Protezione Civile Logo">
                 <h2>EasyVol</h2>
                 <p>Sistema Gestionale Protezione Civile</p>
             </div>
