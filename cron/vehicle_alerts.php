@@ -68,8 +68,8 @@ try {
             
             foreach ($items as $item) {
                 $body .= '<li>';
-                $body .= '<strong>' . htmlspecialchars($item['vehicle_name']) . '</strong> ';
-                $body .= '(' . htmlspecialchars($item['plate_number']) . ') - ';
+                $body .= '<strong>' . htmlspecialchars($item['name']) . '</strong> ';
+                $body .= '(' . htmlspecialchars($item['license_plate']) . ') - ';
                 $body .= 'Scadenza: ' . date('d/m/Y', strtotime($item['scheduled_date']));
                 $body .= '</li>';
             }

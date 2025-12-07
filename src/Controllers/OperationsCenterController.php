@@ -45,7 +45,7 @@ class OperationsCenterController {
         // Mezzi disponibili
         $sql = "SELECT * FROM vehicles 
                 WHERE status = 'operativo' 
-                ORDER BY vehicle_name";
+                ORDER BY name";
         $dashboard['available_vehicles'] = $this->db->fetchAll($sql);
         
         // Volontari reperibili
