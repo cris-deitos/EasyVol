@@ -1,0 +1,376 @@
+<?php
+namespace EasyVol\Controllers;
+
+use EasyVol\Database;
+
+/**
+ * Scheduler Sync Controller
+ * 
+ * Sincronizza automaticamente le scadenze da vari moduli allo scadenziario
+ * - Qualifiche/Corsi membri (member_courses.expiry_date)
+ * - Patenti membri (member_licenses.expiry_date)
+ * - Assicurazioni veicoli (vehicles.insurance_expiry)
+ * - Revisioni veicoli (vehicles.inspection_expiry)
+ */
+class SchedulerSyncController {
+    private $db;
+    private $config;
+    
+    public function __construct(Database $db, $config) {
+        $this->db = $db;
+        $this->config = $config;
+    }
+    
+    /**
+     * Sincronizza scadenza qualifica/corso membro
+     * 
+     * @param int $courseId ID del corso
+     * @param int $memberId ID del membro
+     * @return bool
+     */
+    public function syncQualificationExpiry($courseId, $memberId) {
+        try {
+            // Ottieni dettagli del corso
+            $sql = "SELECT mc.*, m.first_name, m.last_name 
+                    FROM member_courses mc
+                    JOIN members m ON mc.member_id = m.id
+                    WHERE mc.id = ?";
+            $course = $this->db->fetchOne($sql, [$courseId]);
+            
+            if (!$course || !$course['expiry_date']) {
+                return true; // Nessuna scadenza da sincronizzare
+            }
+            
+            // Verifica se esiste già un item per questa qualifica
+            $existing = $this->findSchedulerItem('qualification', $courseId);
+            
+            $title = "Scadenza Qualifica: {$course['course_name']} - {$course['first_name']} {$course['last_name']}";
+            $description = "La qualifica '{$course['course_name']}' del socio {$course['first_name']} {$course['last_name']} scade il {$course['expiry_date']}.";
+            
+            if ($existing) {
+                // Aggiorna item esistente
+                return $this->updateSchedulerItem(
+                    $existing['id'],
+                    $title,
+                    $description,
+                    $course['expiry_date'],
+                    'qualifiche'
+                );
+            } else {
+                // Crea nuovo item
+                return $this->createSchedulerItem(
+                    $title,
+                    $description,
+                    $course['expiry_date'],
+                    'qualifiche',
+                    'qualification',
+                    $courseId
+                );
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Errore sincronizzazione qualifica: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Sincronizza scadenza patente membro
+     * 
+     * @param int $licenseId ID della patente
+     * @param int $memberId ID del membro
+     * @return bool
+     */
+    public function syncLicenseExpiry($licenseId, $memberId) {
+        try {
+            // Ottieni dettagli della patente
+            $sql = "SELECT ml.*, m.first_name, m.last_name 
+                    FROM member_licenses ml
+                    JOIN members m ON ml.member_id = m.id
+                    WHERE ml.id = ?";
+            $license = $this->db->fetchOne($sql, [$licenseId]);
+            
+            if (!$license || !$license['expiry_date']) {
+                return true; // Nessuna scadenza da sincronizzare
+            }
+            
+            // Verifica se esiste già un item per questa patente
+            $existing = $this->findSchedulerItem('license', $licenseId);
+            
+            $title = "Scadenza Patente {$license['license_type']}: {$license['first_name']} {$license['last_name']}";
+            $description = "La patente {$license['license_type']} del socio {$license['first_name']} {$license['last_name']} scade il {$license['expiry_date']}.";
+            
+            if ($existing) {
+                // Aggiorna item esistente
+                return $this->updateSchedulerItem(
+                    $existing['id'],
+                    $title,
+                    $description,
+                    $license['expiry_date'],
+                    'patenti'
+                );
+            } else {
+                // Crea nuovo item
+                return $this->createSchedulerItem(
+                    $title,
+                    $description,
+                    $license['expiry_date'],
+                    'patenti',
+                    'license',
+                    $licenseId
+                );
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Errore sincronizzazione patente: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Sincronizza scadenza assicurazione veicolo
+     * 
+     * @param int $vehicleId ID del veicolo
+     * @return bool
+     */
+    public function syncInsuranceExpiry($vehicleId) {
+        try {
+            // Ottieni dettagli del veicolo
+            $sql = "SELECT * FROM vehicles WHERE id = ?";
+            $vehicle = $this->db->fetchOne($sql, [$vehicleId]);
+            
+            if (!$vehicle || !$vehicle['insurance_expiry']) {
+                return true; // Nessuna scadenza da sincronizzare
+            }
+            
+            // Verifica se esiste già un item per questa assicurazione
+            $existing = $this->findSchedulerItem('insurance', $vehicleId);
+            
+            $title = "Scadenza Assicurazione: {$vehicle['name']}";
+            $description = "L'assicurazione del mezzo {$vehicle['name']} ";
+            if (!empty($vehicle['license_plate'])) {
+                $description .= "(targa: {$vehicle['license_plate']}) ";
+            }
+            $description .= "scade il {$vehicle['insurance_expiry']}.";
+            
+            if ($existing) {
+                // Aggiorna item esistente
+                return $this->updateSchedulerItem(
+                    $existing['id'],
+                    $title,
+                    $description,
+                    $vehicle['insurance_expiry'],
+                    'veicoli'
+                );
+            } else {
+                // Crea nuovo item
+                return $this->createSchedulerItem(
+                    $title,
+                    $description,
+                    $vehicle['insurance_expiry'],
+                    'veicoli',
+                    'insurance',
+                    $vehicleId
+                );
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Errore sincronizzazione assicurazione: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Sincronizza scadenza revisione veicolo
+     * 
+     * @param int $vehicleId ID del veicolo
+     * @return bool
+     */
+    public function syncInspectionExpiry($vehicleId) {
+        try {
+            // Ottieni dettagli del veicolo
+            $sql = "SELECT * FROM vehicles WHERE id = ?";
+            $vehicle = $this->db->fetchOne($sql, [$vehicleId]);
+            
+            if (!$vehicle || !$vehicle['inspection_expiry']) {
+                return true; // Nessuna scadenza da sincronizzare
+            }
+            
+            // Verifica se esiste già un item per questa revisione
+            $existing = $this->findSchedulerItem('inspection', $vehicleId);
+            
+            $title = "Scadenza Revisione: {$vehicle['name']}";
+            $description = "La revisione del mezzo {$vehicle['name']} ";
+            if (!empty($vehicle['license_plate'])) {
+                $description .= "(targa: {$vehicle['license_plate']}) ";
+            }
+            $description .= "scade il {$vehicle['inspection_expiry']}.";
+            
+            if ($existing) {
+                // Aggiorna item esistente
+                return $this->updateSchedulerItem(
+                    $existing['id'],
+                    $title,
+                    $description,
+                    $vehicle['inspection_expiry'],
+                    'veicoli'
+                );
+            } else {
+                // Crea nuovo item
+                return $this->createSchedulerItem(
+                    $title,
+                    $description,
+                    $vehicle['inspection_expiry'],
+                    'veicoli',
+                    'inspection',
+                    $vehicleId
+                );
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Errore sincronizzazione revisione: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Trova un item dello scadenziario esistente per un riferimento
+     * 
+     * @param string $referenceType Tipo di riferimento
+     * @param int $referenceId ID del riferimento
+     * @return array|false
+     */
+    private function findSchedulerItem($referenceType, $referenceId) {
+        $sql = "SELECT * FROM scheduler_items 
+                WHERE reference_type = ? AND reference_id = ?
+                LIMIT 1";
+        return $this->db->fetchOne($sql, [$referenceType, $referenceId]);
+    }
+    
+    /**
+     * Crea un nuovo item nello scadenziario
+     * 
+     * @param string $title Titolo
+     * @param string $description Descrizione
+     * @param string $dueDate Data scadenza
+     * @param string $category Categoria
+     * @param string $referenceType Tipo di riferimento
+     * @param int $referenceId ID del riferimento
+     * @return bool
+     */
+    private function createSchedulerItem($title, $description, $dueDate, $category, $referenceType, $referenceId) {
+        try {
+            $sql = "INSERT INTO scheduler_items (
+                title, description, due_date, category, priority, status,
+                reference_type, reference_id, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            
+            // Calcola priorità in base alla vicinanza della scadenza
+            $priority = $this->calculatePriority($dueDate);
+            
+            $params = [
+                $title,
+                $description,
+                $dueDate,
+                $category,
+                $priority,
+                'in_attesa',
+                $referenceType,
+                $referenceId
+            ];
+            
+            $this->db->execute($sql, $params);
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Errore creazione scheduler item: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Aggiorna un item esistente nello scadenziario
+     * 
+     * @param int $itemId ID dell'item
+     * @param string $title Titolo
+     * @param string $description Descrizione
+     * @param string $dueDate Data scadenza
+     * @param string $category Categoria
+     * @return bool
+     */
+    private function updateSchedulerItem($itemId, $title, $description, $dueDate, $category) {
+        try {
+            // Calcola priorità in base alla vicinanza della scadenza
+            $priority = $this->calculatePriority($dueDate);
+            
+            $sql = "UPDATE scheduler_items SET
+                title = ?,
+                description = ?,
+                due_date = ?,
+                category = ?,
+                priority = ?,
+                updated_at = NOW()
+                WHERE id = ?";
+            
+            $params = [
+                $title,
+                $description,
+                $dueDate,
+                $category,
+                $priority,
+                $itemId
+            ];
+            
+            $this->db->execute($sql, $params);
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Errore aggiornamento scheduler item: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Calcola priorità in base alla vicinanza della scadenza
+     * 
+     * @param string $dueDate Data scadenza
+     * @return string Priority level
+     */
+    private function calculatePriority($dueDate) {
+        $now = new \DateTime();
+        $due = new \DateTime($dueDate);
+        $diff = $now->diff($due);
+        $days = (int)$diff->format('%r%a'); // Numero di giorni (negativo se passato)
+        
+        if ($days < 0) {
+            return 'urgente'; // Già scaduto
+        } elseif ($days <= 7) {
+            return 'urgente'; // Scade entro 7 giorni
+        } elseif ($days <= 30) {
+            return 'alta'; // Scade entro 30 giorni
+        } elseif ($days <= 60) {
+            return 'media'; // Scade entro 60 giorni
+        } else {
+            return 'bassa'; // Scade tra più di 60 giorni
+        }
+    }
+    
+    /**
+     * Rimuove un item dallo scadenziario quando il riferimento viene eliminato
+     * 
+     * @param string $referenceType Tipo di riferimento
+     * @param int $referenceId ID del riferimento
+     * @return bool
+     */
+    public function removeSchedulerItem($referenceType, $referenceId) {
+        try {
+            $sql = "DELETE FROM scheduler_items 
+                    WHERE reference_type = ? AND reference_id = ?";
+            $this->db->execute($sql, [$referenceType, $referenceId]);
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore rimozione scheduler item: " . $e->getMessage());
+            return false;
+        }
+    }
+}
