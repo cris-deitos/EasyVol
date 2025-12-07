@@ -12,6 +12,9 @@ Script per importare **175 soci adulti** dal file `soci.csv`
 ### 2. `import_cadetti_completo.sql`
 Script per importare **53 cadetti** dal file `cadetti.csv`
 
+### 3. `csv_to_sql_converter.py`
+Script Python per convertire automaticamente i file CSV in SQL INSERT statements
+
 ## Stato Attuale
 
 ⚠️ **IMPORTANTE**: Gli script attualmente contengono solo **5 record di esempio** per ciascuna categoria per dimostrare la struttura corretta dell'importazione.
@@ -32,11 +35,31 @@ Script per importare **53 cadetti** dal file `cadetti.csv`
 
 ## Come Completare gli Script
 
-### Opzione 1: Fornire i File CSV
+### Opzione 1: Usare lo Script di Conversione Automatica (CONSIGLIATO)
 
-1. Caricare i file `soci.csv` e `cadetti.csv` nella repository
-2. Verrà creato uno script di conversione automatica
-3. Gli script SQL verranno rigenerati con tutti i record
+1. Caricare i file `soci.csv` e `cadetti.csv` in questa directory
+2. Eseguire lo script di conversione:
+
+```bash
+cd database/migrations
+
+# Convertire soci adulti
+python3 csv_to_sql_converter.py soci.csv > import_soci_adulti_completo.sql
+
+# Convertire cadetti
+python3 csv_to_sql_converter.py cadetti.csv > import_cadetti_completo.sql
+```
+
+3. Verificare i file SQL generati
+4. Eseguire l'importazione come descritto nella sezione "Come Eseguire l'Importazione"
+
+**Caratteristiche dello script:**
+- ✅ Gestione automatica escape di caratteri speciali
+- ✅ Parsing intelligente delle date
+- ✅ Consolidamento automatico dei campi in notes
+- ✅ Separazione automatica del numero civico dall'indirizzo
+- ✅ Gestione di campi NULL
+- ✅ Generazione di statistiche finali
 
 ### Opzione 2: Conversione Manuale
 
@@ -46,13 +69,7 @@ Script per importare **53 cadetti** dal file `cadetti.csv`
 4. Ripetere per ogni record
 5. Verificare escape di caratteri speciali
 
-### Opzione 3: Script di Conversione Personalizzato
-
-Creare uno script (Python, PHP, ecc.) che:
-1. Legga il file CSV
-2. Per ogni riga, generi il blocco SQL corrispondente
-3. Gestisca escape e valori NULL
-4. Consolidi i campi extra nel campo notes
+**Nota:** Questa opzione è sconsigliata per grandi quantità di dati. Utilizzare lo script di conversione automatica (Opzione 1).
 
 ## Struttura di un Record di Importazione
 
