@@ -320,7 +320,47 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($logs as $log): ?>
+                                        <?php foreach ($logs as $log): 
+                                            // Translate action to Italian
+                                            $actionLabels = [
+                                                'page_view' => 'Visualizzazione',
+                                                'create' => 'Creazione',
+                                                'update' => 'Modifica',
+                                                'edit' => 'Modifica',
+                                                'delete' => 'Eliminazione',
+                                                'search' => 'Ricerca',
+                                                'export' => 'Esportazione',
+                                                'login' => 'Login',
+                                                'logout' => 'Logout',
+                                                'view' => 'Visualizzazione'
+                                            ];
+                                            $actionLabel = $actionLabels[$log['action']] ?? $log['action'];
+                                            
+                                            // Get module label in Italian
+                                            $moduleLabels = [
+                                                'dashboard' => 'Dashboard',
+                                                'members' => 'Soci',
+                                                'junior_members' => 'Cadetti',
+                                                'events' => 'Eventi',
+                                                'vehicles' => 'Mezzi',
+                                                'warehouse' => 'Magazzino',
+                                                'documents' => 'Documenti',
+                                                'meetings' => 'Riunioni',
+                                                'training' => 'Formazione',
+                                                'applications' => 'Domande',
+                                                'users' => 'Utenti',
+                                                'roles' => 'Ruoli',
+                                                'reports' => 'Report',
+                                                'settings' => 'Impostazioni',
+                                                'profile' => 'Profilo',
+                                                'scheduler' => 'Scadenziario',
+                                                'operations_center' => 'Centro Operativo',
+                                                'radio' => 'Radio',
+                                                'fee_payments' => 'Quote',
+                                                'activity_logs' => 'Log Attività'
+                                            ];
+                                            $moduleLabel = $moduleLabels[$log['module']] ?? $log['module'];
+                                        ?>
                                             <tr>
                                                 <td><?= $log['id'] ?></td>
                                                 <td>
@@ -332,7 +372,7 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                                 <td>
                                                     <?php if ($log['user_id']): ?>
                                                         <strong><?= htmlspecialchars($log['full_name'] ?? $log['username'] ?? 'N/D') ?></strong><br>
-                                                        <small class="text-muted"><?= htmlspecialchars($log['username'] ?? '') ?></small>
+                                                        <small class="text-muted">@<?= htmlspecialchars($log['username'] ?? '') ?></small>
                                                     <?php else: ?>
                                                         <span class="text-muted">Sistema</span>
                                                     <?php endif; ?>
@@ -344,12 +384,12 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                                         ($log['action'] === 'delete' ? 'danger' : 
                                                         ($log['action'] === 'view' || $log['action'] === 'page_view' ? 'info' : 
                                                         'secondary'))) ?>">
-                                                        <?= htmlspecialchars($log['action']) ?>
+                                                        <?= htmlspecialchars($actionLabel) ?>
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <?php if ($log['module']): ?>
-                                                        <span class="badge bg-dark"><?= htmlspecialchars($log['module']) ?></span>
+                                                        <span class="badge bg-dark"><?= htmlspecialchars($moduleLabel) ?></span>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
