@@ -72,18 +72,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Gestione upload file (solo per nuovo documento)
         if (!$isEdit && isset($_FILES['document_file']) && $_FILES['document_file']['error'] === UPLOAD_ERR_OK) {
-            $uploader = new FileUploader(__DIR__ . '/../uploads/documents/');
+            // Define allowed MIME types for documents
+            $allowedMimeTypes = array_merge(
+                FileUploader::getDocumentMimeTypes(),
+                FileUploader::getImageMimeTypes(),
+                [
+                    'application/zip',
+                    'application/x-zip-compressed',
+                    'application/x-rar-compressed',
+                    'application/vnd.rar'
+                ]
+            );
             
-            $uploadResult = $uploader->upload($_FILES['document_file'], [
-                'allowed_extensions' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'rar'],
-                'max_size' => 50 * 1024 * 1024 // 50 MB
-            ]);
+            $uploader = new FileUploader(
+                __DIR__ . '/../uploads/',
+                $allowedMimeTypes,
+                50 * 1024 * 1024 // 50 MB max size
+            );
+            
+            $uploadResult = $uploader->upload($_FILES['document_file'], 'documents');
             
             if ($uploadResult['success']) {
                 $data['file_name'] = $uploadResult['filename'];
                 $data['file_path'] = $uploadResult['path'];
-                $data['file_size'] = $uploadResult['size'];
-                $data['mime_type'] = $uploadResult['mime_type'];
+                $data['file_size'] = $_FILES['document_file']['size'];
+                
+                // Get MIME type
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $data['mime_type'] = $finfo->file($uploadResult['path']);
             } else {
                 $errors[] = 'Errore upload file: ' . $uploadResult['error'];
             }
