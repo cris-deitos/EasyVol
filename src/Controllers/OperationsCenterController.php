@@ -49,15 +49,29 @@ class OperationsCenterController {
         $dashboard['available_vehicles'] = $this->db->fetchAll($sql);
         
                 // Volontari attivi e operativi
-        $sql = "SELECT m.* 
+        $dashboard['available_members'] = $this->getAvailableVolunteers();
+        
+        return $dashboard;
+    }
+    
+    /**
+     * Get available volunteers with all necessary fields
+     */
+    public function getAvailableVolunteers() {
+        $sql = "SELECT m.*, 
+                m.badge_number,
+                mc.value as phone,
+                COALESCE(ma.availability_type, 'available') as availability_type,
+                ma.notes as availability_notes
                 FROM members m
+                LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
+                LEFT JOIN member_availability ma ON m.id = ma.member_id
                 WHERE m.member_status = 'attivo' 
                 AND m.volunteer_status = 'operativo'
                 ORDER BY m.last_name, m.first_name
                 LIMIT 50";
-        $dashboard['available_members'] = $this->db->fetchAll($sql);
         
-        return $dashboard;
+        return $this->db->fetchAll($sql);
     }
     
     // ============================================
