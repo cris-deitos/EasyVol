@@ -16,6 +16,11 @@ class Autoloader {
         $vendorAutoload = __DIR__ . '/../vendor/autoload.php';
         if (file_exists($vendorAutoload)) {
             require_once $vendorAutoload;
+        } else {
+            // Log warning if vendor autoloader is missing
+            error_log('WARNING: Composer vendor autoloader not found at ' . $vendorAutoload . 
+                      '. Please run "composer install" to install dependencies. ' .
+                      'Features requiring third-party libraries (email, PDF, Excel) will not work.');
         }
         
         spl_autoload_register(function ($class) {
