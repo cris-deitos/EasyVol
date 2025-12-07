@@ -130,7 +130,7 @@ class ApplicationController {
             $params[] = $search;
         }
         
-        $sql .= " ORDER BY created_at DESC";
+        $sql .= " ORDER BY submitted_at DESC";
         
         $offset = ($page - 1) * $perPage;
         $sql .= " LIMIT ? OFFSET ?";

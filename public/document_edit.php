@@ -51,7 +51,7 @@ $categories = $controller->getCategories();
 
 // Gestione form submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$csrf->validate($_POST['csrf_token'] ?? '')) {
+    if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token di sicurezza non valido';
     } else {
         $data = [

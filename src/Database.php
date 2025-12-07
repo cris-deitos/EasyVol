@@ -119,4 +119,24 @@ class Database {
     public function rollback() {
         return $this->connection->rollBack();
     }
+    
+    /**
+     * Alias per query() per compatibilità con codice esistente
+     * 
+     * @param string $sql
+     * @param array $params
+     * @return PDOStatement
+     */
+    public function execute($sql, $params = []) {
+        return $this->query($sql, $params);
+    }
+    
+    /**
+     * Ottieni l'ultimo ID inserito
+     * 
+     * @return string
+     */
+    public function lastInsertId() {
+        return $this->connection->lastInsertId();
+    }
 }

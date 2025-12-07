@@ -29,7 +29,7 @@ class OperationsCenterController {
                 COUNT(DISTINCT iv.vehicle_id) as num_vehicles
                 FROM events e
                 LEFT JOIN intervention_members im ON e.id = im.event_id
-                LEFT JOIN intervention_vehicles iv ON e.id = iv.event_id
+                LEFT JOIN intervention_vehicles iv ON e.id = iv.intervention_id
                 WHERE e.status = 'aperto'
                 GROUP BY e.id
                 ORDER BY e.start_date DESC";
