@@ -12,7 +12,7 @@ use EasyVol\App;
 use EasyVol\Controllers\ApplicationController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App(false); // No authentication required
+$app = App::getInstance(); // Public page - no authentication required
 
 $db = $app->getDb();
 $config = $app->getConfig();
