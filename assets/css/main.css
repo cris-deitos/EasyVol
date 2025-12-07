@@ -98,6 +98,13 @@ body {
     padding: 0.4em 0.6em;
 }
 
+/* Navbar */
+.navbar-logo {
+    height: 40px;
+    width: auto;
+    margin-right: 8px;
+}
+
 /* Sidebar */
 main {
     padding-top: 20px;

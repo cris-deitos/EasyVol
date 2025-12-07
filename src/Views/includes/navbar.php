@@ -59,11 +59,3 @@ $user = $app->getCurrentUser();
         </div>
     </div>
 </nav>
-
-<style>
-.navbar-logo {
-    height: 40px;
-    width: auto;
-    margin-right: 8px;
-}
-</style>

@@ -193,8 +193,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .logo-container img {
             max-width: 150px;
-            width: auto;
-            height: auto;
             margin-bottom: 15px;
             animation: fadeInDown 0.8s ease;
         }
