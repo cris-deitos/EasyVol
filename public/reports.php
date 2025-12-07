@@ -377,7 +377,7 @@ $pageTitle = 'Report e Statistiche';
                                                         <br>
                                                         <small class="text-muted">
                                                             Disponibile: <?php echo $item['quantity']; ?> <?php echo htmlspecialchars($item['unit']); ?>
-                                                            | Minimo: <?php echo $item['min_quantity']; ?>
+                                                            | Minimo: <?php echo $item['minimum_quantity']; ?>
                                                         </small>
                                                     </div>
                                                 <?php endforeach; ?>
