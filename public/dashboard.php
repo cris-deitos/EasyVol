@@ -35,6 +35,10 @@ try {
     $result = $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status IN ('aperto', 'in_corso') AND start_date >= NOW()");
     $stats['upcoming_events'] = $result['count'] ?? 0;
     
+    // Pending fee payment requests
+    $result = $db->fetchOne("SELECT COUNT(*) as count FROM fee_payment_requests WHERE status = 'pending'");
+    $stats['pending_fee_requests'] = $result['count'] ?? 0;
+    
     // Recent activity logs
     $recentLogs = $db->fetchAll(
         "SELECT al.*, u.username, u.full_name 
@@ -166,6 +170,29 @@ AutoLogger::logPageAccess();
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Second Row of Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <a href="fee_payments.php?status=pending" class="text-decoration-none">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Richieste Quote in Sospeso
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['pending_fee_requests'] ?></div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-clock-history fs-2 text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                 </div>
 

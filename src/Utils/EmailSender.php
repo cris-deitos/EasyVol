@@ -1,14 +1,10 @@
 <?php
 namespace EasyVol\Utils;
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
 /**
  * Email Sender Utility
  * 
- * Gestisce l'invio di email per EasyVol
- * Supporta SMTP, sendmail e funzione mail() di PHP
+ * Gestisce l'invio di email per EasyVol usando la funzione mail() nativa di PHP
  */
 class EmailSender {
     private $config;
@@ -27,48 +23,52 @@ class EmailSender {
     }
     
     /**
-     * Inizializza PHPMailer
+     * Build email headers from configuration
      * 
-     * @return PHPMailer
-     * @throws Exception
+     * @param string|null $replyTo Optional Reply-To address
+     * @return array Array of email headers
      */
-    private function initMailer() {
-        $mailer = new PHPMailer(true);
+    private function buildHeaders($replyTo = null) {
+        $charset = $this->config['email']['charset'] ?? 'UTF-8';
+        $encoding = $this->config['email']['encoding'] ?? '8bit';
+        $fromEmail = $this->config['email']['from_address'] ?? $this->config['email']['from_email'] ?? 'noreply@localhost';
+        $fromName = $this->config['email']['from_name'] ?? 'EasyVol';
+        $replyToEmail = $replyTo ?? $this->config['email']['reply_to'] ?? $fromEmail;
+        $returnPath = $this->config['email']['return_path'] ?? $fromEmail;
         
-        // Set charset
-        $mailer->CharSet = 'UTF-8';
+        $headers = [
+            'MIME-Version: 1.0',
+            "Content-type: text/html; charset=$charset",
+            "Content-Transfer-Encoding: $encoding",
+            "From: $fromName <$fromEmail>",
+            "Reply-To: $replyToEmail",
+            "Return-Path: $returnPath",
+            'X-Mailer: EasyVol/' . ($this->config['app']['version'] ?? '1.0')
+        ];
         
-        // Check if email is enabled
-        if (!($this->config['email']['enabled'] ?? false)) {
-            throw new Exception('Email sending is disabled in configuration');
+        // Add custom headers if configured
+        if (!empty($this->config['email']['additional_headers'])) {
+            if (is_array($this->config['email']['additional_headers'])) {
+                // Validate and filter dangerous headers
+                $dangerousHeaders = ['bcc:', 'cc:', 'to:', 'from:', 'content-type:', 'mime-version:'];
+                foreach ($this->config['email']['additional_headers'] as $header) {
+                    $headerLower = strtolower(trim($header));
+                    $isDangerous = false;
+                    foreach ($dangerousHeaders as $dangerous) {
+                        if (strpos($headerLower, $dangerous) === 0) {
+                            $isDangerous = true;
+                            error_log("Blocked dangerous header: $header");
+                            break;
+                        }
+                    }
+                    if (!$isDangerous && preg_match('/^[a-zA-Z0-9\-]+:/', $header)) {
+                        $headers[] = $header;
+                    }
+                }
+            }
         }
         
-        $method = $this->config['email']['method'] ?? 'mail';
-        
-        if ($method === 'smtp') {
-            $mailer->isSMTP();
-            $mailer->Host = $this->config['email']['smtp_host'] ?? '';
-            $mailer->Port = $this->config['email']['smtp_port'] ?? 587;
-            $mailer->SMTPAuth = true;
-            $mailer->Username = $this->config['email']['smtp_username'] ?? '';
-            $mailer->Password = $this->config['email']['smtp_password'] ?? '';
-            $mailer->SMTPSecure = $this->config['email']['smtp_encryption'] ?? 'tls';
-            
-            // Optional SMTP debug
-            // $mailer->SMTPDebug = 2;
-        } elseif ($method === 'sendmail') {
-            $mailer->isSendmail();
-        } else {
-            $mailer->isMail();
-        }
-        
-        // Set from
-        $mailer->setFrom(
-            $this->config['email']['from_email'] ?? 'noreply@example.com',
-            $this->config['email']['from_name'] ?? 'EasyVol'
-        );
-        
-        return $mailer;
+        return $headers;
     }
     
     /**
@@ -77,99 +77,49 @@ class EmailSender {
      * @param string|array $to Destinatario/i
      * @param string $subject Oggetto
      * @param string $body Corpo HTML
-     * @param array $attachments Allegati (array di path)
-     * @param string|array $cc CC
-     * @param string|array $bcc BCC
+     * @param array $attachments Allegati (array di path) - Not supported with native mail()
+     * @param string|array $cc CC - Not supported with native mail()
+     * @param string|array $bcc BCC - Not supported with native mail()
      * @param string $replyTo Reply-To email
      * @return bool
      */
     public function send($to, $subject, $body, $attachments = [], $cc = [], $bcc = [], $replyTo = null) {
         try {
-            $mailer = $this->initMailer();
-            
-            // Add recipients
-            if (is_array($to)) {
-                foreach ($to as $email => $name) {
-                    if (is_numeric($email)) {
-                        $mailer->addAddress($name);
-                    } else {
-                        $mailer->addAddress($email, $name);
-                    }
-                }
-            } else {
-                $mailer->addAddress($to);
+            // Check if email is enabled
+            if (!($this->config['email']['enabled'] ?? false)) {
+                throw new \Exception('Email sending is disabled in configuration');
             }
             
-            // Add CC
-            if (!empty($cc)) {
-                if (is_array($cc)) {
-                    foreach ($cc as $email) {
-                        $mailer->addCC($email);
-                    }
-                } else {
-                    $mailer->addCC($cc);
-                }
+            // Get primary recipient email
+            $toEmail = $this->extractPrimaryEmailAddress($to);
+            
+            // Validate email
+            if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+                throw new \Exception("Invalid email address: $toEmail");
             }
             
-            // Add BCC
-            if (!empty($bcc)) {
-                if (is_array($bcc)) {
-                    foreach ($bcc as $email) {
-                        $mailer->addBCC($email);
-                    }
-                } else {
-                    $mailer->addBCC($bcc);
-                }
+            // Build headers
+            $headers = $this->buildHeaders($replyTo);
+            
+            // Additional sendmail parameters if configured
+            $additionalParams = $this->config['email']['sendmail_params'] ?? null;
+            
+            // Send email
+            $result = mail($toEmail, $subject, $body, implode("\r\n", $headers), $additionalParams);
+            
+            if (!$result) {
+                throw new \Exception("mail() function returned false");
             }
-            
-            // Reply-To
-            if ($replyTo) {
-                $mailer->addReplyTo($replyTo);
-            }
-            
-            // Subject and body
-            $mailer->Subject = $subject;
-            $mailer->isHTML(true);
-            $mailer->Body = $body;
-            $mailer->AltBody = strip_tags($body);
-            
-            // Add attachments
-            foreach ($attachments as $attachment) {
-                if (file_exists($attachment)) {
-                    $mailer->addAttachment($attachment);
-                }
-            }
-            
-            // Send
-            $result = $mailer->send();
             
             // Log success
             if ($this->db) {
                 $this->logEmail($to, $subject, $body, 'sent', '');
             }
             
-            return $result;
+            return true;
             
-        } catch (Exception $e) {
-            error_log("PHPMailer send failed: " . $e->getMessage());
-            
-            // Try fallback to PHP's native mail() function
-            try {
-                $fallbackResult = $this->sendWithNativeMail($to, $subject, $body);
-                
-                if ($fallbackResult) {
-                    error_log("Email sent successfully using fallback mail() function");
-                    
-                    // Log success
-                    if ($this->db) {
-                        $this->logEmail($to, $subject, $body, 'sent_fallback', 'Sent using fallback mail() after PHPMailer failed');
-                    }
-                    
-                    return true;
-                }
-            } catch (\Exception $fallbackException) {
-                error_log("Fallback mail() also failed: " . $fallbackException->getMessage());
-            }
+        } catch (\Exception $e) {
+            error_log("Email send failed: " . $e->getMessage());
             
             // Log failure
             if ($this->db) {
@@ -400,43 +350,5 @@ class EmailSender {
         return $to;
     }
     
-    /**
-     * Fallback: Invia email usando la funzione mail() nativa di PHP
-     * 
-     * @param string|array $to Destinatario/i
-     * @param string $subject Oggetto
-     * @param string $body Corpo HTML
-     * @return bool
-     * @throws \Exception Se l'indirizzo email non è valido o l'invio fallisce
-     */
-    private function sendWithNativeMail($to, $subject, $body) {
-        // Get the primary recipient email
-        $toEmail = $this->extractPrimaryEmailAddress($to);
-        
-        // Validate email
-        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            throw new \Exception("Invalid email address: $toEmail");
-        }
-        
-        // Prepare headers - use configured values or reasonable defaults
-        $fromEmail = $this->config['email']['from_email'] ?? 'noreply@localhost';
-        $fromName = $this->config['email']['from_name'] ?? 'EasyVol';
-        
-        $headers = [
-            'MIME-Version: 1.0',
-            'Content-type: text/html; charset=UTF-8',
-            "From: $fromName <$fromEmail>",
-            "Reply-To: $fromEmail",
-            'X-Mailer: PHP/' . phpversion()
-        ];
-        
-        // Send email
-        $result = mail($toEmail, $subject, $body, implode("\r\n", $headers));
-        
-        if (!$result) {
-            throw new \Exception("mail() function returned false");
-        }
-        
-        return true;
-    }
+
 }

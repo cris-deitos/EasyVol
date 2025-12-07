@@ -32,14 +32,14 @@ return [
     
     'email' => [
         'enabled' => true,
-        'method' => 'smtp', // smtp, sendmail, mail
-        'smtp_host' => 'smtp.example.com',
-        'smtp_port' => 587,
-        'smtp_username' => '',
-        'smtp_password' => '',
-        'smtp_encryption' => 'tls', // tls, ssl
-        'from_email' => 'noreply@example.com',
+        'from_address' => 'noreply@example.com',
         'from_name' => 'EasyVol',
+        'reply_to' => 'noreply@example.com',
+        'return_path' => 'noreply@example.com',
+        'charset' => 'UTF-8',
+        'encoding' => '8bit', // 7bit, 8bit, base64, quoted-printable
+        'sendmail_params' => null, // Additional parameters for mail() function (e.g., '-f bounce@example.com')
+        'additional_headers' => [], // Additional custom headers as array
     ],
     
     'telegram' => [
