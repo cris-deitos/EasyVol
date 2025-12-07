@@ -72,18 +72,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Gestione upload file (solo per nuovo documento)
         if (!$isEdit && isset($_FILES['document_file']) && $_FILES['document_file']['error'] === UPLOAD_ERR_OK) {
-            $uploader = new FileUploader(__DIR__ . '/../uploads/documents/');
+            // Allowed MIME types for documents
+            $allowedMimeTypes = array_merge(
+                FileUploader::getDocumentMimeTypes(),
+                FileUploader::getImageMimeTypes(),
+                ['application/zip', 'application/x-rar-compressed', 'application/x-zip-compressed']
+            );
             
-            $uploadResult = $uploader->upload($_FILES['document_file'], [
-                'allowed_extensions' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'rar'],
-                'max_size' => 50 * 1024 * 1024 // 50 MB
-            ]);
+            $uploader = new FileUploader(__DIR__ . '/../uploads/documents/', $allowedMimeTypes, 50 * 1024 * 1024);
+            
+            $uploadResult = $uploader->upload($_FILES['document_file']);
             
             if ($uploadResult['success']) {
-                $data['file_name'] = $uploadResult['filename'];
+                $data['file_name'] = basename($_FILES['document_file']['name']);
                 $data['file_path'] = $uploadResult['path'];
-                $data['file_size'] = $uploadResult['size'];
-                $data['mime_type'] = $uploadResult['mime_type'];
+                $data['file_size'] = $_FILES['document_file']['size'];
+                $data['mime_type'] = mime_content_type($uploadResult['path']);
             } else {
                 $errors[] = 'Errore upload file: ' . $uploadResult['error'];
             }

@@ -148,30 +148,28 @@ $pageTitle = $isEdit ? 'Modifica Socio' : 'Nuovo Socio';
                                            value="<?php echo htmlspecialchars($member['registration_number'] ?? ''); ?>" 
                                            placeholder="Generata automaticamente se vuota">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label for="member_type" class="form-label">Tipo Socio *</label>
                                     <select class="form-select" id="member_type" name="member_type" required>
                                         <option value="ordinario" <?php echo ($member['member_type'] ?? '') === 'ordinario' ? 'selected' : ''; ?>>Ordinario</option>
-                                        <option value="sostenitore" <?php echo ($member['member_type'] ?? '') === 'sostenitore' ? 'selected' : ''; ?>>Sostenitore</option>
-                                        <option value="onorario" <?php echo ($member['member_type'] ?? '') === 'onorario' ? 'selected' : ''; ?>>Onorario</option>
+                                        <option value="fondatore" <?php echo ($member['member_type'] ?? '') === 'fondatore' ? 'selected' : ''; ?>>Fondatore</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label for="member_status" class="form-label">Stato *</label>
                                     <select class="form-select" id="member_status" name="member_status" required>
                                         <option value="attivo" <?php echo ($member['member_status'] ?? 'attivo') === 'attivo' ? 'selected' : ''; ?>>Attivo</option>
                                         <option value="sospeso" <?php echo ($member['member_status'] ?? '') === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                         <option value="dimesso" <?php echo ($member['member_status'] ?? '') === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
-                                        <option value="deceduto" <?php echo ($member['member_status'] ?? '') === 'deceduto' ? 'selected' : ''; ?>>Deceduto</option>
+                                        <option value="decaduto" <?php echo ($member['member_status'] ?? '') === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="volunteer_status" class="form-label">Qualifica *</label>
+                                <div class="col-md-4">
+                                    <label for="volunteer_status" class="form-label">Stato Volontario *</label>
                                     <select class="form-select" id="volunteer_status" name="volunteer_status" required>
-                                        <option value="aspirante" <?php echo ($member['volunteer_status'] ?? 'aspirante') === 'aspirante' ? 'selected' : ''; ?>>Aspirante</option>
-                                        <option value="volontario" <?php echo ($member['volunteer_status'] ?? '') === 'volontario' ? 'selected' : ''; ?>>Volontario</option>
-                                        <option value="operatore" <?php echo ($member['volunteer_status'] ?? '') === 'operatore' ? 'selected' : ''; ?>>Operatore</option>
-                                        <option value="coordinatore" <?php echo ($member['volunteer_status'] ?? '') === 'coordinatore' ? 'selected' : ''; ?>>Coordinatore</option>
+                                        <option value="in_formazione" <?php echo ($member['volunteer_status'] ?? 'in_formazione') === 'in_formazione' ? 'selected' : ''; ?>>In Formazione</option>
+                                        <option value="operativo" <?php echo ($member['volunteer_status'] ?? '') === 'operativo' ? 'selected' : ''; ?>>Operativo</option>
+                                        <option value="non_operativo" <?php echo ($member['volunteer_status'] ?? '') === 'non_operativo' ? 'selected' : ''; ?>>Non Operativo</option>
                                     </select>
                                 </div>
                             </div>

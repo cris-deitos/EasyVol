@@ -32,7 +32,13 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'applications.php' ? 'active' : '' ?>" href="applications.php">
                     <i class="bi bi-inbox"></i> Domande Iscrizione
-                    <span class="badge bg-warning rounded-pill">3</span>
+                    <?php
+                    // Count pending applications
+                    $pendingCount = $app->getDb()->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'pending'")['count'] ?? 0;
+                    if ($pendingCount > 0):
+                    ?>
+                        <span class="badge bg-warning rounded-pill"><?= $pendingCount ?></span>
+                    <?php endif; ?>
                 </a>
             </li>
             <?php endif; ?>
@@ -157,6 +163,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     font-weight: 500;
     color: #333;
     padding: 10px 15px;
+    font-size: 0.9rem; /* Fixed size to prevent variation between pages */
 }
 
 .sidebar .nav-link:hover {
@@ -170,6 +177,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 .sidebar .nav-link i {
     margin-right: 8px;
+    font-size: 1rem; /* Fixed icon size */
 }
 
 .sidebar-heading {

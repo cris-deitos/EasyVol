@@ -46,7 +46,18 @@ if ($isEdit) {
         header('Location: meetings.php?error=not_found');
         exit;
     }
+    // Load existing agenda items
+    $agendaItems = $db->fetchAll("SELECT * FROM meeting_agenda WHERE meeting_id = ? ORDER BY order_number", [$meetingId]);
+    // Load existing participants
+    $participants = $db->fetchAll("SELECT * FROM meeting_participants WHERE meeting_id = ?", [$meetingId]);
+} else {
+    $agendaItems = [];
+    $participants = [];
 }
+
+// Get all active members for participant selection
+$activeMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
+$activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM junior_members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
 
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -58,31 +69,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'meeting_type' => $_POST['meeting_type'] ?? 'consiglio_direttivo',
             'title' => trim($_POST['title'] ?? ''),
             'meeting_date' => $_POST['meeting_date'] ?? '',
+            'start_time' => $_POST['start_time'] ?? '',
+            'end_time' => $_POST['end_time'] ?? '',
             'location' => trim($_POST['location'] ?? ''),
-            'convened_by' => trim($_POST['convened_by'] ?? ''),
-            'president' => trim($_POST['president'] ?? ''),
-            'secretary' => trim($_POST['secretary'] ?? ''),
-            'minutes' => trim($_POST['minutes'] ?? ''),
+            'convocator' => trim($_POST['convocator'] ?? ''),
+            'description' => trim($_POST['description'] ?? ''),
             'notes' => trim($_POST['notes'] ?? '')
         ];
         
         try {
+            $db->beginTransaction();
+            
             if ($isEdit) {
-                $result = $controller->update($meetingId, $data, $app->getUserId());
+                // Update meeting
+                $db->query("UPDATE meetings SET meeting_type = ?, title = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
+                    [$data['meeting_type'], $data['title'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $meetingId]);
             } else {
-                $result = $controller->create($data, $app->getUserId());
-                $meetingId = $result;
+                // Create new meeting
+                $db->query("INSERT INTO meetings (meeting_type, title, meeting_date, start_time, end_time, location, convocator, description, location_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'fisico', NOW())",
+                    [$data['meeting_type'], $data['title'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description']]);
+                $meetingId = $db->lastInsertId();
             }
             
-            if ($result) {
-                $success = true;
-                header('Location: meeting_view.php?id=' . $meetingId . '&success=1');
-                exit;
-            } else {
-                $errors[] = 'Errore durante il salvataggio';
+            // Save participants
+            if (!empty($_POST['participants'])) {
+                // Delete existing participants
+                $db->query("DELETE FROM meeting_participants WHERE meeting_id = ?", [$meetingId]);
+                
+                foreach ($_POST['participants'] as $participant) {
+                    $memberType = $participant['type'] ?? 'adult';
+                    $memberId = $participant['id'] ?? null;
+                    
+                    if ($memberId) {
+                        if ($memberType === 'adult') {
+                            $db->query("INSERT INTO meeting_participants (meeting_id, member_id, member_type, present) VALUES (?, ?, 'adult', 0)",
+                                [$meetingId, $memberId]);
+                        } else {
+                            $db->query("INSERT INTO meeting_participants (meeting_id, junior_member_id, member_type, present) VALUES (?, ?, 'junior', 0)",
+                                [$meetingId, $memberId]);
+                        }
+                    }
+                }
             }
+            
+            // Save agenda items
+            if (!empty($_POST['agenda_items'])) {
+                // Delete existing agenda items
+                $db->query("DELETE FROM meeting_agenda WHERE meeting_id = ?", [$meetingId]);
+                
+                foreach ($_POST['agenda_items'] as $index => $item) {
+                    $hasVoting = isset($item['has_voting']) ? 1 : 0;
+                    $votingTotal = intval($item['voting_total'] ?? 0);
+                    $votingInFavor = intval($item['voting_in_favor'] ?? 0);
+                    $votingAgainst = intval($item['voting_against'] ?? 0);
+                    $votingAbstentions = intval($item['voting_abstentions'] ?? 0);
+                    $votingResult = $item['voting_result'] ?? 'non_votato';
+                    
+                    $db->query("INSERT INTO meeting_agenda (meeting_id, order_number, subject, description, discussion, has_voting, voting_total, voting_in_favor, voting_against, voting_abstentions, voting_result) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        [$meetingId, ($index + 1), trim($item['subject'] ?? ''), trim($item['description'] ?? ''), trim($item['discussion'] ?? ''), $hasVoting, $votingTotal, $votingInFavor, $votingAgainst, $votingAbstentions, $votingResult]);
+                }
+            }
+            
+            $db->commit();
+            $success = true;
+            header('Location: meeting_view.php?id=' . $meetingId . '&success=1');
+            exit;
+            
         } catch (\Exception $e) {
-            $errors[] = $e->getMessage();
+            $db->rollBack();
+            $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
         }
     }
 }
@@ -154,60 +209,175 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             </div>
                             
                             <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="meeting_date" class="form-label">Data e Ora <span class="text-danger">*</span></label>
-                                    <input type="datetime-local" class="form-control" id="meeting_date" name="meeting_date" 
-                                           value="<?php echo !empty($meeting['meeting_date']) ? date('Y-m-d\TH:i', strtotime($meeting['meeting_date'])) : ''; ?>" required>
+                                <div class="col-md-4 mb-3">
+                                    <label for="meeting_date" class="form-label">Data <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="meeting_date" name="meeting_date" 
+                                           value="<?php echo !empty($meeting['meeting_date']) ? date('Y-m-d', strtotime($meeting['meeting_date'])) : ''; ?>" required>
                                 </div>
                                 
+                                <div class="col-md-4 mb-3">
+                                    <label for="start_time" class="form-label">Ora Inizio</label>
+                                    <input type="time" class="form-control" id="start_time" name="start_time" 
+                                           value="<?php echo htmlspecialchars($meeting['start_time'] ?? ''); ?>">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="end_time" class="form-label">Ora Fine</label>
+                                    <input type="time" class="form-control" id="end_time" name="end_time" 
+                                           value="<?php echo htmlspecialchars($meeting['end_time'] ?? ''); ?>">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="location" class="form-label">Luogo</label>
                                     <input type="text" class="form-control" id="location" name="location" 
                                            value="<?php echo htmlspecialchars($meeting['location'] ?? ''); ?>"
                                            placeholder="es. Sede Associazione">
                                 </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="convocator" class="form-label">Convocata da</label>
+                                    <input type="text" class="form-control" id="convocator" name="convocator" 
+                                           value="<?php echo htmlspecialchars($meeting['convocator'] ?? ''); ?>"
+                                           placeholder="es. Il Presidente">
+                                </div>
                             </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Descrizione</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"><?php echo htmlspecialchars($meeting['description'] ?? ''); ?></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-people"></i> Partecipanti</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="participants-container">
+                                <?php if (!empty($participants)): ?>
+                                    <?php foreach ($participants as $index => $participant): ?>
+                                        <div class="row mb-2 participant-row">
+                                            <div class="col-md-5">
+                                                <select class="form-select" name="participants[<?= $index ?>][type]" onchange="updateParticipantOptions(this)">
+                                                    <option value="adult" <?= ($participant['member_type'] ?? 'adult') === 'adult' ? 'selected' : '' ?>>Socio Maggiorenne</option>
+                                                    <option value="junior" <?= ($participant['member_type'] ?? '') === 'junior' ? 'selected' : '' ?>>Socio Minorenne (Cadetto)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <select class="form-select participant-select" name="participants[<?= $index ?>][id]">
+                                                    <option value="">Seleziona...</option>
+                                                    <?php if (($participant['member_type'] ?? 'adult') === 'adult'): ?>
+                                                        <?php foreach ($activeMembers as $member): ?>
+                                                            <option value="<?= $member['id'] ?>" <?= ($participant['member_id'] ?? 0) == $member['id'] ? 'selected' : '' ?>>
+                                                                <?= htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')') ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <?php foreach ($activeJuniorMembers as $member): ?>
+                                                            <option value="<?= $member['id'] ?>" <?= ($participant['junior_member_id'] ?? 0) == $member['id'] ? 'selected' : '' ?>>
+                                                                <?= htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')') ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeParticipant(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addParticipant()">
+                                <i class="bi bi-plus-circle"></i> Aggiungi Partecipante
+                            </button>
                         </div>
                     </div>
                     
                     <div class="card mb-3">
                         <div class="card-header bg-warning text-dark">
-                            <h5 class="mb-0"><i class="bi bi-people"></i> Cariche</h5>
+                            <h5 class="mb-0"><i class="bi bi-list-ol"></i> Ordini del Giorno</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label for="convened_by" class="form-label">Convocata da</label>
-                                    <input type="text" class="form-control" id="convened_by" name="convened_by" 
-                                           value="<?php echo htmlspecialchars($meeting['convened_by'] ?? ''); ?>"
-                                           placeholder="es. Il Presidente">
-                                </div>
-                                
-                                <div class="col-md-4 mb-3">
-                                    <label for="president" class="form-label">Presidente</label>
-                                    <input type="text" class="form-control" id="president" name="president" 
-                                           value="<?php echo htmlspecialchars($meeting['president'] ?? ''); ?>">
-                                </div>
-                                
-                                <div class="col-md-4 mb-3">
-                                    <label for="secretary" class="form-label">Segretario</label>
-                                    <input type="text" class="form-control" id="secretary" name="secretary" 
-                                           value="<?php echo htmlspecialchars($meeting['secretary'] ?? ''); ?>">
-                                </div>
+                            <div id="agenda-container">
+                                <?php if (!empty($agendaItems)): ?>
+                                    <?php foreach ($agendaItems as $index => $item): ?>
+                                        <div class="card mb-3 agenda-item">
+                                            <div class="card-header bg-light">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <strong>Ordine del Giorno #<?= $index + 1 ?></strong>
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="removeAgendaItem(this)">
+                                                        <i class="bi bi-trash"></i> Rimuovi
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Oggetto <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" name="agenda_items[<?= $index ?>][subject]" 
+                                                           value="<?= htmlspecialchars($item['subject'] ?? '') ?>" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Descrizione</label>
+                                                    <textarea class="form-control" name="agenda_items[<?= $index ?>][description]" rows="2"><?= htmlspecialchars($item['description'] ?? '') ?></textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Discussione</label>
+                                                    <textarea class="form-control" name="agenda_items[<?= $index ?>][discussion]" rows="3"><?= htmlspecialchars($item['discussion'] ?? '') ?></textarea>
+                                                </div>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="checkbox" name="agenda_items[<?= $index ?>][has_voting]" 
+                                                           id="voting_<?= $index ?>" <?= ($item['has_voting'] ?? 0) ? 'checked' : '' ?> 
+                                                           onchange="toggleVotingFields(this)">
+                                                    <label class="form-check-label" for="voting_<?= $index ?>">
+                                                        Votazione effettuata
+                                                    </label>
+                                                </div>
+                                                <div class="voting-fields" style="display: <?= ($item['has_voting'] ?? 0) ? 'block' : 'none' ?>;">
+                                                    <div class="row">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Votanti</label>
+                                                            <input type="number" class="form-control" name="agenda_items[<?= $index ?>][voting_total]" 
+                                                                   value="<?= htmlspecialchars($item['voting_total'] ?? 0) ?>" min="0">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Favorevoli</label>
+                                                            <input type="number" class="form-control" name="agenda_items[<?= $index ?>][voting_in_favor]" 
+                                                                   value="<?= htmlspecialchars($item['voting_in_favor'] ?? 0) ?>" min="0">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Contrari</label>
+                                                            <input type="number" class="form-control" name="agenda_items[<?= $index ?>][voting_against]" 
+                                                                   value="<?= htmlspecialchars($item['voting_against'] ?? 0) ?>" min="0">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Astenuti</label>
+                                                            <input type="number" class="form-control" name="agenda_items[<?= $index ?>][voting_abstentions]" 
+                                                                   value="<?= htmlspecialchars($item['voting_abstentions'] ?? 0) ?>" min="0">
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-3">
+                                                        <label class="form-label">Esito</label>
+                                                        <select class="form-select" name="agenda_items[<?= $index ?>][voting_result]">
+                                                            <option value="non_votato" <?= ($item['voting_result'] ?? 'non_votato') === 'non_votato' ? 'selected' : '' ?>>Non Votato</option>
+                                                            <option value="approvato" <?= ($item['voting_result'] ?? '') === 'approvato' ? 'selected' : '' ?>>Approvato</option>
+                                                            <option value="respinto" <?= ($item['voting_result'] ?? '') === 'respinto' ? 'selected' : '' ?>>Respinto</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card mb-3">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="mb-0"><i class="bi bi-file-text"></i> Verbale</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="minutes" class="form-label">Contenuto Verbale</label>
-                                <textarea class="form-control" id="minutes" name="minutes" rows="10"><?php echo htmlspecialchars($meeting['minutes'] ?? ''); ?></textarea>
-                                <small class="form-text text-muted">Inserire qui il testo completo del verbale</small>
-                            </div>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addAgendaItem()">
+                                <i class="bi bi-plus-circle"></i> Aggiungi Ordine del Giorno
+                            </button>
                         </div>
                     </div>
                     
@@ -236,5 +406,144 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    let participantIndex = <?= count($participants) ?>;
+    let agendaIndex = <?= count($agendaItems) ?>;
+    
+    const activeMembersData = <?= json_encode($activeMembers) ?>;
+    const activeJuniorMembersData = <?= json_encode($activeJuniorMembers) ?>;
+    
+    function addParticipant() {
+        const container = document.getElementById('participants-container');
+        const index = participantIndex++;
+        
+        const html = `
+            <div class="row mb-2 participant-row">
+                <div class="col-md-5">
+                    <select class="form-select" name="participants[${index}][type]" onchange="updateParticipantOptions(this)">
+                        <option value="adult">Socio Maggiorenne</option>
+                        <option value="junior">Socio Minorenne (Cadetto)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-select participant-select" name="participants[${index}][id]">
+                        <option value="">Seleziona...</option>
+                        ${activeMembersData.map(m => `<option value="${m.id}">${m.last_name} ${m.first_name} (${m.registration_number})</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeParticipant(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', html);
+    }
+    
+    function removeParticipant(button) {
+        button.closest('.participant-row').remove();
+    }
+    
+    function updateParticipantOptions(select) {
+        const row = select.closest('.participant-row');
+        const memberSelect = row.querySelector('.participant-select');
+        const type = select.value;
+        
+        memberSelect.innerHTML = '<option value="">Seleziona...</option>';
+        
+        const members = type === 'adult' ? activeMembersData : activeJuniorMembersData;
+        members.forEach(m => {
+            const option = document.createElement('option');
+            option.value = m.id;
+            option.textContent = `${m.last_name} ${m.first_name} (${m.registration_number})`;
+            memberSelect.appendChild(option);
+        });
+    }
+    
+    function addAgendaItem() {
+        const container = document.getElementById('agenda-container');
+        const index = agendaIndex++;
+        
+        const html = `
+            <div class="card mb-3 agenda-item">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Ordine del Giorno #${index + 1}</strong>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeAgendaItem(this)">
+                            <i class="bi bi-trash"></i> Rimuovi
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Oggetto <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="agenda_items[${index}][subject]" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrizione</label>
+                        <textarea class="form-control" name="agenda_items[${index}][description]" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Discussione</label>
+                        <textarea class="form-control" name="agenda_items[${index}][discussion]" rows="3"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="agenda_items[${index}][has_voting]" 
+                               id="voting_${index}" onchange="toggleVotingFields(this)">
+                        <label class="form-check-label" for="voting_${index}">
+                            Votazione effettuata
+                        </label>
+                    </div>
+                    <div class="voting-fields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">Votanti</label>
+                                <input type="number" class="form-control" name="agenda_items[${index}][voting_total]" value="0" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Favorevoli</label>
+                                <input type="number" class="form-control" name="agenda_items[${index}][voting_in_favor]" value="0" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Contrari</label>
+                                <input type="number" class="form-control" name="agenda_items[${index}][voting_against]" value="0" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Astenuti</label>
+                                <input type="number" class="form-control" name="agenda_items[${index}][voting_abstentions]" value="0" min="0">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Esito</label>
+                            <select class="form-select" name="agenda_items[${index}][voting_result]">
+                                <option value="non_votato" selected>Non Votato</option>
+                                <option value="approvato">Approvato</option>
+                                <option value="respinto">Respinto</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', html);
+    }
+    
+    function removeAgendaItem(button) {
+        button.closest('.agenda-item').remove();
+        // Renumber remaining items
+        document.querySelectorAll('.agenda-item').forEach((item, index) => {
+            item.querySelector('.card-header strong').textContent = `Ordine del Giorno #${index + 1}`;
+        });
+    }
+    
+    function toggleVotingFields(checkbox) {
+        const card = checkbox.closest('.card-body');
+        const votingFields = card.querySelector('.voting-fields');
+        votingFields.style.display = checkbox.checked ? 'block' : 'none';
+    }
+    </script>
 </body>
 </html>
