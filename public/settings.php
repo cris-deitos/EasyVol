@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\FileUploader;
 
 $app = App::getInstance();
 
@@ -59,53 +60,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                 
                 // Handle logo upload
                 if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
-                    $file = $_FILES['logo'];
-                    $fileSize = $file['size'];
-                    $fileTmpPath = $file['tmp_name'];
+                    // Allowed MIME types for logo
+                    $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
                     
-                    // Validate file size (5MB max)
-                    if ($fileSize > 5 * 1024 * 1024) {
-                        $errors[] = 'Il file è troppo grande. Dimensione massima: 5MB';
+                    // Determine file extension from MIME type
+                    $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                    $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
+                    
+                    $ext = match($mimeType) {
+                        'image/png' => 'png',
+                        'image/jpeg' => 'jpg',
+                        'image/svg+xml' => 'svg',
+                        default => null
+                    };
+                    
+                    if ($ext === null) {
+                        $errors[] = 'Tipo di file non valido. Sono ammessi solo PNG, JPG, SVG';
                     } else {
-                        // Validate MIME type
-                        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-                        $mimeType = $finfo->file($fileTmpPath);
-                        $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+                        $newFileName = 'logo_associazione.' . $ext;
                         
-                        if (!in_array($mimeType, $allowedMimeTypes)) {
-                            $errors[] = 'Tipo di file non valido. Sono ammessi solo PNG, JPG, JPEG, SVG';
+                        // Delete old logo files if exist
+                        $uploadDir = __DIR__ . '/../uploads/logo/';
+                        $oldFiles = glob($uploadDir . 'logo_associazione.*');
+                        foreach ($oldFiles as $oldFile) {
+                            if (file_exists($oldFile)) {
+                                unlink($oldFile);
+                            }
+                        }
+                        
+                        // Use FileUploader for consistent and secure upload
+                        $uploader = new FileUploader(__DIR__ . '/../uploads/logo/', $allowedMimeTypes, 5 * 1024 * 1024);
+                        $uploadResult = $uploader->upload($_FILES['logo'], '', $newFileName);
+                        
+                        if ($uploadResult['success']) {
+                            $associationData['logo'] = 'uploads/logo/' . $newFileName;
                         } else {
-                            // Determine file extension
-                            $ext = match($mimeType) {
-                                'image/png' => 'png',
-                                'image/jpeg', 'image/jpg' => 'jpg',
-                                'image/svg+xml' => 'svg',
-                                default => 'png'
-                            };
-                            
-                            // Create upload directory if not exists
-                            $uploadDir = __DIR__ . '/../uploads/logo/';
-                            if (!is_dir($uploadDir)) {
-                                mkdir($uploadDir, 0755, true);
-                            }
-                            
-                            $newFileName = 'logo_associazione.' . $ext;
-                            $destPath = $uploadDir . $newFileName;
-                            
-                            // Delete old logo files if exist
-                            $oldFiles = glob($uploadDir . 'logo_associazione.*');
-                            foreach ($oldFiles as $oldFile) {
-                                if (file_exists($oldFile)) {
-                                    unlink($oldFile);
-                                }
-                            }
-                            
-                            // Move uploaded file
-                            if (move_uploaded_file($fileTmpPath, $destPath)) {
-                                $associationData['logo'] = 'uploads/logo/' . $newFileName;
-                            } else {
-                                $errors[] = 'Errore durante il caricamento del logo';
-                            }
+                            $errors[] = 'Errore upload logo: ' . $uploadResult['error'];
                         }
                     }
                 } elseif (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -293,7 +283,7 @@ $pageTitle = 'Impostazioni Sistema';
                                             </div>
                                         <?php endif; ?>
                                         <input type="file" class="form-control" id="logo" name="logo" 
-                                               accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+                                               accept="image/png,image/jpeg,image/svg+xml"
                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
                                         <small class="text-muted">Formati consentiti: PNG, JPG, JPEG, SVG. Dimensione massima: 5MB</small>
                                     </div>
