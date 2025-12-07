@@ -11,6 +11,7 @@ use EasyVol\Database;
 class UserController {
     private $db;
     private $config;
+    private $phpmailerAvailable = null;
     
     public function __construct(Database $db, $config) {
         $this->db = $db;
@@ -136,10 +137,16 @@ class UserController {
             
             $this->logActivity($creatorId, 'users', 'create', $userId, 'Creato utente: ' . $data['username']);
             
-            // Send welcome email with credentials
-            $this->sendWelcomeEmail($data['username'], $data['email'], $data['full_name'] ?? $data['username'], $password);
-            
             $this->db->commit();
+            
+            // Send welcome email with credentials (after commit, non-blocking)
+            // If email fails, user creation still succeeds
+            try {
+                $this->sendWelcomeEmail($data['username'], $data['email'], $data['full_name'] ?? $data['username'], $password);
+            } catch (\Exception $e) {
+                error_log("Errore invio email benvenuto (utente creato comunque): " . $e->getMessage());
+            }
+            
             return $userId;
             
         } catch (\Exception $e) {
@@ -363,12 +370,29 @@ class UserController {
     }
     
     /**
+     * Verifica se PHPMailer è disponibile (con cache)
+     */
+    private function isPhpMailerAvailable() {
+        if ($this->phpmailerAvailable === null) {
+            $this->phpmailerAvailable = class_exists('\PHPMailer\PHPMailer\PHPMailer');
+        }
+        return $this->phpmailerAvailable;
+    }
+    
+    /**
      * Invia email di benvenuto
      */
     private function sendWelcomeEmail($username, $email, $fullName, $password) {
         try {
             // Only send if email is enabled
             if (!($this->config['email']['enabled'] ?? false)) {
+                error_log("Email invio disabilitato nella configurazione");
+                return false;
+            }
+            
+            // Check if PHPMailer is available (cached check)
+            if (!$this->isPhpMailerAvailable()) {
+                error_log("PHPMailer non installato. Eseguire: composer install");
                 return false;
             }
             
@@ -411,10 +435,14 @@ class UserController {
             $sql = "UPDATE users SET password = ?, must_change_password = 1, updated_at = NOW() WHERE id = ?";
             $this->db->execute($sql, [$hashedPassword, $user['id']]);
             
-            // Send email with new password
-            $this->sendPasswordResetEmail($user['username'], $user['email'], $user['full_name'] ?? $user['username'], $newPassword);
-            
             $this->logActivity($user['id'], 'users', 'password_reset', $user['id'], 'Password resettata');
+            
+            // Send email with new password (non-blocking)
+            try {
+                $this->sendPasswordResetEmail($user['username'], $user['email'], $user['full_name'] ?? $user['username'], $newPassword);
+            } catch (\Exception $e) {
+                error_log("Errore invio email reset password (password resettata comunque): " . $e->getMessage());
+            }
             
             return true;
             
@@ -431,6 +459,13 @@ class UserController {
         try {
             // Only send if email is enabled
             if (!($this->config['email']['enabled'] ?? false)) {
+                error_log("Email invio disabilitato nella configurazione");
+                return false;
+            }
+            
+            // Check if PHPMailer is available (cached check)
+            if (!$this->isPhpMailerAvailable()) {
+                error_log("PHPMailer non installato. Eseguire: composer install");
                 return false;
             }
             
