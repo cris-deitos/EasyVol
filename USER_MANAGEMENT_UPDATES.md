@@ -28,15 +28,18 @@ This document describes the comprehensive updates made to the EasyVol user manag
 - All new users are automatically assigned the password: `Pw@12345678`
 - Password is automatically sent via email to the user
 - Users are required to change this password on first login
+- Default password is defined as a constant (`App::DEFAULT_PASSWORD`) for easy maintenance
 
 **Files Modified:**
 - `public/user_edit.php` - Automatic password assignment for new users
 - `src/Controllers/UserController.php` - Default password logic in create method
+- `src/App.php` - Added DEFAULT_PASSWORD constant
 
 **Benefits:**
 - Consistent, secure default password
 - Reduces administrative overhead
 - Users receive credentials via email automatically
+- Easy to change default password in one place if needed
 
 ### 3. Welcome Email Notification ✓
 

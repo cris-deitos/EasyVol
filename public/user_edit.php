@@ -89,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Password solo per nuovo utente o se specificata
         if (!$isEdit) {
-            // For new users, use default password Pw@12345678
-            $data['password'] = 'Pw@12345678';
+            // For new users, use default password
+            $data['password'] = App::DEFAULT_PASSWORD;
         } elseif (!empty($_POST['password'])) {
             // For existing users, only change if provided
             $password = $_POST['password'] ?? '';
@@ -267,7 +267,7 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                 <?php if (!$isEdit): ?>
                                     <div class="alert alert-info mb-3">
                                         <i class="bi bi-info-circle"></i> 
-                                        Per i nuovi utenti verrà impostata automaticamente la password predefinita: <strong>Pw@12345678</strong><br>
+                                        Per i nuovi utenti verrà impostata automaticamente la password predefinita: <strong><?php echo htmlspecialchars(App::DEFAULT_PASSWORD); ?></strong><br>
                                         L'utente riceverà un'email con le credenziali e sarà obbligato a cambiarla al primo accesso.
                                     </div>
                                 <?php endif; ?>

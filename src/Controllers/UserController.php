@@ -110,8 +110,8 @@ class UserController {
             }
             
             // Set default password if not provided
-            $password = $data['password'] ?? 'Pw@12345678';
-            $mustChangePassword = !isset($data['password']) || $data['password'] === 'Pw@12345678' ? 1 : 0;
+            $password = $data['password'] ?? \EasyVol\App::DEFAULT_PASSWORD;
+            $mustChangePassword = !isset($data['password']) || $data['password'] === \EasyVol\App::DEFAULT_PASSWORD ? 1 : 0;
             
             $sql = "INSERT INTO users (
                 username, password, email, full_name, member_id, 
@@ -402,7 +402,7 @@ class UserController {
             }
             
             // Set default password
-            $newPassword = 'Pw@12345678';
+            $newPassword = \EasyVol\App::DEFAULT_PASSWORD;
             $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
             
             // Update password and set must_change_password flag

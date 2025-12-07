@@ -8,6 +8,11 @@ use EasyVol\Controllers\UserController;
 $app = App::getInstance();
 $db = $app->getDb();
 
+// Ensure session is started
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 // Check if user needs to change password
 if (!isset($_SESSION['must_change_password_user_id'])) {
     header("Location: login.php");
@@ -36,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'La password deve essere di almeno 8 caratteri.';
     } elseif ($newPassword !== $confirmPassword) {
         $error = 'Le password non coincidono.';
-    } elseif ($newPassword === 'Pw@12345678') {
+    } elseif ($newPassword === App::DEFAULT_PASSWORD) {
         $error = 'Non puoi utilizzare la password predefinita. Scegli una password diversa.';
     } else {
         try {
