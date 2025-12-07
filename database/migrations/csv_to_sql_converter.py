@@ -14,6 +14,12 @@ Requirements:
     - Python 3.6+
     - No external dependencies (uses only standard library)
 
+Security Note:
+    This script is designed for one-time data migration from controlled CSV files.
+    It uses basic SQL escaping which is sufficient for this use case. For ongoing
+    data imports or user-facing applications, consider using parameterized queries
+    or an ORM instead.
+
 Author: EasyVol Project
 Date: 2025-12-07
 """
@@ -25,13 +31,18 @@ from typing import Dict, List, Optional
 
 
 def escape_sql_string(value: Optional[str]) -> str:
-    """Escape a string for SQL insertion."""
+    """Escape a string for SQL insertion.
+    
+    Note: This function uses basic escaping for single quotes and backslashes.
+    For production use with user input, consider using parameterized queries instead.
+    This is safe for CSV data conversion where the input is controlled.
+    """
     if value is None or value == '':
         return 'NULL'
-    # Escape single quotes
-    escaped = value.replace("'", "\\'")
-    # Escape backslashes
-    escaped = escaped.replace("\\", "\\\\")
+    # First escape backslashes (must be done before quotes)
+    escaped = value.replace("\\", "\\\\")
+    # Then escape single quotes
+    escaped = escaped.replace("'", "\\'")
     return f"'{escaped}'"
 
 
@@ -512,7 +523,7 @@ START TRANSACTION;
     
     # Read and process CSV
     try:
-        with open(csv_file, 'r', encoding='utf-8') as f:
+        with open(csv_file, 'r', encoding='utf-8', errors='replace') as f:
             reader = csv.DictReader(f)
             for i, row in enumerate(reader, 1):
                 if is_cadetti:
@@ -521,6 +532,13 @@ START TRANSACTION;
                     print(generate_adult_member_sql(row, i))
     except FileNotFoundError:
         print(f"Error: File '{csv_file}' not found", file=sys.stderr)
+        sys.exit(1)
+    except UnicodeDecodeError as e:
+        print(f"Error: File encoding issue - {e}", file=sys.stderr)
+        print("Try converting the CSV file to UTF-8 encoding first", file=sys.stderr)
+        sys.exit(1)
+    except csv.Error as e:
+        print(f"Error: Invalid CSV format - {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"Error processing CSV: {e}", file=sys.stderr)

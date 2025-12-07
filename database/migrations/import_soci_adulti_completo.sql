@@ -49,7 +49,7 @@ INSERT INTO `members` (
     'ROMA',                            -- luogo_nascita
     'RSSMRA80A15H501X',               -- codicefiscale
     '2010-03-20',                      -- anno_iscrizione
-    -- notes: consolidamento di tutti i campi extra
+    -- notes: consolidamento campi extra (non presenti nello schema DB corrente)
     'Provincia nascita: RM
 Sesso: M
 Gruppo sanguigno: A+

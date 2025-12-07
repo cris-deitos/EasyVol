@@ -44,7 +44,7 @@ INSERT INTO `junior_members` (
     'ROMA',                            -- nuovocampo4 (birth_place)
     'FRRPLA10E15H501X',               -- nuovocampo7 (tax_code)
     '2023-09-01',                      -- nuovocampo61 (registration_date)
-    -- notes: consolidamento di tutti i campi extra
+    -- notes: consolidamento campi extra (non presenti nello schema DB corrente)
     'Provincia nascita: RM
 Sesso: M
 Gruppo sanguigno: A+
@@ -432,9 +432,9 @@ INSERT INTO `junior_member_guardians` (
     'roberto.costa@example.com'
 );
 
--- Contatti cadetto C005 (include contatti padre e madre)
--- Nota: Nel database attuale non c'è modo di distinguere tra contatti diversi
--- se non nel campo notes del junior_member
+-- Contatti cadetto C005
+-- Note: Current schema limitations - parent contacts are stored in notes field
+-- junior_member_contacts table is for junior's contacts only
 INSERT INTO `junior_member_contacts` (`junior_member_id`, `contact_type`, `value`) VALUES
     (@junior_id, 'cellulare', '3388889900'),   -- cellulare cadetto
     (@junior_id, 'email', 'andrea.costa@example.com'); -- email cadetto
