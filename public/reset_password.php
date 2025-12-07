@@ -3,14 +3,9 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Controllers\UserController;
 
 $app = App::getInstance();
-
-// Redirect to install if not configured
-if (!$app->isInstalled()) {
-    header("Location: install.php");
-    exit;
-}
 
 // Redirect if already logged in
 if ($app->isLoggedIn()) {
@@ -19,84 +14,27 @@ if ($app->isLoggedIn()) {
 }
 
 $error = '';
+$success = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
+    $usernameOrEmail = trim($_POST['username_or_email'] ?? '');
     
-    if (empty($username) || empty($password)) {
-        $error = 'Per favore inserisci username e password.';
+    if (empty($usernameOrEmail)) {
+        $error = 'Inserisci username o email.';
     } else {
         try {
             $db = $app->getDb();
+            $config = $app->getConfig();
+            $controller = new UserController($db, $config);
             
-            // Get user with role
-            $stmt = $db->query(
-                "SELECT u.*, r.name as role_name 
-                FROM users u 
-                LEFT JOIN roles r ON u.role_id = r.id 
-                WHERE u.username = ? AND u.is_active = 1",
-                [$username]
-            );
+            $result = $controller->resetPassword($usernameOrEmail);
             
-            $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password'])) {
-                // Check if password change is required
-                if ($user['must_change_password']) {
-                    // Store user id in session for password change
-                    $_SESSION['must_change_password_user_id'] = $user['id'];
-                    header("Location: change_password.php");
-                    exit;
-                }
-                
-                // Get role-based permissions
-                $rolePermissions = [];
-                if ($user['role_id']) {
-                    $stmt = $db->query(
-                        "SELECT p.* FROM permissions p
-                        INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                        WHERE rp.role_id = ?",
-                        [$user['role_id']]
-                    );
-                    $rolePermissions = $stmt->fetchAll();
-                }
-                
-                // Get user-specific permissions
-                $stmt = $db->query(
-                    "SELECT p.* FROM permissions p
-                    INNER JOIN user_permissions up ON p.id = up.permission_id
-                    WHERE up.user_id = ?",
-                    [$user['id']]
-                );
-                $userPermissions = $stmt->fetchAll();
-                
-                // Merge permissions (user-specific permissions supplement role permissions)
-                $permissionsMap = [];
-                foreach ($rolePermissions as $perm) {
-                    $key = $perm['module'] . '::' . $perm['action'];
-                    $permissionsMap[$key] = $perm;
-                }
-                foreach ($userPermissions as $perm) {
-                    $key = $perm['module'] . '::' . $perm['action'];
-                    $permissionsMap[$key] = $perm;
-                }
-                $user['permissions'] = array_values($permissionsMap);
-                
-                // Update last login
-                $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
-                
-                // Set session
-                $_SESSION['user'] = $user;
-                
-                // Log activity
-                $app->logActivity('login', 'auth', null, 'User logged in');
-                
-                header("Location: dashboard.php");
-                exit;
+            if ($result === true) {
+                $success = true;
+            } elseif (is_array($result) && isset($result['error'])) {
+                $error = $result['error'];
             } else {
-                $error = 'Username o password non corretti.';
-                $app->logActivity('login_failed', 'auth', null, "Failed login attempt for username: $username");
+                $error = 'Errore durante il reset della password.';
             }
         } catch (Exception $e) {
             $error = 'Errore di sistema. Riprova più tardi.';
@@ -110,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - EasyVol</title>
+    <title>Reset Password - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -163,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             50% { transform: translateY(-50px) rotate(180deg); }
         }
         
-        .login-container {
+        .reset-container {
             position: relative;
             z-index: 1;
             max-width: 450px;
@@ -171,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 20px;
         }
         
-        .login-card {
+        .reset-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -181,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         
-        .login-card:hover {
+        .reset-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
         }
@@ -199,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .logo-container h2 {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
@@ -258,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
         }
         
-        .btn-login {
+        .btn-reset {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             padding: 14px;
@@ -271,13 +209,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         
-        .btn-login:hover {
+        .btn-reset:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
             background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
         
-        .btn-login:active {
+        .btn-reset:active {
             transform: translateY(0);
         }
         
@@ -298,15 +236,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
             color: white;
         }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            color: white;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link a:hover {
+            color: #764ba2;
+        }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-card">
+    <div class="reset-container">
+        <div class="reset-card">
             <div class="logo-container">
                 <img src="../assets/images/easyvol-logo.svg" alt="EasyVol Logo">
-                <h2>EasyVol</h2>
-                <p>Sistema Gestionale Protezione Civile</p>
+                <h2>Reset Password</h2>
+                <p>Inserisci il tuo username o email</p>
             </div>
 
             <?php if ($error): ?>
@@ -315,28 +274,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <form method="POST">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" class="form-control" name="username" placeholder="Username" required autofocus>
+            <?php if ($success): ?>
+                <div class="alert alert-success mb-4">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Password resettata con successo! Controlla la tua email per le nuove credenziali.
                 </div>
+            <?php else: ?>
+                <form method="POST">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control" name="username_or_email" 
+                               placeholder="Username o Email" required autofocus>
+                    </div>
 
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input type="password" class="form-control" name="password" placeholder="Password" required>
-                </div>
+                    <button type="submit" class="btn btn-reset btn-primary w-100">
+                        <i class="bi bi-key me-2"></i>Reset Password
+                    </button>
+                </form>
+            <?php endif; ?>
 
-                <button type="submit" class="btn btn-login btn-primary w-100">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>Accedi
-                </button>
-            </form>
-
-            <div class="text-center mt-3">
-                <a href="reset_password.php" class="text-decoration-none" style="color: #667eea;">
-                    <i class="bi bi-key"></i> Password dimenticata?
+            <div class="back-link">
+                <a href="login.php">
+                    <i class="bi bi-arrow-left"></i> Torna al Login
                 </a>
             </div>
-
         </div>
     </div>
 
