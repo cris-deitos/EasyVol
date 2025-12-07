@@ -59,7 +59,6 @@ class OperationsCenterController {
      */
     public function getAvailableVolunteers() {
         $sql = "SELECT m.*, 
-                m.badge_number,
                 mc.value as phone,
                 COALESCE(ma.availability_type, 'available') as availability_type,
                 ma.notes as availability_notes
