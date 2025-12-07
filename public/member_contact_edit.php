@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $memberModel->addContact($memberId, $data);
                 }
                 
-                header('Location: member_view.php?id=' . $memberId . '&success=1');
+                header('Location: member_view.php?id=' . $memberId . '&tab=contacts&success=1');
                 exit;
             } catch (\Exception $e) {
                 $errors[] = $e->getMessage();

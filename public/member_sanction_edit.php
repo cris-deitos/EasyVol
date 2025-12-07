@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $memberModel->update($memberId, ['member_status' => $newStatus]);
                 
-                header('Location: member_view.php?id=' . $memberId . '&success=1');
+                header('Location: member_view.php?id=' . $memberId . '&tab=sanctions&success=1');
                 exit;
             } catch (\Exception $e) {
                 $errors[] = $e->getMessage();
