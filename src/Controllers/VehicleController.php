@@ -271,13 +271,18 @@ class VehicleController {
     private function calculateInspectionExpiry($revisionDate) {
         $date = new \DateTime($revisionDate);
         
-        // Vai all'ultimo giorno del mese
-        $date->modify('last day of this month');
+        // Get current month and year
+        $year = (int)$date->format('Y');
+        $month = (int)$date->format('m');
         
-        // Aggiungi 2 anni
-        $date->modify('+2 years');
+        // Add 2 years
+        $year += 2;
         
-        return $date->format('Y-m-d');
+        // Get the last day of that month in 2 years
+        $lastDay = date('t', mktime(0, 0, 0, $month, 1, $year));
+        
+        // Create the expiry date
+        return sprintf('%04d-%02d-%02d', $year, $month, $lastDay);
     }
     
     /**
