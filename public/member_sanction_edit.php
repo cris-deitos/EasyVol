@@ -75,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (empty($errors)) {
             try {
-                // Log sanction data for debugging
-                error_log("Adding/Updating sanction for member $memberId: " . json_encode($data));
+                // Log sanction operation (non-sensitive data only)
+                error_log("Adding/Updating sanction for member $memberId - Type: " . $data['sanction_type'] . ", Date: " . $data['sanction_date']);
                 
                 if ($sanctionId > 0) {
                     $memberModel->updateSanction($sanctionId, $data);

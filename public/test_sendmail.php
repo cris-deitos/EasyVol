@@ -46,7 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($testEmail)) {
             <p>Questa è un\'email di test per verificare che il sistema di invio email funzioni correttamente.</p>
             <p><strong>Configurazione:</strong></p>
             <ul>
-                <li>From: ' . htmlspecialchars($config['email']['from_name'] ?? 'N/A') . ' &lt;' . htmlspecialchars($config['email']['from_address'] ?? $config['email']['from_email'] ?? 'N/A') . '&gt;</li>
+                <?php 
+                $fromAddr = $config['email']['from_address'] ?? $config['email']['from_email'] ?? 'N/A';
+                $fromName = $config['email']['from_name'] ?? 'N/A';
+                ?>
+                <li>From: <?= htmlspecialchars($fromName) ?> &lt;<?= htmlspecialchars($fromAddr) ?>&gt;</li>
                 <li>Reply-To: ' . htmlspecialchars($config['email']['reply_to'] ?? 'N/A') . '</li>
                 <li>Charset: ' . htmlspecialchars($config['email']['charset'] ?? 'UTF-8') . '</li>
                 <li>Encoding: ' . htmlspecialchars($config['email']['encoding'] ?? '8bit') . '</li>

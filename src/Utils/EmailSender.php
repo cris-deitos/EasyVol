@@ -49,7 +49,22 @@ class EmailSender {
         // Add custom headers if configured
         if (!empty($this->config['email']['additional_headers'])) {
             if (is_array($this->config['email']['additional_headers'])) {
-                $headers = array_merge($headers, $this->config['email']['additional_headers']);
+                // Validate and filter dangerous headers
+                $dangerousHeaders = ['bcc:', 'cc:', 'to:', 'from:', 'content-type:', 'mime-version:'];
+                foreach ($this->config['email']['additional_headers'] as $header) {
+                    $headerLower = strtolower(trim($header));
+                    $isDangerous = false;
+                    foreach ($dangerousHeaders as $dangerous) {
+                        if (strpos($headerLower, $dangerous) === 0) {
+                            $isDangerous = true;
+                            error_log("Blocked dangerous header: $header");
+                            break;
+                        }
+                    }
+                    if (!$isDangerous && preg_match('/^[a-zA-Z0-9\-]+:/', $header)) {
+                        $headers[] = $header;
+                    }
+                }
             }
         }
         
