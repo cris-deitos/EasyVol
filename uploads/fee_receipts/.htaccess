@@ -1,0 +1,11 @@
+# Prevent direct access to uploaded files
+# Files should only be accessed through the application
+
+# Deny access to all files by default
+<FilesMatch ".*">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Allow access only to specific file types from authenticated users
+# The application should handle authentication and authorization

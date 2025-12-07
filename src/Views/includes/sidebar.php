@@ -37,6 +37,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </li>
             <?php endif; ?>
             
+            <?php if ($app->checkPermission('members', 'edit')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'fee_payments.php' ? 'active' : '' ?>" href="fee_payments.php">
+                    <i class="bi bi-receipt-cutoff"></i> Quote Associative
+                </a>
+            </li>
+            <?php endif; ?>
+            
             <?php if ($app->checkPermission('meetings', 'view')): ?>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'meetings.php' ? 'active' : '' ?>" href="meetings.php">
