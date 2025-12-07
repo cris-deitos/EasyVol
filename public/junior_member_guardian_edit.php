@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         try {
             $memberModel->addGuardian($memberId, $data);
-            header('Location: junior_member_view.php?id=' . $memberId . '&success=1');
+            header('Location: junior_member_view.php?id=' . $memberId . '&tab=guardians&success=1');
             exit;
         } catch (\Exception $e) {
             $errors[] = $e->getMessage();

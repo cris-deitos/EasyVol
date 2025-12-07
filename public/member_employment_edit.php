@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         try {
             $memberModel->addEmployment($memberId, $data);
-            header('Location: member_view.php?id=' . $memberId . '&success=1');
+            header('Location: member_view.php?id=' . $memberId . '&tab=employment&success=1');
             exit;
         } catch (\Exception $e) {
             $errors[] = $e->getMessage();

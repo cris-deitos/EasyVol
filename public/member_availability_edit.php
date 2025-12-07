@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($errors)) {
             try {
                 $memberModel->addAvailability($memberId, $data);
-                header('Location: member_view.php?id=' . $memberId . '&success=1');
+                header('Location: member_view.php?id=' . $memberId . '&tab=availability&success=1');
                 exit;
             } catch (\Exception $e) {
                 $errors[] = $e->getMessage();

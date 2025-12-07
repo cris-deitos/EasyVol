@@ -973,6 +973,20 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                 modal.hide();
             }
         }
+        
+        // Handle tab activation from URL parameter
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTab = urlParams.get('tab');
+            
+            if (activeTab) {
+                const tabElement = document.getElementById(activeTab + '-tab');
+                if (tabElement) {
+                    const tab = new bootstrap.Tab(tabElement);
+                    tab.show();
+                }
+            }
+        });
     </script>
 
     <!-- Print Template Selection Modal -->

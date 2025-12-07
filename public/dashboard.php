@@ -213,14 +213,55 @@ AutoLogger::logPageAccess();
                                     <p class="text-muted">Nessuna attività recente</p>
                                 <?php else: ?>
                                     <div class="list-group list-group-flush">
-                                        <?php foreach ($recentLogs as $log): ?>
+                                        <?php foreach ($recentLogs as $log): 
+                                            // Translate action to Italian
+                                            $actionLabels = [
+                                                'page_view' => 'ha visualizzato',
+                                                'create' => 'ha creato',
+                                                'update' => 'ha modificato',
+                                                'delete' => 'ha eliminato',
+                                                'search' => 'ha cercato',
+                                                'export' => 'ha esportato',
+                                                'login' => 'ha effettuato il login',
+                                                'logout' => 'ha effettuato il logout'
+                                            ];
+                                            $actionLabel = $actionLabels[$log['action']] ?? $log['action'];
+                                            
+                                            // Get module label
+                                            $moduleLabels = [
+                                                'dashboard' => 'Dashboard',
+                                                'members' => 'Soci',
+                                                'junior_members' => 'Cadetti',
+                                                'events' => 'Eventi',
+                                                'vehicles' => 'Mezzi',
+                                                'warehouse' => 'Magazzino',
+                                                'documents' => 'Documenti',
+                                                'meetings' => 'Riunioni',
+                                                'training' => 'Formazione',
+                                                'users' => 'Utenti',
+                                                'settings' => 'Impostazioni'
+                                            ];
+                                            $moduleLabel = $moduleLabels[$log['module']] ?? $log['module'];
+                                        ?>
                                             <div class="list-group-item">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <small class="mb-1">
-                                                        <strong><?= htmlspecialchars($log['full_name'] ?? $log['username'] ?? 'Sistema') ?></strong>
-                                                        - <?= htmlspecialchars($log['action']) ?>
-                                                    </small>
-                                                    <small class="text-muted"><?= date('d/m/Y H:i', strtotime($log['created_at'])) ?></small>
+                                                <div class="d-flex w-100 justify-content-between align-items-start">
+                                                    <div>
+                                                        <small class="mb-1">
+                                                            <strong><?= htmlspecialchars($log['full_name'] ?? $log['username'] ?? 'Sistema') ?></strong>
+                                                            <?= htmlspecialchars($actionLabel) ?>
+                                                            <?php if ($log['module']): ?>
+                                                                <span class="badge bg-secondary"><?= htmlspecialchars($moduleLabel) ?></span>
+                                                            <?php endif; ?>
+                                                            <?php if ($log['record_id']): ?>
+                                                                <span class="text-muted">(ID: <?= htmlspecialchars($log['record_id']) ?>)</span>
+                                                            <?php endif; ?>
+                                                        </small>
+                                                        <?php if ($log['description']): ?>
+                                                            <br>
+                                                            <small class="text-muted"><?= htmlspecialchars($log['description']) ?></small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <small class="text-muted text-nowrap ms-2"><?= date('d/m/Y H:i', strtotime($log['created_at'])) ?></small>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>

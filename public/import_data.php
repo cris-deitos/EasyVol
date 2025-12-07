@@ -80,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Parse e preview
                 $parseResult = $importController->parseAndPreview($filePath, $delimiter);
                 $suggestedMapping = $importController->suggestMapping($parseResult['headers'], $importType);
+                $availableFields = $importController->getAvailableFields($importType);
                 
                 $importData = [
                     'file_path' => $filePath,
@@ -90,7 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'preview' => $parseResult['preview'],
                     'total_rows' => $parseResult['total_rows'],
                     'encoding' => $parseResult['encoding'],
-                    'suggested_mapping' => $suggestedMapping
+                    'suggested_mapping' => $suggestedMapping,
+                    'available_fields' => $availableFields
                 ];
                 
                 $_SESSION['import_data'] = $importData;
@@ -365,7 +367,7 @@ $pageTitle = 'Import Dati CSV';
                             </div>
                             
                             <h6 class="mt-4">Mappatura Colonne</h6>
-                            <p class="text-muted">Mappa le colonne del CSV ai campi del database. La mappatura automatica è già suggerita.</p>
+                            <p class="text-muted">Mappa le colonne del CSV ai campi del database. La mappatura automatica è già suggerita. Seleziona dal menu a tendina per vedere a quale tabella appartiene ogni campo.</p>
                             
                             <form method="POST">
                                 <?php echo CsrfProtection::getHiddenField(); ?>
@@ -375,8 +377,8 @@ $pageTitle = 'Import Dati CSV';
                                     <table class="table table-sm">
                                         <thead>
                                             <tr>
-                                                <th>Colonna CSV</th>
-                                                <th>Campo Database</th>
+                                                <th style="width: 30%;">Colonna CSV</th>
+                                                <th style="width: 70%;">Campo Database (Tabella)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -384,11 +386,22 @@ $pageTitle = 'Import Dati CSV';
                                                 <tr>
                                                     <td><strong><?php echo htmlspecialchars($header); ?></strong></td>
                                                     <td>
-                                                        <input type="text" 
-                                                               class="form-control form-control-sm" 
-                                                               name="mapping_<?php echo md5($header); ?>" 
-                                                               value="<?php echo htmlspecialchars($importData['suggested_mapping'][$header] ?? ''); ?>"
-                                                               placeholder="Lascia vuoto per ignorare">
+                                                        <select class="form-select form-select-sm" name="mapping_<?php echo md5($header); ?>">
+                                                            <option value="">-- Ignora questa colonna --</option>
+                                                            <?php 
+                                                            $currentMapping = $importData['suggested_mapping'][$header] ?? '';
+                                                            foreach ($importData['available_fields'] as $tableName => $fields): 
+                                                            ?>
+                                                                <optgroup label="Tabella: <?php echo htmlspecialchars($tableName); ?>">
+                                                                    <?php foreach ($fields as $fieldKey => $fieldLabel): ?>
+                                                                        <option value="<?php echo htmlspecialchars($fieldKey); ?>"
+                                                                                <?php echo $currentMapping === $fieldKey ? 'selected' : ''; ?>>
+                                                                            <?php echo htmlspecialchars($fieldLabel); ?>
+                                                                        </option>
+                                                                    <?php endforeach; ?>
+                                                                </optgroup>
+                                                            <?php endforeach; ?>
+                                                        </select>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>

@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $memberModel->addNote($memberId, $data);
                 }
                 
-                header('Location: member_view.php?id=' . $memberId . '&success=1');
+                header('Location: member_view.php?id=' . $memberId . '&tab=notes&success=1');
                 exit;
             } catch (\Exception $e) {
                 $errors[] = $e->getMessage();

@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         try {
             $memberModel->addCourse($memberId, $data);
-            header('Location: member_view.php?id=' . $memberId . '&success=1');
+            header('Location: member_view.php?id=' . $memberId . '&tab=courses&success=1');
             exit;
         } catch (\Exception $e) {
             $errors[] = $e->getMessage();

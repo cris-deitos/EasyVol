@@ -115,45 +115,172 @@ class AutoLogger {
     }
     
     /**
+     * Get Italian page name for display
+     */
+    private static function getPageNameItalian($pageName) {
+        $pageNames = [
+            'dashboard' => 'Dashboard',
+            'members' => 'Lista Soci',
+            'member_view' => 'Visualizzazione Socio',
+            'member_edit' => 'Modifica Socio',
+            'member_data' => 'Dati Socio',
+            'member_contact_edit' => 'Modifica Contatto Socio',
+            'member_address_edit' => 'Modifica Indirizzo Socio',
+            'member_employment_edit' => 'Modifica Lavoro Socio',
+            'member_role_edit' => 'Modifica Qualifica Socio',
+            'member_course_edit' => 'Modifica Corso Socio',
+            'member_license_edit' => 'Modifica Patente Socio',
+            'member_health_edit' => 'Modifica Info Sanitarie Socio',
+            'member_availability_edit' => 'Modifica Disponibilità Socio',
+            'member_fee_edit' => 'Modifica Quota Socio',
+            'member_sanction_edit' => 'Modifica Provvedimento Socio',
+            'member_note_edit' => 'Modifica Nota Socio',
+            'member_attachment_edit' => 'Modifica Allegato Socio',
+            'junior_members' => 'Lista Cadetti',
+            'junior_member_view' => 'Visualizzazione Cadetto',
+            'junior_member_edit' => 'Modifica Cadetto',
+            'junior_member_contact_edit' => 'Modifica Contatto Cadetto',
+            'junior_member_address_edit' => 'Modifica Indirizzo Cadetto',
+            'junior_member_guardian_edit' => 'Modifica Tutore Cadetto',
+            'junior_member_health_edit' => 'Modifica Info Sanitarie Cadetto',
+            'junior_member_sanction_edit' => 'Modifica Provvedimento Cadetto',
+            'events' => 'Lista Eventi',
+            'event_view' => 'Visualizzazione Evento',
+            'event_edit' => 'Modifica Evento',
+            'vehicles' => 'Lista Mezzi',
+            'vehicle_view' => 'Visualizzazione Mezzo',
+            'vehicle_edit' => 'Modifica Mezzo',
+            'warehouse' => 'Magazzino',
+            'warehouse_view' => 'Visualizzazione Articolo',
+            'warehouse_edit' => 'Modifica Articolo',
+            'documents' => 'Documenti',
+            'document_view' => 'Visualizzazione Documento',
+            'document_edit' => 'Modifica Documento',
+            'meetings' => 'Riunioni',
+            'meeting_view' => 'Visualizzazione Riunione',
+            'meeting_edit' => 'Modifica Riunione',
+            'training' => 'Corsi di Formazione',
+            'training_view' => 'Visualizzazione Corso',
+            'training_edit' => 'Modifica Corso',
+            'applications' => 'Domande di Iscrizione',
+            'users' => 'Gestione Utenti',
+            'user_edit' => 'Modifica Utente',
+            'roles' => 'Gestione Ruoli',
+            'role_edit' => 'Modifica Ruolo',
+            'reports' => 'Report',
+            'settings' => 'Impostazioni',
+            'profile' => 'Profilo Utente',
+            'scheduler' => 'Scadenziario',
+            'scheduler_edit' => 'Modifica Scadenza',
+            'operations_center' => 'Centro Operativo',
+            'radio_directory' => 'Rubrica Radio',
+            'radio_view' => 'Visualizzazione Radio',
+            'radio_edit' => 'Modifica Radio',
+            'fee_payments' => 'Pagamenti Quote',
+            'pay_fee' => 'Pagamento Quota',
+            'activity_logs' => 'Log Attività',
+            'import_data' => 'Importazione Dati CSV',
+        ];
+        
+        return $pageNames[$pageName] ?? ucfirst(str_replace('_', ' ', $pageName));
+    }
+    
+    /**
      * Build description from request parameters
      */
     private static function buildDescription() {
         $parts = [];
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        $pageName = basename($scriptName, '.php');
+        
+        // Add page name in Italian
+        $parts[] = self::getPageNameItalian($pageName);
         
         // Add query parameters
         if (!empty($_GET)) {
             $params = $_GET;
             unset($params['PHPSESSID']); // Remove session
             
-            // Format search/filter parameters
+            // Format search/filter parameters with labels
             if (isset($params['search']) && $params['search']) {
-                $parts[] = "Ricerca: " . $params['search'];
+                $parts[] = "Filtro ricerca testuale: '" . $params['search'] . "'";
             }
             
             if (isset($params['status']) && $params['status']) {
-                $parts[] = "Stato: " . $params['status'];
+                $statusLabels = [
+                    'attivo' => 'Attivo',
+                    'decaduto' => 'Decaduto',
+                    'dimesso' => 'Dimesso',
+                    'in_aspettativa' => 'In Aspettativa',
+                    'sospeso' => 'Sospeso',
+                    'in_congedo' => 'In Congedo',
+                    'pending' => 'In Attesa',
+                    'approved' => 'Approvato',
+                    'rejected' => 'Rifiutato',
+                    'operativo' => 'Operativo',
+                    'in_manutenzione' => 'In Manutenzione',
+                    'fuori_servizio' => 'Fuori Servizio'
+                ];
+                $statusLabel = $statusLabels[$params['status']] ?? $params['status'];
+                $parts[] = "Filtro stato: " . $statusLabel;
             }
             
             if (isset($params['volunteer_status']) && $params['volunteer_status']) {
-                $parts[] = "Stato volontario: " . $params['volunteer_status'];
+                $volStatusLabels = [
+                    'operativo' => 'Operativo',
+                    'non_operativo' => 'Non Operativo',
+                    'in_formazione' => 'In Formazione'
+                ];
+                $statusLabel = $volStatusLabels[$params['volunteer_status']] ?? $params['volunteer_status'];
+                $parts[] = "Filtro stato volontario: " . $statusLabel;
+            }
+            
+            if (isset($params['member_type']) && $params['member_type']) {
+                $typeLabels = [
+                    'ordinario' => 'Ordinario',
+                    'fondatore' => 'Fondatore'
+                ];
+                $typeLabel = $typeLabels[$params['member_type']] ?? $params['member_type'];
+                $parts[] = "Filtro tipo socio: " . $typeLabel;
             }
             
             if (isset($params['type']) && $params['type']) {
-                $parts[] = "Tipo: " . $params['type'];
+                $parts[] = "Filtro tipo: " . $params['type'];
             }
             
             if (isset($params['date_from']) && $params['date_from']) {
-                $parts[] = "Da: " . $params['date_from'];
+                $parts[] = "Filtro data da: " . $params['date_from'];
             }
             
             if (isset($params['date_to']) && $params['date_to']) {
-                $parts[] = "A: " . $params['date_to'];
+                $parts[] = "Filtro data a: " . $params['date_to'];
+            }
+            
+            if (isset($params['tab']) && $params['tab']) {
+                $tabLabels = [
+                    'personal' => 'Dati Personali',
+                    'contacts' => 'Contatti',
+                    'address' => 'Indirizzi',
+                    'employment' => 'Lavoro',
+                    'qualifications' => 'Qualifiche',
+                    'courses' => 'Corsi',
+                    'licenses' => 'Patenti',
+                    'health' => 'Informazioni Sanitarie',
+                    'availability' => 'Disponibilità',
+                    'fees' => 'Quote Sociali',
+                    'sanctions' => 'Provvedimenti',
+                    'notes' => 'Note',
+                    'attachments' => 'Allegati',
+                    'guardians' => 'Tutori'
+                ];
+                $tabLabel = $tabLabels[$params['tab']] ?? $params['tab'];
+                $parts[] = "Scheda: " . $tabLabel;
             }
             
             // If there are other parameters not yet captured
             // Filter out sensitive parameters before logging
             $remainingParams = array_diff_key($params, array_flip(array_merge(
-                ['search', 'status', 'volunteer_status', 'type', 'date_from', 'date_to', 'page', 'id'],
+                ['search', 'status', 'volunteer_status', 'member_type', 'type', 'date_from', 'date_to', 'page', 'id', 'tab', 'success', 'error'],
                 self::SENSITIVE_PARAMS
             )));
             if (!empty($remainingParams)) {
@@ -164,16 +291,11 @@ class AutoLogger {
                     }
                     return $value;
                 }, $remainingParams);
-                $parts[] = "Parametri: " . json_encode($sanitizedParams, JSON_UNESCAPED_UNICODE);
+                $parts[] = "Altri parametri: " . json_encode($sanitizedParams, JSON_UNESCAPED_UNICODE);
             }
         }
         
-        // Add request method if not GET
-        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            $parts[] = "Metodo: " . $_SERVER['REQUEST_METHOD'];
-        }
-        
-        return !empty($parts) ? implode(', ', $parts) : null;
+        return !empty($parts) ? implode(' | ', $parts) : null;
     }
     
     /**
