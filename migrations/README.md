@@ -59,6 +59,15 @@ This migration adds:
   - Forced password change on first login
   - Password reset functionality from login page
 
+### add_member_notes_table.sql
+**Date**: 2025-12-07
+**Purpose**: Add member_notes table that was missing from the database schema
+
+This migration adds:
+- `member_notes` table (for storing notes about members)
+
+**Required**: Yes - This fixes the error "Table 'member_notes' doesn't exist" when viewing or creating member records.
+
 ## Important Notes
 
 - Always backup your database before applying migrations
