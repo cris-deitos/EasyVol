@@ -124,6 +124,11 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="guardians-tab" data-bs-toggle="tab" data-bs-target="#guardians" type="button" role="tab">
+                                    <i class="bi bi-people"></i> Genitori/Tutori
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="contacts-tab" data-bs-toggle="tab" data-bs-target="#contacts" type="button" role="tab">
                                     <i class="bi bi-telephone"></i> Contatti
                                 </button>
@@ -134,8 +139,8 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="qualifications-tab" data-bs-toggle="tab" data-bs-target="#qualifications" type="button" role="tab">
-                                    <i class="bi bi-award"></i> Qualifiche
+                                <button class="nav-link" id="health-tab" data-bs-toggle="tab" data-bs-target="#health" type="button" role="tab">
+                                    <i class="bi bi-heart-pulse"></i> Allergie/Salute
                                 </button>
                             </li>
                         </ul>
@@ -196,12 +201,82 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                 </div>
                             </div>
                             
+                            <!-- Genitori/Tutori -->
+                            <div class="tab-pane fade" id="guardians" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Genitori/Tutori</h5>
+                                            <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                <button class="btn btn-sm btn-primary" onclick="addGuardian()">
+                                                    <i class="bi bi-plus"></i> Aggiungi Tutore
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['guardians'])): ?>
+                                            <?php foreach ($member['guardians'] as $guardian): ?>
+                                                <div class="border rounded p-3 mb-2">
+                                                    <h6><?php echo ucfirst($guardian['guardian_type']); ?></h6>
+                                                    <p class="mb-1"><strong>Nome:</strong> <?php echo htmlspecialchars($guardian['first_name'] . ' ' . $guardian['last_name']); ?></p>
+                                                    <p class="mb-1"><strong>Codice Fiscale:</strong> <?php echo htmlspecialchars($guardian['tax_code'] ?? 'N/D'); ?></p>
+                                                    <p class="mb-1"><strong>Telefono:</strong> <?php echo htmlspecialchars($guardian['phone'] ?? 'N/D'); ?></p>
+                                                    <p class="mb-1"><strong>Email:</strong> <?php echo htmlspecialchars($guardian['email'] ?? 'N/D'); ?></p>
+                                                    <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                        <button class="btn btn-sm btn-danger" onclick="deleteGuardian(<?php echo $guardian['id']; ?>)">
+                                                            <i class="bi bi-trash"></i> Elimina
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessun tutore inserito</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Contatti -->
                             <div class="tab-pane fade" id="contacts" role="tabpanel">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5 class="card-title">Contatti</h5>
-                                        <p class="text-muted">Sezione in sviluppo</p>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Contatti</h5>
+                                            <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                <button class="btn btn-sm btn-primary" onclick="addContact()">
+                                                    <i class="bi bi-plus"></i> Aggiungi Contatto
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['contacts'])): ?>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Tipo</th>
+                                                            <th>Valore</th>
+                                                            <th>Azioni</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($member['contacts'] as $contact): ?>
+                                                            <tr>
+                                                                <td><?php echo ucfirst(str_replace('_', ' ', $contact['contact_type'])); ?></td>
+                                                                <td><?php echo htmlspecialchars($contact['value']); ?></td>
+                                                                <td>
+                                                                    <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                                        <button class="btn btn-sm btn-danger" onclick="deleteContact(<?php echo $contact['id']; ?>)">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessun contatto inserito</p>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -210,18 +285,83 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                             <div class="tab-pane fade" id="address" role="tabpanel">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5 class="card-title">Indirizzi</h5>
-                                        <p class="text-muted">Sezione in sviluppo</p>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Indirizzi</h5>
+                                            <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                <button class="btn btn-sm btn-primary" onclick="addAddress()">
+                                                    <i class="bi bi-plus"></i> Aggiungi Indirizzo
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['addresses'])): ?>
+                                            <?php foreach ($member['addresses'] as $address): ?>
+                                                <div class="border rounded p-3 mb-2">
+                                                    <h6><?php echo ucfirst($address['address_type']); ?></h6>
+                                                    <p class="mb-1">
+                                                        <?php echo htmlspecialchars($address['street'] ?? ''); ?> 
+                                                        <?php echo htmlspecialchars($address['number'] ?? ''); ?>
+                                                    </p>
+                                                    <p class="mb-1">
+                                                        <?php echo htmlspecialchars($address['cap'] ?? ''); ?> 
+                                                        <?php echo htmlspecialchars($address['city'] ?? ''); ?> 
+                                                        (<?php echo htmlspecialchars($address['province'] ?? ''); ?>)
+                                                    </p>
+                                                    <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                        <button class="btn btn-sm btn-danger" onclick="deleteAddress(<?php echo $address['id']; ?>)">
+                                                            <i class="bi bi-trash"></i> Elimina
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessun indirizzo inserito</p>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Qualifiche -->
-                            <div class="tab-pane fade" id="qualifications" role="tabpanel">
+                            <!-- Allergie/Salute -->
+                            <div class="tab-pane fade" id="health" role="tabpanel">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5 class="card-title">Qualifiche e Formazione</h5>
-                                        <p class="text-muted">Sezione in sviluppo</p>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Allergie e Informazioni Sanitarie</h5>
+                                            <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                <button class="btn btn-sm btn-primary" onclick="addHealth()">
+                                                    <i class="bi bi-plus"></i> Aggiungi Informazione
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['health'])): ?>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Tipo</th>
+                                                            <th>Descrizione</th>
+                                                            <th>Azioni</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($member['health'] as $health): ?>
+                                                            <tr>
+                                                                <td><?php echo ucfirst($health['health_type']); ?></td>
+                                                                <td><?php echo htmlspecialchars($health['description'] ?? 'N/D'); ?></td>
+                                                                <td>
+                                                                    <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                                        <button class="btn btn-sm btn-danger" onclick="deleteHealth(<?php echo $health['id']; ?>)">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessuna informazione sanitaria inserita</p>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -234,8 +374,57 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const memberId = <?php echo $member['id']; ?>;
+        
         function printCard() {
-            window.open('member_card.php?id=<?php echo $member['id']; ?>', '_blank');
+            window.open('junior_member_card.php?id=' + memberId, '_blank');
+        }
+        
+        function addGuardian() {
+            window.location.href = 'junior_member_guardian_edit.php?member_id=' + memberId;
+        }
+        
+        function deleteGuardian(id) {
+            if (confirm('Sei sicuro di voler eliminare questo tutore?')) {
+                window.location.href = 'junior_member_data.php?action=delete_guardian&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function addContact() {
+            const type = prompt('Tipo di contatto (telefono_fisso, cellulare, email):');
+            if (!type) return;
+            const value = prompt('Valore:');
+            if (!value) return;
+            
+            window.location.href = 'junior_member_data.php?action=add_contact&member_id=' + memberId + 
+                                   '&type=' + encodeURIComponent(type) + 
+                                   '&value=' + encodeURIComponent(value);
+        }
+        
+        function deleteContact(id) {
+            if (confirm('Sei sicuro di voler eliminare questo contatto?')) {
+                window.location.href = 'junior_member_data.php?action=delete_contact&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function addAddress() {
+            window.location.href = 'junior_member_address_edit.php?member_id=' + memberId;
+        }
+        
+        function deleteAddress(id) {
+            if (confirm('Sei sicuro di voler eliminare questo indirizzo?')) {
+                window.location.href = 'junior_member_data.php?action=delete_address&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function addHealth() {
+            window.location.href = 'junior_member_health_edit.php?member_id=' + memberId;
+        }
+        
+        function deleteHealth(id) {
+            if (confirm('Sei sicuro di voler eliminare questa informazione sanitaria?')) {
+                window.location.href = 'junior_member_data.php?action=delete_health&id=' + id + '&member_id=' + memberId;
+            }
         }
     </script>
 </body>

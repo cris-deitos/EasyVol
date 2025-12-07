@@ -88,14 +88,17 @@ class JuniorMemberController {
             return false;
         }
         
+        // Carica tutori/guardians
+        $member['guardians'] = $this->getGuardians($id);
+        
         // Carica contatti
         $member['contacts'] = $this->getContacts($id);
         
         // Carica indirizzi
         $member['addresses'] = $this->getAddresses($id);
         
-        // Carica gruppi
-        $member['groups'] = $this->getGroups($id);
+        // Carica salute
+        $member['health'] = $this->getHealth($id);
         
         return $member;
     }
@@ -121,17 +124,14 @@ class JuniorMemberController {
             
             // Inserisci socio minorenne
             $sql = "INSERT INTO junior_members (
-                registration_number, member_type, member_status,
+                registration_number, member_status,
                 last_name, first_name, birth_date, birth_place, birth_province,
                 tax_code, gender, nationality, registration_date,
-                guardian_last_name, guardian_first_name, guardian_tax_code,
-                guardian_phone, guardian_email, guardian_relationship,
                 created_at, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
             
             $params = [
                 $data['registration_number'],
-                $data['member_type'] ?? 'giovane',
                 $data['member_status'] ?? 'attivo',
                 $data['last_name'],
                 $data['first_name'],
@@ -142,17 +142,31 @@ class JuniorMemberController {
                 $data['gender'] ?? null,
                 $data['nationality'] ?? 'Italiana',
                 $data['registration_date'] ?? date('Y-m-d'),
-                $data['guardian_last_name'],
-                $data['guardian_first_name'],
-                $data['guardian_tax_code'] ?? null,
-                $data['guardian_phone'] ?? null,
-                $data['guardian_email'] ?? null,
-                $data['guardian_relationship'] ?? 'genitore',
                 $userId
             ];
             
             $this->db->execute($sql, $params);
             $memberId = $this->db->lastInsertId();
+            
+            // Inserisci tutore se fornito
+            if (!empty($data['guardian_last_name']) && !empty($data['guardian_first_name'])) {
+                $guardianSql = "INSERT INTO junior_member_guardians (
+                    junior_member_id, guardian_type,
+                    last_name, first_name, tax_code, phone, email
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                
+                $guardianParams = [
+                    $memberId,
+                    $data['guardian_relationship'] ?? 'padre',
+                    $data['guardian_last_name'],
+                    $data['guardian_first_name'],
+                    $data['guardian_tax_code'] ?? null,
+                    $data['guardian_phone'] ?? null,
+                    $data['guardian_email'] ?? null
+                ];
+                
+                $this->db->execute($guardianSql, $guardianParams);
+            }
             
             // Log attività
             $this->logActivity($userId, 'junior_member', 'create', $memberId, 'Creato nuovo socio minorenne: ' . $data['first_name'] . ' ' . $data['last_name']);
@@ -184,17 +198,14 @@ class JuniorMemberController {
             $this->validateJuniorMemberData($data, $id);
             
             $sql = "UPDATE junior_members SET
-                member_type = ?, member_status = ?,
+                member_status = ?,
                 last_name = ?, first_name = ?, birth_date = ?,
                 birth_place = ?, birth_province = ?, tax_code = ?,
                 gender = ?, nationality = ?,
-                guardian_last_name = ?, guardian_first_name = ?, guardian_tax_code = ?,
-                guardian_phone = ?, guardian_email = ?, guardian_relationship = ?,
                 updated_at = NOW(), updated_by = ?
                 WHERE id = ?";
             
             $params = [
-                $data['member_type'] ?? 'giovane',
                 $data['member_status'] ?? 'attivo',
                 $data['last_name'],
                 $data['first_name'],
@@ -204,17 +215,56 @@ class JuniorMemberController {
                 $data['tax_code'] ?? null,
                 $data['gender'] ?? null,
                 $data['nationality'] ?? 'Italiana',
-                $data['guardian_last_name'],
-                $data['guardian_first_name'],
-                $data['guardian_tax_code'] ?? null,
-                $data['guardian_phone'] ?? null,
-                $data['guardian_email'] ?? null,
-                $data['guardian_relationship'] ?? 'genitore',
                 $userId,
                 $id
             ];
             
             $this->db->execute($sql, $params);
+            
+            // Aggiorna tutore se fornito
+            if (!empty($data['guardian_last_name']) && !empty($data['guardian_first_name'])) {
+                // Cerca tutore esistente
+                $guardianSql = "SELECT id FROM junior_member_guardians WHERE junior_member_id = ? LIMIT 1";
+                $guardian = $this->db->fetchOne($guardianSql, [$id]);
+                
+                if ($guardian) {
+                    // Aggiorna tutore esistente
+                    $updateGuardianSql = "UPDATE junior_member_guardians SET
+                        guardian_type = ?, last_name = ?, first_name = ?,
+                        tax_code = ?, phone = ?, email = ?
+                        WHERE id = ?";
+                    
+                    $guardianParams = [
+                        $data['guardian_relationship'] ?? 'padre',
+                        $data['guardian_last_name'],
+                        $data['guardian_first_name'],
+                        $data['guardian_tax_code'] ?? null,
+                        $data['guardian_phone'] ?? null,
+                        $data['guardian_email'] ?? null,
+                        $guardian['id']
+                    ];
+                    
+                    $this->db->execute($updateGuardianSql, $guardianParams);
+                } else {
+                    // Inserisci nuovo tutore
+                    $insertGuardianSql = "INSERT INTO junior_member_guardians (
+                        junior_member_id, guardian_type,
+                        last_name, first_name, tax_code, phone, email
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    
+                    $guardianParams = [
+                        $id,
+                        $data['guardian_relationship'] ?? 'padre',
+                        $data['guardian_last_name'],
+                        $data['guardian_first_name'],
+                        $data['guardian_tax_code'] ?? null,
+                        $data['guardian_phone'] ?? null,
+                        $data['guardian_email'] ?? null
+                    ];
+                    
+                    $this->db->execute($insertGuardianSql, $guardianParams);
+                }
+            }
             
             // Log attività
             $this->logActivity($userId, 'junior_member', 'update', $id, 'Aggiornato socio minorenne');
@@ -436,6 +486,28 @@ class JuniorMemberController {
                 throw new \Exception("Codice fiscale tutore non valido");
             }
         }
+    }
+    
+    /**
+     * Get guardians for junior member
+     * 
+     * @param int $juniorMemberId ID socio minorenne
+     * @return array
+     */
+    private function getGuardians($juniorMemberId) {
+        $sql = "SELECT * FROM junior_member_guardians WHERE junior_member_id = ?";
+        return $this->db->fetchAll($sql, [$juniorMemberId]);
+    }
+    
+    /**
+     * Get health info for junior member
+     * 
+     * @param int $juniorMemberId ID socio minorenne
+     * @return array
+     */
+    private function getHealth($juniorMemberId) {
+        $sql = "SELECT * FROM junior_member_health WHERE junior_member_id = ?";
+        return $this->db->fetchAll($sql, [$juniorMemberId]);
     }
     
     /**
