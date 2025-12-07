@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS `member_sanctions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `member_id` int(11) NOT NULL,
   `sanction_date` date NOT NULL,
-  `sanction_type` enum('decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo') NOT NULL,
+  `sanction_type` enum('decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'operativo') NOT NULL,
   `reason` text,
   `created_by` int(11),
   PRIMARY KEY (`id`),
