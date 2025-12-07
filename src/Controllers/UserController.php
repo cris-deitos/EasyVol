@@ -19,45 +19,43 @@ class UserController {
     }
     
     /**
-     * Lista utenti con filtri
-     */
-    public function index($filters = [], $page = 1, $perPage = 20) {
-        $where = ["1=1"];
-        $params = [];
-        
-        if (!empty($filters['role_id'])) {
-            $where[] = "u.role_id = ?";
-            $params[] = $filters['role_id'];
-        }
-        
-        if (isset($filters['is_active'])) {
-            $where[] = "u.is_active = ?";
-            $params[] = $filters['is_active'];
-        }
-        
-        if (!empty($filters['search'])) {
-            $where[] = "(u.username LIKE ? OR u.full_name LIKE ? OR u.email LIKE ?)";
-            $searchTerm = '%' . $filters['search'] . '%';
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-        }
-        
-        $whereClause = implode(' AND ', $where);
-        $offset = ($page - 1) * $perPage;
-        
-        $sql = "SELECT u.*, r.name as role_name
-                FROM users u
-                LEFT JOIN roles r ON u.role_id = r.id
-                WHERE $whereClause 
-                ORDER BY u.username 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $perPage;
-        $params[] = $offset;
-        
-        return $this->db->fetchAll($sql, $params);
+ * Lista utenti con filtri
+ */
+public function index($filters = [], $page = 1, $perPage = 20) {
+    $where = ["1=1"];
+    $params = [];
+    
+    if (!empty($filters['role_id'])) {
+        $where[] = "u.role_id = ? ";
+        $params[] = $filters['role_id'];
     }
+    
+    if (isset($filters['is_active']) && $filters['is_active'] !== '') {
+        $where[] = "u.is_active = ? ";
+        $params[] = (int)$filters['is_active'];
+    }
+    
+    if (! empty($filters['search'])) {
+        $where[] = "(u.username LIKE ? OR u. full_name LIKE ? OR u.email LIKE ?)";
+        $searchTerm = '%' . $filters['search'] . '%';
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+    }
+    
+    $whereClause = implode(' AND ', $where);
+    $offset = ($page - 1) * $perPage;
+    
+    // FIX: LIMIT e OFFSET direttamente nella query (non come parametri)
+    $sql = "SELECT u.*, r.name as role_name
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r. id
+            WHERE $whereClause 
+            ORDER BY u.username 
+            LIMIT $perPage OFFSET $offset";
+    
+    return $this->db->fetchAll($sql, $params);
+}
     
     /**
      * Ottieni statistiche utenti
@@ -519,3 +517,4 @@ class UserController {
         }
     }
 }
+
