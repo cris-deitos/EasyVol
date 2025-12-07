@@ -78,15 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     if ($ext === null) {
                         $errors[] = 'Tipo di file non valido. Sono ammessi solo PNG, JPEG, SVG';
                     } else {
-                        // Delete old logo files only after validation
-                        $uploadDir = __DIR__ . '/../uploads/logo/';
-                        $oldFiles = glob($uploadDir . 'logo_associazione.*');
-                        foreach ($oldFiles as $oldFile) {
-                            if (file_exists($oldFile)) {
-                                unlink($oldFile);
-                            }
-                        }
-                        
                         $newFileName = 'logo_associazione.' . $ext;
                         
                         // Use FileUploader for consistent and secure upload
@@ -94,6 +85,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         $uploadResult = $uploader->upload($_FILES['logo'], '', $newFileName);
                         
                         if ($uploadResult['success']) {
+                            // Delete old logo files only after successful upload
+                            $uploadDir = __DIR__ . '/../uploads/logo/';
+                            $oldFiles = glob($uploadDir . 'logo_associazione.*');
+                            foreach ($oldFiles as $oldFile) {
+                                // Don't delete the file we just uploaded
+                                if (file_exists($oldFile) && $oldFile !== $uploadResult['path']) {
+                                    unlink($oldFile);
+                                }
+                            }
+                            
                             $associationData['logo'] = 'uploads/logo/' . $newFileName;
                         } else {
                             $errors[] = 'Errore upload logo: ' . $uploadResult['error'];
@@ -297,8 +298,9 @@ $pageTitle = 'Impostazioni Sistema';
                                                     str_starts_with($logoPath, 'uploads/logo/') && 
                                                     file_exists(__DIR__ . '/../' . $logoPath);
                                         if ($showLogo): 
-                                            // Build absolute URL from web root
-                                            $logoUrl = '/' . ltrim($logoPath, '/');
+                                            // Use relative path that works regardless of installation directory
+                                            // Since this page is in /public/, the logo in /uploads/ is one level up
+                                            $logoUrl = '../' . $logoPath;
                                         ?>
                                             <div class="mb-2">
                                                 <img src="<?php echo htmlspecialchars($logoUrl); ?>" 
