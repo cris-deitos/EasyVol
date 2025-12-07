@@ -3,6 +3,7 @@ namespace EasyVol\Controllers;
 
 use EasyVol\Database;
 use EasyVol\Utils\QrCodeGenerator;
+use EasyVol\Controllers\SchedulerSyncController;
 
 /**
  * Vehicle Controller
@@ -112,6 +113,15 @@ class VehicleController {
                 $this->generateQrCode($vehicleId);
             }
             
+            // Sincronizza scadenze con lo scadenziario
+            $syncController = new SchedulerSyncController($this->db, $this->config);
+            if (!empty($data['insurance_expiry'])) {
+                $syncController->syncInsuranceExpiry($vehicleId);
+            }
+            if (!empty($data['inspection_expiry'])) {
+                $syncController->syncInspectionExpiry($vehicleId);
+            }
+            
             $this->logActivity($userId, 'vehicle', 'create', $vehicleId, 'Creato nuovo mezzo: ' . $data['name']);
             
             $this->db->commit();
@@ -157,6 +167,15 @@ class VehicleController {
             
             $this->db->execute($sql, $params);
             
+            // Sincronizza scadenze con lo scadenziario
+            $syncController = new SchedulerSyncController($this->db, $this->config);
+            if (!empty($data['insurance_expiry'])) {
+                $syncController->syncInsuranceExpiry($id);
+            }
+            if (!empty($data['inspection_expiry'])) {
+                $syncController->syncInspectionExpiry($id);
+            }
+            
             $this->logActivity($userId, 'vehicle', 'update', $id, 'Aggiornato mezzo');
             
             $this->db->commit();
@@ -191,9 +210,11 @@ class VehicleController {
      */
     public function addMaintenance($vehicleId, $data, $userId) {
         try {
+            $this->db->beginTransaction();
+            
             $sql = "INSERT INTO vehicle_maintenance (
-                vehicle_id, maintenance_type, date, description, cost, performed_by, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                vehicle_id, maintenance_type, date, description, cost, performed_by, notes, status, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $params = [
                 $vehicleId,
@@ -202,21 +223,67 @@ class VehicleController {
                 $data['description'],
                 $data['cost'] ?? null,
                 $data['performed_by'] ?? null,
-                $data['notes'] ?? null
+                $data['notes'] ?? null,
+                $data['status'] ?? null,
+                $userId
             ];
             
             $this->db->execute($sql, $params);
             $maintenanceId = $this->db->lastInsertId();
             
+            // Se è una revisione, calcola automaticamente la nuova scadenza
+            if ($data['maintenance_type'] === 'revisione') {
+                $newInspectionExpiry = $this->calculateInspectionExpiry($data['date']);
+                
+                // Aggiorna la scadenza revisione del veicolo
+                $updateSql = "UPDATE vehicles SET inspection_expiry = ?, updated_at = NOW() WHERE id = ?";
+                $this->db->execute($updateSql, [$newInspectionExpiry, $vehicleId]);
+                
+                // Sincronizza con lo scadenziario
+                $syncController = new SchedulerSyncController($this->db, $this->config);
+                $syncController->syncInspectionExpiry($vehicleId);
+            }
+            
+            // Aggiorna stato veicolo se specificato
+            if (!empty($data['status'])) {
+                $updateStatusSql = "UPDATE vehicles SET status = ?, updated_at = NOW() WHERE id = ?";
+                $this->db->execute($updateStatusSql, [$data['status'], $vehicleId]);
+            }
+            
             $this->logActivity($userId, 'vehicle_maintenance', 'create', $maintenanceId, 
                 'Aggiunta manutenzione per mezzo ID ' . $vehicleId);
             
+            $this->db->commit();
             return $maintenanceId;
             
         } catch (\Exception $e) {
+            $this->db->rollBack();
             error_log("Errore aggiunta manutenzione: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Calcola scadenza revisione: ultimo giorno del mese + 2 anni
+     * 
+     * @param string $revisionDate Data della revisione (YYYY-MM-DD)
+     * @return string Data scadenza (YYYY-MM-DD)
+     */
+    private function calculateInspectionExpiry($revisionDate) {
+        $date = new \DateTime($revisionDate);
+        
+        // Get current month and year
+        $year = (int)$date->format('Y');
+        $month = (int)$date->format('m');
+        
+        // Add 2 years
+        $year += 2;
+        
+        // Get the last day of that month in 2 years
+        $lastDay = date('t', mktime(0, 0, 0, $month, 1, $year));
+        
+        // Create the expiry date
+        return sprintf('%04d-%02d-%02d', $year, $month, $lastDay);
     }
     
     /**

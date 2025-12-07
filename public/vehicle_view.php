@@ -418,5 +418,89 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
             </div>
         </div>
     </div>
+
+    <!-- Modal Aggiungi Manutenzione -->
+    <div class="modal fade" id="addMaintenanceModal" tabindex="-1" aria-labelledby="addMaintenanceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="vehicle_maintenance_save.php" method="POST">
+                    <?php use EasyVol\Middleware\CsrfProtection; echo CsrfProtection::getHiddenField(); ?>
+                    <input type="hidden" name="vehicle_id" value="<?php echo $vehicleId; ?>">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addMaintenanceModalLabel">
+                            <i class="bi bi-wrench"></i> Aggiungi Manutenzione
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="maintenance_type" class="form-label">Tipo Manutenzione *</label>
+                                <select class="form-select" id="maintenance_type" name="maintenance_type" required>
+                                    <option value="">Seleziona tipo...</option>
+                                    <option value="revisione">Revisione</option>
+                                    <option value="manutenzione_ordinaria">Manutenzione Ordinaria</option>
+                                    <option value="manutenzione_straordinaria">Manutenzione Straordinaria</option>
+                                    <option value="anomalie">Anomalie</option>
+                                    <option value="guasti">Guasti</option>
+                                    <option value="riparazioni">Riparazioni</option>
+                                    <option value="sostituzioni">Sostituzioni</option>
+                                </select>
+                                <small class="text-muted">Per le revisioni, la scadenza sarà calcolata automaticamente</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="date" class="form-label">Data *</label>
+                                <input type="date" class="form-control" id="date" name="date" required value="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione *</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required placeholder="Descrivi la manutenzione effettuata..."></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="cost" class="form-label">Costo (€)</label>
+                                <input type="number" class="form-control" id="cost" name="cost" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="performed_by" class="form-label">Eseguita da</label>
+                                <input type="text" class="form-control" id="performed_by" name="performed_by" placeholder="Nome officina o persona">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="vehicle_status" class="form-label">Aggiorna Stato Veicolo</label>
+                            <select class="form-select" id="vehicle_status" name="vehicle_status">
+                                <option value="">Non modificare</option>
+                                <option value="operativo">Operativo</option>
+                                <option value="in_manutenzione">In Manutenzione</option>
+                                <option value="fuori_servizio">Fuori Servizio</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Note</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Note aggiuntive..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Annulla
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Salva Manutenzione
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

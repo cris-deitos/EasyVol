@@ -212,7 +212,17 @@ class Member {
     
     public function addLicense($memberId, $data) {
         $data['member_id'] = $memberId;
-        return $this->db->insert('member_licenses', $data);
+        $licenseId = $this->db->insert('member_licenses', $data);
+        
+        // Sincronizza con lo scadenziario se c'è una data di scadenza
+        if ($licenseId && !empty($data['expiry_date'])) {
+            $app = \EasyVol\App::getInstance();
+            $config = $app->getConfig();
+            $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
+            $syncController->syncLicenseExpiry($licenseId, $memberId);
+        }
+        
+        return $licenseId;
     }
     
     public function deleteLicense($id) {
@@ -226,7 +236,17 @@ class Member {
     
     public function addCourse($memberId, $data) {
         $data['member_id'] = $memberId;
-        return $this->db->insert('member_courses', $data);
+        $courseId = $this->db->insert('member_courses', $data);
+        
+        // Sincronizza con lo scadenziario se c'è una data di scadenza
+        if ($courseId && !empty($data['expiry_date'])) {
+            $app = \EasyVol\App::getInstance();
+            $config = $app->getConfig();
+            $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
+            $syncController->syncQualificationExpiry($courseId, $memberId);
+        }
+        
+        return $courseId;
     }
     
     public function deleteCourse($id) {
