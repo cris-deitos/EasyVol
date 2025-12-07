@@ -4,18 +4,19 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\TrainingController;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-if (!$app->hasPermission('training', 'view')) {
+if (!$app->checkPermission('training', 'view')) {
     die('Accesso negato');
 }
 
@@ -26,7 +27,7 @@ if ($courseId <= 0) {
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new TrainingController($db, $config);
 
@@ -66,7 +67,7 @@ $pageTitle = 'Dettaglio Corso: ' . $course['course_name'];
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <?php if ($app->hasPermission('training', 'edit')): ?>
+                            <?php if ($app->checkPermission('training', 'edit')): ?>
                                 <a href="training_edit.php?id=<?php echo $course['id']; ?>" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
@@ -203,7 +204,7 @@ $pageTitle = 'Dettaglio Corso: ' . $course['course_name'];
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Elenco Partecipanti</h5>
-                                <?php if ($app->hasPermission('training', 'edit')): ?>
+                                <?php if ($app->checkPermission('training', 'edit')): ?>
                                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
                                         <i class="bi bi-plus-circle"></i> Aggiungi Partecipante
                                     </button>
@@ -261,7 +262,7 @@ $pageTitle = 'Dettaglio Corso: ' . $course['course_name'];
                                                             <?php endif; ?>
                                                         </td>
                                                         <td>
-                                                            <?php if ($app->hasPermission('training', 'edit')): ?>
+                                                            <?php if ($app->checkPermission('training', 'edit')): ?>
                                                                 <button type="button" class="btn btn-sm btn-outline-warning" 
                                                                         onclick="editParticipant(<?php echo $participant['id']; ?>)">
                                                                     <i class="bi bi-pencil"></i>
@@ -289,7 +290,7 @@ $pageTitle = 'Dettaglio Corso: ' . $course['course_name'];
                                     <i class="bi bi-info-circle"></i> 
                                     La funzionalità di registro presenze permette di tracciare la partecipazione giornaliera dei corsisti.
                                 </p>
-                                <?php if ($app->hasPermission('training', 'edit')): ?>
+                                <?php if ($app->checkPermission('training', 'edit')): ?>
                                     <a href="training_attendance.php?course_id=<?php echo $course['id']; ?>" class="btn btn-primary">
                                         <i class="bi bi-calendar-check"></i> Gestisci Presenze
                                     </a>

@@ -1,12 +1,13 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\OperationsCenterController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -14,11 +15,11 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-if (!$app->hasPermission('operations_center', 'view')) {
+if (!$app->checkPermission('operations_center', 'view')) {
     die('Accesso negato');
 }
 
-$controller = new OperationsCenterController($app->getDatabase(), $app->getConfig());
+$controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 $csrf = new CsrfProtection();
 
 // Get dashboard data
@@ -123,7 +124,7 @@ $pageTitle = 'Centrale Operativa';
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Eventi Attivi</h5>
-                                <?php if ($app->hasPermission('events', 'view')): ?>
+                                <?php if ($app->checkPermission('events', 'view')): ?>
                                     <a href="events.php" class="btn btn-sm btn-outline-primary">Vedi tutti</a>
                                 <?php endif; ?>
                             </div>
@@ -151,7 +152,7 @@ $pageTitle = 'Centrale Operativa';
                                                             <?php endif; ?>
                                                         </small>
                                                     </div>
-                                                    <?php if ($app->hasPermission('events', 'view')): ?>
+                                                    <?php if ($app->checkPermission('events', 'view')): ?>
                                                         <a href="event_view.php?id=<?php echo $event['id']; ?>" class="btn btn-sm btn-outline-primary">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
@@ -189,7 +190,7 @@ $pageTitle = 'Centrale Operativa';
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
-                                <?php if ($app->hasPermission('operations_center', 'edit')): ?>
+                                <?php if ($app->checkPermission('operations_center', 'edit')): ?>
                                     <div class="mt-3">
                                         <a href="radio_directory.php" class="btn btn-sm btn-primary">
                                             <i class="bi bi-list"></i> Gestisci Radio
@@ -270,28 +271,28 @@ $pageTitle = 'Centrale Operativa';
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    <?php if ($app->hasPermission('events', 'create')): ?>
+                                    <?php if ($app->checkPermission('events', 'create')): ?>
                                         <div class="col-md-3 mb-2">
                                             <a href="event_edit.php" class="btn btn-danger w-100">
                                                 <i class="bi bi-exclamation-triangle"></i> Nuovo Evento
                                             </a>
                                         </div>
                                     <?php endif; ?>
-                                    <?php if ($app->hasPermission('operations_center', 'view')): ?>
+                                    <?php if ($app->checkPermission('operations_center', 'view')): ?>
                                         <div class="col-md-3 mb-2">
                                             <a href="radio_directory.php" class="btn btn-primary w-100">
                                                 <i class="bi bi-broadcast"></i> Rubrica Radio
                                             </a>
                                         </div>
                                     <?php endif; ?>
-                                    <?php if ($app->hasPermission('vehicles', 'view')): ?>
+                                    <?php if ($app->checkPermission('vehicles', 'view')): ?>
                                         <div class="col-md-3 mb-2">
                                             <a href="vehicles.php" class="btn btn-info w-100">
                                                 <i class="bi bi-truck"></i> Gestione Mezzi
                                             </a>
                                         </div>
                                     <?php endif; ?>
-                                    <?php if ($app->hasPermission('members', 'view')): ?>
+                                    <?php if ($app->checkPermission('members', 'view')): ?>
                                         <div class="col-md-3 mb-2">
                                             <a href="members.php" class="btn btn-success w-100">
                                                 <i class="bi bi-people"></i> Rubrica Soci

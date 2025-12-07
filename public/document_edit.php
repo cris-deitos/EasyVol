@@ -4,20 +4,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\DocumentController;
 use EasyVol\Utils\FileUploader;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new DocumentController($db, $config);
 $csrf = new CsrfProtection();
@@ -26,10 +27,10 @@ $documentId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $isEdit = $documentId > 0;
 
 // Verifica permessi
-if ($isEdit && !$app->hasPermission('documents', 'edit')) {
+if ($isEdit && !$app->checkPermission('documents', 'edit')) {
     die('Accesso negato');
 }
-if (!$isEdit && !$app->hasPermission('documents', 'create')) {
+if (!$isEdit && !$app->checkPermission('documents', 'create')) {
     die('Accesso negato');
 }
 

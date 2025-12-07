@@ -107,7 +107,7 @@ class App {
     
     public function requireLogin() {
         if (!$this->isLoggedIn()) {
-            $this->redirect('/public/login.php');
+            $this->redirect('login.php');
         }
     }
     

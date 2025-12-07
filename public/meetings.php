@@ -4,22 +4,23 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\MeetingController;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-if (!$app->hasPermission('meetings', 'view')) {
+if (!$app->checkPermission('meetings', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MeetingController($db, $config);
 
@@ -58,7 +59,7 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('meetings', 'create')): ?>
+                        <?php if ($app->checkPermission('meetings', 'create')): ?>
                             <a href="meeting_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuova Riunione
                             </a>
@@ -150,7 +151,7 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                                            class="btn btn-sm btn-info" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        <?php if ($app->hasPermission('meetings', 'edit')): ?>
+                                                        <?php if ($app->checkPermission('meetings', 'edit')): ?>
                                                             <a href="meeting_edit.php?id=<?php echo $meeting['id']; ?>" 
                                                                class="btn btn-sm btn-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>

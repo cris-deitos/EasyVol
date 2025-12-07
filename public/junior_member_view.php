@@ -6,20 +6,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\JuniorMemberController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('junior_members', 'view')) {
+if (!$app->checkPermission('junior_members', 'view')) {
     die('Accesso negato');
 }
 
@@ -30,7 +31,7 @@ if ($memberId <= 0) {
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new JuniorMemberController($db, $config);
 
@@ -70,7 +71,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <?php if ($app->hasPermission('junior_members', 'edit')): ?>
+                            <?php if ($app->checkPermission('junior_members', 'edit')): ?>
                                 <a href="junior_member_edit.php?id=<?php echo $member['id']; ?>" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>

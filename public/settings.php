@@ -6,31 +6,32 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('settings', 'view')) {
+if (!$app->checkPermission('settings', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 
 $errors = [];
 $success = false;
 
 // Gestione salvataggio impostazioni
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->hasPermission('settings', 'edit')) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', 'edit')) {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token di sicurezza non valido';
     } else {
@@ -119,19 +120,19 @@ $pageTitle = 'Impostazioni Sistema';
                                         <label for="app_name" class="form-label">Nome Applicazione</label>
                                         <input type="text" class="form-control" id="app_name" name="app_name" 
                                                value="<?php echo htmlspecialchars($config['app']['name'] ?? 'EasyVol'); ?>" 
-                                               <?php echo !$app->hasPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
                                     </div>
                                     
                                     <div class="mb-3">
                                         <label for="timezone" class="form-label">Timezone</label>
                                         <select class="form-select" id="timezone" name="timezone" 
-                                                <?php echo !$app->hasPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
                                             <option value="Europe/Rome" <?php echo ($config['app']['timezone'] ?? '') === 'Europe/Rome' ? 'selected' : ''; ?>>Europe/Rome</option>
                                             <option value="Europe/London" <?php echo ($config['app']['timezone'] ?? '') === 'Europe/London' ? 'selected' : ''; ?>>Europe/London</option>
                                         </select>
                                     </div>
                                     
-                                    <?php if ($app->hasPermission('settings', 'edit')): ?>
+                                    <?php if ($app->checkPermission('settings', 'edit')): ?>
                                         <button type="submit" class="btn btn-primary">
                                             <i class="bi bi-save"></i> Salva Modifiche
                                         </button>

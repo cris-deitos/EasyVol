@@ -4,19 +4,20 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\UserController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new UserController($db, $config);
 $csrf = new CsrfProtection();
@@ -25,10 +26,10 @@ $userId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $isEdit = $userId > 0;
 
 // Verifica permessi
-if ($isEdit && !$app->hasPermission('users', 'edit')) {
+if ($isEdit && !$app->checkPermission('users', 'edit')) {
     die('Accesso negato');
 }
-if (!$isEdit && !$app->hasPermission('users', 'create')) {
+if (!$isEdit && !$app->checkPermission('users', 'create')) {
     die('Accesso negato');
 }
 

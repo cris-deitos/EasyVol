@@ -5,7 +5,7 @@ $user = $app->getCurrentUser();
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/public/dashboard.php">
+        <a class="navbar-brand" href="dashboard.php">
             <i class="bi bi-heart-pulse text-danger"></i> <strong>EasyVol</strong>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -32,10 +32,10 @@ $user = $app->getCurrentUser();
                         <i class="bi bi-person-circle"></i> <?= htmlspecialchars($user['full_name'] ?? $user['username']) ?>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/public/profile.php"><i class="bi bi-person"></i> Profilo</a></li>
-                        <li><a class="dropdown-item" href="/public/settings.php"><i class="bi bi-gear"></i> Impostazioni</a></li>
+                        <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profilo</a></li>
+                        <li><a class="dropdown-item" href="settings.php"><i class="bi bi-gear"></i> Impostazioni</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/public/logout.php"><i class="bi bi-box-arrow-right"></i> Esci</a></li>
+                        <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right"></i> Esci</a></li>
                     </ul>
                 </li>
             </ul>

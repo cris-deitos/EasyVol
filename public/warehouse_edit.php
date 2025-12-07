@@ -6,15 +6,16 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\WarehouseController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
@@ -23,14 +24,14 @@ $itemId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $isEdit = $itemId > 0;
 
 // Verifica permessi
-if ($isEdit && !$app->hasPermission('warehouse', 'edit')) {
+if ($isEdit && !$app->checkPermission('warehouse', 'edit')) {
     die('Accesso negato');
 }
-if (!$isEdit && !$app->hasPermission('warehouse', 'create')) {
+if (!$isEdit && !$app->checkPermission('warehouse', 'create')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new WarehouseController($db, $config);
 

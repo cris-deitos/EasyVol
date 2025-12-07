@@ -4,22 +4,23 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\UserController;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-if (!$app->hasPermission('users', 'view')) {
+if (!$app->checkPermission('users', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new UserController($db, $config);
 
@@ -59,7 +60,7 @@ $pageTitle = 'Gestione Utenti';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <?php if ($app->hasPermission('users', 'create')): ?>
+                        <?php if ($app->checkPermission('users', 'create')): ?>
                             <a href="user_edit.php" class="btn btn-primary me-2">
                                 <i class="bi bi-plus-circle"></i> Nuovo Utente
                             </a>
@@ -192,13 +193,13 @@ $pageTitle = 'Gestione Utenti';
                                                 </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm" role="group">
-                                                        <?php if ($app->hasPermission('users', 'edit')): ?>
+                                                        <?php if ($app->checkPermission('users', 'edit')): ?>
                                                             <a href="user_edit.php?id=<?php echo $user['id']; ?>" 
                                                                class="btn btn-outline-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>
                                                         <?php endif; ?>
-                                                        <?php if ($app->hasPermission('users', 'delete')): ?>
+                                                        <?php if ($app->checkPermission('users', 'delete')): ?>
                                                             <button type="button" class="btn btn-outline-danger" 
                                                                     onclick="deleteUser(<?php echo $user['id']; ?>)" title="Elimina">
                                                                 <i class="bi bi-trash"></i>

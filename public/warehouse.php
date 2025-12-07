@@ -4,22 +4,23 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\WarehouseController;
 
-$app = new App();
+$app = App::getInstance();
 
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-if (!$app->hasPermission('warehouse', 'view')) {
+if (!$app->checkPermission('warehouse', 'view')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new WarehouseController($db, $config);
 
@@ -65,7 +66,7 @@ $pageTitle = 'Gestione Magazzino';
                         <a href="warehouse_movements.php" class="btn btn-secondary me-2">
                             <i class="bi bi-arrow-left-right"></i> Movimenti
                         </a>
-                        <?php if ($app->hasPermission('warehouse', 'create')): ?>
+                        <?php if ($app->checkPermission('warehouse', 'create')): ?>
                             <a href="warehouse_item_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Articolo
                             </a>
@@ -197,7 +198,7 @@ $pageTitle = 'Gestione Magazzino';
                                                            class="btn btn-sm btn-info" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        <?php if ($app->hasPermission('warehouse', 'edit')): ?>
+                                                        <?php if ($app->checkPermission('warehouse', 'edit')): ?>
                                                             <a href="warehouse_item_edit.php?id=<?php echo $item['id']; ?>" 
                                                                class="btn btn-sm btn-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>

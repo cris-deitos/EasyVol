@@ -1,5 +1,6 @@
 <?php
 require_once '../src/Autoloader.php';
+EasyVol\Autoloader::register();
 require_once '../src/App.php';
 
 use EasyVol\App;
@@ -7,7 +8,7 @@ use EasyVol\Controllers\SchedulerController;
 use EasyVol\Controllers\UserController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
@@ -18,12 +19,12 @@ if (!$app->isLoggedIn()) {
 $isEdit = isset($_GET['id']);
 $requiredPermission = $isEdit ? 'edit' : 'create';
 
-if (!$app->hasPermission('scheduler', $requiredPermission)) {
+if (!$app->checkPermission('scheduler', $requiredPermission)) {
     die('Accesso negato');
 }
 
-$controller = new SchedulerController($app->getDatabase(), $app->getConfig());
-$userController = new UserController($app->getDatabase(), $app->getConfig());
+$controller = new SchedulerController($app->getDb(), $app->getConfig());
+$userController = new UserController($app->getDb(), $app->getConfig());
 $csrf = new CsrfProtection();
 
 $item = null;
@@ -127,7 +128,7 @@ $users = $userController->index([], 1, 100);
 
 // Get members for recipients dropdown
 use EasyVol\Controllers\MemberController;
-$memberController = new MemberController($app->getDatabase(), $app->getConfig());
+$memberController = new MemberController($app->getDb(), $app->getConfig());
 $members = $memberController->index(['member_status' => 'attivo'], 1, 500);
 
 $pageTitle = $isEdit ? 'Modifica Scadenza' : 'Nuova Scadenza';

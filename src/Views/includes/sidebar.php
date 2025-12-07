@@ -7,14 +7,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <div class="position-sticky pt-3">
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>" href="/public/dashboard.php">
+                <a class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>" href="dashboard.php">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </li>
             
             <?php if ($app->checkPermission('members', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'members.php' ? 'active' : '' ?>" href="/public/members.php">
+                <a class="nav-link <?= $currentPage === 'members.php' ? 'active' : '' ?>" href="members.php">
                     <i class="bi bi-people"></i> Soci
                 </a>
             </li>
@@ -22,7 +22,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('junior_members', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'junior_members.php' ? 'active' : '' ?>" href="/public/junior_members.php">
+                <a class="nav-link <?= $currentPage === 'junior_members.php' ? 'active' : '' ?>" href="junior_members.php">
                     <i class="bi bi-person-badge"></i> Cadetti
                 </a>
             </li>
@@ -30,7 +30,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('applications', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'applications.php' ? 'active' : '' ?>" href="/public/applications.php">
+                <a class="nav-link <?= $currentPage === 'applications.php' ? 'active' : '' ?>" href="applications.php">
                     <i class="bi bi-inbox"></i> Domande Iscrizione
                     <span class="badge bg-warning rounded-pill">3</span>
                 </a>
@@ -39,7 +39,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('meetings', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'meetings.php' ? 'active' : '' ?>" href="/public/meetings.php">
+                <a class="nav-link <?= $currentPage === 'meetings.php' ? 'active' : '' ?>" href="meetings.php">
                     <i class="bi bi-calendar3"></i> Riunioni/Assemblee
                 </a>
             </li>
@@ -47,7 +47,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('vehicles', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'vehicles.php' ? 'active' : '' ?>" href="/public/vehicles.php">
+                <a class="nav-link <?= $currentPage === 'vehicles.php' ? 'active' : '' ?>" href="vehicles.php">
                     <i class="bi bi-truck"></i> Mezzi
                 </a>
             </li>
@@ -55,7 +55,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('warehouse', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'warehouse.php' ? 'active' : '' ?>" href="/public/warehouse.php">
+                <a class="nav-link <?= $currentPage === 'warehouse.php' ? 'active' : '' ?>" href="warehouse.php">
                     <i class="bi bi-box-seam"></i> Magazzino
                 </a>
             </li>
@@ -63,7 +63,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('training', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'training.php' ? 'active' : '' ?>" href="/public/training.php">
+                <a class="nav-link <?= $currentPage === 'training.php' ? 'active' : '' ?>" href="training.php">
                     <i class="bi bi-mortarboard"></i> Formazione
                 </a>
             </li>
@@ -71,7 +71,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('events', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'events.php' ? 'active' : '' ?>" href="/public/events.php">
+                <a class="nav-link <?= $currentPage === 'events.php' ? 'active' : '' ?>" href="events.php">
                     <i class="bi bi-calendar-event"></i> Eventi/Interventi
                 </a>
             </li>
@@ -79,7 +79,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('scheduler', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'scheduler.php' ? 'active' : '' ?>" href="/public/scheduler.php">
+                <a class="nav-link <?= $currentPage === 'scheduler.php' ? 'active' : '' ?>" href="scheduler.php">
                     <i class="bi bi-calendar-check"></i> Scadenzario
                 </a>
             </li>
@@ -87,7 +87,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('documents', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'documents.php' ? 'active' : '' ?>" href="/public/documents.php">
+                <a class="nav-link <?= $currentPage === 'documents.php' ? 'active' : '' ?>" href="documents.php">
                     <i class="bi bi-folder"></i> Documenti
                 </a>
             </li>
@@ -95,7 +95,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('operations_center', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'operations_center.php' ? 'active' : '' ?>" href="/public/operations_center.php">
+                <a class="nav-link <?= $currentPage === 'operations_center.php' ? 'active' : '' ?>" href="operations_center.php">
                     <i class="bi bi-broadcast"></i> Centrale Operativa
                 </a>
             </li>
@@ -108,7 +108,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <ul class="nav flex-column mb-2">
             <?php if ($app->checkPermission('users', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'users.php' ? 'active' : '' ?>" href="/public/users.php">
+                <a class="nav-link <?= $currentPage === 'users.php' ? 'active' : '' ?>" href="users.php">
                     <i class="bi bi-person-gear"></i> Utenti
                 </a>
             </li>
@@ -116,7 +116,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('reports', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'reports.php' ? 'active' : '' ?>" href="/public/reports.php">
+                <a class="nav-link <?= $currentPage === 'reports.php' ? 'active' : '' ?>" href="reports.php">
                     <i class="bi bi-file-earmark-bar-graph"></i> Report
                 </a>
             </li>
@@ -124,7 +124,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('settings', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'settings.php' ? 'active' : '' ?>" href="/public/settings.php">
+                <a class="nav-link <?= $currentPage === 'settings.php' ? 'active' : '' ?>" href="settings.php">
                     <i class="bi bi-gear"></i> Impostazioni
                 </a>
             </li>

@@ -6,20 +6,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\MeetingController;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
 // Verifica permessi
-if (!$app->hasPermission('meetings', 'view')) {
+if (!$app->checkPermission('meetings', 'view')) {
     die('Accesso negato');
 }
 
@@ -30,7 +31,7 @@ if ($meetingId <= 0) {
     exit;
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MeetingController($db, $config);
 
@@ -70,7 +71,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <?php if ($app->hasPermission('meetings', 'edit')): ?>
+                            <?php if ($app->checkPermission('meetings', 'edit')): ?>
                                 <a href="meeting_edit.php?id=<?php echo $meeting['id']; ?>" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
@@ -245,7 +246,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-people"></i> Partecipanti</h5>
-                                    <?php if ($app->hasPermission('meetings', 'edit')): ?>
+                                    <?php if ($app->checkPermission('meetings', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Partecipante
                                         </button>
@@ -302,7 +303,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-list-ol"></i> Ordine del Giorno</h5>
-                                    <?php if ($app->hasPermission('meetings', 'edit')): ?>
+                                    <?php if ($app->checkPermission('meetings', 'edit')): ?>
                                         <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addAgendaModal">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Punto
                                         </button>

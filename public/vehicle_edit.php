@@ -6,15 +6,16 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\VehicleController;
 use EasyVol\Middleware\CsrfProtection;
 
-$app = new App();
+$app = App::getInstance();
 
 // Verifica autenticazione
-if (!$app->isAuthenticated()) {
+if (!$app->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
@@ -23,14 +24,14 @@ $vehicleId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $isEdit = $vehicleId > 0;
 
 // Verifica permessi
-if ($isEdit && !$app->hasPermission('vehicles', 'edit')) {
+if ($isEdit && !$app->checkPermission('vehicles', 'edit')) {
     die('Accesso negato');
 }
-if (!$isEdit && !$app->hasPermission('vehicles', 'create')) {
+if (!$isEdit && !$app->checkPermission('vehicles', 'create')) {
     die('Accesso negato');
 }
 
-$db = $app->getDatabase();
+$db = $app->getDb();
 $config = $app->getConfig();
 $controller = new VehicleController($db, $config);
 
