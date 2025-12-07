@@ -167,8 +167,8 @@ switch ($type) {
         if ($file && !empty($file['photo_path'])) {
             $filePath = $file['photo_path'];
             
-            // Photos can be viewed by anyone with member access
-            if ($app->checkPermission('members', 'view')) {
+            // Photos can be viewed by anyone with junior member access
+            if ($app->checkPermission('junior_members', 'view')) {
                 $canAccess = true;
             } else {
                 $userId = $app->getUserId();
@@ -190,7 +190,7 @@ switch ($type) {
             $filePath = $file['file_path'];
             
             // Admin or owner can access
-            if ($app->checkPermission('members', 'view')) {
+            if ($app->checkPermission('junior_members', 'view')) {
                 $canAccess = true;
             } else {
                 // Check if user owns this member record
