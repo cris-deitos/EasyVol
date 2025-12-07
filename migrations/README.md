@@ -37,19 +37,27 @@ echo "Migration completed successfully!\n";
 
 ## Available Migrations
 
-### add_member_fields.sql
+### add_registration_applications_fields.sql
 **Date**: 2025-12-07
-**Purpose**: Add missing fields to members and junior_members tables
+**Purpose**: Add missing fields to registration applications tables
 
-This migration adds the following columns:
-- `gender` (enum: 'M', 'F')
-- `nationality` (varchar, default: 'Italiana')
-- `birth_province` (varchar)
-- `photo_path` (varchar)
-- `created_by` (int)
-- `updated_by` (int)
+This migration adds the following columns to handle registration applications.
 
-**Required**: Yes - This fixes database insertion errors where the application tries to save these fields but they don't exist in the database.
+**Required**: Yes - This fixes database insertion errors where the application tries to save registration application fields.
+
+### add_password_reset_functionality.sql
+**Date**: 2025-12-07
+**Purpose**: Add password reset functionality and force password change on first login
+
+This migration adds:
+- `must_change_password` column to users table (to force password change on first login)
+- `password_reset_tokens` table (for password reset functionality)
+- Email templates for user welcome and password reset
+
+**Required**: Yes - This enables the new user management features including:
+  - Welcome emails with default credentials
+  - Forced password change on first login
+  - Password reset functionality from login page
 
 ## Important Notes
 
