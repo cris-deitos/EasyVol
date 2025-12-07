@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `member_id` int(11) DEFAULT NULL,
   `role_id` int(11) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
+  `must_change_password` tinyint(1) DEFAULT 0 COMMENT 'Flag to force password change on next login',
   `last_login` timestamp NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -912,6 +913,34 @@ CREATE TABLE IF NOT EXISTS `email_queue` (
   `sent_at` timestamp NULL,
   PRIMARY KEY (`id`),
   KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `email_logs` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `recipient` varchar(255) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `body` longtext,
+  `status` enum('sent', 'failed') NOT NULL,
+  `error_message` text,
+  `sent_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`),
+  KEY `sent_at` (`sent_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `token` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `used` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `token` (`token`),
+  KEY `expires_at` (`expires_at`),
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `notifications` (

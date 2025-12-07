@@ -37,6 +37,25 @@ echo "Migration completed successfully!\n";
 
 ## Available Migrations
 
+### fix_user_creation_issues.sql (RECOMMENDED - Run This First)
+**Date**: 2025-12-07
+**Purpose**: Comprehensive fix for user creation and email issues
+
+This migration fixes all issues related to:
+- User creation errors ("Errore durante il salvataggio dell'utente")
+- Missing `must_change_password` column in users table
+- Missing `email_logs` table for email logging
+- Missing `password_reset_tokens` table
+- Email template configuration
+
+**What it does**:
+- Adds `must_change_password` column to users table
+- Creates `email_logs` table for email tracking
+- Creates `password_reset_tokens` table for password reset functionality
+- Inserts email templates for user_welcome and password_reset
+
+**Required**: YES - This is the most important migration to run. It consolidates all user management fixes and ensures user creation works properly even if email is not configured or PHPMailer is not installed.
+
 ### add_registration_applications_fields.sql
 **Date**: 2025-12-07
 **Purpose**: Add missing fields to registration applications tables
@@ -45,19 +64,11 @@ This migration adds the following columns to handle registration applications.
 
 **Required**: Yes - This fixes database insertion errors where the application tries to save registration application fields.
 
-### add_password_reset_functionality.sql
+### add_password_reset_functionality.sql (DEPRECATED - Use fix_user_creation_issues.sql instead)
 **Date**: 2025-12-07
 **Purpose**: Add password reset functionality and force password change on first login
 
-This migration adds:
-- `must_change_password` column to users table (to force password change on first login)
-- `password_reset_tokens` table (for password reset functionality)
-- Email templates for user welcome and password reset
-
-**Required**: Yes - This enables the new user management features including:
-  - Welcome emails with default credentials
-  - Forced password change on first login
-  - Password reset functionality from login page
+**Note**: This migration is included in `fix_user_creation_issues.sql`. You only need to run one or the other, not both.
 
 ### add_member_notes_table.sql
 **Date**: 2025-12-07

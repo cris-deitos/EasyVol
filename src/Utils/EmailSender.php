@@ -266,6 +266,13 @@ class EmailSender {
      */
     private function logEmail($to, $subject, $body, $status, $error) {
         try {
+            // Check if email_logs table exists before attempting to log
+            $tableCheck = $this->db->fetchOne("SHOW TABLES LIKE 'email_logs'");
+            if (!$tableCheck) {
+                // Table doesn't exist, skip logging silently
+                return;
+            }
+            
             $toStr = is_array($to) ? json_encode($to) : $to;
             
             $sql = "INSERT INTO email_logs 
@@ -275,6 +282,7 @@ class EmailSender {
             $this->db->execute($sql, [$toStr, $subject, $body, $status, $error]);
             
         } catch (\Exception $e) {
+            // Silently fail email logging - it's not critical
             error_log("Failed to log email: " . $e->getMessage());
         }
     }
