@@ -223,9 +223,9 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <h5 class="card-title mb-0">Contatti</h5>
                                             <?php if ($app->checkPermission('members', 'edit')): ?>
-                                                <button class="btn btn-sm btn-primary" onclick="addContact()">
+                                                <a href="member_contact_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
                                                     <i class="bi bi-plus"></i> Aggiungi Contatto
-                                                </button>
+                                                </a>
                                             <?php endif; ?>
                                         </div>
                                         <?php if (!empty($member['contacts'])): ?>
@@ -245,6 +245,10 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                                 <td><?php echo htmlspecialchars($contact['value']); ?></td>
                                                                 <td>
                                                                     <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                                        <a href="member_contact_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $contact['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
                                                                         <button class="btn btn-sm btn-danger" onclick="deleteContact(<?php echo $contact['id']; ?>)">
                                                                             <i class="bi bi-trash"></i>
                                                                         </button>
@@ -540,17 +544,6 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
         
         function printCard() {
             window.open('member_card.php?id=' + memberId, '_blank');
-        }
-        
-        function addContact() {
-            const type = prompt('Tipo di contatto (telefono_fisso, cellulare, email, pec):');
-            if (!type) return;
-            const value = prompt('Valore:');
-            if (!value) return;
-            
-            window.location.href = 'member_data.php?action=add_contact&member_id=' + memberId + 
-                                   '&type=' + encodeURIComponent(type) + 
-                                   '&value=' + encodeURIComponent(value);
         }
         
         function deleteContact(id) {
