@@ -77,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validazione
         if (empty($data['username'])) {
             $errors[] = 'L\'username è obbligatorio';
-        } elseif (!preg_match('/^[a-zA-Z0-9_]{3,}$/', $data['username'])) {
-            $errors[] = 'L\'username deve contenere almeno 3 caratteri e solo lettere, numeri e underscore';
+        } elseif (!preg_match('/^[a-zA-Z0-9_.]{3,}$/', $data['username'])) {
+            $errors[] = 'L\'username deve contenere almeno 3 caratteri e solo lettere, numeri, underscore e punto';
         }
         
         if (empty($data['email'])) {
@@ -88,7 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Password solo per nuovo utente o se specificata
-        if (!$isEdit || !empty($_POST['password'])) {
+        if (!$isEdit) {
+            // For new users, use default password
+            $data['password'] = App::DEFAULT_PASSWORD;
+        } elseif (!empty($_POST['password'])) {
+            // For existing users, only change if provided
             $password = $_POST['password'] ?? '';
             $passwordConfirm = $_POST['password_confirm'] ?? '';
             
@@ -208,8 +212,8 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                     <label for="username" class="form-label">Username *</label>
                                     <input type="text" class="form-control" id="username" name="username" 
                                            value="<?php echo htmlspecialchars($user['username'] ?? $_POST['username'] ?? ''); ?>" 
-                                           required pattern="[a-zA-Z0-9_]{3,}">
-                                    <div class="form-text">Almeno 3 caratteri, solo lettere, numeri e underscore</div>
+                                           required pattern="[a-zA-Z0-9_.]{3,}">
+                                    <div class="form-text">Almeno 3 caratteri, solo lettere, numeri, underscore e punto</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="email" class="form-label">Email *</label>
@@ -259,20 +263,29 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                             </div>
                             
                             <div class="border rounded p-3 mb-3 bg-light">
-                                <h6>Password<?php echo $isEdit ? ' (lascia vuoto per non modificare)' : ' *'; ?></h6>
+                                <h6>Password<?php echo $isEdit ? ' (lascia vuoto per non modificare)' : ''; ?></h6>
+                                <?php if (!$isEdit): ?>
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Per i nuovi utenti verrà impostata automaticamente la password predefinita: <strong><?php echo htmlspecialchars(App::DEFAULT_PASSWORD); ?></strong><br>
+                                        L'utente riceverà un'email con le credenziali e sarà obbligato a cambiarla al primo accesso.
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($isEdit): ?>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <label for="password" class="form-label">Password<?php echo !$isEdit ? ' *' : ''; ?></label>
+                                        <label for="password" class="form-label">Nuova Password</label>
                                         <input type="password" class="form-control" id="password" name="password" 
-                                               minlength="8" <?php echo !$isEdit ? 'required' : ''; ?>>
-                                        <div class="form-text">Almeno 8 caratteri</div>
+                                               minlength="8">
+                                        <div class="form-text">Almeno 8 caratteri (lascia vuoto per non modificare)</div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="password_confirm" class="form-label">Conferma Password<?php echo !$isEdit ? ' *' : ''; ?></label>
+                                        <label for="password_confirm" class="form-label">Conferma Password</label>
                                         <input type="password" class="form-control" id="password_confirm" name="password_confirm" 
-                                               minlength="8" <?php echo !$isEdit ? 'required' : ''; ?>>
+                                               minlength="8">
                                     </div>
                                 </div>
+                                <?php endif; ?>
                             </div>
                             
                             <div class="form-check mb-3">

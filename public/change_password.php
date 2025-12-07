@@ -3,103 +3,130 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Controllers\UserController;
 
 $app = App::getInstance();
+$db = $app->getDb();
 
-// Redirect to install if not configured
-if (!$app->isInstalled()) {
-    header("Location: install.php");
+// Ensure session is started
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+// Check if user needs to change password
+if (!isset($_SESSION['must_change_password_user_id'])) {
+    header("Location: login.php");
     exit;
 }
 
-// Redirect if already logged in
-if ($app->isLoggedIn()) {
-    header("Location: dashboard.php");
-    exit;
-}
-
+$userId = $_SESSION['must_change_password_user_id'];
 $error = '';
+$success = false;
+
+// Get user info
+$user = $db->fetchOne("SELECT * FROM users WHERE id = ?", [$userId]);
+if (!$user) {
+    unset($_SESSION['must_change_password_user_id']);
+    header("Location: login.php");
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
+    $newPassword = $_POST['new_password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
     
-    if (empty($username) || empty($password)) {
-        $error = 'Per favore inserisci username e password.';
+    if (empty($newPassword)) {
+        $error = 'La nuova password è obbligatoria.';
+    } elseif (strlen($newPassword) < 8) {
+        $error = 'La password deve essere di almeno 8 caratteri.';
+    } elseif ($newPassword !== $confirmPassword) {
+        $error = 'Le password non coincidono.';
     } else {
+        // Verify the new password is not the same as the default
+        // Check against current hashed password (which is the default password)
+        if (password_verify($newPassword, $user['password'])) {
+            // If the new password matches their current password (which is default), reject it
+            $error = 'Non puoi utilizzare la password predefinita. Scegli una password diversa.';
+        }
+    }
+    
+    if (empty($error)) {
         try {
-            $db = $app->getDb();
+            $config = $app->getConfig();
+            $controller = new UserController($db, $config);
             
-            // Get user with role
-            $stmt = $db->query(
+            // Update password and clear must_change_password flag
+            $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+            $db->execute(
+                "UPDATE users SET password = ?, must_change_password = 0, updated_at = NOW() WHERE id = ?",
+                [$hashedPassword, $userId]
+            );
+            
+            // Log the password change
+            $db->execute(
+                "INSERT INTO activity_logs (user_id, module, action, record_id, description, ip_address, created_at) 
+                 VALUES (?, 'users', 'password_changed', ?, 'Password changed after forced reset', ?, NOW())",
+                [$userId, $userId, $_SERVER['REMOTE_ADDR'] ?? null]
+            );
+            
+            // Clear the session variable
+            unset($_SESSION['must_change_password_user_id']);
+            
+            // Now log the user in
+            // Get fresh user data
+            $user = $db->fetchOne(
                 "SELECT u.*, r.name as role_name 
                 FROM users u 
                 LEFT JOIN roles r ON u.role_id = r.id 
-                WHERE u.username = ? AND u.is_active = 1",
-                [$username]
+                WHERE u.id = ?",
+                [$userId]
             );
             
-            $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password'])) {
-                // Check if password change is required
-                if ($user['must_change_password']) {
-                    // Store user id in session for password change
-                    $_SESSION['must_change_password_user_id'] = $user['id'];
-                    header("Location: change_password.php");
-                    exit;
-                }
-                
-                // Get role-based permissions
-                $rolePermissions = [];
-                if ($user['role_id']) {
-                    $stmt = $db->query(
-                        "SELECT p.* FROM permissions p
-                        INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                        WHERE rp.role_id = ?",
-                        [$user['role_id']]
-                    );
-                    $rolePermissions = $stmt->fetchAll();
-                }
-                
-                // Get user-specific permissions
+            // Get role-based permissions
+            $rolePermissions = [];
+            if ($user['role_id']) {
                 $stmt = $db->query(
                     "SELECT p.* FROM permissions p
-                    INNER JOIN user_permissions up ON p.id = up.permission_id
-                    WHERE up.user_id = ?",
-                    [$user['id']]
+                    INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                    WHERE rp.role_id = ?",
+                    [$user['role_id']]
                 );
-                $userPermissions = $stmt->fetchAll();
-                
-                // Merge permissions (user-specific permissions supplement role permissions)
-                $permissionsMap = [];
-                foreach ($rolePermissions as $perm) {
-                    $key = $perm['module'] . '::' . $perm['action'];
-                    $permissionsMap[$key] = $perm;
-                }
-                foreach ($userPermissions as $perm) {
-                    $key = $perm['module'] . '::' . $perm['action'];
-                    $permissionsMap[$key] = $perm;
-                }
-                $user['permissions'] = array_values($permissionsMap);
-                
-                // Update last login
-                $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
-                
-                // Set session
-                $_SESSION['user'] = $user;
-                
-                // Log activity
-                $app->logActivity('login', 'auth', null, 'User logged in');
-                
-                header("Location: dashboard.php");
-                exit;
-            } else {
-                $error = 'Username o password non corretti.';
-                $app->logActivity('login_failed', 'auth', null, "Failed login attempt for username: $username");
+                $rolePermissions = $stmt->fetchAll();
             }
+            
+            // Get user-specific permissions
+            $stmt = $db->query(
+                "SELECT p.* FROM permissions p
+                INNER JOIN user_permissions up ON p.id = up.permission_id
+                WHERE up.user_id = ?",
+                [$user['id']]
+            );
+            $userPermissions = $stmt->fetchAll();
+            
+            // Merge permissions
+            $permissionsMap = [];
+            foreach ($rolePermissions as $perm) {
+                $key = $perm['module'] . '::' . $perm['action'];
+                $permissionsMap[$key] = $perm;
+            }
+            foreach ($userPermissions as $perm) {
+                $key = $perm['module'] . '::' . $perm['action'];
+                $permissionsMap[$key] = $perm;
+            }
+            $user['permissions'] = array_values($permissionsMap);
+            
+            // Update last login
+            $db->execute("UPDATE users SET last_login = NOW() WHERE id = ?", [$user['id']]);
+            
+            // Set session
+            $_SESSION['user'] = $user;
+            
+            // Redirect to dashboard
+            header("Location: dashboard.php");
+            exit;
+            
         } catch (Exception $e) {
-            $error = 'Errore di sistema. Riprova più tardi.';
+            $error = 'Errore durante il cambio password. Riprova.';
             error_log($e->getMessage());
         }
     }
@@ -110,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - EasyVol</title>
+    <title>Cambio Password Obbligatorio - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -163,15 +190,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             50% { transform: translateY(-50px) rotate(180deg); }
         }
         
-        .login-container {
+        .change-container {
             position: relative;
             z-index: 1;
-            max-width: 450px;
+            max-width: 500px;
             width: 100%;
             padding: 20px;
         }
         
-        .login-card {
+        .change-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -181,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         
-        .login-card:hover {
+        .change-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
         }
@@ -199,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .logo-container h2 {
-            font-size: 32px;
+            font-size: 26px;
             font-weight: 700;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
@@ -258,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
         }
         
-        .btn-login {
+        .btn-change {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             padding: 14px;
@@ -271,13 +298,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         
-        .btn-login:hover {
+        .btn-change:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
             background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
         
-        .btn-login:active {
+        .btn-change:active {
             transform: translateY(0);
         }
         
@@ -285,28 +312,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 12px;
             border: none;
             padding: 15px;
-            animation: shake 0.5s ease;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
         }
         
         .alert-danger {
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
             color: white;
         }
+        
+        .alert-warning {
+            background: linear-gradient(135deg, #ffd93d 0%, #f59e0b 100%);
+            color: white;
+        }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-card">
+    <div class="change-container">
+        <div class="change-card">
             <div class="logo-container">
                 <img src="../assets/images/easyvol-logo.svg" alt="EasyVol Logo">
-                <h2>EasyVol</h2>
-                <p>Sistema Gestionale Protezione Civile</p>
+                <h2>Cambio Password Richiesto</h2>
+                <p>Per motivi di sicurezza, devi cambiare la tua password</p>
+            </div>
+
+            <div class="alert alert-warning mb-4">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Benvenuto, <?= htmlspecialchars($user['username']) ?>!</strong><br>
+                Devi cambiare la password predefinita prima di procedere.
             </div>
 
             <?php if ($error): ?>
@@ -317,26 +348,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form method="POST">
                 <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" class="form-control" name="username" placeholder="Username" required autofocus>
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" name="new_password" 
+                           placeholder="Nuova Password" required minlength="8" autofocus>
                 </div>
 
                 <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input type="password" class="form-control" name="password" placeholder="Password" required>
+                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                    <input type="password" class="form-control" name="confirm_password" 
+                           placeholder="Conferma Password" required minlength="8">
                 </div>
 
-                <button type="submit" class="btn btn-login btn-primary w-100">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>Accedi
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        La password deve essere di almeno 8 caratteri e diversa da quella predefinita.
+                    </small>
+                </div>
+
+                <button type="submit" class="btn btn-change btn-primary w-100">
+                    <i class="bi bi-check-circle me-2"></i>Cambia Password
                 </button>
             </form>
-
-            <div class="text-center mt-3">
-                <a href="reset_password.php" class="text-decoration-none" style="color: #667eea;">
-                    <i class="bi bi-key"></i> Password dimenticata?
-                </a>
-            </div>
-
         </div>
     </div>
 

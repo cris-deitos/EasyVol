@@ -60,6 +60,13 @@ $pageTitle = 'Gestione Ruoli e Permessi';
                         </a>
                         <?php echo htmlspecialchars($pageTitle); ?>
                     </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <?php if ($app->checkPermission('users', 'create')): ?>
+                            <a href="role_edit.php" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Nuovo Ruolo
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 
                 <div class="alert alert-info">
@@ -103,11 +110,18 @@ $pageTitle = 'Gestione Ruoli e Permessi';
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm btn-primary" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#permissionsModal<?php echo $role['id']; ?>">
-                                                        <i class="bi bi-shield-lock"></i> Visualizza Permessi
-                                                    </button>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="role_edit.php?id=<?php echo $role['id']; ?>" 
+                                                           class="btn btn-outline-warning" title="Modifica">
+                                                            <i class="bi bi-pencil"></i> Modifica
+                                                        </a>
+                                                        <button type="button" class="btn btn-outline-primary" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#permissionsModal<?php echo $role['id']; ?>"
+                                                                title="Visualizza Permessi">
+                                                            <i class="bi bi-shield-lock"></i> Permessi
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

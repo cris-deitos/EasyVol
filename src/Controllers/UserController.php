@@ -109,25 +109,35 @@ class UserController {
                 return ['error' => 'Email già utilizzata'];
             }
             
+            // Set default password if not provided
+            $password = $data['password'] ?? \EasyVol\App::DEFAULT_PASSWORD;
+            // Check if password is default to set must_change_password flag
+            // This is done before hashing to determine if password change is required
+            $mustChangePassword = !isset($data['password']) || $data['password'] === \EasyVol\App::DEFAULT_PASSWORD ? 1 : 0;
+            
             $sql = "INSERT INTO users (
                 username, password, email, full_name, member_id, 
-                role_id, is_active, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                role_id, is_active, must_change_password, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['username'],
-                password_hash($data['password'], PASSWORD_BCRYPT),
+                password_hash($password, PASSWORD_BCRYPT),
                 $data['email'],
                 $data['full_name'] ?? null,
                 $data['member_id'] ?? null,
                 $data['role_id'] ?? null,
-                isset($data['is_active']) ? (int)$data['is_active'] : 1
+                isset($data['is_active']) ? (int)$data['is_active'] : 1,
+                $mustChangePassword
             ];
             
             $this->db->execute($sql, $params);
             $userId = $this->db->lastInsertId();
             
             $this->logActivity($creatorId, 'users', 'create', $userId, 'Creato utente: ' . $data['username']);
+            
+            // Send welcome email with credentials
+            $this->sendWelcomeEmail($data['username'], $data['email'], $data['full_name'] ?? $data['username'], $password);
             
             $this->db->commit();
             return $userId;
@@ -350,6 +360,103 @@ class UserController {
             error_log("Errore rimozione permesso: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Invia email di benvenuto
+     */
+    private function sendWelcomeEmail($username, $email, $fullName, $password) {
+        try {
+            // Only send if email is enabled
+            if (!($this->config['email']['enabled'] ?? false)) {
+                return false;
+            }
+            
+            $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+            
+            $data = [
+                'app_name' => $this->config['app']['name'] ?? 'EasyVol',
+                'full_name' => $fullName,
+                'username' => $username,
+                'password' => $password,
+                'login_url' => ($this->config['app']['url'] ?? 'http://localhost') . '/login.php'
+            ];
+            
+            return $emailSender->sendFromTemplate($email, 'user_welcome', $data);
+            
+        } catch (\Exception $e) {
+            error_log("Errore invio email benvenuto: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Reset password per username o email
+     */
+    public function resetPassword($usernameOrEmail) {
+        try {
+            // Find user by username or email
+            $sql = "SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1";
+            $user = $this->db->fetchOne($sql, [$usernameOrEmail, $usernameOrEmail]);
+            
+            if (!$user) {
+                return ['error' => 'Utente non trovato'];
+            }
+            
+            // Set default password
+            $newPassword = \EasyVol\App::DEFAULT_PASSWORD;
+            $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+            
+            // Update password and set must_change_password flag
+            $sql = "UPDATE users SET password = ?, must_change_password = 1, updated_at = NOW() WHERE id = ?";
+            $this->db->execute($sql, [$hashedPassword, $user['id']]);
+            
+            // Send email with new password
+            $this->sendPasswordResetEmail($user['username'], $user['email'], $user['full_name'] ?? $user['username'], $newPassword);
+            
+            $this->logActivity($user['id'], 'users', 'password_reset', $user['id'], 'Password resettata');
+            
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Errore reset password: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Invia email di reset password
+     */
+    private function sendPasswordResetEmail($username, $email, $fullName, $password) {
+        try {
+            // Only send if email is enabled
+            if (!($this->config['email']['enabled'] ?? false)) {
+                return false;
+            }
+            
+            $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+            
+            $data = [
+                'app_name' => $this->config['app']['name'] ?? 'EasyVol',
+                'username' => $username,
+                'password' => $password,
+                'login_url' => ($this->config['app']['url'] ?? 'http://localhost') . '/login.php'
+            ];
+            
+            return $emailSender->sendFromTemplate($email, 'password_reset', $data);
+            
+        } catch (\Exception $e) {
+            error_log("Errore invio email reset password: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Ottiene utente per email
+     */
+    public function getByEmail($email) {
+        $sql = "SELECT * FROM users WHERE email = ?";
+        return $this->db->fetchOne($sql, [$email]);
     }
     
     /**

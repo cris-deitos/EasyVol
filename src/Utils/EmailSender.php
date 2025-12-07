@@ -178,7 +178,7 @@ class EmailSender {
         
         // Get template from database
         $template = $this->db->fetchOne(
-            "SELECT * FROM email_templates WHERE name = ? AND is_active = 1",
+            "SELECT * FROM email_templates WHERE template_name = ?",
             [$templateName]
         );
         
@@ -189,7 +189,7 @@ class EmailSender {
         
         // Replace variables in subject and body
         $subject = $this->replaceVariables($template['subject'], $data);
-        $body = $this->replaceVariables($template['body'], $data);
+        $body = $this->replaceVariables($template['body_html'], $data);
         
         return $this->send($to, $subject, $body, $attachments);
     }

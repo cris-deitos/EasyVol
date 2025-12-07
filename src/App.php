@@ -5,6 +5,11 @@ namespace EasyVol;
  * Main Application Class
  */
 class App {
+    /**
+     * Default password for new users and password resets
+     */
+    const DEFAULT_PASSWORD = 'Pw@12345678';
+    
     private static $instance = null;
     private $config;
     private $db;
