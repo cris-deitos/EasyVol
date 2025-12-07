@@ -266,9 +266,13 @@ class EmailSender {
      */
     private function logEmail($to, $subject, $body, $status, $error) {
         try {
-            // Check if email_logs table exists before attempting to log
-            $tableCheck = $this->db->fetchOne("SHOW TABLES LIKE 'email_logs'");
-            if (!$tableCheck) {
+            // Check if email_logs table exists using INFORMATION_SCHEMA for better performance
+            $tableCheck = $this->db->fetchOne(
+                "SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES 
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'email_logs'"
+            );
+            
+            if (!$tableCheck || $tableCheck['count'] == 0) {
                 // Table doesn't exist, skip logging silently
                 return;
             }

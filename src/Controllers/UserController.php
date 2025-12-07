@@ -11,6 +11,7 @@ use EasyVol\Database;
 class UserController {
     private $db;
     private $config;
+    private $phpmailerAvailable = null;
     
     public function __construct(Database $db, $config) {
         $this->db = $db;
@@ -369,6 +370,16 @@ class UserController {
     }
     
     /**
+     * Verifica se PHPMailer è disponibile (con cache)
+     */
+    private function isPhpMailerAvailable() {
+        if ($this->phpmailerAvailable === null) {
+            $this->phpmailerAvailable = class_exists('\PHPMailer\PHPMailer\PHPMailer');
+        }
+        return $this->phpmailerAvailable;
+    }
+    
+    /**
      * Invia email di benvenuto
      */
     private function sendWelcomeEmail($username, $email, $fullName, $password) {
@@ -379,8 +390,8 @@ class UserController {
                 return false;
             }
             
-            // Check if PHPMailer is available
-            if (!class_exists('\PHPMailer\PHPMailer\PHPMailer')) {
+            // Check if PHPMailer is available (cached check)
+            if (!$this->isPhpMailerAvailable()) {
                 error_log("PHPMailer non installato. Eseguire: composer install");
                 return false;
             }
@@ -452,8 +463,8 @@ class UserController {
                 return false;
             }
             
-            // Check if PHPMailer is available
-            if (!class_exists('\PHPMailer\PHPMailer\PHPMailer')) {
+            // Check if PHPMailer is available (cached check)
+            if (!$this->isPhpMailerAvailable()) {
                 error_log("PHPMailer non installato. Eseguire: composer install");
                 return false;
             }
