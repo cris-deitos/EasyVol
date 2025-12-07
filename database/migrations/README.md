@@ -103,49 +103,36 @@ Lo script attuale contiene la struttura e 3 esempi di soci. Per importare tutti 
 
 **OPZIONE B: Script Automatico (Consigliato)**
 
-Per generare automaticamente lo script completo:
+È disponibile uno script Python che genera automaticamente tutti gli INSERT statements dal CSV.
 
-1. Salvare il CSV in formato UTF-8
-2. Utilizzare uno script Python/PHP per leggere il CSV e generare le INSERT
-3. Esempio di script Python:
+**File**: `generate_import_sql.py`
 
-```python
-import csv
-import datetime
+**Uso**:
+```bash
+# Generare gli INSERT statements dal CSV
+python3 generate_import_sql.py soci.csv > generated_inserts.sql
 
-def escape_sql(value):
-    if value is None or value == '':
-        return 'NULL'
-    return "'" + str(value).replace("'", "''") + "'"
+# Combinare con l'header dello script template
+cat import_soci_completo.sql > import_final.sql
+# Inserire manualmente gli INSERT generati nella sezione appropriata
 
-def map_member_type(tipo):
-    if 'FONDATORE' in tipo.upper():
-        return 'fondatore'
-    return 'ordinario'
-
-def map_member_status(stato):
-    if 'DIMESSO' in stato.upper():
-        return 'dimesso'
-    if 'DECADUTO' in stato.upper():
-        return 'decaduto'
-    return 'attivo'
-
-def map_gender(value):
-    if 'MASCHIO' in value.upper():
-        return 'M'
-    if 'FEMMINA' in value.upper():
-        return 'F'
-    return 'NULL'
-
-# Leggere CSV e generare INSERT statements
-with open('soci.csv', 'r', encoding='utf-8') as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        # Generare INSERT per members
-        # Generare INSERT per member_contacts
-        # Generare INSERT per member_addresses
-        pass
+# Oppure generare direttamente uno script completo
+head -n 120 import_soci_completo.sql > import_final.sql
+python3 generate_import_sql.py soci.csv >> import_final.sql
+tail -n 50 import_soci_completo.sql >> import_final.sql
 ```
+
+**Caratteristiche dello script**:
+- Legge automaticamente il CSV con header
+- Mappa correttamente tutti i campi secondo le specifiche
+- Gestisce escape di virgolette singole
+- Gestisce valori NULL
+- Converte formati data automaticamente
+- Riconosce nazionalità estere dal luogo di nascita
+- Genera INSERT per members, member_contacts e member_addresses
+- Estrae automaticamente numeri civici dagli indirizzi
+
+**File di esempio**: `soci_example.csv` contiene 5 soci di esempio per testare lo script
 
 #### Esecuzione dello Script
 
