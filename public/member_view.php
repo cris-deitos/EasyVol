@@ -158,6 +158,31 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                     <i class="bi bi-heart-pulse"></i> Allergie/Salute
                                 </button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="availability-tab" data-bs-toggle="tab" data-bs-target="#availability" type="button" role="tab">
+                                    <i class="bi bi-geo-alt"></i> Disponibilità
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="fees-tab" data-bs-toggle="tab" data-bs-target="#fees" type="button" role="tab">
+                                    <i class="bi bi-cash"></i> Quote Sociali
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="sanctions-tab" data-bs-toggle="tab" data-bs-target="#sanctions" type="button" role="tab">
+                                    <i class="bi bi-exclamation-triangle"></i> Provvedimenti
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+                                    <i class="bi bi-chat-left-text"></i> Note
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="attachments-tab" data-bs-toggle="tab" data-bs-target="#attachments" type="button" role="tab">
+                                    <i class="bi bi-paperclip"></i> Allegati
+                                </button>
+                            </li>
                         </ul>
                         
                         <div class="tab-content" id="memberTabsContent">
@@ -343,11 +368,11 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="card-title mb-0">Qualifiche e Ruoli</h5>
+                                            <h5 class="card-title mb-0">Mansioni e Qualifiche</h5>
                                             <?php if ($app->checkPermission('members', 'edit')): ?>
-                                                <button class="btn btn-sm btn-primary" onclick="addRole()">
-                                                    <i class="bi bi-plus"></i> Aggiungi Qualifica
-                                                </button>
+                                                <a href="member_role_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Aggiungi Mansione
+                                                </a>
                                             <?php endif; ?>
                                         </div>
                                         <?php if (!empty($member['roles'])): ?>
@@ -369,6 +394,10 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                                 <td><?php echo $role['end_date'] ? date('d/m/Y', strtotime($role['end_date'])) : 'Attiva'; ?></td>
                                                                 <td>
                                                                     <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                                        <a href="member_role_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $role['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
                                                                         <button class="btn btn-sm btn-danger" onclick="deleteRole(<?php echo $role['id']; ?>)">
                                                                             <i class="bi bi-trash"></i>
                                                                         </button>
@@ -531,6 +560,237 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Disponibilità Territoriale -->
+                            <div class="tab-pane fade" id="availability" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Disponibilità Territoriale</h5>
+                                            <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                <a href="member_availability_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Aggiungi Disponibilità
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['availability'])): ?>
+                                            <div class="list-group">
+                                                <?php foreach ($member['availability'] as $avail): ?>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <span class="badge bg-primary rounded-pill"><?php echo ucfirst($avail['availability_type']); ?></span>
+                                                        <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                            <button class="btn btn-sm btn-danger" onclick="deleteAvailability(<?php echo $avail['id']; ?>)">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessuna disponibilità territoriale inserita</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quote Sociali -->
+                            <div class="tab-pane fade" id="fees" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Quote Sociali Pagate</h5>
+                                            <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                <a href="member_fee_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Aggiungi Anno
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['fees'])): ?>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Anno</th>
+                                                            <th>Data Pagamento</th>
+                                                            <th>Importo</th>
+                                                            <th>Azioni</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($member['fees'] as $fee): ?>
+                                                            <tr>
+                                                                <td><?php echo htmlspecialchars($fee['year']); ?></td>
+                                                                <td><?php echo $fee['payment_date'] ? date('d/m/Y', strtotime($fee['payment_date'])) : 'N/D'; ?></td>
+                                                                <td><?php echo $fee['amount'] ? '€ ' . number_format($fee['amount'], 2) : 'N/D'; ?></td>
+                                                                <td>
+                                                                    <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                                        <a href="member_fee_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $fee['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
+                                                                        <button class="btn btn-sm btn-danger" onclick="deleteFee(<?php echo $fee['id']; ?>)">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessuna quota sociale registrata</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Provvedimenti -->
+                            <div class="tab-pane fade" id="sanctions" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Provvedimenti a Carico</h5>
+                                            <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                <a href="member_sanction_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Aggiungi Provvedimento
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['sanctions'])): ?>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Data</th>
+                                                            <th>Tipo</th>
+                                                            <th>Motivazione</th>
+                                                            <th>Azioni</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($member['sanctions'] as $sanction): ?>
+                                                            <tr>
+                                                                <td><?php echo date('d/m/Y', strtotime($sanction['sanction_date'])); ?></td>
+                                                                <td><span class="badge bg-warning"><?php echo ucfirst(str_replace('_', ' ', $sanction['sanction_type'])); ?></span></td>
+                                                                <td><?php echo htmlspecialchars($sanction['reason'] ?? 'N/D'); ?></td>
+                                                                <td>
+                                                                    <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                                        <a href="member_sanction_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $sanction['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
+                                                                        <button class="btn btn-sm btn-danger" onclick="deleteSanction(<?php echo $sanction['id']; ?>)">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessun provvedimento registrato</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Note -->
+                            <div class="tab-pane fade" id="notes" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Note sul Socio</h5>
+                                            <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                <a href="member_note_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Aggiungi Nota
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['notes'])): ?>
+                                            <div class="list-group">
+                                                <?php foreach ($member['notes'] as $note): ?>
+                                                    <div class="list-group-item">
+                                                        <div class="d-flex w-100 justify-content-between">
+                                                            <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($note['created_at'])); ?></small>
+                                                            <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                                <div>
+                                                                    <a href="member_note_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $note['id']; ?>" 
+                                                                       class="btn btn-sm btn-warning">
+                                                                        <i class="bi bi-pencil"></i>
+                                                                    </a>
+                                                                    <button class="btn btn-sm btn-danger" onclick="deleteNote(<?php echo $note['id']; ?>)">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <p class="mb-1"><?php echo nl2br(htmlspecialchars($note['note'])); ?></p>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessuna nota inserita</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Allegati -->
+                            <div class="tab-pane fade" id="attachments" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Allegati Documentali</h5>
+                                            <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                <a href="member_attachment_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Carica Documento
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($member['attachments'])): ?>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Nome File</th>
+                                                            <th>Tipo</th>
+                                                            <th>Descrizione</th>
+                                                            <th>Data Caricamento</th>
+                                                            <th>Azioni</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($member['attachments'] as $attachment): ?>
+                                                            <tr>
+                                                                <td><?php echo htmlspecialchars($attachment['file_name']); ?></td>
+                                                                <td><?php echo htmlspecialchars($attachment['file_type'] ?? 'N/D'); ?></td>
+                                                                <td><?php echo htmlspecialchars($attachment['description'] ?? 'N/D'); ?></td>
+                                                                <td><?php echo date('d/m/Y', strtotime($attachment['uploaded_at'])); ?></td>
+                                                                <td>
+                                                                    <a href="<?php echo htmlspecialchars($attachment['file_path']); ?>" 
+                                                                       class="btn btn-sm btn-info" target="_blank">
+                                                                        <i class="bi bi-download"></i>
+                                                                    </a>
+                                                                    <?php if ($app->checkPermission('members', 'edit')): ?>
+                                                                        <button class="btn btn-sm btn-danger" onclick="deleteAttachment(<?php echo $attachment['id']; ?>)">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessun allegato caricato</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -572,10 +832,6 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
             }
         }
         
-        function addRole() {
-            window.location.href = 'member_role_edit.php?member_id=' + memberId;
-        }
-        
         function deleteRole(id) {
             if (confirm('Sei sicuro di voler eliminare questa qualifica?')) {
                 window.location.href = 'member_data.php?action=delete_role&id=' + id + '&member_id=' + memberId;
@@ -609,6 +865,36 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
         function deleteHealth(id) {
             if (confirm('Sei sicuro di voler eliminare questa informazione sanitaria?')) {
                 window.location.href = 'member_data.php?action=delete_health&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function deleteAvailability(id) {
+            if (confirm('Sei sicuro di voler eliminare questa disponibilità?')) {
+                window.location.href = 'member_data.php?action=delete_availability&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function deleteFee(id) {
+            if (confirm('Sei sicuro di voler eliminare questa quota?')) {
+                window.location.href = 'member_data.php?action=delete_fee&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function deleteSanction(id) {
+            if (confirm('Sei sicuro di voler eliminare questo provvedimento?')) {
+                window.location.href = 'member_data.php?action=delete_sanction&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function deleteNote(id) {
+            if (confirm('Sei sicuro di voler eliminare questa nota?')) {
+                window.location.href = 'member_data.php?action=delete_note&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function deleteAttachment(id) {
+            if (confirm('Sei sicuro di voler eliminare questo allegato?')) {
+                window.location.href = 'member_data.php?action=delete_attachment&id=' + id + '&member_id=' + memberId;
             }
         }
     </script>
