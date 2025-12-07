@@ -316,6 +316,8 @@ class ApplicationController {
             }
             
             // Aggiorna domanda con timestamp unico
+            // processed_at e approved_at hanno lo stesso valore per domande approvate
+            // processed_at viene usato anche per le domande rifiutate, mentre approved_at solo per approvate
             $now = date('Y-m-d H:i:s');
             $sql = "UPDATE member_applications SET 
                     status = 'approved',
@@ -1027,7 +1029,7 @@ class ApplicationController {
             $data['last_name'],
             $data['first_name'],
             $data['birth_date'],
-            $data['birth_place'] ?? null,
+            $data['birth_place'], // Required field from form
             $data['tax_code'],
             date('Y-m-d'),
             date('Y-m-d')
