@@ -105,67 +105,224 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Login - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
+            font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
-        .login-card {
+        
+        /* Animated background circles */
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        body::before {
+            width: 500px;
+            height: 500px;
+            top: -250px;
+            right: -250px;
+            animation-delay: 0s;
+        }
+        
+        body::after {
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            left: -200px;
+            animation-delay: 10s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-50px) rotate(180deg); }
+        }
+        
+        .login-container {
+            position: relative;
+            z-index: 1;
             max-width: 450px;
             width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 20px;
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 50px 40px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .login-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+        
+        .logo-container img {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 15px;
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        .logo-container h2 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            animation: fadeInDown 0.8s ease 0.2s backwards;
+        }
+        
+        .logo-container p {
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: 400;
+            animation: fadeInDown 0.8s ease 0.4s backwards;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        .input-group-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
-            border-radius: 15px;
+            color: white;
+            padding: 12px 15px;
+        }
+        
+        .form-control {
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            border-left: none;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 15px;
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .alert-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div class="login-card card">
-        <div class="card-body p-5">
-            <div class="text-center mb-4">
-                <i class="bi bi-heart-pulse text-danger" style="font-size: 4rem;"></i>
-                <h2 class="mt-3">EasyVol</h2>
-                <p class="text-muted">Sistema Gestionale Protezione Civile</p>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-container">
+                <img src="../assets/images/easyvol-logo.svg" alt="EasyVol Logo">
+                <h2>EasyVol</h2>
+                <p>Sistema Gestionale Protezione Civile</p>
             </div>
 
             <?php if ($error): ?>
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
+                <div class="alert alert-danger mb-4">
+                    <i class="bi bi-exclamation-triangle me-2"></i><?= htmlspecialchars($error) ?>
                 </div>
             <?php endif; ?>
 
             <form method="POST">
-                <div class="mb-3">
-                    <label class="form-label">Username</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-person"></i></span>
-                        <input type="text" class="form-control" name="username" required autofocus>
-                    </div>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" class="form-control" name="username" placeholder="Username" required autofocus>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label">Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control" name="password" required>
-                    </div>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" name="password" placeholder="Password" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
-                    <i class="bi bi-box-arrow-in-right"></i> Accedi
+                <button type="submit" class="btn btn-login btn-primary w-100">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Accedi
                 </button>
             </form>
 
-            <hr>
-
-            <div class="text-center">
-                <small class="text-muted">
-                    <a href="register.php" class="text-decoration-none">Registrazione Nuovo Socio</a>
-                </small>
-            </div>
         </div>
     </div>
 
