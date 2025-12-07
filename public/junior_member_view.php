@@ -104,7 +104,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                         <div class="card mb-4">
                             <div class="card-body text-center">
                                 <?php if (!empty($member['photo_path']) && file_exists($member['photo_path'])): ?>
-                                    <img src="<?php echo htmlspecialchars($member['photo_path']); ?>" 
+                                    <img src="download.php?type=junior_member_photo&id=<?php echo $member['id']; ?>" 
                                          alt="Foto socio" class="img-fluid rounded mb-3" style="max-width: 200px;">
                                 <?php else: ?>
                                     <div class="bg-secondary text-white rounded mb-3 d-inline-flex align-items-center justify-content-center" 

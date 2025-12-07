@@ -178,7 +178,7 @@ $pageTitle = 'Documento: ' . $document['title'];
                                     <h5 class="card-title mb-0">Anteprima</h5>
                                 </div>
                                 <div class="card-body text-center">
-                                    <img src="../<?php echo htmlspecialchars($document['file_path']); ?>" 
+                                    <img src="download.php?type=document&id=<?php echo $document['id']; ?>" 
                                          alt="<?php echo htmlspecialchars($document['title']); ?>" 
                                          class="img-fluid" style="max-height: 600px;">
                                 </div>
@@ -189,7 +189,7 @@ $pageTitle = 'Documento: ' . $document['title'];
                                     <h5 class="card-title mb-0">Anteprima PDF</h5>
                                 </div>
                                 <div class="card-body">
-                                    <iframe src="../<?php echo htmlspecialchars($document['file_path']); ?>" 
+                                    <iframe src="download.php?type=document&id=<?php echo $document['id']; ?>" 
                                             width="100%" height="600px" style="border: none;">
                                     </iframe>
                                 </div>
