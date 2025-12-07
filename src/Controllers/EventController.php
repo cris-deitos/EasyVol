@@ -216,8 +216,8 @@ class EventController {
                 return ['success' => false, 'message' => 'Evento non trovato'];
             }
             
-            // Soft delete - mark as deleted
-            $sql = "UPDATE events SET deleted_at = NOW() WHERE id = ?";
+            // Mark event as cancelled instead of soft delete
+            $sql = "UPDATE events SET status = 'annullato' WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
             // Log activity

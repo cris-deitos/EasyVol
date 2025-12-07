@@ -22,12 +22,11 @@ class ReportController {
      */
     public function membersByStatus() {
         $sql = "SELECT 
-                    status,
+                    member_status as status,
                     COUNT(*) as count
                 FROM members
-                WHERE deleted_at IS NULL
-                GROUP BY status
-                ORDER BY status";
+                GROUP BY member_status
+                ORDER BY member_status";
         
         return $this->db->fetchAll($sql);
     }
@@ -40,7 +39,6 @@ class ReportController {
                     qualification,
                     COUNT(*) as count
                 FROM members
-                WHERE deleted_at IS NULL
                 GROUP BY qualification
                 ORDER BY count DESC";
         
@@ -237,10 +235,9 @@ class ReportController {
         // Soci
         $sql = "SELECT 
                     COUNT(*) as total,
-                    SUM(CASE WHEN status = 'attivo' THEN 1 ELSE 0 END) as active,
-                    SUM(CASE WHEN status = 'sospeso' THEN 1 ELSE 0 END) as suspended
-                FROM members
-                WHERE deleted_at IS NULL";
+                    SUM(CASE WHEN member_status = 'attivo' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN member_status = 'sospeso' THEN 1 ELSE 0 END) as suspended
+                FROM members";
         $stats['members'] = $this->db->fetchOne($sql);
         
         // Eventi
