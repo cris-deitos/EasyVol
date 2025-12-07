@@ -178,12 +178,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 24px;
             padding: 50px 40px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: box-shadow 0.3s ease;
         }
         
         .login-card:hover {
-            transform: translateY(-5px);
             box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+            /* Removed transform to prevent shaking */
         }
         
         .logo-container {
@@ -304,7 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <div class="login-card">
             <div class="logo-container">
-                <img src="../assets/images/easyvol-logo.svg" alt="EasyVol Logo">
+                <img src="../assets/images/easyvol-logo.svg" alt="Protezione Civile Logo" class="mb-4" style="max-width: 150px;">
                 <h2>EasyVol</h2>
                 <p>Sistema Gestionale Protezione Civile</p>
             </div>

@@ -333,7 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="change-container">
         <div class="change-card">
             <div class="logo-container">
-                <img src="../assets/images/easyvol-logo.svg" alt="EasyVol Logo">
+                <img src="../assets/images/easyvol-logo.svg" alt="Protezione Civile Logo">
                 <h2>Cambio Password Richiesto</h2>
                 <p>Per motivi di sicurezza, devi cambiare la tua password</p>
             </div>

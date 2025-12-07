@@ -267,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="reset-container">
         <div class="reset-card">
             <div class="logo-container">
-                <img src="../assets/images/easyvol-logo.svg" alt="EasyVol Logo">
+                <img src="../assets/images/easyvol-logo.svg" alt="Protezione Civile Logo">
                 <h2>Reset Password</h2>
                 <p>Inserisci il tuo username o email</p>
             </div>
