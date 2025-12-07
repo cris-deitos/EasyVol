@@ -239,8 +239,14 @@ class ApplicationController {
         }
         
         if (!empty($filters['search'])) {
-            $sql .= " AND (application_code LIKE ? OR application_data LIKE ?)";
+            // Use JSON functions for more efficient searching
+            $sql .= " AND (application_code LIKE ? 
+                      OR JSON_EXTRACT(application_data, '$.last_name') LIKE ?
+                      OR JSON_EXTRACT(application_data, '$.first_name') LIKE ?
+                      OR JSON_EXTRACT(application_data, '$.email') LIKE ?)";
             $search = "%{$filters['search']}%";
+            $params[] = $search;
+            $params[] = $search;
             $params[] = $search;
             $params[] = $search;
         }
@@ -309,16 +315,17 @@ class ApplicationController {
                 $memberId = $this->createMemberFromApplication($data, $userId);
             }
             
-            // Aggiorna domanda
+            // Aggiorna domanda con timestamp unico
+            $now = date('Y-m-d H:i:s');
             $sql = "UPDATE member_applications SET 
                     status = 'approved',
                     processed_by = ?,
-                    processed_at = NOW(),
-                    approved_at = NOW(),
+                    processed_at = ?,
+                    approved_at = ?,
                     member_id = ?
                     WHERE id = ?";
             
-            $this->db->execute($sql, [$userId, $memberId, $id]);
+            $this->db->execute($sql, [$userId, $now, $now, $memberId, $id]);
             
             // Invia email approvazione
             $this->sendApprovalEmailFromData($data, $application['application_type']);
@@ -875,7 +882,7 @@ class ApplicationController {
             $data['last_name'],
             $data['first_name'],
             $data['birth_date'],
-            $data['birth_place'] ?? null,
+            $data['birth_place'], // Required field from form
             $data['tax_code'],
             date('Y-m-d'),
             date('Y-m-d')
