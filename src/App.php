@@ -33,6 +33,65 @@ class App {
         // Initialize database if configured
         if ($this->isInstalled()) {
             $this->db = Database::getInstance($this->config['database']);
+            $this->loadAssociationData();
+        }
+    }
+    
+    private function loadAssociationData() {
+        try {
+            $association = $this->db->fetchOne("SELECT * FROM association ORDER BY id ASC LIMIT 1");
+            if ($association) {
+                // Build address string
+                $addressParts = array_filter([
+                    $association['address_street'] ?? '',
+                    $association['address_number'] ?? ''
+                ]);
+                $address = !empty($addressParts) ? implode(' ', $addressParts) : '';
+                
+                // Build city string
+                $cityParts = [];
+                if (!empty($association['address_city'])) {
+                    $cityParts[] = $association['address_city'];
+                }
+                if (!empty($association['address_province']) || !empty($association['address_cap'])) {
+                    $provinceCap = array_filter([
+                        $association['address_province'] ?? '',
+                        $association['address_cap'] ?? ''
+                    ]);
+                    if (!empty($provinceCap)) {
+                        $cityParts[] = '(' . implode(') ', $provinceCap) . ')';
+                    }
+                }
+                $city = !empty($cityParts) ? implode(' ', $cityParts) : '';
+                
+                $this->config['association'] = [
+                    'name' => $association['name'] ?? '',
+                    'address' => $address,
+                    'city' => $city,
+                    'email' => $association['email'] ?? '',
+                    'pec' => $association['pec'] ?? '',
+                    'tax_code' => $association['tax_code'] ?? '',
+                ];
+            } else {
+                $this->config['association'] = [
+                    'name' => 'N/D',
+                    'address' => 'N/D',
+                    'city' => 'N/D',
+                    'email' => 'N/D',
+                    'pec' => 'N/D',
+                    'tax_code' => 'N/D',
+                ];
+            }
+        } catch (\Exception $e) {
+            error_log("Failed to load association data: " . $e->getMessage());
+            $this->config['association'] = [
+                'name' => 'N/D',
+                'address' => 'N/D',
+                'city' => 'N/D',
+                'email' => 'N/D',
+                'pec' => 'N/D',
+                'tax_code' => 'N/D',
+            ];
         }
     }
     
@@ -99,6 +158,11 @@ class App {
     
     public function getCurrentUser() {
         return isset($_SESSION['user']) ? $_SESSION['user'] : null;
+    }
+    
+    public function getUserId() {
+        $user = $this->getCurrentUser();
+        return $user['id'] ?? null;
     }
     
     public function isLoggedIn() {

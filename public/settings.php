@@ -159,11 +159,14 @@ $pageTitle = 'Impostazioni Sistema';
                                     <dt class="col-sm-3">Città</dt>
                                     <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['city'] ?? 'N/D'); ?></dd>
                                     
+                                    <dt class="col-sm-3">Codice Fiscale</dt>
+                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['tax_code'] ?? 'N/D'); ?></dd>
+                                    
                                     <dt class="col-sm-3">Email</dt>
                                     <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['email'] ?? 'N/D'); ?></dd>
                                     
-                                    <dt class="col-sm-3">Telefono</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['phone'] ?? 'N/D'); ?></dd>
+                                    <dt class="col-sm-3">PEC</dt>
+                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['association']['pec'] ?? 'N/D'); ?></dd>
                                 </dl>
                                 <p class="text-muted">
                                     <i class="bi bi-info-circle"></i>
