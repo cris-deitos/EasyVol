@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: roles.php?success=1');
                     exit;
                 } catch (Exception $e) {
-                    $db->rollback();
+                    $db->rollBack();
                     $errors[] = 'Errore durante l\'aggiornamento dei permessi';
                     error_log("Error updating role permissions: " . $e->getMessage());
                 }
