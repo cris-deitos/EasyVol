@@ -107,6 +107,11 @@ $pageTitle = 'Impostazioni Sistema';
                             <i class="bi bi-archive"></i> Backup
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import" type="button" role="tab">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Import CSV
+                        </button>
+                    </li>
                 </ul>
                 
                 <div class="tab-content" id="settingsTabsContent">
@@ -269,6 +274,126 @@ $pageTitle = 'Impostazioni Sistema';
                                     <h6>Cron Jobs</h6>
                                     <p>Per configurare i cron jobs automatici, consulta <code>cron/README.md</code></p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Import CSV -->
+                    <div class="tab-pane fade" id="import" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Import Dati da CSV</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Sistema di Import CSV Avanzato</strong><br>
+                                    Importa dati da file CSV con conversione automatica da struttura MONOTABELLA a MULTI-TABELLA.
+                                </div>
+                                
+                                <h6>Funzionalità</h6>
+                                <ul>
+                                    <li><i class="bi bi-check-circle text-success"></i> Upload CSV con encoding detection (UTF-8/ISO-8859-1)</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Supporto per Soci, Cadetti, Mezzi e Attrezzature</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Mappatura intelligente delle colonne</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Anteprima dati prima dell'import</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Split automatico in tabelle correlate</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Gestione contatti multipli (email, telefono, cellulare, PEC)</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Gestione indirizzi multipli (residenza, domicilio)</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Rilevamento duplicati via matricola/targa/codice</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Transazioni con rollback automatico su errore</li>
+                                    <li><i class="bi bi-check-circle text-success"></i> Log dettagliato di ogni import</li>
+                                </ul>
+                                
+                                <h6 class="mt-4">Tipi di Import Supportati</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6><i class="bi bi-people"></i> Soci Adulti</h6>
+                                                <small class="text-muted">
+                                                    Import in: members, member_contacts, member_addresses, member_employment
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6><i class="bi bi-person"></i> Cadetti (Minorenni)</h6>
+                                                <small class="text-muted">
+                                                    Import in: junior_members, junior_member_contacts, junior_member_addresses, junior_member_guardians
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6><i class="bi bi-truck"></i> Mezzi e Veicoli</h6>
+                                                <small class="text-muted">
+                                                    Import in: vehicles, vehicle_maintenance
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6><i class="bi bi-box"></i> Attrezzature e Magazzino</h6>
+                                                <small class="text-muted">
+                                                    Import in: warehouse_items, warehouse_movements
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <a href="import_data.php" class="btn btn-primary">
+                                        <i class="bi bi-file-earmark-arrow-up"></i> Vai a Import CSV
+                                    </a>
+                                </div>
+                                
+                                <?php
+                                // Mostra ultimi import se esiste la tabella
+                                try {
+                                    $stmt = $db->getConnection()->prepare(
+                                        "SELECT * FROM import_logs ORDER BY started_at DESC LIMIT 5"
+                                    );
+                                    $stmt->execute();
+                                    $recentImports = $stmt->fetchAll();
+                                    
+                                    if (!empty($recentImports)) {
+                                        echo '<h6 class="mt-4">Ultimi Import</h6>';
+                                        echo '<div class="table-responsive">';
+                                        echo '<table class="table table-sm">';
+                                        echo '<thead><tr><th>Data</th><th>Tipo</th><th>File</th><th>Righe</th><th>Stato</th></tr></thead>';
+                                        echo '<tbody>';
+                                        foreach ($recentImports as $import) {
+                                            echo '<tr>';
+                                            echo '<td>' . date('d/m/Y H:i', strtotime($import['started_at'])) . '</td>';
+                                            echo '<td>' . htmlspecialchars(ucfirst($import['import_type'])) . '</td>';
+                                            echo '<td>' . htmlspecialchars($import['file_name']) . '</td>';
+                                            echo '<td>' . ($import['imported_rows'] ?? 0) . '/' . ($import['total_rows'] ?? 0) . '</td>';
+                                            echo '<td>';
+                                            $statusClass = [
+                                                'completed' => 'success',
+                                                'failed' => 'danger',
+                                                'partial' => 'warning',
+                                                'in_progress' => 'info'
+                                            ];
+                                            $class = $statusClass[$import['status']] ?? 'secondary';
+                                            echo '<span class="badge bg-' . $class . '">' . htmlspecialchars($import['status']) . '</span>';
+                                            echo '</td>';
+                                            echo '</tr>';
+                                        }
+                                        echo '</tbody></table></div>';
+                                    }
+                                } catch (\Exception $e) {
+                                    // Tabella non esiste ancora, ignorare
+                                }
+                                ?>
                             </div>
                         </div>
                     </div>
