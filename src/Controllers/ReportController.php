@@ -36,10 +36,12 @@ class ReportController {
      */
     public function membersByQualification() {
         $sql = "SELECT 
-                    qualification,
-                    COUNT(*) as count
-                FROM members
-                GROUP BY qualification
+                    COALESCE(mr.role_name, 'Non assegnato') as qualification,
+                    COUNT(DISTINCT m.id) as count
+                FROM members m
+                LEFT JOIN member_roles mr ON m.id = mr.member_id 
+                    AND (mr.end_date IS NULL OR mr.end_date >= CURDATE())
+                GROUP BY mr.role_name
                 ORDER BY count DESC";
         
         return $this->db->fetchAll($sql);
