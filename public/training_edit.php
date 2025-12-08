@@ -8,6 +8,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\TrainingCourseTypes;
 use EasyVol\Controllers\TrainingController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -54,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = [
             'course_name' => trim($_POST['course_name'] ?? ''),
             'course_type' => trim($_POST['course_type'] ?? ''),
+            'sspc_course_code' => trim($_POST['sspc_course_code'] ?? ''),
+            'sspc_edition_code' => trim($_POST['sspc_edition_code'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
             'location' => trim($_POST['location'] ?? ''),
             'start_date' => $_POST['start_date'] ?? null,
@@ -64,8 +67,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         
         // Validazione
+        if (empty($data['course_type'])) {
+            $errors[] = 'Il tipo di corso è obbligatorio';
+        }
+        
+        // Se course_name è vuoto, usa il nome del tipo corso
         if (empty($data['course_name'])) {
-            $errors[] = 'Il nome del corso è obbligatorio';
+            $data['course_name'] = TrainingCourseTypes::getName($data['course_type']) ?? $data['course_type'];
         }
         
         if (empty($data['start_date'])) {
@@ -153,27 +161,54 @@ $pageTitle = $isEdit ? 'Modifica Corso' : 'Nuovo Corso';
                             <input type="hidden" name="csrf_token" value="<?php echo $csrf->generateToken(); ?>">
                             
                             <div class="row mb-3">
-                                <div class="col-md-8">
-                                    <label for="course_name" class="form-label">Nome Corso *</label>
-                                    <input type="text" class="form-control" id="course_name" name="course_name" 
-                                           value="<?php echo htmlspecialchars($course['course_name'] ?? $_POST['course_name'] ?? ''); ?>" 
-                                           required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="course_type" class="form-label">Tipo Corso</label>
-                                    <select class="form-select" id="course_type" name="course_type">
-                                        <option value="">Seleziona...</option>
+                                <div class="col-md-12">
+                                    <label for="course_type" class="form-label">Tipo Corso *</label>
+                                    <select class="form-select" id="course_type" name="course_type" required>
+                                        <option value="">Seleziona tipo di corso...</option>
                                         <?php
-                                        $types = ['BLSD', 'AIB', 'Radio', 'Primo Soccorso', 'DLgs 81/08', 'Base PC', 'Altro'];
+                                        $courseTypes = TrainingCourseTypes::getAll();
                                         $selectedType = $course['course_type'] ?? $_POST['course_type'] ?? '';
-                                        foreach ($types as $type):
+                                        foreach ($courseTypes as $code => $name):
                                         ?>
-                                            <option value="<?php echo htmlspecialchars($type); ?>" 
-                                                    <?php echo $selectedType === $type ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($type); ?>
+                                            <option value="<?php echo htmlspecialchars($code); ?>" 
+                                                    <?php echo $selectedType === $code ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($name); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label for="course_name" class="form-label">Nome Corso (personalizzato)</label>
+                                    <input type="text" class="form-control" id="course_name" name="course_name" 
+                                           value="<?php echo htmlspecialchars($course['course_name'] ?? $_POST['course_name'] ?? ''); ?>" 
+                                           placeholder="Lascia vuoto per usare il nome standard del tipo corso">
+                                    <small class="form-text text-muted">
+                                        Compila questo campo solo se vuoi personalizzare il nome del corso. Altrimenti verrà usato il nome del tipo corso selezionato.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="sspc_course_code" class="form-label">Codice Corso SSPC</label>
+                                    <input type="text" class="form-control" id="sspc_course_code" name="sspc_course_code" 
+                                           value="<?php echo htmlspecialchars($course['sspc_course_code'] ?? $_POST['sspc_course_code'] ?? ''); ?>"
+                                           placeholder="Es: A1-2025-001">
+                                    <small class="form-text text-muted">
+                                        Codice del corso nel Sistema di Supporto alla Protezione Civile
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="sspc_edition_code" class="form-label">Codice Edizione SSPC</label>
+                                    <input type="text" class="form-control" id="sspc_edition_code" name="sspc_edition_code" 
+                                           value="<?php echo htmlspecialchars($course['sspc_edition_code'] ?? $_POST['sspc_edition_code'] ?? ''); ?>"
+                                           placeholder="Es: ED-001">
+                                    <small class="form-text text-muted">
+                                        Codice dell'edizione nel Sistema di Supporto alla Protezione Civile
+                                    </small>
                                 </div>
                             </div>
                             

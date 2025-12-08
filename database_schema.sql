@@ -774,6 +774,8 @@ CREATE TABLE IF NOT EXISTS `training_courses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `course_name` varchar(255) NOT NULL,
   `course_type` varchar(100),
+  `sspc_course_code` varchar(50) DEFAULT NULL COMMENT 'Codice Corso SSPC',
+  `sspc_edition_code` varchar(50) DEFAULT NULL COMMENT 'Codice Edizione SSPC',
   `description` text,
   `location` varchar(255),
   `start_date` date,
@@ -783,7 +785,9 @@ CREATE TABLE IF NOT EXISTS `training_courses` (
   `status` enum('pianificato', 'in_corso', 'completato', 'annullato') DEFAULT 'pianificato',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_sspc_course_code` (`sspc_course_code`),
+  KEY `idx_sspc_edition_code` (`sspc_edition_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `training_participants` (

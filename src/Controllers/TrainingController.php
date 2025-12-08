@@ -130,13 +130,15 @@ class TrainingController {
             $this->db->beginTransaction();
             
             $sql = "INSERT INTO training_courses (
-                course_name, course_type, description, location, 
+                course_name, course_type, sspc_course_code, sspc_edition_code, description, location, 
                 start_date, end_date, instructor, max_participants, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['course_name'],
                 $data['course_type'] ?? null,
+                $data['sspc_course_code'] ?? null,
+                $data['sspc_edition_code'] ?? null,
                 $data['description'] ?? null,
                 $data['location'] ?? null,
                 $data['start_date'],
@@ -167,7 +169,7 @@ class TrainingController {
     public function update($id, $data, $userId) {
         try {
             $sql = "UPDATE training_courses SET
-                course_name = ?, course_type = ?, description = ?, location = ?,
+                course_name = ?, course_type = ?, sspc_course_code = ?, sspc_edition_code = ?, description = ?, location = ?,
                 start_date = ?, end_date = ?, instructor = ?, max_participants = ?,
                 status = ?, updated_at = NOW()
                 WHERE id = ?";
@@ -175,6 +177,8 @@ class TrainingController {
             $params = [
                 $data['course_name'],
                 $data['course_type'] ?? null,
+                $data['sspc_course_code'] ?? null,
+                $data['sspc_edition_code'] ?? null,
                 $data['description'] ?? null,
                 $data['location'] ?? null,
                 $data['start_date'],
