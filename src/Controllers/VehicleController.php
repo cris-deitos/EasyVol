@@ -353,7 +353,9 @@ class VehicleController {
     }
     
     /**
-     * Aggiorna documento di un mezzo
+     * Aggiorna metadati documento di un mezzo
+     * Nota: Questo metodo aggiorna solo document_type e expiry_date.
+     * Per sostituire il file, eliminare e ricaricare il documento.
      */
     public function updateDocument($documentId, $data, $userId) {
         try {

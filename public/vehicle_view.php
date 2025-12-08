@@ -334,7 +334,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                                                         $today = new DateTime();
                                                         $diff = $today->diff($expiryDate);
                                                         $isExpired = $expiryDate < $today;
-                                                        $isExpiringSoon = !$isExpired && $diff->days <= 30 && !$diff->invert;
+                                                        $isExpiringSoon = !$isExpired && $diff->days <= 30;
                                                     }
                                                     $rowClass = $isExpired ? 'table-danger' : ($isExpiringSoon ? 'table-warning' : '');
                                                     ?>

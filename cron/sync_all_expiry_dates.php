@@ -34,6 +34,8 @@ echo "Started at: " . date('Y-m-d H:i:s') . "\n\n";
 echo "1. Syncing member qualifications/courses...\n";
 $sql = "SELECT id, member_id FROM member_courses WHERE expiry_date IS NOT NULL";
 $courses = $db->fetchAll($sql);
+// Note: Processing individually provides better error handling and progress tracking.
+// For very large datasets (>10,000 records), consider implementing batch processing.
 foreach ($courses as $course) {
     if ($syncController->syncQualificationExpiry($course['id'], $course['member_id'])) {
         $stats['qualifications']['synced']++;
