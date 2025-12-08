@@ -14,7 +14,7 @@ class Autoloader {
         
         // Load Composer's vendor autoloader for third-party dependencies
         // BUT ONLY if the vendor folder is complete (not just autoload.php)
-        $vendorAutoload = __DIR__ .  '/../vendor/autoload.php';
+        $vendorAutoload = __DIR__ . '/../vendor/autoload.php';
         $vendorComposer = __DIR__ . '/../vendor/composer/autoload_real.php';
         
         if (file_exists($vendorAutoload) && file_exists($vendorComposer)) {
@@ -44,11 +44,17 @@ class Autoloader {
             $relativeClass = substr($class, $len);
             
             // Replace namespace separators with directory separators
-            $file = $baseDir . str_replace('\\', '/', $relativeClass) . '. php';
+            $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+            
+            // Debug log
+            error_log("Autoloader: Trying to load class '$class' from file: $file");
             
             // If the file exists, require it
             if (file_exists($file)) {
                 require $file;
+                error_log("Autoloader: Successfully loaded $file");
+            } else {
+                error_log("Autoloader: File NOT FOUND: $file");
             }
         });
         
