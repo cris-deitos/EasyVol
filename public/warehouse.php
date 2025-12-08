@@ -71,7 +71,7 @@ $pageTitle = 'Gestione Magazzino';
                             <i class="bi bi-arrow-left-right"></i> Movimenti
                         </a>
                         <?php if ($app->checkPermission('warehouse', 'create')): ?>
-                            <a href="warehouse_item_edit.php" class="btn btn-primary">
+                            <a href="warehouse_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Articolo
                             </a>
                         <?php endif; ?>
@@ -198,12 +198,12 @@ $pageTitle = 'Gestione Magazzino';
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <a href="warehouse_item_view.php?id=<?php echo $item['id']; ?>" 
+                                                        <a href="warehouse_view.php?id=<?php echo $item['id']; ?>" 
                                                            class="btn btn-sm btn-info" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
                                                         <?php if ($app->checkPermission('warehouse', 'edit')): ?>
-                                                            <a href="warehouse_item_edit.php?id=<?php echo $item['id']; ?>" 
+                                                            <a href="warehouse_edit.php?id=<?php echo $item['id']; ?>" 
                                                                class="btn btn-sm btn-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>

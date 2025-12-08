@@ -95,8 +95,8 @@ class WarehouseController {
             
             $sql = "INSERT INTO warehouse_items (
                 code, name, category, description, quantity, minimum_quantity,
-                unit, location, status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                unit, location, status, notes, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
             
             $params = [
                 $data['code'] ?? null,
@@ -107,7 +107,8 @@ class WarehouseController {
                 $data['minimum_quantity'] ?? 0,
                 $data['unit'] ?? 'pz',
                 $data['location'] ?? null,
-                $data['status'] ?? 'disponibile'
+                $data['status'] ?? 'disponibile',
+                $data['notes'] ?? null
             ];
             
             error_log("SQL: " . $sql);
@@ -153,7 +154,7 @@ class WarehouseController {
             $sql = "UPDATE warehouse_items SET
                 code = ?, name = ?, category = ?, description = ?,
                 quantity = ?, minimum_quantity = ?, unit = ?, location = ?,
-                status = ?, updated_at = NOW()
+                status = ?, notes = ?, updated_at = NOW()
                 WHERE id = ?";
             
             $params = [
@@ -166,6 +167,7 @@ class WarehouseController {
                 $data['unit'] ?? 'pz',
                 $data['location'] ?? null,
                 $data['status'] ?? 'disponibile',
+                $data['notes'] ?? null,
                 $id
             ];
             
