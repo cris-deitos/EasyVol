@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\ApplicationController;
+use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
 
@@ -44,6 +45,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $reason = $_POST['rejection_reason'] ?? '';
         $controller->reject($applicationId, $app->getUserId(), $reason);
         header('Location: applications.php?success=rejected');
+        exit;
+    } elseif ($_POST['action'] === 'regenerate_pdf' && $app->checkPermission('applications', 'edit')) {
+        // Handle PDF regeneration
+        if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token di sicurezza non valido';
+        } else {
+            try {
+                if ($applicationId <= 0) {
+                    throw new \Exception("ID applicazione non valido");
+                }
+                
+                require_once __DIR__ . '/../src/Utils/ApplicationPdfGenerator.php';
+                $pdfGenerator = new \EasyVol\Utils\ApplicationPdfGenerator($db, $config);
+                $pdfPath = $pdfGenerator->generateApplicationPdf($applicationId);
+                
+                $_SESSION['success'] = 'PDF rigenerato con successo';
+                
+                // Optionally resend email
+                if (isset($_POST['resend_email']) && $_POST['resend_email'] === '1') {
+                    $application = $db->fetchOne("SELECT * FROM member_applications WHERE id = ?", [$applicationId]);
+                    
+                    require_once __DIR__ . '/../src/Utils/EmailSender.php';
+                    $emailSender = new \EasyVol\Utils\EmailSender($config, $db);
+                    
+                    if ($emailSender->sendApplicationEmail($application, $pdfPath)) {
+                        $_SESSION['success'] .= ' ed email inviata';
+                    } else {
+                        $_SESSION['warning'] = 'PDF rigenerato ma invio email fallito';
+                    }
+                }
+                
+            } catch (\Exception $e) {
+                $_SESSION['error'] = 'Errore: ' . $e->getMessage();
+            }
+        }
+        
+        header('Location: applications.php');
         exit;
     }
 }
@@ -92,6 +130,30 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                 </div>
+                
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <?php echo htmlspecialchars($_SESSION['success']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['success']); ?>
+                <?php endif; ?>
+                
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <?php echo htmlspecialchars($_SESSION['error']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['error']); ?>
+                <?php endif; ?>
+                
+                <?php if (isset($_SESSION['warning'])): ?>
+                    <div class="alert alert-warning alert-dismissible fade show">
+                        <?php echo htmlspecialchars($_SESSION['warning']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['warning']); ?>
+                <?php endif; ?>
                 
                 <?php if (isset($_GET['success'])): ?>
                     <div class="alert alert-success alert-dismissible fade show">
@@ -468,6 +530,26 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                             <?php endif; ?>
                                                         </div>
                                                         <div class="modal-footer">
+                                                            <?php if ($app->checkPermission('applications', 'edit')): ?>
+                                                                <!-- Regenerate PDF Section -->
+                                                                <form method="POST" class="me-auto">
+                                                                    <?php echo CsrfProtection::getHiddenField(); ?>
+                                                                    <input type="hidden" name="action" value="regenerate_pdf">
+                                                                    <input type="hidden" name="application_id" value="<?php echo $application['id']; ?>">
+                                                                    
+                                                                    <button type="submit" class="btn btn-warning btn-sm" title="Rigenera il PDF dell'applicazione">
+                                                                        <i class="bi bi-arrow-clockwise"></i> Rigenera PDF
+                                                                    </button>
+                                                                    
+                                                                    <div class="form-check form-check-inline ms-2">
+                                                                        <input class="form-check-input" type="checkbox" name="resend_email" value="1" id="resendEmail<?php echo $application['id']; ?>">
+                                                                        <label class="form-check-label" for="resendEmail<?php echo $application['id']; ?>">
+                                                                            Invia anche email
+                                                                        </label>
+                                                                    </div>
+                                                                </form>
+                                                            <?php endif; ?>
+                                                            
                                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
                                                         </div>
                                                     </div>

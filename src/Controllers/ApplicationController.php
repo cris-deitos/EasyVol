@@ -127,19 +127,40 @@ class ApplicationController {
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
             
-            // Genera PDF
-            $pdfPath = $this->generateAdultApplicationPdf($applicationId, $data, $code);
-            
-            // Aggiorna con path PDF
-            $this->db->execute(
-                "UPDATE member_applications SET pdf_file = ? WHERE id = ?",
-                [$pdfPath, $applicationId]
-            );
-            
-            // Invia email
-            $this->sendAdultApplicationEmails($data, $code, $pdfPath);
-            
             $this->db->commit();
+            
+            // After successful insert, generate PDF and send email
+            // Use try-catch to ensure application is saved even if PDF/email fails
+            if ($applicationId) {
+                try {
+                    // Generate PDF using new TCPDF-based generator
+                    require_once __DIR__ . '/../Utils/ApplicationPdfGenerator.php';
+                    $pdfGenerator = new \EasyVol\Utils\ApplicationPdfGenerator($this->db, $this->config);
+                    $pdfPath = $pdfGenerator->generateApplicationPdf($applicationId);
+                    
+                    // Reload application with pdf_file path
+                    $application = $this->db->fetchOne(
+                        "SELECT * FROM member_applications WHERE id = ?",
+                        [$applicationId]
+                    );
+                    
+                    // Send email with PDF attachment
+                    require_once __DIR__ . '/../Utils/EmailSender.php';
+                    $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+                    $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
+                    
+                    if ($emailSent) {
+                        error_log("Application PDF generated and email sent for application ID: $applicationId");
+                    } else {
+                        error_log("Application PDF generated but email failed for application ID: $applicationId");
+                    }
+                    
+                } catch (\Exception $e) {
+                    // Don't fail the whole application if PDF/email fails
+                    error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
+                    // Application is still saved, PDF can be regenerated later
+                }
+            }
             
             return [
                 'success' => true,
@@ -185,19 +206,40 @@ class ApplicationController {
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
             
-            // Genera PDF
-            $pdfPath = $this->generateJuniorApplicationPdf($applicationId, $data, $code);
-            
-            // Aggiorna con path PDF
-            $this->db->execute(
-                "UPDATE member_applications SET pdf_file = ? WHERE id = ?",
-                [$pdfPath, $applicationId]
-            );
-            
-            // Invia email
-            $this->sendJuniorApplicationEmails($data, $code, $pdfPath);
-            
             $this->db->commit();
+            
+            // After successful insert, generate PDF and send email
+            // Use try-catch to ensure application is saved even if PDF/email fails
+            if ($applicationId) {
+                try {
+                    // Generate PDF using new TCPDF-based generator
+                    require_once __DIR__ . '/../Utils/ApplicationPdfGenerator.php';
+                    $pdfGenerator = new \EasyVol\Utils\ApplicationPdfGenerator($this->db, $this->config);
+                    $pdfPath = $pdfGenerator->generateApplicationPdf($applicationId);
+                    
+                    // Reload application with pdf_file path
+                    $application = $this->db->fetchOne(
+                        "SELECT * FROM member_applications WHERE id = ?",
+                        [$applicationId]
+                    );
+                    
+                    // Send email with PDF attachment
+                    require_once __DIR__ . '/../Utils/EmailSender.php';
+                    $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+                    $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
+                    
+                    if ($emailSent) {
+                        error_log("Application PDF generated and email sent for application ID: $applicationId");
+                    } else {
+                        error_log("Application PDF generated but email failed for application ID: $applicationId");
+                    }
+                    
+                } catch (\Exception $e) {
+                    // Don't fail the whole application if PDF/email fails
+                    error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
+                    // Application is still saved, PDF can be regenerated later
+                }
+            }
             
             return [
                 'success' => true,
@@ -421,6 +463,9 @@ class ApplicationController {
     }
     
     /**
+     * DEPRECATED: Old mPDF-based PDF generation
+     * Replaced by ApplicationPdfGenerator (TCPDF)
+     * 
      * Genera PDF domanda adulto
      * 
      * @param int $id ID domanda
@@ -428,6 +473,7 @@ class ApplicationController {
      * @param string $code Codice domanda
      * @return string Path PDF
      */
+    /* DEPRECATED - Commented out in favor of new TCPDF generator
     private function generateAdultApplicationPdf($id, $data, $code) {
         $pdfGen = new PdfGenerator($this->config);
         
@@ -552,8 +598,12 @@ class ApplicationController {
         
         return 'uploads/applications/' . $filename;
     }
+    */ // End of deprecated generateAdultApplicationPdf
     
     /**
+     * DEPRECATED: Old mPDF-based PDF generation
+     * Replaced by ApplicationPdfGenerator (TCPDF)
+     * 
      * Genera PDF domanda minorenne
      * 
      * @param int $id ID domanda
@@ -561,6 +611,7 @@ class ApplicationController {
      * @param string $code Codice domanda
      * @return string Path PDF
      */
+    /* DEPRECATED - Commented out in favor of new TCPDF generator
     private function generateJuniorApplicationPdf($id, $data, $code) {
         $pdfGen = new PdfGenerator($this->config);
         
@@ -655,14 +706,19 @@ class ApplicationController {
         
         return 'uploads/applications/' . $filename;
     }
+    */ // End of deprecated generateJuniorApplicationPdf
     
     /**
+     * DEPRECATED: Old email sending method
+     * Replaced by EmailSender->sendApplicationEmail()
+     * 
      * Invia email domanda adulto
      * 
      * @param array $data Dati
      * @param string $code Codice
      * @param string $pdfPath Path PDF
      */
+    /* DEPRECATED - Commented out in favor of new EmailSender->sendApplicationEmail()
     private function sendAdultApplicationEmails($data, $code, $pdfPath) {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
@@ -697,14 +753,19 @@ class ApplicationController {
             $emailSender->queue($this->config['association']['email'], $subject, $body, [$fullPdfPath]);
         }
     }
+    */ // End of deprecated sendAdultApplicationEmails
     
     /**
+     * DEPRECATED: Old email sending method
+     * Replaced by EmailSender->sendApplicationEmail()
+     * 
      * Invia email domanda minorenne
      * 
      * @param array $data Dati
      * @param string $code Codice
      * @param string $pdfPath Path PDF
      */
+    /* DEPRECATED - Commented out in favor of new EmailSender->sendApplicationEmail()
     private function sendJuniorApplicationEmails($data, $code, $pdfPath) {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
@@ -751,6 +812,7 @@ class ApplicationController {
             $emailSender->queue($this->config['association']['email'], $subject, $body, [$fullPdfPath]);
         }
     }
+    */ // End of deprecated sendJuniorApplicationEmails
     
     /**
      * Genera PDF domanda

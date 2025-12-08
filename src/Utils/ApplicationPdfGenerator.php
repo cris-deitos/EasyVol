@@ -95,11 +95,7 @@ class ApplicationPdfGenerator {
             // 6. Update database with pdf_file path
             $relativePath = "uploads/applications/" . $filename;
             try {
-                $stmt = $this->db->prepare("UPDATE member_applications SET pdf_file = ? WHERE id = ?");
-                $result = $stmt->execute([$relativePath, $applicationId]);
-                if (!$result) {
-                    throw new \Exception("Database update failed");
-                }
+                $this->db->execute("UPDATE member_applications SET pdf_file = ? WHERE id = ?", [$relativePath, $applicationId]);
             } catch (\Exception $dbException) {
                 // Rollback: delete the PDF file
                 if (file_exists($fullPath)) {
@@ -121,9 +117,7 @@ class ApplicationPdfGenerator {
      * Load application from database
      */
     private function loadApplication($applicationId) {
-        $stmt = $this->db->prepare("SELECT * FROM member_applications WHERE id = ?");
-        $stmt->execute([$applicationId]);
-        return $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $this->db->fetchOne("SELECT * FROM member_applications WHERE id = ?", [$applicationId]);
     }
     
     /**
