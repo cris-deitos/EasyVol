@@ -206,7 +206,7 @@ $filename = basename($fullPath);
 $encodedFilename = rawurlencode($filename);
 
 // Determine if this is a download or inline view
-$download = isset($_GET['download']) && $_GET['download'] == '1';
+$download = isset($_GET['download']) && $_GET['download'] === '1';
 
 // Serve file
 header('Content-Type: ' . $mimeType);
