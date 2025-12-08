@@ -102,10 +102,14 @@ class EmailSender {
             $headers = $this->buildHeaders($replyTo);
             
             // Additional sendmail parameters if configured
-            $additionalParams = $this->config['email']['sendmail_params'] ?? null;
-            
-            // Send email
-            $result = mail($toEmail, $subject, $body, implode("\r\n", $headers), $additionalParams);
+$additionalParams = $this->config['email']['sendmail_params'] ?? '';
+
+// Send email
+if (! empty($additionalParams)) {
+    $result = mail($toEmail, $subject, $body, implode("\r\n", $headers), $additionalParams);
+} else {
+    $result = mail($toEmail, $subject, $body, implode("\r\n", $headers));
+}
             
             if (!$result) {
                 throw new \Exception("mail() function returned false");
