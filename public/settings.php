@@ -32,6 +32,9 @@ AutoLogger::logPageAccess();
 $db = $app->getDb();
 $config = $app->getConfig();
 
+// Valid email encoding options
+define('VALID_EMAIL_ENCODINGS', ['7bit', '8bit', 'base64', 'quoted-printable']);
+
 $errors = [];
 $success = false;
 $successMessage = '';
@@ -239,13 +242,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                 error_log("Database fix fatal error: " . $e->getMessage());
             }
         } elseif ($formType === 'email') {
-            // Handle email settings update
+            // Handle email settings update - save to database instead of config file
             try {
                 $fromAddress = trim($_POST['from_address'] ?? '');
                 $fromName = trim($_POST['from_name'] ?? '');
                 $replyTo = trim($_POST['reply_to'] ?? '');
                 $returnPath = trim($_POST['return_path'] ?? '');
+                $charset = trim($_POST['charset'] ?? 'UTF-8');
+                $encoding = trim($_POST['encoding'] ?? '8bit');
+                $sendmailParams = trim($_POST['sendmail_params'] ?? '');
+                $additionalHeaders = trim($_POST['additional_headers'] ?? '');
                 
+                // Validate required fields
                 if (empty($fromAddress) || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
                     $errors[] = 'Indirizzo email mittente non valido';
                 }
@@ -256,39 +264,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $errors[] = 'Return-Path non valido';
                 }
                 
+                // Validate encoding
+                if (!in_array($encoding, VALID_EMAIL_ENCODINGS)) {
+                    $errors[] = 'Encoding non valido';
+                }
+                
                 if (empty($errors)) {
-                    $configPath = __DIR__ . '/../config/config.php';
+                    // Save email configuration to database in a transaction
+                    $emailSettings = [
+                        'email_from_address' => $fromAddress,
+                        'email_from_name' => $fromName,
+                        'email_reply_to' => $replyTo,
+                        'email_return_path' => $returnPath,
+                        'email_charset' => $charset,
+                        'email_encoding' => $encoding,
+                        'email_sendmail_params' => $sendmailParams,
+                        'email_additional_headers' => $additionalHeaders,
+                    ];
                     
-                    // Check if config file exists
-                    if (!file_exists($configPath)) {
-                        $errors[] = 'File di configurazione non trovato';
-                    } else {
-                        $content = file_get_contents($configPath);
-                        
-                        // Update email settings
-                        $content = preg_replace("/'from_address'\s*=>\s*'[^']*'/", "'from_address' => '" . addslashes($fromAddress) . "'", $content);
-                        $content = preg_replace("/'from_name'\s*=>\s*'[^']*'/", "'from_name' => '" . addslashes($fromName) . "'", $content);
-                        $content = preg_replace("/'reply_to'\s*=>\s*'[^']*'/", "'reply_to' => '" . addslashes($replyTo) . "'", $content);
-                        $content = preg_replace("/'return_path'\s*=>\s*'[^']*'/", "'return_path' => '" . addslashes($returnPath) . "'", $content);
-                        
-                        // Use atomic write with temporary file
-                        $tempPath = $configPath . '.tmp';
-                        if (file_put_contents($tempPath, $content) !== false) {
-                            // Atomic rename
-                            if (rename($tempPath, $configPath)) {
-                                $success = true;
-                                $successMessage = 'Impostazioni email aggiornate con successo!';
-                                
-                                // Reload config
-                                header('Location: settings.php?success=email');
-                                exit;
-                            } else {
-                                @unlink($tempPath);
-                                $errors[] = 'Errore durante il salvataggio della configurazione';
-                            }
-                        } else {
-                            $errors[] = 'Errore durante la scrittura del file di configurazione';
+                    // Use transaction for atomicity and better performance
+                    $db->getConnection()->beginTransaction();
+                    try {
+                        // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert
+                        foreach ($emailSettings as $key => $value) {
+                            $sql = "INSERT INTO config (config_key, config_value) 
+                                    VALUES (?, ?) 
+                                    ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)";
+                            $db->execute($sql, [$key, $value]);
                         }
+                        $db->getConnection()->commit();
+                        
+                        $success = true;
+                        $successMessage = 'Impostazioni email aggiornate con successo!';
+                        
+                        // Reload page to show updated config
+                        header('Location: settings.php?success=email');
+                        exit;
+                    } catch (\Exception $e) {
+                        $db->getConnection()->rollBack();
+                        throw $e;
                     }
                 }
             } catch (\Exception $e) {
@@ -606,6 +620,62 @@ $pageTitle = 'Impostazioni Sistema';
                                         <input type="email" class="form-control" id="return_path" name="return_path" 
                                                value="<?php echo htmlspecialchars($config['email']['return_path'] ?? ''); ?>"
                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        <small class="text-muted">Indirizzo email per gestire i bounce (email non consegnate)</small>
+                                    </div>
+                                    
+                                    <hr class="my-4">
+                                    <h6>Configurazione Sendmail</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="charset" class="form-label">Charset</label>
+                                        <select class="form-select" id="charset" name="charset"
+                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                            <option value="UTF-8" <?php echo ($config['email']['charset'] ?? 'UTF-8') === 'UTF-8' ? 'selected' : ''; ?>>UTF-8</option>
+                                            <option value="ISO-8859-1" <?php echo ($config['email']['charset'] ?? '') === 'ISO-8859-1' ? 'selected' : ''; ?>>ISO-8859-1</option>
+                                            <option value="ISO-8859-15" <?php echo ($config['email']['charset'] ?? '') === 'ISO-8859-15' ? 'selected' : ''; ?>>ISO-8859-15</option>
+                                        </select>
+                                        <small class="text-muted">Codifica caratteri delle email</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="encoding" class="form-label">Encoding</label>
+                                        <select class="form-select" id="encoding" name="encoding"
+                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                            <?php 
+                                            $currentEncoding = $config['email']['encoding'] ?? '8bit';
+                                            foreach (VALID_EMAIL_ENCODINGS as $encodingOption): 
+                                            ?>
+                                                <option value="<?php echo htmlspecialchars($encodingOption); ?>" 
+                                                        <?php echo $currentEncoding === $encodingOption ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($encodingOption); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <small class="text-muted">Metodo di codifica del contenuto</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="sendmail_params" class="form-label">Parametri Sendmail</label>
+                                        <input type="text" class="form-control" id="sendmail_params" name="sendmail_params" 
+                                               value="<?php echo htmlspecialchars($config['email']['sendmail_params'] ?? ''); ?>"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        <small class="text-muted">Parametri aggiuntivi per la funzione mail() di PHP (es: '-f bounce@example.com')</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="additional_headers" class="form-label">Header Aggiuntivi</label>
+                                        <textarea class="form-control" id="additional_headers" name="additional_headers" 
+                                                  rows="4"
+                                                  <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>><?php 
+                                            // Display additional headers - convert array to string
+                                            $headers = $config['email']['additional_headers'] ?? '';
+                                            if (is_array($headers)) {
+                                                echo htmlspecialchars(implode("\n", $headers));
+                                            } else {
+                                                echo htmlspecialchars($headers);
+                                            }
+                                        ?></textarea>
+                                        <small class="text-muted">Header personalizzati, uno per riga (es: X-Priority: 1). Non includere header pericolosi come BCC, CC, To, From.</small>
                                     </div>
                                     
                                     <?php if ($app->checkPermission('settings', 'edit')): ?>

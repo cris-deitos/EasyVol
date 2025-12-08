@@ -79,6 +79,32 @@ This migration adds:
 
 **Required**: Yes - This fixes the error "Table 'member_notes' doesn't exist" when viewing or creating member records.
 
+### add_email_config_to_database.sql
+**Date**: 2025-12-08
+**Purpose**: Add email configuration to database for web-based management
+
+This migration adds email configuration settings to the `config` table, allowing administrators to manage email settings from the web interface (Settings > Email) instead of editing the `config.php` file.
+
+**What it adds**:
+- `email_from_address` - Sender email address
+- `email_from_name` - Sender name
+- `email_reply_to` - Reply-to address
+- `email_return_path` - Return path for bounces
+- `email_charset` - Character encoding (UTF-8, ISO-8859-1, etc.)
+- `email_encoding` - Content encoding (8bit, 7bit, base64, quoted-printable)
+- `email_sendmail_params` - Additional sendmail parameters
+- `email_additional_headers` - Custom email headers
+
+**Required**: No - But highly recommended for easier email configuration management
+
+**Benefits**:
+- Configure email settings via web interface
+- No need to edit PHP files
+- Supports additional sendmail headers and parameters
+- Database values override config.php values
+
+See `EMAIL_CONFIG_DATABASE_GUIDE.md` for complete documentation.
+
 ## Important Notes
 
 - Always backup your database before applying migrations

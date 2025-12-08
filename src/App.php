@@ -10,6 +10,11 @@ class App {
      */
     const DEFAULT_PASSWORD = 'Pw@12345678';
     
+    /**
+     * Optional email configuration fields that can have empty values
+     */
+    const OPTIONAL_EMAIL_FIELDS = ['reply_to', 'return_path', 'sendmail_params', 'additional_headers'];
+    
     private static $instance = null;
     private $config;
     private $db;
@@ -39,6 +44,7 @@ class App {
         if ($this->isInstalled()) {
             $this->db = Database::getInstance($this->config['database']);
             $this->loadAssociationData();
+            $this->loadEmailConfigFromDatabase();
         }
     }
     
@@ -97,6 +103,51 @@ class App {
                 'pec' => 'N/D',
                 'tax_code' => 'N/D',
             ];
+        }
+    }
+    
+    private function loadEmailConfigFromDatabase() {
+        try {
+            // Load email configuration from database
+            $emailConfigs = $this->db->fetchAll(
+                "SELECT config_key, config_value FROM config WHERE config_key LIKE 'email_%'"
+            );
+            
+            if (!empty($emailConfigs)) {
+                // Map database config keys to config array keys
+                $keyMapping = [
+                    'email_from_address' => 'from_address',
+                    'email_from_name' => 'from_name',
+                    'email_reply_to' => 'reply_to',
+                    'email_return_path' => 'return_path',
+                    'email_charset' => 'charset',
+                    'email_encoding' => 'encoding',
+                    'email_sendmail_params' => 'sendmail_params',
+                    'email_additional_headers' => 'additional_headers',
+                ];
+                
+                foreach ($emailConfigs as $row) {
+                    $dbKey = $row['config_key'];
+                    $value = $row['config_value'];
+                    
+                    if (isset($keyMapping[$dbKey])) {
+                        $configKey = $keyMapping[$dbKey];
+                        
+                        // Special handling for additional_headers - convert to array
+                        if ($configKey === 'additional_headers' && !empty($value)) {
+                            $value = array_filter(array_map('trim', explode("\n", $value)));
+                        }
+                        
+                        // Override config if value is not empty, or if it's an optional field
+                        if ($value !== '' || in_array($configKey, self::OPTIONAL_EMAIL_FIELDS)) {
+                            $this->config['email'][$configKey] = $value;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            error_log("Failed to load email config from database: " . $e->getMessage());
+            // Continue with file-based config
         }
     }
     
