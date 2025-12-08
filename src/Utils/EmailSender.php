@@ -614,11 +614,11 @@ class EmailSender {
         $memberEmail = $member['email'] ?? '';
         if (empty($memberEmail)) return false;
         
-        $name = trim(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? ''));
-        $year = $feeRequest['payment_year'] ?? '';
-        $date = date('d/m/Y', strtotime($feeRequest['payment_date'] ?? 'now'));
-        $amount = !empty($feeRequest['amount']) ? '€' . number_format($feeRequest['amount'], 2, ',', '.') : 'N/A';
-        $assocName = $this->config['association']['name'] ?? 'Associazione';
+        $name = htmlspecialchars(trim(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? '')), ENT_QUOTES, 'UTF-8');
+        $year = htmlspecialchars($feeRequest['payment_year'] ?? '', ENT_QUOTES, 'UTF-8');
+        $date = htmlspecialchars(date('d/m/Y', strtotime($feeRequest['payment_date'] ?? 'now')), ENT_QUOTES, 'UTF-8');
+        $amount = !empty($feeRequest['amount']) ? '€' . htmlspecialchars(number_format($feeRequest['amount'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') : 'N/A';
+        $assocName = htmlspecialchars($this->config['association']['name'] ?? 'Associazione', ENT_QUOTES, 'UTF-8');
         
         $subject = "Richiesta Pagamento Quota Ricevuta - Anno $year";
         $body = "<h2>Richiesta Ricevuta</h2><p>Gentile $name,</p><p>Abbiamo ricevuto la tua richiesta di pagamento quota.</p><p><strong>Anno:</strong> $year<br><strong>Data:</strong> $date<br><strong>Importo:</strong> $amount</p><p>La richiesta è in attesa di verifica.</p><p>$assocName</p>";
@@ -637,11 +637,11 @@ class EmailSender {
         $memberEmail = $member['email'] ?? '';
         if (empty($memberEmail)) return false;
         
-        $name = trim(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? ''));
-        $year = $feeRequest['payment_year'] ?? '';
-        $date = date('d/m/Y');
-        $amount = !empty($feeRequest['amount']) ? '€' . number_format($feeRequest['amount'], 2, ',', '.') : 'N/A';
-        $assocName = $this->config['association']['name'] ?? 'Associazione';
+        $name = htmlspecialchars(trim(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? '')), ENT_QUOTES, 'UTF-8');
+        $year = htmlspecialchars($feeRequest['payment_year'] ?? '', ENT_QUOTES, 'UTF-8');
+        $date = htmlspecialchars(date('d/m/Y'), ENT_QUOTES, 'UTF-8');
+        $amount = !empty($feeRequest['amount']) ? '€' . htmlspecialchars(number_format($feeRequest['amount'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') : 'N/A';
+        $assocName = htmlspecialchars($this->config['association']['name'] ?? 'Associazione', ENT_QUOTES, 'UTF-8');
         
         $subject = "✅ Pagamento Quota Confermato - Anno $year";
         $body = "<h2>✅ Pagamento Confermato</h2><p>Gentile $name,</p><p>Il pagamento della quota è stato approvato!</p><p><strong>Anno:</strong> $year<br><strong>Data:</strong> $date<br><strong>Importo:</strong> $amount</p><p><strong>Grazie per il tuo contributo!</strong></p><p>$assocName</p>";

@@ -74,17 +74,15 @@ class FeePaymentController {
             // Send email notification to member
             if ($requestId) {
                 try {
-                    $member = $this->db->fetchOne("SELECT * FROM members WHERE registration_number = ?", [$data['registration_number']]);
-                    if ($member) {
-                        // Get member email from contacts table
-                        $emailResult = $this->db->fetchOne(
-                            "SELECT value FROM member_contacts WHERE member_id = ? AND contact_type = 'email' LIMIT 1",
-                            [$member['id']]
-                        );
-                        if ($emailResult) {
-                            $member['email'] = $emailResult['value'];
-                        }
-                        
+                    $member = $this->db->fetchOne(
+                        "SELECT m.id, m.first_name, m.last_name, m.registration_number, mc.value as email 
+                         FROM members m
+                         LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'email'
+                         WHERE m.registration_number = ?",
+                        [$data['registration_number']]
+                    );
+                    
+                    if ($member && !empty($member['email'])) {
                         require_once __DIR__ . '/../Utils/EmailSender.php';
                         $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
                         $emailSender->sendFeeRequestReceivedEmail($member, $data);

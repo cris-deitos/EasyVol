@@ -176,7 +176,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                 
                 if (empty($fromAddress) || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
                     $errors[] = 'Indirizzo email mittente non valido';
-                } else {
+                }
+                if (!empty($replyTo) && !filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = 'Indirizzo per risposte non valido';
+                }
+                if (!empty($returnPath) && !filter_var($returnPath, FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = 'Return-Path non valido';
+                }
+                
+                if (empty($errors)) {
                     $configPath = __DIR__ . '/../config/config.php';
                     
                     // Check if config file exists
