@@ -2,7 +2,6 @@
 namespace EasyVol\Utils;
 
 use Mpdf\Mpdf;
-use Mpdf\MpdfException;
 
 /**
  * Application PDF Generator
@@ -60,7 +59,8 @@ class ApplicationPdfGenerator {
             $mpdf->WriteHTML($html);
             
             // 5. Save to uploads/applications/
-            $uploadsDir = __DIR__ . '/../../uploads/applications';
+            $uploadsBasePath = $this->config['uploads']['path'] ?? __DIR__ . '/../../uploads';
+            $uploadsDir = $uploadsBasePath . '/applications';
             if (!is_dir($uploadsDir)) {
                 if (!mkdir($uploadsDir, 0755, true)) {
                     throw new \Exception("Cannot create directory: $uploadsDir");
@@ -78,8 +78,19 @@ class ApplicationPdfGenerator {
             
             // 6. Update database with pdf_file path
             $relativePath = "uploads/applications/" . $filename;
-            $stmt = $this->db->prepare("UPDATE member_applications SET pdf_file = ? WHERE id = ?");
-            $stmt->execute([$relativePath, $applicationId]);
+            try {
+                $stmt = $this->db->prepare("UPDATE member_applications SET pdf_file = ? WHERE id = ?");
+                $result = $stmt->execute([$relativePath, $applicationId]);
+                if (!$result) {
+                    throw new \Exception("Database update failed");
+                }
+            } catch (\Exception $dbException) {
+                // Rollback: delete the PDF file
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+                throw new \Exception("Failed to update database: " . $dbException->getMessage());
+            }
             
             // 7. Return relative path
             return $relativePath;
@@ -176,8 +187,12 @@ class ApplicationPdfGenerator {
         
         // Add logo if exists
         $logoPath = $assoc['logo_path'] ?? '';
-        if ($logoPath && file_exists($logoPath)) {
-            $html .= '<img src="' . $logoPath . '" style="height: 50px; margin-bottom: 10px;" /><br>';
+        if ($logoPath) {
+            // Validate logo path to prevent path traversal
+            $realPath = realpath($logoPath);
+            if ($realPath && file_exists($realPath) && strpos($realPath, realpath(__DIR__ . '/../..')) === 0) {
+                $html .= '<img src="' . htmlspecialchars($realPath, ENT_QUOTES, 'UTF-8') . '" style="height: 50px; margin-bottom: 10px;" /><br>';
+            }
         }
         
         $html .= '<div style="font-size: 12pt; font-weight: bold;">' . htmlspecialchars($name) . '</div>';
