@@ -31,8 +31,8 @@ Pagina accessibile pubblicamente senza autenticazione per il caricamento delle r
 - File salvati in directory protetta
 
 **Notifiche Email:**
-- Email di conferma ricezione al socio
-- Email di notifica nuova richiesta all'associazione
+- Email di conferma ricezione al socio (1 email)
+- Email di notifica nuova richiesta all'associazione (1 email)
 
 ### H) Pagina Interna - Gestione Richieste (`/public/fee_payments.php`)
 
@@ -179,11 +179,11 @@ La gestione richieste richiede il permesso `members:edit`. Gli utenti devono ave
    - Sistema crea record in `member_fees`
    - Marca pagamento come verificato
    - Aggiorna status richiesta a 'approved'
-   - Invia email conferma al socio
+   - Invia email conferma al socio (1 email)
 
 4. **Rifiuto**
    - Aggiorna status richiesta a 'rejected'
-   - Invia email notifica al socio
+   - Invia email notifica al socio (1 email)
 
 ## Sicurezza
 
