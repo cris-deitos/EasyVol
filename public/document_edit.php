@@ -89,8 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $finfo = new \finfo(FILEINFO_MIME_TYPE);
                 $mimeType = $finfo->file($uploadResult['path']);
                 
+                // Store relative path from project root for database
+                $projectRoot = realpath(__DIR__ . '/../');
+                $absolutePath = realpath($uploadResult['path']);
+                $relativePath = str_replace($projectRoot . '/', '', $absolutePath);
+                
                 $data['file_name'] = basename($_FILES['document_file']['name']);
-                $data['file_path'] = $uploadResult['path'];
+                $data['file_path'] = $relativePath;
                 $data['file_size'] = $_FILES['document_file']['size'];
                 $data['mime_type'] = $mimeType;
             } else {

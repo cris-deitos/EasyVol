@@ -212,7 +212,7 @@ $pageTitle = 'Archivio Documenti';
                                                            class="btn btn-outline-primary" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        <a href="document_download.php?id=<?php echo $doc['id']; ?>" 
+                                                        <a href="download.php?type=document&id=<?php echo $doc['id']; ?>&download=1" 
                                                            class="btn btn-outline-success" title="Download">
                                                             <i class="bi bi-download"></i>
                                                         </a>
