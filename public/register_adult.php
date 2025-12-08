@@ -218,22 +218,37 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                     <div class="card">
                         <div class="card-body text-center py-5">
                             <i class="bi bi-check-circle text-success" style="font-size: 80px;"></i>
-                            <h2 class="mt-3">Domanda Inviata!</h2>
-                            <p class="lead">La tua domanda di iscrizione è stata ricevuta con successo.</p>
+                            <h2 class="mt-3">Domanda Inviata con Successo!</h2>
+                            <p class="lead">La tua domanda di iscrizione è stata ricevuta correttamente.</p>
                             <div class="alert alert-info">
-                                <strong>Codice domanda:</strong> <?php echo htmlspecialchars($applicationCode); ?><br>
+                                <strong>Codice Domanda:</strong> <?php echo htmlspecialchars($applicationCode); ?><br>
                                 <small>Conserva questo codice per future comunicazioni</small>
                             </div>
-                            <p>Riceverai un'email di conferma con il PDF della domanda all'indirizzo fornito.</p>
-                            <p>Il nostro team esaminerà la tua domanda e ti contatterà a breve.</p>
-                            <div class="alert alert-warning mt-4">
-                                <h5><i class="bi bi-exclamation-triangle"></i> Importante</h5>
-                                <p><strong>Il PDF generato deve essere stampato, firmato e consegnato in originale presso la sede dell'associazione, insieme a:</strong></p>
-                                <ul class="text-start">
-                                    <li>Copie di Attestati e Specializzazioni personali in campi inerenti alla Protezione Civile</li>
-                                    <li>Copie Patenti di Guida per conduzione di mezzi speciali, Brevetti o Patentini per natanti o velivoli</li>
-                                </ul>
+                            
+                            <div class="alert alert-success mt-3">
+                                <p class="mb-2">
+                                    <i class="bi bi-envelope-check"></i>
+                                    Abbiamo inviato un'email all'indirizzo <strong><?php echo htmlspecialchars($_POST['email'] ?? ''); ?></strong>
+                                    con il modulo PDF precompilato in allegato.
+                                </p>
                             </div>
+                            
+                            <div class="alert alert-warning mt-4">
+                                <h5><i class="bi bi-list-check"></i> Prossimi Passi:</h5>
+                                <ol class="text-start mt-3">
+                                    <li><strong>Controlla la tua email</strong> (anche nella cartella spam se non la trovi)</li>
+                                    <li><strong>Stampa il modulo PDF</strong> allegato all'email</li>
+                                    <li><strong>Firma negli spazi indicati</strong></li>
+                                    <li><strong>Consegna il modulo firmato</strong> presso la nostra sede insieme a:
+                                        <ul class="mt-2">
+                                            <li>Copie di Attestati e Specializzazioni personali in campi inerenti alla Protezione Civile</li>
+                                            <li>Copie Patenti di Guida per conduzione di mezzi speciali, Brevetti o Patentini per natanti o velivoli</li>
+                                        </ul>
+                                    </li>
+                                </ol>
+                            </div>
+                            
+                            <p class="mt-3">Il nostro team esaminerà la tua domanda e ti contatterà a breve.</p>
                             <a href="index.php" class="btn btn-primary mt-3">Torna alla Home</a>
                         </div>
                     </div>

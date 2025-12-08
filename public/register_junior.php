@@ -242,18 +242,38 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                     <div class="card">
                         <div class="card-body text-center py-5">
                             <i class="bi bi-check-circle text-success" style="font-size: 80px;"></i>
-                            <h2 class="mt-3">Domanda Inviata!</h2>
-                            <p class="lead">La domanda di iscrizione è stata ricevuta con successo.</p>
+                            <h2 class="mt-3">Domanda Inviata con Successo!</h2>
+                            <p class="lead">La domanda di iscrizione per il socio minorenne è stata ricevuta correttamente.</p>
                             <div class="alert alert-info">
-                                <strong>Codice domanda:</strong> <?php echo htmlspecialchars($applicationCode); ?><br>
+                                <strong>Codice Domanda:</strong> <?php echo htmlspecialchars($applicationCode); ?><br>
                                 <small>Conserva questo codice per future comunicazioni</small>
                             </div>
-                            <p>Riceverai un'email di conferma con il PDF della domanda all'indirizzo fornito.</p>
-                            <p>Il nostro team esaminerà la domanda e ti contatterà a breve.</p>
-                            <div class="alert alert-warning mt-4">
-                                <h5><i class="bi bi-exclamation-triangle"></i> Importante</h5>
-                                <p><strong>Il PDF generato deve essere stampato, firmato dal socio minorenne e da entrambi i genitori (o tutore), e consegnato in originale presso la sede dell'associazione.</strong></p>
+                            
+                            <div class="alert alert-success mt-3">
+                                <p class="mb-2">
+                                    <i class="bi bi-envelope-check"></i>
+                                    Abbiamo inviato un'email all'indirizzo <strong><?php echo htmlspecialchars($_POST['email'] ?? ($_POST['guardian_1_email'] ?? '')); ?></strong>
+                                    con il modulo PDF precompilato in allegato.
+                                </p>
                             </div>
+                            
+                            <div class="alert alert-warning mt-4">
+                                <h5><i class="bi bi-list-check"></i> Prossimi Passi:</h5>
+                                <ol class="text-start mt-3">
+                                    <li><strong>Controlla la tua email</strong> (anche nella cartella spam se non la trovi)</li>
+                                    <li><strong>Stampa il modulo PDF</strong> allegato all'email</li>
+                                    <li><strong>Firma negli spazi indicati</strong>:
+                                        <ul class="mt-2">
+                                            <li>Firma del socio minorenne</li>
+                                            <li>Firma del padre/tutore</li>
+                                            <li>Firma della madre/tutore</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Consegna il modulo firmato</strong> presso la nostra sede</li>
+                                </ol>
+                            </div>
+                            
+                            <p class="mt-3">Il nostro team esaminerà la domanda e ti contatterà a breve.</p>
                             <a href="index.php" class="btn btn-primary mt-3">Torna alla Home</a>
                         </div>
                     </div>
