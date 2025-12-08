@@ -639,7 +639,7 @@ class EmailSender {
         
         $name = htmlspecialchars(trim(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? '')), ENT_QUOTES, 'UTF-8');
         $year = htmlspecialchars($feeRequest['payment_year'] ?? '', ENT_QUOTES, 'UTF-8');
-        $date = htmlspecialchars(date('d/m/Y'), ENT_QUOTES, 'UTF-8');
+        $date = htmlspecialchars(date('d/m/Y', strtotime($feeRequest['payment_date'] ?? 'now')), ENT_QUOTES, 'UTF-8');
         $amount = !empty($feeRequest['amount']) ? '€' . htmlspecialchars(number_format($feeRequest['amount'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') : 'N/A';
         $assocName = htmlspecialchars($this->config['association']['name'] ?? 'Associazione', ENT_QUOTES, 'UTF-8');
         

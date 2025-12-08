@@ -199,14 +199,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         $content = preg_replace("/'reply_to'\s*=>\s*'[^']*'/", "'reply_to' => '" . addslashes($replyTo) . "'", $content);
                         $content = preg_replace("/'return_path'\s*=>\s*'[^']*'/", "'return_path' => '" . addslashes($returnPath) . "'", $content);
                         
-                        file_put_contents($configPath, $content);
-                        
-                        $success = true;
-                        $successMessage = 'Impostazioni email aggiornate con successo!';
-                        
-                        // Reload config
-                        header('Location: settings.php?success=email');
-                        exit;
+                        // Use atomic write with temporary file
+                        $tempPath = $configPath . '.tmp';
+                        if (file_put_contents($tempPath, $content) !== false) {
+                            // Atomic rename
+                            if (rename($tempPath, $configPath)) {
+                                $success = true;
+                                $successMessage = 'Impostazioni email aggiornate con successo!';
+                                
+                                // Reload config
+                                header('Location: settings.php?success=email');
+                                exit;
+                            } else {
+                                @unlink($tempPath);
+                                $errors[] = 'Errore durante il salvataggio della configurazione';
+                            }
+                        } else {
+                            $errors[] = 'Errore durante la scrittura del file di configurazione';
+                        }
                     }
                 }
             } catch (\Exception $e) {
