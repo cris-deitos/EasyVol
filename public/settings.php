@@ -178,34 +178,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $sql = file_get_contents($migrationFile);
                     
                     // Split into individual statements and execute
+                    // Only process statements that start with known safe DDL commands
                     $statements = array_filter(
                         array_map('trim', preg_split('/;(?=(?:[^\'"]|[\'"][^\'"]*[\'"])*$)/', $sql)),
                         function($statement) {
-                            return !empty($statement) && !preg_match('/^--/', $statement);
+                            $statement = trim($statement);
+                            // Filter out comments and empty statements
+                            if (empty($statement) || preg_match('/^--/', $statement)) {
+                                return false;
+                            }
+                            // Only allow specific DDL commands for safety
+                            $allowedCommands = ['ALTER TABLE', 'CREATE TABLE IF NOT EXISTS'];
+                            foreach ($allowedCommands as $cmd) {
+                                if (stripos($statement, $cmd) === 0) {
+                                    return true;
+                                }
+                            }
+                            return false;
                         }
                     );
                     
                     $executed = 0;
+                    $skipped = 0;
+                    $executionLog = [];
+                    
                     foreach ($statements as $statement) {
-                        if (stripos($statement, 'ALTER TABLE') !== false || 
-                            stripos($statement, 'CREATE TABLE') !== false) {
-                            try {
-                                $db->execute($statement);
-                                $executed++;
-                            } catch (\Exception $e) {
-                                // Continue on error (table/column might already exist)
-                                error_log("Database fix warning: " . $e->getMessage());
+                        try {
+                            $db->execute($statement);
+                            $executed++;
+                            $executionLog[] = "Executed successfully";
+                        } catch (\Exception $e) {
+                            // Only catch expected errors (column/table already exists)
+                            $errorMsg = $e->getMessage();
+                            if (stripos($errorMsg, 'Duplicate column') !== false || 
+                                stripos($errorMsg, 'already exists') !== false ||
+                                stripos($errorMsg, 'duplicate key') !== false) {
+                                $skipped++;
+                                error_log("Database fix (expected): " . $errorMsg);
+                            } else {
+                                // Unexpected error - report to user
+                                $errors[] = "Errore SQL: " . $errorMsg;
+                                error_log("Database fix error: " . $errorMsg);
                             }
                         }
                     }
                     
-                    $success = true;
-                    $successMessage = "Correzioni database applicate con successo! ($executed statement eseguiti)";
-                    header('Location: settings.php?success=database_fix&executed=' . $executed);
-                    exit;
+                    if (empty($errors)) {
+                        $success = true;
+                        $successMessage = "Correzioni database applicate! (Eseguiti: $executed, Già presenti: $skipped)";
+                        header('Location: settings.php?success=database_fix&executed=' . $executed . '&skipped=' . $skipped);
+                        exit;
+                    }
                 }
             } catch (\Exception $e) {
                 $errors[] = 'Errore durante l\'applicazione delle correzioni: ' . $e->getMessage();
+                error_log("Database fix fatal error: " . $e->getMessage());
             }
         } elseif ($formType === 'email') {
             // Handle email settings update
@@ -276,7 +303,8 @@ if (isset($_GET['success'])) {
         $successMessage = 'Impostazioni email aggiornate con successo!';
     } elseif ($_GET['success'] === 'database_fix') {
         $executed = intval($_GET['executed'] ?? 0);
-        $successMessage = "Correzioni database applicate con successo! ($executed statement eseguiti)";
+        $skipped = intval($_GET['skipped'] ?? 0);
+        $successMessage = "Correzioni database applicate! (Eseguiti: $executed, Già presenti: $skipped)";
     }
 }
 

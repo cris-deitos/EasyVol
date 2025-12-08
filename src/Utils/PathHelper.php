@@ -21,17 +21,27 @@ class PathHelper {
     public static function absoluteToRelative($absolutePath, $basePath = null) {
         if ($basePath === null) {
             // Default to two levels up from src/Utils (i.e., project root)
-            $basePath = __DIR__ . '/../../';
+            $basePath = realpath(__DIR__ . '/../../') ?: __DIR__ . '/../../';
         }
         
         // Normalize paths to use forward slashes
         $absolutePath = self::normalizePath($absolutePath);
         $basePath = self::normalizePath($basePath);
         
-        // Remove base path from absolute path
-        $relativePath = str_replace($basePath, '../', $absolutePath);
+        // Ensure base path ends with /
+        if (substr($basePath, -1) !== '/') {
+            $basePath .= '/';
+        }
         
-        return $relativePath;
+        // Check if absolute path starts with base path
+        if (strpos($absolutePath, $basePath) === 0) {
+            // Remove base path and prepend '../' for web paths
+            $relativePath = '../' . substr($absolutePath, strlen($basePath));
+            return $relativePath;
+        }
+        
+        // If path doesn't contain base, return as-is
+        return $absolutePath;
     }
     
     /**
@@ -64,11 +74,17 @@ class PathHelper {
     public static function relativeToAbsolute($relativePath, $basePath = null) {
         if ($basePath === null) {
             // Default to two levels up from src/Utils (i.e., project root)
-            $basePath = __DIR__ . '/../../';
+            $basePath = realpath(__DIR__ . '/../../') ?: __DIR__ . '/../../';
         }
         
-        // Remove leading '../' from relative path
-        $relativePath = preg_replace('/^\.\.\//', '', $relativePath);
+        // Remove all leading '../' from relative path
+        $relativePath = preg_replace('/^(\.\.\/)+/', '', $relativePath);
+        
+        // Ensure base path ends with /
+        $basePath = self::normalizePath($basePath);
+        if (substr($basePath, -1) !== '/') {
+            $basePath .= '/';
+        }
         
         // Combine and normalize
         $absolutePath = $basePath . $relativePath;
