@@ -8,9 +8,14 @@ $configFile = __DIR__ . '/../config/config.php';
 $isInstalled = false;
 
 if (file_exists($configFile)) {
-    $config = require $configFile;
-    if (isset($config['database']['name']) && !empty($config['database']['name']) && $config['database']['name'] !== 'easyvol') {
-        $isInstalled = true;
+    try {
+        $config = require $configFile;
+        if (isset($config['database']['name']) && !empty($config['database']['name']) && $config['database']['name'] !== 'easyvol') {
+            $isInstalled = true;
+        }
+    } catch (Exception $e) {
+        // Config file exists but is invalid - treat as not installed
+        $isInstalled = false;
     }
 }
 
