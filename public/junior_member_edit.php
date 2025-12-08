@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $data = [
             'registration_number' => $_POST['registration_number'] ?? '',
-            'member_type' => $_POST['member_type'] ?? 'giovane',
+            'member_type' => $_POST['member_type'] ?? 'ordinario',
             'member_status' => $_POST['member_status'] ?? 'attivo',
             'last_name' => trim($_POST['last_name'] ?? ''),
             'first_name' => trim($_POST['first_name'] ?? ''),
@@ -160,8 +160,7 @@ $pageTitle = $isEdit ? 'Modifica Socio Minorenne' : 'Nuovo Socio Minorenne';
                                 <div class="col-md-3">
                                     <label for="member_type" class="form-label">Tipo Socio *</label>
                                     <select class="form-select" id="member_type" name="member_type" required>
-                                        <option value="giovane" <?php echo ($member['member_type'] ?? 'giovane') === 'giovane' ? 'selected' : ''; ?>>Giovane</option>
-                                        <option value="junior" <?php echo ($member['member_type'] ?? '') === 'junior' ? 'selected' : ''; ?>>Junior</option>
+                                        <option value="ordinario" <?php echo ($member['member_type'] ?? 'ordinario') === 'ordinario' ? 'selected' : ''; ?>>Ordinario</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -169,6 +168,7 @@ $pageTitle = $isEdit ? 'Modifica Socio Minorenne' : 'Nuovo Socio Minorenne';
                                     <select class="form-select" id="member_status" name="member_status" required>
                                         <option value="attivo" <?php echo ($member['member_status'] ?? 'attivo') === 'attivo' ? 'selected' : ''; ?>>Attivo</option>
                                         <option value="sospeso" <?php echo ($member['member_status'] ?? '') === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
+                                        <option value="decaduto" <?php echo ($member['member_status'] ?? '') === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
                                         <option value="dimesso" <?php echo ($member['member_status'] ?? '') === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
                                     </select>
                                 </div>
@@ -229,8 +229,12 @@ $pageTitle = $isEdit ? 'Modifica Socio Minorenne' : 'Nuovo Socio Minorenne';
                                 </div>
                                 <div class="col-md-2">
                                     <label for="nationality" class="form-label">Nazionalità</label>
-                                    <input type="text" class="form-control" id="nationality" name="nationality" 
-                                           value="<?php echo htmlspecialchars($member['nationality'] ?? 'Italiana'); ?>">
+                                    <select class="form-select" id="nationality" name="nationality">
+                                        <?php 
+                                        use EasyVol\Utils\CountryList;
+                                        echo CountryList::getNationalityOptions($member['nationality'] ?? 'Italiana');
+                                        ?>
+                                    </select>
                                 </div>
                             </div>
                             

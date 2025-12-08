@@ -122,14 +122,15 @@ class JuniorMemberController {
             
             // Inserisci socio minorenne
             $sql = "INSERT INTO junior_members (
-                registration_number, member_status,
+                registration_number, member_type, member_status,
                 last_name, first_name, birth_date, birth_place, birth_province,
                 tax_code, gender, nationality, registration_date,
                 created_at, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
             
             $params = [
                 $data['registration_number'],
+                $data['member_type'] ?? 'ordinario',
                 $data['member_status'] ?? 'attivo',
                 $data['last_name'],
                 $data['first_name'],
@@ -196,7 +197,7 @@ class JuniorMemberController {
             $this->validateJuniorMemberData($data, $id);
             
             $sql = "UPDATE junior_members SET
-                member_status = ?,
+                member_type = ?, member_status = ?,
                 last_name = ?, first_name = ?, birth_date = ?,
                 birth_place = ?, birth_province = ?, tax_code = ?,
                 gender = ?, nationality = ?,
@@ -204,6 +205,7 @@ class JuniorMemberController {
                 WHERE id = ?";
             
             $params = [
+                $data['member_type'] ?? 'ordinario',
                 $data['member_status'] ?? 'attivo',
                 $data['last_name'],
                 $data['first_name'],
@@ -441,11 +443,19 @@ class JuniorMemberController {
      * @throws \Exception Se validazione fallisce
      */
     private function validateJuniorMemberData($data, $id = null) {
-        $required = ['last_name', 'first_name', 'birth_date', 'guardian_last_name', 'guardian_first_name'];
+        // Basic required fields
+        $required = ['last_name', 'first_name', 'birth_date'];
         
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 throw new \Exception("Campo obbligatorio mancante: $field");
+            }
+        }
+        
+        // Guardian fields required only for new entries (not edits)
+        if ($id === null) {
+            if (empty($data['guardian_last_name']) || empty($data['guardian_first_name'])) {
+                throw new \Exception("Dati tutore obbligatori per nuovi soci minorenni");
             }
         }
         

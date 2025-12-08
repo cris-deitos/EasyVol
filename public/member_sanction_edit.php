@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <strong>Attenzione:</strong> L'inserimento di un provvedimento cambierà automaticamente lo stato del socio.<br>
                                     <small>
                                         - <strong>In Aspettativa/In Congedo</strong>: imposta lo stato a "Sospeso"<br>
-                                        - <strong>Operativo</strong>: se inserito DOPO un provvedimento sospensivo, riporta lo stato ad "Attivo"<br>
+                                        - <strong>Attivo</strong>: se inserito DOPO un provvedimento sospensivo, riporta lo stato ad "Attivo"<br>
                                         - <strong>Decaduto/Dimesso</strong>: imposta lo stato rispettivo
                                     </small>
                                 </div>
@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <option value="in_aspettativa" <?php echo $sanction['sanction_type'] === 'in_aspettativa' ? 'selected' : ''; ?>>In Aspettativa</option>
                                             <option value="sospeso" <?php echo $sanction['sanction_type'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                             <option value="in_congedo" <?php echo $sanction['sanction_type'] === 'in_congedo' ? 'selected' : ''; ?>>In Congedo</option>
-                                            <option value="operativo" <?php echo $sanction['sanction_type'] === 'operativo' ? 'selected' : ''; ?>>Operativo</option>
+                                            <option value="operativo" <?php echo $sanction['sanction_type'] === 'operativo' ? 'selected' : ''; ?>>Attivo</option>
                                         </select>
                                     </div>
                                     

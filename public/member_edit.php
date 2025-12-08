@@ -171,8 +171,8 @@ $pageTitle = $isEdit ? 'Modifica Socio' : 'Nuovo Socio';
                                 <div class="col-md-4">
                                     <label for="volunteer_status" class="form-label">Stato Volontario *</label>
                                     <select class="form-select" id="volunteer_status" name="volunteer_status" required>
-                                        <option value="in_formazione" <?php echo ($member['volunteer_status'] ?? 'in_formazione') === 'in_formazione' ? 'selected' : ''; ?>>In Formazione</option>
                                         <option value="operativo" <?php echo ($member['volunteer_status'] ?? '') === 'operativo' ? 'selected' : ''; ?>>Operativo</option>
+                                        <option value="in_formazione" <?php echo ($member['volunteer_status'] ?? 'in_formazione') === 'in_formazione' ? 'selected' : ''; ?>>In Formazione</option>
                                         <option value="non_operativo" <?php echo ($member['volunteer_status'] ?? '') === 'non_operativo' ? 'selected' : ''; ?>>Non Operativo</option>
                                     </select>
                                 </div>
@@ -228,8 +228,12 @@ $pageTitle = $isEdit ? 'Modifica Socio' : 'Nuovo Socio';
                                 </div>
                                 <div class="col-md-2">
                                     <label for="nationality" class="form-label">Nazionalità</label>
-                                    <input type="text" class="form-control" id="nationality" name="nationality" 
-                                           value="<?php echo htmlspecialchars($member['nationality'] ?? 'Italiana'); ?>">
+                                    <select class="form-select" id="nationality" name="nationality">
+                                        <?php 
+                                        use EasyVol\Utils\CountryList;
+                                        echo CountryList::getNationalityOptions($member['nationality'] ?? 'Italiana');
+                                        ?>
+                                    </select>
                                 </div>
                             </div>
                             
