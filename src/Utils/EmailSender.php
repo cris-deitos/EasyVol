@@ -649,4 +649,198 @@ class EmailSender {
         return $this->send($memberEmail, $subject, $body);
     }
 
+    /**
+     * Send welcome email to new user with credentials
+     * 
+     * @param array $user User data (must include 'email', 'username')
+     * @param string $plainPassword Plain text temporary password
+     * @return bool Success status
+     */
+    public function sendNewUserEmail($user, $plainPassword) {
+        try {
+            $userEmail = $user['email'] ?? '';
+            $username = $user['username'] ?? '';
+            
+            if (empty($userEmail) || empty($username)) {
+                error_log("Missing email or username for new user email");
+                return false;
+            }
+            
+            $assocName = $this->config['association']['name'] ?? 'Associazione';
+            $loginUrl = 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
+            
+            $subject = "🎉 Benvenuto in EasyVol - Credenziali di Accesso";
+            
+            $body = "
+        <!DOCTYPE html>
+        <html lang='it'>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; }
+                .header { background: #007bff; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .credentials { background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; font-family: monospace; }
+                .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+                .button { display: inline-block; background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .footer { text-align: center; padding: 15px; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>🎉 Benvenuto in EasyVol!</h2>
+                </div>
+                
+                <div class='content'>
+                    <p>Benvenuto!</p>
+                    
+                    <p>È stato creato un account per te nel sistema di gestione <strong>EasyVol</strong>.</p>
+                    
+                    <div class='credentials'>
+                        <p style='margin: 0;'><strong>CREDENZIALI DI ACCESSO:</strong></p>
+                        <p style='margin: 10px 0 5px 0;'>👤 <strong>Username:</strong> $username</p>
+                        <p style='margin: 5px 0;'>🔑 <strong>Password:</strong> $plainPassword</p>
+                    </div>
+                    
+                    <div class='warning'>
+                        <p style='margin: 0;'><strong>⚠️ IMPORTANTE:</strong></p>
+                        <p style='margin: 10px 0 0 0;'>Questa è una <strong>password TEMPORANEA</strong>. Al primo accesso ti verrà richiesto di cambiarla con una nuova password personale.</p>
+                    </div>
+                    
+                    <p style='text-align: center;'>
+                        <a href='$loginUrl' class='button'>Accedi Ora</a>
+                    </p>
+                    
+                    <p><strong>PRIMO ACCESSO:</strong></p>
+                    <ol>
+                        <li>Clicca sul pulsante \"Accedi Ora\" qui sopra</li>
+                        <li>Inserisci username e password indicati</li>
+                        <li>Cambia la password quando richiesto</li>
+                        <li>Accedi al sistema</li>
+                    </ol>
+                    
+                    <p>Per qualsiasi problema, contatta l'amministratore del sistema.</p>
+                    
+                    <p>Cordiali saluti,<br><strong>$assocName</strong></p>
+                </div>
+                
+                <div class='footer'>
+                    <p>&copy; " . date('Y') . " $assocName</p>
+                    <p>Questa è un'email automatica, non rispondere a questo messaggio.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+            
+            $result = $this->send($userEmail, $subject, $body);
+            
+            if ($result) {
+                error_log("New user email sent to: $userEmail (username: $username)");
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            error_log("Failed to send new user email: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send password reset email with new credentials
+     * 
+     * @param array $user User data (must include 'email', 'username')
+     * @param string $newPassword Plain text new temporary password
+     * @return bool Success status
+     */
+    public function sendPasswordResetEmail($user, $newPassword) {
+        try {
+            $userEmail = $user['email'] ?? '';
+            $username = $user['username'] ?? '';
+            
+            if (empty($userEmail) || empty($username)) {
+                error_log("Missing email or username for password reset email");
+                return false;
+            }
+            
+            $assocName = $this->config['association']['name'] ?? 'Associazione';
+            $loginUrl = 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
+            
+            $subject = "🔑 Reset Password - EasyVol";
+            
+            $body = "
+        <!DOCTYPE html>
+        <html lang='it'>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; }
+                .header { background: #dc3545; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .credentials { background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; font-family: monospace; }
+                .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+                .security-warning { background: #ffe5e5; border: 2px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                .button { display: inline-block; background: #dc3545; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .footer { text-align: center; padding: 15px; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>🔑 Reset Password</h2>
+                </div>
+                
+                <div class='content'>
+                    <p>Hai richiesto il reset della password per il tuo account <strong>EasyVol</strong>.</p>
+                    
+                    <div class='credentials'>
+                        <p style='margin: 0;'><strong>NUOVE CREDENZIALI:</strong></p>
+                        <p style='margin: 10px 0 5px 0;'>👤 <strong>Username:</strong> $username</p>
+                        <p style='margin: 5px 0;'>🔑 <strong>Nuova Password:</strong> $newPassword</p>
+                    </div>
+                    
+                    <div class='warning'>
+                        <p style='margin: 0;'><strong>⚠️ IMPORTANTE:</strong></p>
+                        <p style='margin: 10px 0 0 0;'>Questa è una <strong>password TEMPORANEA</strong>. Al prossimo accesso ti verrà richiesto di cambiarla.</p>
+                    </div>
+                    
+                    <p style='text-align: center;'>
+                        <a href='$loginUrl' class='button'>Accedi Ora</a>
+                    </p>
+                    
+                    <div class='security-warning'>
+                        <p style='margin: 0;'><strong>🚨 ATTENZIONE SICUREZZA</strong></p>
+                        <p style='margin: 10px 0 0 0;'>Se <strong>NON hai richiesto</strong> questo reset, contatta <strong>immediatamente</strong> l'amministratore del sistema. Il tuo account potrebbe essere a rischio.</p>
+                    </div>
+                    
+                    <p>Cordiali saluti,<br><strong>$assocName</strong></p>
+                </div>
+                
+                <div class='footer'>
+                    <p>&copy; " . date('Y') . " $assocName</p>
+                    <p>Questa è un'email automatica, non rispondere a questo messaggio.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+            
+            $result = $this->send($userEmail, $subject, $body);
+            
+            if ($result) {
+                error_log("Password reset email sent to: $userEmail (username: $username)");
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            error_log("Failed to send password reset email: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }
