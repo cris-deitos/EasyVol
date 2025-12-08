@@ -133,8 +133,11 @@ class App {
                             $value = array_filter(array_map('trim', explode("\n", $value)));
                         }
                         
-                        // Only override if value is not empty or if it's a valid empty value
-                        if ($value !== '' || $configKey === 'reply_to' || $configKey === 'return_path' || $configKey === 'sendmail_params') {
+                        // Fields that can have empty values (optional fields)
+                        $optionalFields = ['reply_to', 'return_path', 'sendmail_params', 'additional_headers'];
+                        
+                        // Override config if value is not empty, or if it's an optional field
+                        if ($value !== '' || in_array($configKey, $optionalFields)) {
                             $this->config['email'][$configKey] = $value;
                         }
                     }

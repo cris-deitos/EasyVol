@@ -32,6 +32,9 @@ AutoLogger::logPageAccess();
 $db = $app->getDb();
 $config = $app->getConfig();
 
+// Valid email encoding options
+define('VALID_EMAIL_ENCODINGS', ['7bit', '8bit', 'base64', 'quoted-printable']);
+
 $errors = [];
 $success = false;
 $successMessage = '';
@@ -262,13 +265,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                 }
                 
                 // Validate encoding
-                $validEncodings = ['7bit', '8bit', 'base64', 'quoted-printable'];
-                if (!in_array($encoding, $validEncodings)) {
+                if (!in_array($encoding, VALID_EMAIL_ENCODINGS)) {
                     $errors[] = 'Encoding non valido';
                 }
                 
                 if (empty($errors)) {
-                    // Save email configuration to database
+                    // Save email configuration to database in a transaction
                     $emailSettings = [
                         'email_from_address' => $fromAddress,
                         'email_from_name' => $fromName,
@@ -280,20 +282,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         'email_additional_headers' => $additionalHeaders,
                     ];
                     
-                    // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert
-                    foreach ($emailSettings as $key => $value) {
-                        $sql = "INSERT INTO config (config_key, config_value) 
-                                VALUES (?, ?) 
-                                ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)";
-                        $db->execute($sql, [$key, $value]);
+                    // Use transaction for atomicity and better performance
+                    $db->getConnection()->beginTransaction();
+                    try {
+                        // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert
+                        foreach ($emailSettings as $key => $value) {
+                            $sql = "INSERT INTO config (config_key, config_value) 
+                                    VALUES (?, ?) 
+                                    ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)";
+                            $db->execute($sql, [$key, $value]);
+                        }
+                        $db->getConnection()->commit();
+                        
+                        $success = true;
+                        $successMessage = 'Impostazioni email aggiornate con successo!';
+                        
+                        // Reload page to show updated config
+                        header('Location: settings.php?success=email');
+                        exit;
+                    } catch (\Exception $e) {
+                        $db->getConnection()->rollBack();
+                        throw $e;
                     }
-                    
-                    $success = true;
-                    $successMessage = 'Impostazioni email aggiornate con successo!';
-                    
-                    // Reload page to show updated config
-                    header('Location: settings.php?success=email');
-                    exit;
                 }
             } catch (\Exception $e) {
                 $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
@@ -631,10 +641,15 @@ $pageTitle = 'Impostazioni Sistema';
                                         <label for="encoding" class="form-label">Encoding</label>
                                         <select class="form-select" id="encoding" name="encoding"
                                                 <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
-                                            <option value="8bit" <?php echo ($config['email']['encoding'] ?? '8bit') === '8bit' ? 'selected' : ''; ?>>8bit</option>
-                                            <option value="7bit" <?php echo ($config['email']['encoding'] ?? '') === '7bit' ? 'selected' : ''; ?>>7bit</option>
-                                            <option value="base64" <?php echo ($config['email']['encoding'] ?? '') === 'base64' ? 'selected' : ''; ?>>base64</option>
-                                            <option value="quoted-printable" <?php echo ($config['email']['encoding'] ?? '') === 'quoted-printable' ? 'selected' : ''; ?>>quoted-printable</option>
+                                            <?php 
+                                            $currentEncoding = $config['email']['encoding'] ?? '8bit';
+                                            foreach (VALID_EMAIL_ENCODINGS as $encodingOption): 
+                                            ?>
+                                                <option value="<?php echo htmlspecialchars($encodingOption); ?>" 
+                                                        <?php echo $currentEncoding === $encodingOption ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($encodingOption); ?>
+                                                </option>
+                                            <?php endforeach; ?>
                                         </select>
                                         <small class="text-muted">Metodo di codifica del contenuto</small>
                                     </div>
