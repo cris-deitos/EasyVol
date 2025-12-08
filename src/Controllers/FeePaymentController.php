@@ -69,7 +69,32 @@ class FeePaymentController {
             ];
             
             $this->db->execute($sql, $params);
-            return $this->db->lastInsertId();
+            $requestId = $this->db->lastInsertId();
+            
+            // Send email notification to member
+            if ($requestId) {
+                try {
+                    $member = $this->db->fetchOne("SELECT * FROM members WHERE registration_number = ?", [$data['registration_number']]);
+                    if ($member) {
+                        // Get member email from contacts table
+                        $emailResult = $this->db->fetchOne(
+                            "SELECT value FROM member_contacts WHERE member_id = ? AND contact_type = 'email' LIMIT 1",
+                            [$member['id']]
+                        );
+                        if ($emailResult) {
+                            $member['email'] = $emailResult['value'];
+                        }
+                        
+                        require_once __DIR__ . '/../Utils/EmailSender.php';
+                        $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+                        $emailSender->sendFeeRequestReceivedEmail($member, $data);
+                    }
+                } catch (\Exception $e) {
+                    error_log("Fee request email failed: " . $e->getMessage());
+                }
+            }
+            
+            return $requestId;
         } catch (\Exception $e) {
             error_log("Error creating payment request: " . $e->getMessage());
             return false;
@@ -208,8 +233,30 @@ class FeePaymentController {
             
             $this->db->commit();
             
-            // Send approval email
-            $this->sendApprovalEmail($request);
+            // Send approval email using new method
+            try {
+                $feeRequest = $this->db->fetchOne(
+                    "SELECT fpr.*, m.first_name, m.last_name, mc.value as email 
+                     FROM fee_payment_requests fpr
+                     JOIN members m ON fpr.registration_number = m.registration_number
+                     LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'email'
+                     WHERE fpr.id = ?",
+                    [$requestId]
+                );
+                
+                if ($feeRequest && !empty($feeRequest['email'])) {
+                    require_once __DIR__ . '/../Utils/EmailSender.php';
+                    $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+                    $memberData = [
+                        'first_name' => $feeRequest['first_name'],
+                        'last_name' => $feeRequest['last_name'],
+                        'email' => $feeRequest['email']
+                    ];
+                    $emailSender->sendFeePaymentApprovedEmail($memberData, $feeRequest);
+                }
+            } catch (\Exception $e) {
+                error_log("Fee approval email failed: " . $e->getMessage());
+            }
             
             return true;
         } catch (\Exception $e) {
