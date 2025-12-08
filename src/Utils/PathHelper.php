@@ -21,7 +21,7 @@ class PathHelper {
     public static function absoluteToRelative($absolutePath, $basePath = null) {
         if ($basePath === null) {
             // Default to two levels up from src/Utils (i.e., project root)
-            $basePath = realpath(__DIR__ . '/../../') ?: __DIR__ . '/../../';
+            $basePath = realpath(dirname(__DIR__, 2)) ?: dirname(__DIR__, 2);
         }
         
         // Normalize paths to use forward slashes
@@ -74,7 +74,7 @@ class PathHelper {
     public static function relativeToAbsolute($relativePath, $basePath = null) {
         if ($basePath === null) {
             // Default to two levels up from src/Utils (i.e., project root)
-            $basePath = realpath(__DIR__ . '/../../') ?: __DIR__ . '/../../';
+            $basePath = realpath(dirname(__DIR__, 2)) ?: dirname(__DIR__, 2);
         }
         
         // Remove all leading '../' from relative path

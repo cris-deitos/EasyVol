@@ -177,26 +177,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                 } else {
                     $sql = file_get_contents($migrationFile);
                     
-                    // Split into individual statements and execute
-                    // Only process statements that start with known safe DDL commands
-                    $statements = array_filter(
-                        array_map('trim', preg_split('/;(?=(?:[^\'"]|[\'"][^\'"]*[\'"])*$)/', $sql)),
-                        function($statement) {
-                            $statement = trim($statement);
-                            // Filter out comments and empty statements
-                            if (empty($statement) || preg_match('/^--/', $statement)) {
-                                return false;
-                            }
-                            // Only allow specific DDL commands for safety
-                            $allowedCommands = ['ALTER TABLE', 'CREATE TABLE IF NOT EXISTS'];
-                            foreach ($allowedCommands as $cmd) {
-                                if (stripos($statement, $cmd) === 0) {
-                                    return true;
-                                }
-                            }
+                    // Split into individual statements by semicolon
+                    // Simple split is sufficient for this specific migration file
+                    $statements = explode(';', $sql);
+                    $statements = array_map('trim', $statements);
+                    $statements = array_filter($statements, function($statement) {
+                        $statement = trim($statement);
+                        // Filter out comments and empty statements
+                        if (empty($statement) || preg_match('/^--/', $statement)) {
                             return false;
                         }
-                    );
+                        // Only allow specific safe DDL operations
+                        // More restrictive patterns to prevent dangerous operations
+                        $safePatterns = [
+                            '/^ALTER TABLE\s+`?\w+`?\s+ADD COLUMN/i',
+                            '/^CREATE TABLE IF NOT EXISTS\s+`?\w+`?/i'
+                        ];
+                        
+                        foreach ($safePatterns as $pattern) {
+                            if (preg_match($pattern, $statement)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
                     
                     $executed = 0;
                     $skipped = 0;
