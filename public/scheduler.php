@@ -209,7 +209,18 @@ $pageTitle = 'Scadenzario';
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <strong><?php echo htmlspecialchars($item['title']); ?></strong>
+                                                    <?php
+                                                    // Get reference link if exists
+                                                    $refLink = $controller->getReferenceLink($item);
+                                                    ?>
+                                                    <?php if ($refLink): ?>
+                                                        <a href="<?php echo htmlspecialchars($refLink['url']); ?>" class="text-decoration-none">
+                                                            <strong><?php echo htmlspecialchars($item['title']); ?></strong>
+                                                            <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <strong><?php echo htmlspecialchars($item['title']); ?></strong>
+                                                    <?php endif; ?>
                                                     <?php if ($item['description']): ?>
                                                         <br><small class="text-muted">
                                                             <?php echo htmlspecialchars(substr($item['description'], 0, 60)); ?>

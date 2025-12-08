@@ -234,6 +234,63 @@ class SchedulerSyncController {
     }
     
     /**
+     * Sincronizza scadenza documento veicolo
+     * 
+     * @param int $documentId ID del documento
+     * @param int $vehicleId ID del veicolo
+     * @return bool
+     */
+    public function syncVehicleDocumentExpiry($documentId, $vehicleId) {
+        try {
+            // Ottieni dettagli del documento
+            $sql = "SELECT vd.*, v.name as vehicle_name, v.license_plate 
+                    FROM vehicle_documents vd
+                    JOIN vehicles v ON vd.vehicle_id = v.id
+                    WHERE vd.id = ?";
+            $document = $this->db->fetchOne($sql, [$documentId]);
+            
+            if (!$document || !$document['expiry_date']) {
+                return true; // Nessuna scadenza da sincronizzare
+            }
+            
+            // Verifica se esiste già un item per questo documento
+            $existing = $this->findSchedulerItem('vehicle_document', $documentId);
+            
+            $title = "Scadenza Documento {$document['document_type']}: {$document['vehicle_name']}";
+            $description = "Il documento '{$document['document_type']}' del mezzo {$document['vehicle_name']} ";
+            if (!empty($document['license_plate'])) {
+                $description .= "(targa: {$document['license_plate']}) ";
+            }
+            $description .= "scade il {$document['expiry_date']}.";
+            
+            if ($existing) {
+                // Aggiorna item esistente
+                return $this->updateSchedulerItem(
+                    $existing['id'],
+                    $title,
+                    $description,
+                    $document['expiry_date'],
+                    'documenti_veicoli'
+                );
+            } else {
+                // Crea nuovo item
+                return $this->createSchedulerItem(
+                    $title,
+                    $description,
+                    $document['expiry_date'],
+                    'documenti_veicoli',
+                    'vehicle_document',
+                    $documentId
+                );
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Errore sincronizzazione documento veicolo: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Trova un item dello scadenziario esistente per un riferimento
      * 
      * @param string $referenceType Tipo di riferimento
@@ -371,6 +428,72 @@ class SchedulerSyncController {
         } catch (\Exception $e) {
             error_log("Errore rimozione scheduler item: " . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Ottieni l'URL e l'ID dell'entità di riferimento per un item dello scadenziario
+     * 
+     * @param string $referenceType Tipo di riferimento
+     * @param int $referenceId ID del riferimento
+     * @return array|null Array con 'url' e 'entity_id' (member_id o vehicle_id), oppure null
+     */
+    public function getReferenceLink($referenceType, $referenceId) {
+        try {
+            switch ($referenceType) {
+                case 'qualification':
+                    // Trova il member_id dalla tabella member_courses
+                    $sql = "SELECT member_id FROM member_courses WHERE id = ?";
+                    $result = $this->db->fetchOne($sql, [$referenceId]);
+                    if ($result) {
+                        return [
+                            'url' => "member_view.php?id={$result['member_id']}#courses",
+                            'entity_id' => $result['member_id'],
+                            'entity_type' => 'member'
+                        ];
+                    }
+                    break;
+                    
+                case 'license':
+                    // Trova il member_id dalla tabella member_licenses
+                    $sql = "SELECT member_id FROM member_licenses WHERE id = ?";
+                    $result = $this->db->fetchOne($sql, [$referenceId]);
+                    if ($result) {
+                        return [
+                            'url' => "member_view.php?id={$result['member_id']}#licenses",
+                            'entity_id' => $result['member_id'],
+                            'entity_type' => 'member'
+                        ];
+                    }
+                    break;
+                    
+                case 'insurance':
+                case 'inspection':
+                    // L'ID è direttamente il vehicle_id
+                    return [
+                        'url' => "vehicle_view.php?id={$referenceId}",
+                        'entity_id' => $referenceId,
+                        'entity_type' => 'vehicle'
+                    ];
+                    
+                case 'vehicle_document':
+                    // Trova il vehicle_id dalla tabella vehicle_documents
+                    $sql = "SELECT vehicle_id FROM vehicle_documents WHERE id = ?";
+                    $result = $this->db->fetchOne($sql, [$referenceId]);
+                    if ($result) {
+                        return [
+                            'url' => "vehicle_view.php?id={$result['vehicle_id']}#documents",
+                            'entity_id' => $result['vehicle_id'],
+                            'entity_type' => 'vehicle'
+                        ];
+                    }
+                    break;
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            error_log("Errore ottenimento link riferimento: " . $e->getMessage());
+            return null;
         }
     }
 }
