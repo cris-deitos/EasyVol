@@ -75,9 +75,9 @@ class MemberController {
             $sql = "INSERT INTO members (
                 registration_number, member_type, member_status, volunteer_status,
                 last_name, first_name, birth_date, birth_place, birth_province,
-                tax_code, gender, nationality, registration_date,
+                tax_code, gender, nationality, worker_type, education_level, registration_date,
                 created_at, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
             
             $params = [
                 $data['registration_number'],
@@ -92,6 +92,8 @@ class MemberController {
                 $data['tax_code'] ?? null,
                 $data['gender'] ?? null,
                 $data['nationality'] ?? 'Italiana',
+                $data['worker_type'] ?? null,
+                $data['education_level'] ?? null,
                 $data['registration_date'] ?? date('Y-m-d'),
                 $userId
             ];
@@ -132,7 +134,7 @@ class MemberController {
                 member_type = ?, member_status = ?, volunteer_status = ?,
                 last_name = ?, first_name = ?, birth_date = ?,
                 birth_place = ?, birth_province = ?, tax_code = ?,
-                gender = ?, nationality = ?,
+                gender = ?, nationality = ?, worker_type = ?, education_level = ?,
                 updated_at = NOW(), updated_by = ?
                 WHERE id = ?";
             
@@ -148,6 +150,8 @@ class MemberController {
                 $data['tax_code'] ?? null,
                 $data['gender'] ?? null,
                 $data['nationality'] ?? 'Italiana',
+                $data['worker_type'] ?? null,
+                $data['education_level'] ?? null,
                 $userId,
                 $id
             ];

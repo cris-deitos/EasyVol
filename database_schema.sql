@@ -172,6 +172,8 @@ CREATE TABLE IF NOT EXISTS `members` (
   `tax_code` varchar(50),
   `gender` enum('M', 'F'),
   `nationality` varchar(100) DEFAULT 'Italiana',
+  `worker_type` enum('studente', 'dipendente_privato', 'dipendente_pubblico', 'lavoratore_autonomo', 'disoccupato', 'pensionato') DEFAULT NULL COMMENT 'Tipo di lavoratore',
+  `education_level` enum('licenza_media', 'diploma_maturita', 'laurea_triennale', 'laurea_magistrale', 'dottorato') DEFAULT NULL COMMENT 'Titolo di studio',
   `registration_date` date,
   `approval_date` date,
   `photo` varchar(255),
@@ -183,7 +185,9 @@ CREATE TABLE IF NOT EXISTS `members` (
   `updated_by` int(11),
   PRIMARY KEY (`id`),
   KEY `last_name` (`last_name`),
-  KEY `member_status` (`member_status`)
+  KEY `member_status` (`member_status`),
+  KEY `worker_type` (`worker_type`),
+  KEY `education_level` (`education_level`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `member_addresses` (
