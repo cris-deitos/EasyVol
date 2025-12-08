@@ -166,6 +166,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
             } catch (\Exception $e) {
                 $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
             }
+        } elseif ($formType === 'database_fix') {
+            // Handle database fix
+            try {
+                // Run the migration file
+                $migrationFile = __DIR__ . '/../migrations/fix_critical_issues.sql';
+                
+                if (!file_exists($migrationFile)) {
+                    $errors[] = 'File di migrazione non trovato';
+                } else {
+                    $sql = file_get_contents($migrationFile);
+                    
+                    // Split into individual statements and execute
+                    $statements = array_filter(
+                        array_map('trim', preg_split('/;(?=(?:[^\'"]|[\'"][^\'"]*[\'"])*$)/', $sql)),
+                        function($statement) {
+                            return !empty($statement) && !preg_match('/^--/', $statement);
+                        }
+                    );
+                    
+                    $executed = 0;
+                    foreach ($statements as $statement) {
+                        if (stripos($statement, 'ALTER TABLE') !== false || 
+                            stripos($statement, 'CREATE TABLE') !== false) {
+                            try {
+                                $db->execute($statement);
+                                $executed++;
+                            } catch (\Exception $e) {
+                                // Continue on error (table/column might already exist)
+                                error_log("Database fix warning: " . $e->getMessage());
+                            }
+                        }
+                    }
+                    
+                    $success = true;
+                    $successMessage = "Correzioni database applicate con successo! ($executed statement eseguiti)";
+                    header('Location: settings.php?success=database_fix&executed=' . $executed);
+                    exit;
+                }
+            } catch (\Exception $e) {
+                $errors[] = 'Errore durante l\'applicazione delle correzioni: ' . $e->getMessage();
+            }
         } elseif ($formType === 'email') {
             // Handle email settings update
             try {
@@ -233,6 +274,9 @@ if (isset($_GET['success'])) {
         $successMessage = 'Dati associazione salvati con successo!';
     } elseif ($_GET['success'] === 'email') {
         $successMessage = 'Impostazioni email aggiornate con successo!';
+    } elseif ($_GET['success'] === 'database_fix') {
+        $executed = intval($_GET['executed'] ?? 0);
+        $successMessage = "Correzioni database applicate con successo! ($executed statement eseguiti)";
     }
 }
 
@@ -587,6 +631,23 @@ $pageTitle = 'Impostazioni Sistema';
                                     <h6>Cron Jobs</h6>
                                     <p>Per configurare i cron jobs automatici, consulta <code>cron/README.md</code></p>
                                 </div>
+                                
+                                <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                <div class="mt-4">
+                                    <h6>Correzioni Database</h6>
+                                    <p class="text-muted">Applica correzioni critiche al database (colonne mancanti, tabelle mancanti, ecc.)</p>
+                                    <form method="POST" onsubmit="return confirm('Applicare le correzioni al database? Questa operazione è sicura e può essere eseguita più volte.');">
+                                        <?php echo CsrfProtection::getHiddenField(); ?>
+                                        <input type="hidden" name="form_type" value="database_fix">
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="bi bi-tools"></i> Applica Correzioni Database
+                                        </button>
+                                    </form>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="bi bi-info-circle"></i> Applica le correzioni del file <code>migrations/fix_critical_issues.sql</code>
+                                    </small>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>

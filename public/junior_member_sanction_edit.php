@@ -10,6 +10,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Models\JuniorMember;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Services\SanctionService;
 
 $app = App::getInstance();
 
@@ -67,59 +68,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'created_by' => $app->getUserId()
         ];
         
-        // Validate
-        $validTypes = ['decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'operativo'];
-        if (!in_array($data['sanction_type'], $validTypes)) {
+        // Validate sanction type using SanctionService
+        if (!SanctionService::isValidType($data['sanction_type'])) {
             $errors[] = 'Tipo di provvedimento non valido';
         }
         
+        // Validate sanction date
+        if (!SanctionService::isValidDate($data['sanction_date'])) {
+            $errors[] = 'Data provvedimento non valida';
+        }
+        
         if (empty($errors)) {
-            try {
-                if ($sanctionId > 0) {
-                    $memberModel->updateSanction($sanctionId, $data);
-                } else {
-                    $memberModel->addSanction($memberId, $data);
-                }
-                
-                // Update member status based on sanction type with new logic
-                $newStatus = $data['sanction_type'];
-                
-                // Special handling for operativo sanction
-                if ($data['sanction_type'] === 'operativo') {
-                    // Get all sanctions for this member ordered by date
-                    $allSanctions = $memberModel->getSanctions($memberId);
-                    
-                    // Check if there's a previous suspending sanction
-                    $hasPreviousSuspension = false;
-                    $currentDate = strtotime($data['sanction_date']);
-                    
-                    foreach ($allSanctions as $s) {
-                        $sanctionDate = strtotime($s['sanction_date']);
-                        if ($sanctionDate < $currentDate && 
-                            in_array($s['sanction_type'], ['in_aspettativa', 'sospeso', 'in_congedo'])) {
-                            $hasPreviousSuspension = true;
-                            break;
-                        }
-                    }
-                    
-                    // If operativo comes after a suspension, return to active status
-                    if ($hasPreviousSuspension) {
-                        $newStatus = 'attivo';
-                    }
-                }
-                
-                // Apply status consolidation logic
-                // If in_aspettativa or in_congedo -> set status to sospeso (unless already set to attivo by operativo)
-                if (in_array($data['sanction_type'], ['in_aspettativa', 'in_congedo']) && $newStatus === $data['sanction_type']) {
-                    $newStatus = 'sospeso';
-                }
-                
-                $memberModel->update($memberId, ['member_status' => $newStatus]);
-                
+            // Process sanction using SanctionService
+            $result = SanctionService::processSanction($memberModel, $memberId, $sanctionId, $data);
+            
+            if ($result['success']) {
                 header('Location: junior_member_view.php?id=' . $memberId . '&tab=sanctions&success=1');
                 exit;
-            } catch (\Exception $e) {
-                $errors[] = $e->getMessage();
+            } else {
+                $errors[] = $result['error'];
             }
         }
     }

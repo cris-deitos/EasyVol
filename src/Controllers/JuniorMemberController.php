@@ -5,6 +5,7 @@ use EasyVol\Database;
 use EasyVol\Utils\FileUploader;
 use EasyVol\Utils\ImageProcessor;
 use EasyVol\Utils\PdfGenerator;
+use EasyVol\Utils\PathHelper;
 
 /**
  * Junior Member Controller
@@ -330,8 +331,8 @@ class JuniorMemberController {
             $thumbPath = dirname($result['path']) . '/thumb_' . basename($result['path']);
             ImageProcessor::createThumbnail($result['path'], $thumbPath, 200);
             
-            // Convert absolute path to relative path for web display
-            $relativePath = str_replace(__DIR__ . '/../../', '../', $result['path']);
+            // Convert absolute path to relative path for web display using PathHelper
+            $relativePath = PathHelper::absoluteToRelative($result['path']);
             
             // Aggiorna database
             $sql = "UPDATE junior_members SET photo_path = ?, updated_at = NOW(), updated_by = ? WHERE id = ?";
