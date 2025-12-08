@@ -3,8 +3,9 @@
 -- Purpose: Add missing columns needed for vehicle and warehouse management
 
 -- Add notes column to warehouse_items table if it doesn't exist
+-- Used for additional information and comments about warehouse items
 ALTER TABLE `warehouse_items` 
-ADD COLUMN IF NOT EXISTS `notes` TEXT NULL AFTER `status`;
+ADD COLUMN IF NOT EXISTS `notes` TEXT NULL COMMENT 'Additional notes and comments' AFTER `status`;
 
 -- Update vehicle_maintenance enum to include 'revisione' type if needed
 -- This is safe to run multiple times as it includes all values
@@ -39,4 +40,4 @@ ALTER TABLE `vehicle_maintenance`
 ADD COLUMN IF NOT EXISTS `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- Add index for created_by if it doesn't exist
-CREATE INDEX IF NOT EXISTS `idx_created_by` ON `vehicle_maintenance` (`created_by`);
+CREATE INDEX IF NOT EXISTS `idx_vehicle_maintenance_created_by` ON `vehicle_maintenance` (`created_by`);

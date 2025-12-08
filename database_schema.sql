@@ -629,7 +629,7 @@ CREATE TABLE IF NOT EXISTS `vehicle_maintenance` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `vehicle_id` (`vehicle_id`),
-  KEY `created_by` (`created_by`),
+  KEY `idx_vehicle_maintenance_created_by` (`created_by`),
   FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -663,7 +663,7 @@ CREATE TABLE IF NOT EXISTS `warehouse_items` (
   `qr_code` varchar(255),
   `barcode` varchar(255),
   `status` enum('disponibile', 'in_manutenzione', 'fuori_servizio') DEFAULT 'disponibile',
-  `notes` text,
+  `notes` text COMMENT 'Additional notes and comments',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
