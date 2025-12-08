@@ -485,6 +485,21 @@ class SchedulerController {
     }
     
     /**
+     * Ottieni link di riferimento per un item dello scadenziario
+     * 
+     * @param array $item Item dello scadenziario
+     * @return array|null Array con informazioni sul link, oppure null
+     */
+    public function getReferenceLink($item) {
+        if (empty($item['reference_type']) || empty($item['reference_id'])) {
+            return null;
+        }
+        
+        $syncController = new SchedulerSyncController($this->db, $this->config);
+        return $syncController->getReferenceLink($item['reference_type'], $item['reference_id']);
+    }
+    
+    /**
      * Log activity
      */
     private function logActivity($userId, $module, $action, $recordId, $details) {

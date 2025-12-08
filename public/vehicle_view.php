@@ -319,15 +319,44 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                                                 <tr>
                                                     <th>Nome File</th>
                                                     <th>Tipo Documento</th>
+                                                    <th>Data Scadenza</th>
                                                     <th>Data Caricamento</th>
                                                     <th>Azioni</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php foreach ($vehicle['documents'] as $doc): ?>
-                                                    <tr>
+                                                    <?php
+                                                    $isExpiringSoon = false;
+                                                    $isExpired = false;
+                                                    if (!empty($doc['expiry_date'])) {
+                                                        $expiryDate = new DateTime($doc['expiry_date']);
+                                                        $today = new DateTime();
+                                                        $diff = $today->diff($expiryDate);
+                                                        $isExpired = $expiryDate < $today;
+                                                        $isExpiringSoon = !$isExpired && $diff->days <= 30 && !$diff->invert;
+                                                    }
+                                                    $rowClass = $isExpired ? 'table-danger' : ($isExpiringSoon ? 'table-warning' : '');
+                                                    ?>
+                                                    <tr class="<?php echo $rowClass; ?>">
                                                         <td><i class="bi bi-file-pdf"></i> <?php echo htmlspecialchars($doc['file_name']); ?></td>
                                                         <td><?php echo htmlspecialchars($doc['document_type']); ?></td>
+                                                        <td>
+                                                            <?php if (!empty($doc['expiry_date'])): ?>
+                                                                <?php echo date('d/m/Y', strtotime($doc['expiry_date'])); ?>
+                                                                <?php if ($isExpired): ?>
+                                                                    <br><small class="text-danger">
+                                                                        <i class="bi bi-exclamation-triangle"></i> Scaduto
+                                                                    </small>
+                                                                <?php elseif ($isExpiringSoon): ?>
+                                                                    <br><small class="text-warning">
+                                                                        <i class="bi bi-clock"></i> Scade tra <?php echo $diff->days; ?> giorni
+                                                                    </small>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
                                                         <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($doc['uploaded_at']))); ?></td>
                                                         <td>
                                                             <a href="download.php?type=vehicle_attachment&id=<?php echo $doc['id']; ?>" class="btn btn-sm btn-info" target="_blank">
