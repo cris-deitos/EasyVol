@@ -131,12 +131,18 @@ class ApplicationController {
             
             // After successful insert, generate PDF and send email
             // Use try-catch to ensure application is saved even if PDF/email fails
+            $pdfGenerated = false;
+            $emailSent = false;
+            $processingErrors = [];
+            
             if ($applicationId) {
                 try {
                     // Generate PDF using new TCPDF-based generator
                     require_once __DIR__ . '/../Utils/ApplicationPdfGenerator.php';
                     $pdfGenerator = new \EasyVol\Utils\ApplicationPdfGenerator($this->db, $this->config);
                     $pdfPath = $pdfGenerator->generateApplicationPdf($applicationId);
+                    $pdfGenerated = true;
+                    error_log("Application PDF generated successfully for application ID: $applicationId");
                     
                     // Reload application with pdf_file path
                     $application = $this->db->fetchOne(
@@ -150,14 +156,20 @@ class ApplicationController {
                     $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
                     
                     if ($emailSent) {
-                        error_log("Application PDF generated and email sent for application ID: $applicationId");
+                        error_log("Application email sent successfully for application ID: $applicationId");
                     } else {
                         error_log("Application PDF generated but email failed for application ID: $applicationId");
+                        $processingErrors[] = "Email non inviata. Verifica configurazione email.";
                     }
                     
                 } catch (\Exception $e) {
                     // Don't fail the whole application if PDF/email fails
                     error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
+                    if (!$pdfGenerated) {
+                        $processingErrors[] = "Generazione PDF fallita: " . $e->getMessage();
+                    } else if (!$emailSent) {
+                        $processingErrors[] = "Invio email fallito: " . $e->getMessage();
+                    }
                     // Application is still saved, PDF can be regenerated later
                 }
             }
@@ -166,6 +178,9 @@ class ApplicationController {
                 'success' => true,
                 'id' => $applicationId,
                 'code' => $code,
+                'pdf_generated' => $pdfGenerated,
+                'email_sent' => $emailSent,
+                'processing_errors' => $processingErrors,
                 'error' => null
             ];
             
@@ -210,12 +225,18 @@ class ApplicationController {
             
             // After successful insert, generate PDF and send email
             // Use try-catch to ensure application is saved even if PDF/email fails
+            $pdfGenerated = false;
+            $emailSent = false;
+            $processingErrors = [];
+            
             if ($applicationId) {
                 try {
                     // Generate PDF using new TCPDF-based generator
                     require_once __DIR__ . '/../Utils/ApplicationPdfGenerator.php';
                     $pdfGenerator = new \EasyVol\Utils\ApplicationPdfGenerator($this->db, $this->config);
                     $pdfPath = $pdfGenerator->generateApplicationPdf($applicationId);
+                    $pdfGenerated = true;
+                    error_log("Application PDF generated successfully for application ID: $applicationId");
                     
                     // Reload application with pdf_file path
                     $application = $this->db->fetchOne(
@@ -229,14 +250,20 @@ class ApplicationController {
                     $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
                     
                     if ($emailSent) {
-                        error_log("Application PDF generated and email sent for application ID: $applicationId");
+                        error_log("Application email sent successfully for application ID: $applicationId");
                     } else {
                         error_log("Application PDF generated but email failed for application ID: $applicationId");
+                        $processingErrors[] = "Email non inviata. Verifica configurazione email.";
                     }
                     
                 } catch (\Exception $e) {
                     // Don't fail the whole application if PDF/email fails
                     error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
+                    if (!$pdfGenerated) {
+                        $processingErrors[] = "Generazione PDF fallita: " . $e->getMessage();
+                    } else if (!$emailSent) {
+                        $processingErrors[] = "Invio email fallito: " . $e->getMessage();
+                    }
                     // Application is still saved, PDF can be regenerated later
                 }
             }
@@ -245,6 +272,9 @@ class ApplicationController {
                 'success' => true,
                 'id' => $applicationId,
                 'code' => $code,
+                'pdf_generated' => $pdfGenerated,
+                'email_sent' => $emailSent,
+                'processing_errors' => $processingErrors,
                 'error' => null
             ];
             

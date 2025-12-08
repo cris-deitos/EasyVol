@@ -177,6 +177,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($result['success']) {
                     $success = true;
                     $applicationCode = $result['code'];
+                    
+                    // Show warnings if PDF or email failed
+                    if (!empty($result['processing_errors'])) {
+                        foreach ($result['processing_errors'] as $error) {
+                            $errors[] = "Attenzione: " . $error;
+                        }
+                    }
                 } else {
                     $errors[] = $result['error'] ?? 'Errore durante l\'invio della domanda';
                 }
