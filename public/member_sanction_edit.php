@@ -10,6 +10,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Models\Member;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Services\SanctionService;
 
 $app = App::getInstance();
 
@@ -67,71 +68,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'created_by' => $app->getUserId()
         ];
         
-        // Validate
-        $validTypes = ['decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'operativo'];
-        if (!in_array($data['sanction_type'], $validTypes)) {
+        // Validate sanction type using SanctionService
+        if (!SanctionService::isValidType($data['sanction_type'])) {
             $errors[] = 'Tipo di provvedimento non valido';
         }
         
+        // Validate sanction date
+        if (!SanctionService::isValidDate($data['sanction_date'])) {
+            $errors[] = 'Data provvedimento non valida';
+        }
+        
         if (empty($errors)) {
-            try {
-                // Log sanction operation (non-sensitive data only)
-                error_log("Adding/Updating sanction for member $memberId - Type: " . $data['sanction_type'] . ", Date: " . $data['sanction_date']);
-                
-                if ($sanctionId > 0) {
-                    $memberModel->updateSanction($sanctionId, $data);
-                    error_log("Updated sanction $sanctionId");
-                } else {
-                    $newSanctionId = $memberModel->addSanction($memberId, $data);
-                    error_log("Added sanction with ID: $newSanctionId");
-                }
-                
-                // Update member status based on sanction type with new logic
-                $newStatus = $data['sanction_type'];
-                error_log("Initial status from sanction type: $newStatus");
-                
-                // Special handling for operativo sanction
-                if ($data['sanction_type'] === 'operativo') {
-                    // Get all sanctions for this member ordered by date
-                    $allSanctions = $memberModel->getSanctions($memberId);
-                    
-                    // Check if there's a previous suspending sanction
-                    $hasPreviousSuspension = false;
-                    $currentDate = strtotime($data['sanction_date']);
-                    
-                    foreach ($allSanctions as $s) {
-                        $sanctionDate = strtotime($s['sanction_date']);
-                        if ($sanctionDate < $currentDate && 
-                            in_array($s['sanction_type'], ['in_aspettativa', 'sospeso', 'in_congedo'])) {
-                            $hasPreviousSuspension = true;
-                            error_log("Found previous suspension: " . $s['sanction_type'] . " on " . $s['sanction_date']);
-                            break;
-                        }
-                    }
-                    
-                    // If operativo comes after a suspension, return to active status
-                    if ($hasPreviousSuspension) {
-                        $newStatus = 'attivo';
-                        error_log("Setting status to 'attivo' due to operativo after suspension");
-                    }
-                }
-                
-                // Apply status consolidation logic
-                // If in_aspettativa or in_congedo -> set status to sospeso (unless already set to attivo by operativo)
-                if (in_array($data['sanction_type'], ['in_aspettativa', 'in_congedo']) && $newStatus === $data['sanction_type']) {
-                    $newStatus = 'sospeso';
-                    error_log("Consolidating status to 'sospeso' for " . $data['sanction_type']);
-                }
-                
-                error_log("Final status to update: $newStatus");
-                $memberModel->update($memberId, ['member_status' => $newStatus]);
-                error_log("Member $memberId status updated successfully to $newStatus");
-                
+            // Log sanction operation (non-sensitive data only)
+            error_log("Adding/Updating sanction for member $memberId - Type: " . $data['sanction_type'] . ", Date: " . $data['sanction_date']);
+            
+            // Process sanction using SanctionService
+            $result = SanctionService::processSanction($memberModel, $memberId, $sanctionId, $data);
+            
+            if ($result['success']) {
+                error_log("Sanction processed successfully. New status: " . $result['new_status']);
                 header('Location: member_view.php?id=' . $memberId . '&tab=sanctions&success=1');
                 exit;
-            } catch (\Exception $e) {
-                error_log("Error in member sanction save: " . $e->getMessage());
-                $errors[] = $e->getMessage();
+            } else {
+                error_log("Error in member sanction save: " . $result['error']);
+                $errors[] = $result['error'];
             }
         }
     }
