@@ -34,24 +34,17 @@ $canAccess = false;
 
 switch ($type) {
     case 'member_attachment':
-        $sql = "SELECT ma.*, m.user_id 
+        $sql = "SELECT ma.* 
                 FROM member_attachments ma 
-                JOIN members m ON ma.member_id = m.id 
                 WHERE ma.id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
         if ($file) {
             $filePath = $file['file_path'];
             
-            // Admin or owner can access
+            // Admin can access
             if ($app->checkPermission('members', 'view')) {
                 $canAccess = true;
-            } else {
-                // Check if user owns this member record
-                $userId = $app->getUserId();
-                if ($file['user_id'] == $userId) {
-                    $canAccess = true;
-                }
             }
         }
         break;
@@ -67,24 +60,16 @@ switch ($type) {
         break;
         
     case 'fee_receipt':
-        $sql = "SELECT fpr.*, m.user_id 
+        $sql = "SELECT fpr.* 
                 FROM fee_payment_requests fpr 
-                JOIN members m ON fpr.member_id = m.id 
                 WHERE fpr.id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
         if ($file) {
             $filePath = $file['receipt_file'];
             
-            // Admin or owner can access
-            if ($app->checkPermission('fees', 'view')) {
-                $canAccess = true;
-            } else {
-                $userId = $app->getUserId();
-                if ($file['user_id'] == $userId) {
-                    $canAccess = true;
-                }
-            }
+            // Admin can access
+            $canAccess = $app->checkPermission('fees', 'view');
         }
         break;
         
@@ -99,25 +84,16 @@ switch ($type) {
         break;
         
     case 'application_pdf':
-        $sql = "SELECT ma.*, m.user_id 
+        $sql = "SELECT ma.* 
                 FROM member_applications ma 
-                LEFT JOIN members m ON ma.member_id = m.id 
-                WHERE ma.id = ?";
+                WHERE ma.id = ? ";
         $file = $db->fetchOne($sql, [$id]);
         
         if ($file) {
             $filePath = $file['pdf_file'];
             
             // Admin can access all applications
-            if ($app->checkPermission('settings', 'view')) {
-                $canAccess = true;
-            } else {
-                // If application is approved and linked to a member, check if user owns that member
-                $userId = $app->getUserId();
-                if ($file['member_id'] && $file['user_id'] == $userId) {
-                    $canAccess = true;
-                }
-            }
+            $canAccess = $app->checkPermission('settings', 'view');
         }
         break;
         
@@ -132,21 +108,14 @@ switch ($type) {
         break;
         
     case 'member_photo':
-        $sql = "SELECT photo_path, user_id FROM members WHERE id = ?";
+        $sql = "SELECT photo_path FROM members WHERE id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
-        if ($file && !empty($file['photo_path'])) {
+        if ($file && ! empty($file['photo_path'])) {
             $filePath = $file['photo_path'];
             
             // Photos can be viewed by anyone with member access
-            if ($app->checkPermission('members', 'view')) {
-                $canAccess = true;
-            } else {
-                $userId = $app->getUserId();
-                if ($file['user_id'] == $userId) {
-                    $canAccess = true;
-                }
-            }
+            $canAccess = $app->checkPermission('members', 'view');
         }
         break;
         
@@ -161,44 +130,28 @@ switch ($type) {
         break;
         
     case 'junior_member_photo':
-        $sql = "SELECT photo_path, user_id FROM junior_members WHERE id = ?";
+        $sql = "SELECT photo_path FROM junior_members WHERE id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
         if ($file && !empty($file['photo_path'])) {
             $filePath = $file['photo_path'];
             
             // Photos can be viewed by anyone with junior member access
-            if ($app->checkPermission('junior_members', 'view')) {
-                $canAccess = true;
-            } else {
-                $userId = $app->getUserId();
-                if ($file['user_id'] == $userId) {
-                    $canAccess = true;
-                }
-            }
+            $canAccess = $app->checkPermission('junior_members', 'view');
         }
         break;
         
     case 'junior_member_attachment':
-        $sql = "SELECT jma.*, jm.user_id 
+        $sql = "SELECT jma.* 
                 FROM junior_member_attachments jma 
-                JOIN junior_members jm ON jma.junior_member_id = jm.id 
-                WHERE jma.id = ?";
+                WHERE jma. id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
         if ($file) {
             $filePath = $file['file_path'];
             
-            // Admin or owner can access
-            if ($app->checkPermission('junior_members', 'view')) {
-                $canAccess = true;
-            } else {
-                // Check if user owns this member record
-                $userId = $app->getUserId();
-                if ($file['user_id'] == $userId) {
-                    $canAccess = true;
-                }
-            }
+            // Admin can access
+            $canAccess = $app->checkPermission('junior_members', 'view');
         }
         break;
         
