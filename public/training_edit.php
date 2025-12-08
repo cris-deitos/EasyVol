@@ -8,6 +8,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\TrainingCourseTypes;
 use EasyVol\Controllers\TrainingController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -72,55 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Se course_name è vuoto, usa il nome del tipo corso
         if (empty($data['course_name'])) {
-            $courseTypes = [
-                'A0' => 'A0 Corso informativo rivolto alla cittadinanza',
-                'A1' => 'A1 Corso base per volontari operativi di Protezione Civile',
-                'A2-01' => 'A2-01 ATTIVITA\' LOGISTICO GESTIONALI',
-                'A2-02' => 'A2-02 OPERATORE SEGRETERIA',
-                'A2-03' => 'A2-03 CUCINA IN EMERGENZA',
-                'A2-04' => 'A2-04 RADIOCOMUNICAZIONI E PROCESSO COMUNICATIVO IN PROTEZIONE CIVILE',
-                'A2-05' => 'A2-05 IDROGEOLOGICO: ALLUVIONE',
-                'A2-06' => 'A2-06 IDROGEOLOGICO: FRANE',
-                'A2-07' => 'A2-07 IDROGEOLOGICO: SISTEMI DI ALTO POMPAGGIO',
-                'A2-08' => 'A2-08 USO MOTOSEGA E DECESPUGLIATORE',
-                'A2-09' => 'A2-09 SICUREZZA IN PROTEZIONE CIVILE: D. Lgs. 81/08',
-                'A2-10' => 'A2-10 TOPOGRAFIA E GPS',
-                'A2-11' => 'A2-11 RICERCA DISPERSI',
-                'A2-12' => 'A2-12 OPERATORE NATANTE IN EMERGENZA DI PROTEZIONE CIVILE',
-                'A2-13' => 'A2-13 INTERVENTI ZOOTECNICI IN EMERGENZA DI PROTEZIONE CIVILE',
-                'A2-14' => 'A2-14 PIANO DI PROTEZIONE CIVILE: DIVULGAZIONE E INFORMAZIONE',
-                'A2-15' => 'A2-15 QUADERNI DI PRESIDIO',
-                'A2-16' => 'A2-16 EVENTI A RILEVANTE IMPATTO LOCALE',
-                'A2-17' => 'A2-17 SCUOLA I° CICLO DELL\'ISTRUZIONE',
-                'A2-18' => 'A2-18 SCUOLA SECONDARIA SUPERIORE',
-                'A3-01' => 'A3-01 CAPO SQUADRA',
-                'A3-02' => 'A3-02 COORDINATORE TERRITORIALE DEL VOLONTARIATO',
-                'A3-03' => 'A3-03 VICE COORDINATORE DI SEGRETERIA E SUPPORTO ALLA SALA OPERATIVA',
-                'A3-04' => 'A3-04 PRESIDENTE ASSOCIAZIONE e/o COORD. GR. COMUNALE/INTERCOM.',
-                'A3-05' => 'A3-05 COMPONENTI CCV (eletti)',
-                'A3-06' => 'A3-06 SUPPORTO ALLA PIANIFICAZIONE',
-                'A4-01' => 'A4-01 **SOMMOZZATORI di Protezione civile: Operatore tecnico assistenza sommozzatori PC 1°livello "Attività subacquee e soccorso nautico"',
-                'A4-02' => 'A4-02 **SOMMOZZATORI di protezione civile Alta specializzazione "Attività subacquee"',
-                'A4-03' => 'A4-03 ATTIVITA\' OPERATORI CINOFILI',
-                'A4-04' => 'A4-04 ATTIVITA\' OPERATORI EQUESTRI',
-                'A4-05' => 'A4-05 CATTURA IMENOTTERI E BONIFICA',
-                'A4-06' => 'A4-06 T.S.A. - Tecniche Speleo Alpinistiche',
-                'A4-07' => 'A4-07 S.R.T. - Swiftwater Rescue Technician',
-                'A4-08' => 'A4-08 PATENTE PER OPERATORE RADIO AMATORIALE',
-                'A4-09' => 'A4-09 OPERATORE GRU SU AUTO-CARRO',
-                'A4-10' => 'A4-10 OPERATORE MULETTO',
-                'A4-11' => 'A4-11 OPERATORE PER PIATTAFORME DI LAVORO ELEVABILI (PLE)',
-                'A4-12' => 'A4-12 OPERATORE ESCAVATORE',
-                'A4-13' => 'A4-13 OPERATORE TRATTORE',
-                'A4-14' => 'A4-14 OPERATORE DRONI',
-                'A4-15' => 'A4-15 HACCP',
-                'A5-01' => 'A5-01 A.I.B. di 1° LIVELLO',
-                'A5-02' => 'A5-02 A.I.B. AGGIORNAMENTI',
-                'A5-03' => 'A5-03 CAPOSQUADRA A.I.B.',
-                'A5-04' => 'A5-04 D.O.S. (in gestione direttamente a RL)',
-                'Altro' => 'Altro da specificare'
-            ];
-            $data['course_name'] = $courseTypes[$data['course_type']] ?? $data['course_type'];
+            $data['course_name'] = TrainingCourseTypes::getName($data['course_type']) ?? $data['course_type'];
         }
         
         if (empty($data['start_date'])) {
@@ -213,54 +166,7 @@ $pageTitle = $isEdit ? 'Modifica Corso' : 'Nuovo Corso';
                                     <select class="form-select" id="course_type" name="course_type" required>
                                         <option value="">Seleziona tipo di corso...</option>
                                         <?php
-                                        $courseTypes = [
-                                            'A0' => 'A0 Corso informativo rivolto alla cittadinanza',
-                                            'A1' => 'A1 Corso base per volontari operativi di Protezione Civile',
-                                            'A2-01' => 'A2-01 ATTIVITA\' LOGISTICO GESTIONALI',
-                                            'A2-02' => 'A2-02 OPERATORE SEGRETERIA',
-                                            'A2-03' => 'A2-03 CUCINA IN EMERGENZA',
-                                            'A2-04' => 'A2-04 RADIOCOMUNICAZIONI E PROCESSO COMUNICATIVO IN PROTEZIONE CIVILE',
-                                            'A2-05' => 'A2-05 IDROGEOLOGICO: ALLUVIONE',
-                                            'A2-06' => 'A2-06 IDROGEOLOGICO: FRANE',
-                                            'A2-07' => 'A2-07 IDROGEOLOGICO: SISTEMI DI ALTO POMPAGGIO',
-                                            'A2-08' => 'A2-08 USO MOTOSEGA E DECESPUGLIATORE',
-                                            'A2-09' => 'A2-09 SICUREZZA IN PROTEZIONE CIVILE: D. Lgs. 81/08',
-                                            'A2-10' => 'A2-10 TOPOGRAFIA E GPS',
-                                            'A2-11' => 'A2-11 RICERCA DISPERSI',
-                                            'A2-12' => 'A2-12 OPERATORE NATANTE IN EMERGENZA DI PROTEZIONE CIVILE',
-                                            'A2-13' => 'A2-13 INTERVENTI ZOOTECNICI IN EMERGENZA DI PROTEZIONE CIVILE',
-                                            'A2-14' => 'A2-14 PIANO DI PROTEZIONE CIVILE: DIVULGAZIONE E INFORMAZIONE',
-                                            'A2-15' => 'A2-15 QUADERNI DI PRESIDIO',
-                                            'A2-16' => 'A2-16 EVENTI A RILEVANTE IMPATTO LOCALE',
-                                            'A2-17' => 'A2-17 SCUOLA I° CICLO DELL\'ISTRUZIONE',
-                                            'A2-18' => 'A2-18 SCUOLA SECONDARIA SUPERIORE',
-                                            'A3-01' => 'A3-01 CAPO SQUADRA',
-                                            'A3-02' => 'A3-02 COORDINATORE TERRITORIALE DEL VOLONTARIATO',
-                                            'A3-03' => 'A3-03 VICE COORDINATORE DI SEGRETERIA E SUPPORTO ALLA SALA OPERATIVA',
-                                            'A3-04' => 'A3-04 PRESIDENTE ASSOCIAZIONE e/o COORD. GR. COMUNALE/INTERCOM.',
-                                            'A3-05' => 'A3-05 COMPONENTI CCV (eletti)',
-                                            'A3-06' => 'A3-06 SUPPORTO ALLA PIANIFICAZIONE',
-                                            'A4-01' => 'A4-01 **SOMMOZZATORI di Protezione civile: Operatore tecnico assistenza sommozzatori PC 1°livello "Attività subacquee e soccorso nautico"',
-                                            'A4-02' => 'A4-02 **SOMMOZZATORI di protezione civile Alta specializzazione "Attività subacquee"',
-                                            'A4-03' => 'A4-03 ATTIVITA\' OPERATORI CINOFILI',
-                                            'A4-04' => 'A4-04 ATTIVITA\' OPERATORI EQUESTRI',
-                                            'A4-05' => 'A4-05 CATTURA IMENOTTERI E BONIFICA',
-                                            'A4-06' => 'A4-06 T.S.A. - Tecniche Speleo Alpinistiche',
-                                            'A4-07' => 'A4-07 S.R.T. - Swiftwater Rescue Technician',
-                                            'A4-08' => 'A4-08 PATENTE PER OPERATORE RADIO AMATORIALE',
-                                            'A4-09' => 'A4-09 OPERATORE GRU SU AUTO-CARRO',
-                                            'A4-10' => 'A4-10 OPERATORE MULETTO',
-                                            'A4-11' => 'A4-11 OPERATORE PER PIATTAFORME DI LAVORO ELEVABILI (PLE)',
-                                            'A4-12' => 'A4-12 OPERATORE ESCAVATORE',
-                                            'A4-13' => 'A4-13 OPERATORE TRATTORE',
-                                            'A4-14' => 'A4-14 OPERATORE DRONI',
-                                            'A4-15' => 'A4-15 HACCP',
-                                            'A5-01' => 'A5-01 A.I.B. di 1° LIVELLO',
-                                            'A5-02' => 'A5-02 A.I.B. AGGIORNAMENTI',
-                                            'A5-03' => 'A5-03 CAPOSQUADRA A.I.B.',
-                                            'A5-04' => 'A5-04 D.O.S. (in gestione direttamente a RL)',
-                                            'Altro' => 'Altro da specificare'
-                                        ];
+                                        $courseTypes = TrainingCourseTypes::getAll();
                                         $selectedType = $course['course_type'] ?? $_POST['course_type'] ?? '';
                                         foreach ($courseTypes as $code => $name):
                                         ?>
