@@ -21,7 +21,7 @@ class TrainingCourseTypes {
             'A1' => 'A1 Corso base per volontari operativi di Protezione Civile',
             
             // Corsi A2 - Specializzazione
-            'A2-01' => 'A2-01 ATTIVITA\' LOGISTICO GESTIONALI',
+            'A2-01' => 'A2-01 ATTIVITÀ LOGISTICO GESTIONALI',
             'A2-02' => 'A2-02 OPERATORE SEGRETERIA',
             'A2-03' => 'A2-03 CUCINA IN EMERGENZA',
             'A2-04' => 'A2-04 RADIOCOMUNICAZIONI E PROCESSO COMUNICATIVO IN PROTEZIONE CIVILE',
@@ -49,10 +49,10 @@ class TrainingCourseTypes {
             'A3-06' => 'A3-06 SUPPORTO ALLA PIANIFICAZIONE',
             
             // Corsi A4 - Alta Specializzazione
-            'A4-01' => 'A4-01 **SOMMOZZATORI di Protezione civile: Operatore tecnico assistenza sommozzatori PC 1°livello "Attività subacquee e soccorso nautico"',
-            'A4-02' => 'A4-02 **SOMMOZZATORI di protezione civile Alta specializzazione "Attività subacquee"',
-            'A4-03' => 'A4-03 ATTIVITA\' OPERATORI CINOFILI',
-            'A4-04' => 'A4-04 ATTIVITA\' OPERATORI EQUESTRI',
+            'A4-01' => 'A4-01 SOMMOZZATORI di Protezione civile: Operatore tecnico assistenza sommozzatori PC 1° livello - Attività subacquee e soccorso nautico',
+            'A4-02' => 'A4-02 SOMMOZZATORI di protezione civile Alta specializzazione - Attività subacquee',
+            'A4-03' => 'A4-03 ATTIVITÀ OPERATORI CINOFILI',
+            'A4-04' => 'A4-04 ATTIVITÀ OPERATORI EQUESTRI',
             'A4-05' => 'A4-05 CATTURA IMENOTTERI E BONIFICA',
             'A4-06' => 'A4-06 T.S.A. - Tecniche Speleo Alpinistiche',
             'A4-07' => 'A4-07 S.R.T. - Swiftwater Rescue Technician',
