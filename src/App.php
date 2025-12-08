@@ -10,6 +10,11 @@ class App {
      */
     const DEFAULT_PASSWORD = 'Pw@12345678';
     
+    /**
+     * Optional email configuration fields that can have empty values
+     */
+    const OPTIONAL_EMAIL_FIELDS = ['reply_to', 'return_path', 'sendmail_params', 'additional_headers'];
+    
     private static $instance = null;
     private $config;
     private $db;
@@ -133,11 +138,8 @@ class App {
                             $value = array_filter(array_map('trim', explode("\n", $value)));
                         }
                         
-                        // Fields that can have empty values (optional fields)
-                        $optionalFields = ['reply_to', 'return_path', 'sendmail_params', 'additional_headers'];
-                        
                         // Override config if value is not empty, or if it's an optional field
-                        if ($value !== '' || in_array($configKey, $optionalFields)) {
+                        if ($value !== '' || in_array($configKey, self::OPTIONAL_EMAIL_FIELDS)) {
                             $this->config['email'][$configKey] = $value;
                         }
                     }
