@@ -71,6 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'tax_code' => strtoupper(trim($_POST['tax_code'] ?? '')),
             'gender' => $_POST['gender'] ?? '',
             'nationality' => trim($_POST['nationality'] ?? 'Italiana'),
+            'worker_type' => !empty($_POST['worker_type']) ? $_POST['worker_type'] : null,
+            'education_level' => !empty($_POST['education_level']) ? $_POST['education_level'] : null,
             'registration_date' => $_POST['registration_date'] ?? date('Y-m-d')
         ];
         
@@ -237,6 +239,34 @@ $pageTitle = $isEdit ? 'Modifica Socio' : 'Nuovo Socio';
                                 </div>
                             </div>
                             
+                            <h5 class="mb-3">Informazioni Professionali e Formative</h5>
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label for="worker_type" class="form-label">Tipo di Lavoratore</label>
+                                    <select class="form-select" id="worker_type" name="worker_type">
+                                        <option value="">Seleziona...</option>
+                                        <option value="studente" <?php echo ($member['worker_type'] ?? '') === 'studente' ? 'selected' : ''; ?>>Studente</option>
+                                        <option value="dipendente_privato" <?php echo ($member['worker_type'] ?? '') === 'dipendente_privato' ? 'selected' : ''; ?>>Dipendente Privato</option>
+                                        <option value="dipendente_pubblico" <?php echo ($member['worker_type'] ?? '') === 'dipendente_pubblico' ? 'selected' : ''; ?>>Dipendente Pubblico</option>
+                                        <option value="lavoratore_autonomo" <?php echo ($member['worker_type'] ?? '') === 'lavoratore_autonomo' ? 'selected' : ''; ?>>Lavoratore Autonomo</option>
+                                        <option value="disoccupato" <?php echo ($member['worker_type'] ?? '') === 'disoccupato' ? 'selected' : ''; ?>>Disoccupato</option>
+                                        <option value="pensionato" <?php echo ($member['worker_type'] ?? '') === 'pensionato' ? 'selected' : ''; ?>>Pensionato</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="education_level" class="form-label">Titolo di Studio</label>
+                                    <select class="form-select" id="education_level" name="education_level">
+                                        <option value="">Seleziona...</option>
+                                        <option value="licenza_media" <?php echo ($member['education_level'] ?? '') === 'licenza_media' ? 'selected' : ''; ?>>Licenza Media</option>
+                                        <option value="diploma_maturita" <?php echo ($member['education_level'] ?? '') === 'diploma_maturita' ? 'selected' : ''; ?>>Diploma di Maturità</option>
+                                        <option value="laurea_triennale" <?php echo ($member['education_level'] ?? '') === 'laurea_triennale' ? 'selected' : ''; ?>>Laurea Triennale</option>
+                                        <option value="laurea_magistrale" <?php echo ($member['education_level'] ?? '') === 'laurea_magistrale' ? 'selected' : ''; ?>>Laurea Magistrale</option>
+                                        <option value="dottorato" <?php echo ($member['education_level'] ?? '') === 'dottorato' ? 'selected' : ''; ?>>Dottorato</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <h5 class="mb-3">Altre Informazioni</h5>
                             <div class="row mb-4">
                                 <div class="col-md-6">
                                     <label for="registration_date" class="form-label">Data Iscrizione</label>

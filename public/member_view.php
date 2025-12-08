@@ -255,6 +255,41 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                 <p class="mb-0"><?php echo date('d/m/Y', strtotime($member['registration_date'])); ?></p>
                                             </div>
                                         </div>
+                                        
+                                        <h5 class="card-title mt-4">Informazioni Professionali e Formative</h5>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="text-muted small">Tipo di Lavoratore</label>
+                                                <p class="mb-0">
+                                                    <?php 
+                                                    $workerTypes = [
+                                                        'studente' => 'Studente',
+                                                        'dipendente_privato' => 'Dipendente Privato',
+                                                        'dipendente_pubblico' => 'Dipendente Pubblico',
+                                                        'lavoratore_autonomo' => 'Lavoratore Autonomo',
+                                                        'disoccupato' => 'Disoccupato',
+                                                        'pensionato' => 'Pensionato'
+                                                    ];
+                                                    echo !empty($member['worker_type']) ? ($workerTypes[$member['worker_type']] ?? 'N/D') : 'N/D';
+                                                    ?>
+                                                </p>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="text-muted small">Titolo di Studio</label>
+                                                <p class="mb-0">
+                                                    <?php 
+                                                    $educationLevels = [
+                                                        'licenza_media' => 'Licenza Media',
+                                                        'diploma_maturita' => 'Diploma di Maturità',
+                                                        'laurea_triennale' => 'Laurea Triennale',
+                                                        'laurea_magistrale' => 'Laurea Magistrale',
+                                                        'dottorato' => 'Dottorato'
+                                                    ];
+                                                    echo !empty($member['education_level']) ? ($educationLevels[$member['education_level']] ?? 'N/D') : 'N/D';
+                                                    ?>
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

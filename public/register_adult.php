@@ -136,6 +136,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'employer_city' => trim($_POST['employer_city'] ?? ''),
                 'employer_phone' => trim($_POST['employer_phone'] ?? ''),
                 
+                // Informazioni professionali e formative
+                'worker_type' => !empty($_POST['worker_type']) ? $_POST['worker_type'] : null,
+                'education_level' => !empty($_POST['education_level']) ? $_POST['education_level'] : null,
+                
                 // Consensi
                 'art6_operativo' => !empty($_POST['art6_operativo']),
                 'art6_unica_org' => !empty($_POST['art6_unica_org']),
@@ -569,6 +573,37 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                 <div class="mb-3">
                                     <label for="health_conditions" class="form-label">Patologie</label>
                                     <textarea class="form-control" id="health_conditions" name="health_conditions" rows="2"><?php echo htmlspecialchars($_POST['health_conditions'] ?? ''); ?></textarea>
+                                </div>
+                                
+                                <!-- INFORMAZIONI PROFESSIONALI E FORMATIVE -->
+                                <div class="section-header">
+                                    <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Informazioni Professionali e Formative</h5>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="worker_type" class="form-label">Tipo di Lavoratore</label>
+                                        <select class="form-select" id="worker_type" name="worker_type">
+                                            <option value="">Seleziona...</option>
+                                            <option value="studente" <?php echo ($_POST['worker_type'] ?? '') === 'studente' ? 'selected' : ''; ?>>Studente</option>
+                                            <option value="dipendente_privato" <?php echo ($_POST['worker_type'] ?? '') === 'dipendente_privato' ? 'selected' : ''; ?>>Dipendente Privato</option>
+                                            <option value="dipendente_pubblico" <?php echo ($_POST['worker_type'] ?? '') === 'dipendente_pubblico' ? 'selected' : ''; ?>>Dipendente Pubblico</option>
+                                            <option value="lavoratore_autonomo" <?php echo ($_POST['worker_type'] ?? '') === 'lavoratore_autonomo' ? 'selected' : ''; ?>>Lavoratore Autonomo</option>
+                                            <option value="disoccupato" <?php echo ($_POST['worker_type'] ?? '') === 'disoccupato' ? 'selected' : ''; ?>>Disoccupato</option>
+                                            <option value="pensionato" <?php echo ($_POST['worker_type'] ?? '') === 'pensionato' ? 'selected' : ''; ?>>Pensionato</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="education_level" class="form-label">Titolo di Studio</label>
+                                        <select class="form-select" id="education_level" name="education_level">
+                                            <option value="">Seleziona...</option>
+                                            <option value="licenza_media" <?php echo ($_POST['education_level'] ?? '') === 'licenza_media' ? 'selected' : ''; ?>>Licenza Media</option>
+                                            <option value="diploma_maturita" <?php echo ($_POST['education_level'] ?? '') === 'diploma_maturita' ? 'selected' : ''; ?>>Diploma di Maturità</option>
+                                            <option value="laurea_triennale" <?php echo ($_POST['education_level'] ?? '') === 'laurea_triennale' ? 'selected' : ''; ?>>Laurea Triennale</option>
+                                            <option value="laurea_magistrale" <?php echo ($_POST['education_level'] ?? '') === 'laurea_magistrale' ? 'selected' : ''; ?>>Laurea Magistrale</option>
+                                            <option value="dottorato" <?php echo ($_POST['education_level'] ?? '') === 'dottorato' ? 'selected' : ''; ?>>Dottorato</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 
                                 <!-- DATORE DI LAVORO -->
