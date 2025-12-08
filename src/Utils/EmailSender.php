@@ -117,8 +117,7 @@ class EmailSender {
                 // Create boundary
                 $boundary = md5(time());
                 
-                // Add multipart headers
-                $headers[] = "MIME-Version: 1.0";
+                // Override Content-Type for multipart (MIME-Version already set in buildHeaders)
                 $headers[] = "Content-Type: multipart/mixed; boundary=\"$boundary\"";
                 
                 // Build multipart message
@@ -130,12 +129,29 @@ class EmailSender {
                 // Add each attachment
                 foreach ($attachments as $attachment) {
                     if (isset($attachment['path']) && file_exists($attachment['path'])) {
+                        // Validate file size (max 10MB)
+                        $fileSize = filesize($attachment['path']);
+                        $maxSize = 10 * 1024 * 1024; // 10MB
+                        if ($fileSize > $maxSize) {
+                            error_log("Attachment too large: {$attachment['path']} ($fileSize bytes)");
+                            continue;
+                        }
+                        
+                        // Detect MIME type
+                        $mimeType = 'application/octet-stream';
+                        if (function_exists('mime_content_type')) {
+                            $detectedType = mime_content_type($attachment['path']);
+                            if ($detectedType !== false) {
+                                $mimeType = $detectedType;
+                            }
+                        }
+                        
                         $fileName = $attachment['name'] ?? basename($attachment['path']);
                         $fileContent = file_get_contents($attachment['path']);
                         $encodedContent = chunk_split(base64_encode($fileContent));
                         
                         $message .= "--$boundary\r\n";
-                        $message .= "Content-Type: application/pdf; name=\"$fileName\"\r\n";
+                        $message .= "Content-Type: $mimeType; name=\"$fileName\"\r\n";
                         $message .= "Content-Transfer-Encoding: base64\r\n";
                         $message .= "Content-Disposition: attachment; filename=\"$fileName\"\r\n\r\n";
                         $message .= $encodedContent . "\r\n";
@@ -442,10 +458,27 @@ class EmailSender {
             // Prepare PDF attachment
             $attachments = [];
             if (!empty($pdfPath)) {
-                $fullPath = __DIR__ . '/../../' . ltrim($pdfPath, '/');
-                if (file_exists($fullPath)) {
+                // Construct and validate file path to prevent directory traversal
+                $basePath = realpath(__DIR__ . '/../../');
+                $fullPath = realpath(__DIR__ . '/../../' . ltrim($pdfPath, '/'));
+                
+                // Verify path is within expected directory and file exists
+                if ($fullPath !== false && 
+                    $basePath !== false && 
+                    strpos($fullPath, $basePath) === 0 && 
+                    file_exists($fullPath)) {
+                    
+                    // Sanitize filename components to prevent injection
                     $lastName = strtoupper($data['last_name'] ?? 'SOCIO');
                     $firstName = strtoupper($data['first_name'] ?? '');
+                    
+                    // Remove any non-alphanumeric characters except underscore and hyphen
+                    $lastName = preg_replace('/[^A-Z0-9_-]/i', '', $lastName);
+                    $firstName = preg_replace('/[^A-Z0-9_-]/i', '', $firstName);
+                    
+                    // Fallback to generic names if sanitization leaves empty strings
+                    $lastName = !empty($lastName) ? $lastName : 'SOCIO';
+                    $firstName = !empty($firstName) ? $firstName : 'NUOVO';
                     
                     $attachments[] = [
                         'path' => $fullPath,
