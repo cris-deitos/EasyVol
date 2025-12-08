@@ -101,13 +101,8 @@ class EmailSender {
             // Build headers
             $headers = $this->buildHeaders($replyTo);
             
-            // Add CC to association if not already in headers and configured
-            $assocEmail = $this->config['association']['email'] ?? '';
-            $ccEmail = $this->config['email']['cc'] ?? $assocEmail;
-            
-            if (!empty($ccEmail) && $ccEmail !== $toEmail) {
-                $headers[] = "Cc: $ccEmail";
-            }
+            // Note: Auto-CC feature removed to prevent unwanted duplicate emails
+            // If CC is needed, it should be explicitly handled by the caller
             
             // Additional sendmail parameters if configured
             $additionalParams = $this->config['email']['sendmail_params'] ?? '';
