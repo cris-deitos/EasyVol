@@ -196,6 +196,11 @@ class VehicleController {
             $sql = "UPDATE vehicles SET status = 'dismesso', updated_at = NOW() WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
+            // Remove scheduler items for this vehicle
+            $syncController = new SchedulerSyncController($this->db, $this->config);
+            $syncController->removeSchedulerItem('insurance', $id);
+            $syncController->removeSchedulerItem('inspection', $id);
+            
             $this->logActivity($userId, 'vehicle', 'delete', $id, 'Eliminato/dismesso mezzo');
             
             return true;
@@ -303,6 +308,134 @@ class VehicleController {
     public function getDocuments($vehicleId) {
         $sql = "SELECT * FROM vehicle_documents WHERE vehicle_id = ? ORDER BY uploaded_at DESC";
         return $this->db->fetchAll($sql, [$vehicleId]);
+    }
+    
+    /**
+     * Aggiungi documento a un mezzo
+     */
+    public function addDocument($vehicleId, $data, $userId) {
+        try {
+            $this->db->beginTransaction();
+            
+            $sql = "INSERT INTO vehicle_documents (
+                vehicle_id, document_type, file_name, file_path, 
+                expiry_date, uploaded_at
+            ) VALUES (?, ?, ?, ?, ?, NOW())";
+            
+            $params = [
+                $vehicleId,
+                $data['document_type'],
+                $data['file_name'],
+                $data['file_path'],
+                $data['expiry_date'] ?? null
+            ];
+            
+            $this->db->execute($sql, $params);
+            $documentId = $this->db->lastInsertId();
+            
+            // Sincronizza scadenza con lo scadenziario se presente
+            if (!empty($data['expiry_date'])) {
+                $syncController = new SchedulerSyncController($this->db, $this->config);
+                $syncController->syncVehicleDocumentExpiry($documentId, $vehicleId);
+            }
+            
+            $this->logActivity($userId, 'vehicle', 'add_document', $vehicleId, 
+                "Aggiunto documento: {$data['document_type']}");
+            
+            $this->db->commit();
+            return $documentId;
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Errore aggiunta documento veicolo: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Aggiorna documento di un mezzo
+     */
+    public function updateDocument($documentId, $data, $userId) {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get vehicle_id for logging and sync
+            $doc = $this->db->fetchOne("SELECT vehicle_id FROM vehicle_documents WHERE id = ?", [$documentId]);
+            if (!$doc) {
+                throw new \Exception("Documento non trovato");
+            }
+            
+            $sql = "UPDATE vehicle_documents SET
+                document_type = ?,
+                expiry_date = ?
+                WHERE id = ?";
+            
+            $params = [
+                $data['document_type'],
+                $data['expiry_date'] ?? null,
+                $documentId
+            ];
+            
+            $this->db->execute($sql, $params);
+            
+            // Sincronizza scadenza con lo scadenziario
+            $syncController = new SchedulerSyncController($this->db, $this->config);
+            if (!empty($data['expiry_date'])) {
+                $syncController->syncVehicleDocumentExpiry($documentId, $doc['vehicle_id']);
+            } else {
+                // Se la scadenza è stata rimossa, rimuovi l'item dallo scadenziario
+                $syncController->removeSchedulerItem('vehicle_document', $documentId);
+            }
+            
+            $this->logActivity($userId, 'vehicle', 'update_document', $doc['vehicle_id'], 
+                "Aggiornato documento: {$data['document_type']}");
+            
+            $this->db->commit();
+            return true;
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Errore aggiornamento documento veicolo: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Elimina documento di un mezzo
+     */
+    public function deleteDocument($documentId, $userId) {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get document info for logging
+            $doc = $this->db->fetchOne("SELECT * FROM vehicle_documents WHERE id = ?", [$documentId]);
+            if (!$doc) {
+                throw new \Exception("Documento non trovato");
+            }
+            
+            // Delete file if exists
+            if (file_exists($doc['file_path'])) {
+                unlink($doc['file_path']);
+            }
+            
+            // Delete from database
+            $this->db->execute("DELETE FROM vehicle_documents WHERE id = ?", [$documentId]);
+            
+            // Remove from scheduler if exists
+            $syncController = new SchedulerSyncController($this->db, $this->config);
+            $syncController->removeSchedulerItem('vehicle_document', $documentId);
+            
+            $this->logActivity($userId, 'vehicle', 'delete_document', $doc['vehicle_id'], 
+                "Eliminato documento: {$doc['document_type']}");
+            
+            $this->db->commit();
+            return true;
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Errore eliminazione documento veicolo: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**

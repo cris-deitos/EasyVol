@@ -225,7 +225,39 @@ class Member {
         return $licenseId;
     }
     
+    public function updateLicense($id, $data) {
+        // Get member_id before update for sync
+        $license = $this->db->fetchOne("SELECT member_id FROM member_licenses WHERE id = ?", [$id]);
+        if (!$license) {
+            return false;
+        }
+        
+        $result = $this->db->update('member_licenses', $data, 'id = ?', [$id]);
+        
+        // Sincronizza con lo scadenziario
+        if ($result) {
+            $app = \EasyVol\App::getInstance();
+            $config = $app->getConfig();
+            $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
+            
+            if (!empty($data['expiry_date'])) {
+                $syncController->syncLicenseExpiry($id, $license['member_id']);
+            } else {
+                // Se la scadenza è stata rimossa, rimuovi l'item dallo scadenziario
+                $syncController->removeSchedulerItem('license', $id);
+            }
+        }
+        
+        return $result;
+    }
+    
     public function deleteLicense($id) {
+        // Remove from scheduler when deleting
+        $app = \EasyVol\App::getInstance();
+        $config = $app->getConfig();
+        $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
+        $syncController->removeSchedulerItem('license', $id);
+        
         return $this->db->delete('member_licenses', 'id = ?', [$id]);
     }
     
@@ -249,7 +281,39 @@ class Member {
         return $courseId;
     }
     
+    public function updateCourse($id, $data) {
+        // Get member_id before update for sync
+        $course = $this->db->fetchOne("SELECT member_id FROM member_courses WHERE id = ?", [$id]);
+        if (!$course) {
+            return false;
+        }
+        
+        $result = $this->db->update('member_courses', $data, 'id = ?', [$id]);
+        
+        // Sincronizza con lo scadenziario
+        if ($result) {
+            $app = \EasyVol\App::getInstance();
+            $config = $app->getConfig();
+            $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
+            
+            if (!empty($data['expiry_date'])) {
+                $syncController->syncQualificationExpiry($id, $course['member_id']);
+            } else {
+                // Se la scadenza è stata rimossa, rimuovi l'item dallo scadenziario
+                $syncController->removeSchedulerItem('qualification', $id);
+            }
+        }
+        
+        return $result;
+    }
+    
     public function deleteCourse($id) {
+        // Remove from scheduler when deleting
+        $app = \EasyVol\App::getInstance();
+        $config = $app->getConfig();
+        $syncController = new \EasyVol\Controllers\SchedulerSyncController($this->db, $config);
+        $syncController->removeSchedulerItem('qualification', $id);
+        
         return $this->db->delete('member_courses', 'id = ?', [$id]);
     }
     
