@@ -166,14 +166,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
             } catch (\Exception $e) {
                 $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
             }
+        } elseif ($formType === 'email') {
+            // Handle email settings update
+            try {
+                $fromAddress = trim($_POST['from_address'] ?? '');
+                $fromName = trim($_POST['from_name'] ?? '');
+                $replyTo = trim($_POST['reply_to'] ?? '');
+                $returnPath = trim($_POST['return_path'] ?? '');
+                
+                if (empty($fromAddress) || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = 'Indirizzo email mittente non valido';
+                }
+                if (!empty($replyTo) && !filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = 'Indirizzo per risposte non valido';
+                }
+                if (!empty($returnPath) && !filter_var($returnPath, FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = 'Return-Path non valido';
+                }
+                
+                if (empty($errors)) {
+                    $configPath = __DIR__ . '/../config/config.php';
+                    
+                    // Check if config file exists
+                    if (!file_exists($configPath)) {
+                        $errors[] = 'File di configurazione non trovato';
+                    } else {
+                        $content = file_get_contents($configPath);
+                        
+                        // Update email settings
+                        $content = preg_replace("/'from_address'\s*=>\s*'[^']*'/", "'from_address' => '" . addslashes($fromAddress) . "'", $content);
+                        $content = preg_replace("/'from_name'\s*=>\s*'[^']*'/", "'from_name' => '" . addslashes($fromName) . "'", $content);
+                        $content = preg_replace("/'reply_to'\s*=>\s*'[^']*'/", "'reply_to' => '" . addslashes($replyTo) . "'", $content);
+                        $content = preg_replace("/'return_path'\s*=>\s*'[^']*'/", "'return_path' => '" . addslashes($returnPath) . "'", $content);
+                        
+                        // Use atomic write with temporary file
+                        $tempPath = $configPath . '.tmp';
+                        if (file_put_contents($tempPath, $content) !== false) {
+                            // Atomic rename
+                            if (rename($tempPath, $configPath)) {
+                                $success = true;
+                                $successMessage = 'Impostazioni email aggiornate con successo!';
+                                
+                                // Reload config
+                                header('Location: settings.php?success=email');
+                                exit;
+                            } else {
+                                @unlink($tempPath);
+                                $errors[] = 'Errore durante il salvataggio della configurazione';
+                            }
+                        } else {
+                            $errors[] = 'Errore durante la scrittura del file di configurazione';
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
+            }
         }
     }
 }
 
 // Check for success message in URL
-if (isset($_GET['success']) && $_GET['success'] === 'association') {
+if (isset($_GET['success'])) {
     $success = true;
-    $successMessage = 'Dati associazione salvati con successo!';
+    if ($_GET['success'] === 'association') {
+        $successMessage = 'Dati associazione salvati con successo!';
+    } elseif ($_GET['success'] === 'email') {
+        $successMessage = 'Impostazioni email aggiornate con successo!';
+    }
 }
 
 $pageTitle = 'Impostazioni Sistema';
@@ -438,29 +498,46 @@ $pageTitle = 'Impostazioni Sistema';
                                     <?php endif; ?>
                                 </div>
                                 
-                                <dl class="row">
-                                    <dt class="col-sm-3">Metodo</dt>
-                                    <dd class="col-sm-9"><?php echo strtoupper($config['email']['method'] ?? 'mail'); ?></dd>
+                                <form method="POST">
+                                    <?php echo CsrfProtection::getHiddenField(); ?>
+                                    <input type="hidden" name="form_type" value="email">
                                     
-                                    <?php if (($config['email']['method'] ?? '') === 'smtp'): ?>
-                                        <dt class="col-sm-3">SMTP Host</dt>
-                                        <dd class="col-sm-9"><?php echo htmlspecialchars($config['email']['smtp_host'] ?? 'N/D'); ?></dd>
-                                        
-                                        <dt class="col-sm-3">SMTP Port</dt>
-                                        <dd class="col-sm-9"><?php echo htmlspecialchars($config['email']['smtp_port'] ?? 'N/D'); ?></dd>
+                                    <div class="mb-3">
+                                        <label for="from_address" class="form-label">Indirizzo Email Mittente *</label>
+                                        <input type="email" class="form-control" id="from_address" name="from_address" 
+                                               value="<?php echo htmlspecialchars($config['email']['from_address'] ?? ''); ?>" 
+                                               required
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="from_name" class="form-label">Nome Mittente *</label>
+                                        <input type="text" class="form-control" id="from_name" name="from_name" 
+                                               value="<?php echo htmlspecialchars($config['email']['from_name'] ?? ''); ?>" 
+                                               required
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="reply_to" class="form-label">Indirizzo per Risposte</label>
+                                        <input type="email" class="form-control" id="reply_to" name="reply_to" 
+                                               value="<?php echo htmlspecialchars($config['email']['reply_to'] ?? ''); ?>"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="return_path" class="form-label">Return-Path</label>
+                                        <input type="email" class="form-control" id="return_path" name="return_path" 
+                                               value="<?php echo htmlspecialchars($config['email']['return_path'] ?? ''); ?>"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Salva Modifiche
+                                        </button>
                                     <?php endif; ?>
-                                    
-                                    <dt class="col-sm-3">From Email</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['email']['from_email'] ?? 'N/D'); ?></dd>
-                                    
-                                    <dt class="col-sm-3">From Name</dt>
-                                    <dd class="col-sm-9"><?php echo htmlspecialchars($config['email']['from_name'] ?? 'N/D'); ?></dd>
-                                </dl>
-                                
-                                <p class="text-muted">
-                                    <i class="bi bi-info-circle"></i>
-                                    Per modificare la configurazione email, edita il file <code>config/config.php</code>.
-                                </p>
+                                </form>
                             </div>
                         </div>
                     </div>
