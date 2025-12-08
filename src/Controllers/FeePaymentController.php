@@ -71,26 +71,8 @@ class FeePaymentController {
             $this->db->execute($sql, $params);
             $requestId = $this->db->lastInsertId();
             
-            // Send email notification to member
-            if ($requestId) {
-                try {
-                    $member = $this->db->fetchOne(
-                        "SELECT m.id, m.first_name, m.last_name, m.registration_number, mc.value as email 
-                         FROM members m
-                         LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'email'
-                         WHERE m.registration_number = ?",
-                        [$data['registration_number']]
-                    );
-                    
-                    if ($member && !empty($member['email'])) {
-                        require_once __DIR__ . '/../Utils/EmailSender.php';
-                        $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
-                        $emailSender->sendFeeRequestReceivedEmail($member, $data);
-                    }
-                } catch (\Exception $e) {
-                    error_log("Fee request email failed: " . $e->getMessage());
-                }
-            }
+            // Note: Email sending is handled by sendSubmissionEmails() method
+            // called from the controller to avoid duplicate emails
             
             return $requestId;
         } catch (\Exception $e) {
