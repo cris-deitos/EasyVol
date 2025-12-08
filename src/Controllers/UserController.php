@@ -140,9 +140,18 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             // Send welcome email with credentials (after commit, non-blocking)
             // If email fails, user creation still succeeds
             try {
-                $this->sendWelcomeEmail($data['username'], $data['email'], $data['full_name'] ?? $data['username'], $password);
+                require_once __DIR__ . '/../Utils/EmailSender.php';
+                $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+                
+                $userData = [
+                    'email' => $data['email'],
+                    'username' => $data['username']
+                ];
+                
+                $emailSender->sendNewUserEmail($userData, $password);
             } catch (\Exception $e) {
-                error_log("Errore invio email benvenuto (utente creato comunque): " . $e->getMessage());
+                error_log("Failed to send new user email: " . $e->getMessage());
+                // Don't fail user creation if email fails
             }
             
             return $userId;
@@ -437,9 +446,18 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             
             // Send email with new password (non-blocking)
             try {
-                $this->sendPasswordResetEmail($user['username'], $user['email'], $user['full_name'] ?? $user['username'], $newPassword);
+                require_once __DIR__ . '/../Utils/EmailSender.php';
+                $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+                
+                $userData = [
+                    'email' => $user['email'],
+                    'username' => $user['username']
+                ];
+                
+                $emailSender->sendPasswordResetEmail($userData, $newPassword);
             } catch (\Exception $e) {
-                error_log("Errore invio email reset password (password resettata comunque): " . $e->getMessage());
+                error_log("Failed to send password reset email: " . $e->getMessage());
+                // Don't fail password reset if email fails
             }
             
             return true;
