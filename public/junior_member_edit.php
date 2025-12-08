@@ -231,22 +231,8 @@ $pageTitle = $isEdit ? 'Modifica Socio Minorenne' : 'Nuovo Socio Minorenne';
                                     <label for="nationality" class="form-label">Nazionalità</label>
                                     <select class="form-select" id="nationality" name="nationality">
                                         <?php 
-                                        $nationalities = [
-                                            'Italiana', 'Albanese', 'Argentina', 'Austriaca', 'Belga', 'Brasiliana', 
-                                            'Britannica', 'Bulgara', 'Canadese', 'Cinese', 'Croata', 'Cubana', 
-                                            'Danese', 'Ecuadoriana', 'Egiziana', 'Filippina', 'Finlandese', 'Francese', 
-                                            'Georgiana', 'Giapponese', 'Greca', 'Indiana', 'Iraniana', 'Irlandese', 
-                                            'Marocchina', 'Messicana', 'Moldava', 'Nigeriana', 'Norvegese', 'Olandese', 
-                                            'Pachistana', 'Peruviana', 'Polacca', 'Portoghese', 'Romena', 'Russa', 
-                                            'Senegalese', 'Serba', 'Slovacca', 'Slovena', 'Spagnola', 'Svedese', 
-                                            'Svizzera', 'Tedesca', 'Tunisina', 'Turca', 'Ucraina', 'Ungherese', 
-                                            'Statunitense', 'Venezuelana'
-                                        ];
-                                        $selectedNationality = $member['nationality'] ?? 'Italiana';
-                                        foreach ($nationalities as $nat) {
-                                            $selected = ($nat === $selectedNationality) ? 'selected' : '';
-                                            echo "<option value=\"" . htmlspecialchars($nat) . "\" $selected>" . htmlspecialchars($nat) . "</option>";
-                                        }
+                                        use EasyVol\Utils\CountryList;
+                                        echo CountryList::getNationalityOptions($member['nationality'] ?? 'Italiana');
                                         ?>
                                     </select>
                                 </div>

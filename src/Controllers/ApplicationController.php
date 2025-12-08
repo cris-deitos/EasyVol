@@ -167,7 +167,7 @@ class ApplicationController {
                     error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
                     if (!$pdfGenerated) {
                         $processingErrors[] = "Generazione PDF fallita: " . $e->getMessage();
-                    } else if (!$emailSent) {
+                    } elseif (!$emailSent) {
                         $processingErrors[] = "Invio email fallito: " . $e->getMessage();
                     }
                     // Application is still saved, PDF can be regenerated later
@@ -261,7 +261,7 @@ class ApplicationController {
                     error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
                     if (!$pdfGenerated) {
                         $processingErrors[] = "Generazione PDF fallita: " . $e->getMessage();
-                    } else if (!$emailSent) {
+                    } elseif (!$emailSent) {
                         $processingErrors[] = "Invio email fallito: " . $e->getMessage();
                     }
                     // Application is still saved, PDF can be regenerated later
