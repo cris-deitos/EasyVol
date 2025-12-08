@@ -618,14 +618,18 @@ CREATE TABLE IF NOT EXISTS `vehicles` (
 CREATE TABLE IF NOT EXISTS `vehicle_maintenance` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `vehicle_id` int(11) NOT NULL,
-  `maintenance_type` enum('ordinaria', 'straordinaria', 'guasto', 'riparazione', 'sostituzione', 'danno', 'incidente') NOT NULL,
+  `maintenance_type` enum('revisione', 'manutenzione_ordinaria', 'manutenzione_straordinaria', 'anomalie', 'guasti', 'riparazioni', 'sostituzioni', 'ordinaria', 'straordinaria', 'guasto', 'riparazione', 'sostituzione', 'danno', 'incidente') NOT NULL,
   `date` date NOT NULL,
   `description` text NOT NULL,
   `cost` decimal(10,2),
   `performed_by` varchar(255),
   `notes` text,
+  `status` enum('operativo', 'in_manutenzione', 'fuori_servizio'),
+  `created_by` int(11),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `vehicle_id` (`vehicle_id`),
+  KEY `created_by` (`created_by`),
   FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -659,6 +663,7 @@ CREATE TABLE IF NOT EXISTS `warehouse_items` (
   `qr_code` varchar(255),
   `barcode` varchar(255),
   `status` enum('disponibile', 'in_manutenzione', 'fuori_servizio') DEFAULT 'disponibile',
+  `notes` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
