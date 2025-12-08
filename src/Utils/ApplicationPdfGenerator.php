@@ -8,6 +8,22 @@ use Mpdf\Mpdf;
  * 
  * Generates printable membership application forms with all data,
  * accepted clauses, and legal texts.
+ * 
+ * Usage:
+ * ```php
+ * $generator = new ApplicationPdfGenerator($db, $config);
+ * $pdfPath = $generator->generateApplicationPdf($applicationId);
+ * // Returns: "uploads/applications/application_123_1234567890.pdf"
+ * ```
+ * 
+ * Features:
+ * - Generates PDFs for both adult and junior applications
+ * - Includes association logo and header
+ * - All personal data sections
+ * - Legal declarations with checkboxes
+ * - Privacy and GDPR compliance texts
+ * - Signature spaces (adult vs junior templates)
+ * - Automatic database update with PDF path
  */
 class ApplicationPdfGenerator {
     private $db;
