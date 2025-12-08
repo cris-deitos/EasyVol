@@ -54,6 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = [
             'course_name' => trim($_POST['course_name'] ?? ''),
             'course_type' => trim($_POST['course_type'] ?? ''),
+            'sspc_course_code' => trim($_POST['sspc_course_code'] ?? ''),
+            'sspc_edition_code' => trim($_POST['sspc_edition_code'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
             'location' => trim($_POST['location'] ?? ''),
             'start_date' => $_POST['start_date'] ?? null,
@@ -64,8 +66,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         
         // Validazione
+        if (empty($data['course_type'])) {
+            $errors[] = 'Il tipo di corso è obbligatorio';
+        }
+        
+        // Se course_name è vuoto, usa il nome del tipo corso
         if (empty($data['course_name'])) {
-            $errors[] = 'Il nome del corso è obbligatorio';
+            $courseTypes = [
+                'A0' => 'A0 Corso informativo rivolto alla cittadinanza',
+                'A1' => 'A1 Corso base per volontari operativi di Protezione Civile',
+                'A2-01' => 'A2-01 ATTIVITA\' LOGISTICO GESTIONALI',
+                'A2-02' => 'A2-02 OPERATORE SEGRETERIA',
+                'A2-03' => 'A2-03 CUCINA IN EMERGENZA',
+                'A2-04' => 'A2-04 RADIOCOMUNICAZIONI E PROCESSO COMUNICATIVO IN PROTEZIONE CIVILE',
+                'A2-05' => 'A2-05 IDROGEOLOGICO: ALLUVIONE',
+                'A2-06' => 'A2-06 IDROGEOLOGICO: FRANE',
+                'A2-07' => 'A2-07 IDROGEOLOGICO: SISTEMI DI ALTO POMPAGGIO',
+                'A2-08' => 'A2-08 USO MOTOSEGA E DECESPUGLIATORE',
+                'A2-09' => 'A2-09 SICUREZZA IN PROTEZIONE CIVILE: D. Lgs. 81/08',
+                'A2-10' => 'A2-10 TOPOGRAFIA E GPS',
+                'A2-11' => 'A2-11 RICERCA DISPERSI',
+                'A2-12' => 'A2-12 OPERATORE NATANTE IN EMERGENZA DI PROTEZIONE CIVILE',
+                'A2-13' => 'A2-13 INTERVENTI ZOOTECNICI IN EMERGENZA DI PROTEZIONE CIVILE',
+                'A2-14' => 'A2-14 PIANO DI PROTEZIONE CIVILE: DIVULGAZIONE E INFORMAZIONE',
+                'A2-15' => 'A2-15 QUADERNI DI PRESIDIO',
+                'A2-16' => 'A2-16 EVENTI A RILEVANTE IMPATTO LOCALE',
+                'A2-17' => 'A2-17 SCUOLA I° CICLO DELL\'ISTRUZIONE',
+                'A2-18' => 'A2-18 SCUOLA SECONDARIA SUPERIORE',
+                'A3-01' => 'A3-01 CAPO SQUADRA',
+                'A3-02' => 'A3-02 COORDINATORE TERRITORIALE DEL VOLONTARIATO',
+                'A3-03' => 'A3-03 VICE COORDINATORE DI SEGRETERIA E SUPPORTO ALLA SALA OPERATIVA',
+                'A3-04' => 'A3-04 PRESIDENTE ASSOCIAZIONE e/o COORD. GR. COMUNALE/INTERCOM.',
+                'A3-05' => 'A3-05 COMPONENTI CCV (eletti)',
+                'A3-06' => 'A3-06 SUPPORTO ALLA PIANIFICAZIONE',
+                'A4-01' => 'A4-01 **SOMMOZZATORI di Protezione civile: Operatore tecnico assistenza sommozzatori PC 1°livello "Attività subacquee e soccorso nautico"',
+                'A4-02' => 'A4-02 **SOMMOZZATORI di protezione civile Alta specializzazione "Attività subacquee"',
+                'A4-03' => 'A4-03 ATTIVITA\' OPERATORI CINOFILI',
+                'A4-04' => 'A4-04 ATTIVITA\' OPERATORI EQUESTRI',
+                'A4-05' => 'A4-05 CATTURA IMENOTTERI E BONIFICA',
+                'A4-06' => 'A4-06 T.S.A. - Tecniche Speleo Alpinistiche',
+                'A4-07' => 'A4-07 S.R.T. - Swiftwater Rescue Technician',
+                'A4-08' => 'A4-08 PATENTE PER OPERATORE RADIO AMATORIALE',
+                'A4-09' => 'A4-09 OPERATORE GRU SU AUTO-CARRO',
+                'A4-10' => 'A4-10 OPERATORE MULETTO',
+                'A4-11' => 'A4-11 OPERATORE PER PIATTAFORME DI LAVORO ELEVABILI (PLE)',
+                'A4-12' => 'A4-12 OPERATORE ESCAVATORE',
+                'A4-13' => 'A4-13 OPERATORE TRATTORE',
+                'A4-14' => 'A4-14 OPERATORE DRONI',
+                'A4-15' => 'A4-15 HACCP',
+                'A5-01' => 'A5-01 A.I.B. di 1° LIVELLO',
+                'A5-02' => 'A5-02 A.I.B. AGGIORNAMENTI',
+                'A5-03' => 'A5-03 CAPOSQUADRA A.I.B.',
+                'A5-04' => 'A5-04 D.O.S. (in gestione direttamente a RL)',
+                'Altro' => 'Altro da specificare'
+            ];
+            $data['course_name'] = $courseTypes[$data['course_type']] ?? $data['course_type'];
         }
         
         if (empty($data['start_date'])) {
@@ -153,27 +208,101 @@ $pageTitle = $isEdit ? 'Modifica Corso' : 'Nuovo Corso';
                             <input type="hidden" name="csrf_token" value="<?php echo $csrf->generateToken(); ?>">
                             
                             <div class="row mb-3">
-                                <div class="col-md-8">
-                                    <label for="course_name" class="form-label">Nome Corso *</label>
-                                    <input type="text" class="form-control" id="course_name" name="course_name" 
-                                           value="<?php echo htmlspecialchars($course['course_name'] ?? $_POST['course_name'] ?? ''); ?>" 
-                                           required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="course_type" class="form-label">Tipo Corso</label>
-                                    <select class="form-select" id="course_type" name="course_type">
-                                        <option value="">Seleziona...</option>
+                                <div class="col-md-12">
+                                    <label for="course_type" class="form-label">Tipo Corso *</label>
+                                    <select class="form-select" id="course_type" name="course_type" required>
+                                        <option value="">Seleziona tipo di corso...</option>
                                         <?php
-                                        $types = ['BLSD', 'AIB', 'Radio', 'Primo Soccorso', 'DLgs 81/08', 'Base PC', 'Altro'];
+                                        $courseTypes = [
+                                            'A0' => 'A0 Corso informativo rivolto alla cittadinanza',
+                                            'A1' => 'A1 Corso base per volontari operativi di Protezione Civile',
+                                            'A2-01' => 'A2-01 ATTIVITA\' LOGISTICO GESTIONALI',
+                                            'A2-02' => 'A2-02 OPERATORE SEGRETERIA',
+                                            'A2-03' => 'A2-03 CUCINA IN EMERGENZA',
+                                            'A2-04' => 'A2-04 RADIOCOMUNICAZIONI E PROCESSO COMUNICATIVO IN PROTEZIONE CIVILE',
+                                            'A2-05' => 'A2-05 IDROGEOLOGICO: ALLUVIONE',
+                                            'A2-06' => 'A2-06 IDROGEOLOGICO: FRANE',
+                                            'A2-07' => 'A2-07 IDROGEOLOGICO: SISTEMI DI ALTO POMPAGGIO',
+                                            'A2-08' => 'A2-08 USO MOTOSEGA E DECESPUGLIATORE',
+                                            'A2-09' => 'A2-09 SICUREZZA IN PROTEZIONE CIVILE: D. Lgs. 81/08',
+                                            'A2-10' => 'A2-10 TOPOGRAFIA E GPS',
+                                            'A2-11' => 'A2-11 RICERCA DISPERSI',
+                                            'A2-12' => 'A2-12 OPERATORE NATANTE IN EMERGENZA DI PROTEZIONE CIVILE',
+                                            'A2-13' => 'A2-13 INTERVENTI ZOOTECNICI IN EMERGENZA DI PROTEZIONE CIVILE',
+                                            'A2-14' => 'A2-14 PIANO DI PROTEZIONE CIVILE: DIVULGAZIONE E INFORMAZIONE',
+                                            'A2-15' => 'A2-15 QUADERNI DI PRESIDIO',
+                                            'A2-16' => 'A2-16 EVENTI A RILEVANTE IMPATTO LOCALE',
+                                            'A2-17' => 'A2-17 SCUOLA I° CICLO DELL\'ISTRUZIONE',
+                                            'A2-18' => 'A2-18 SCUOLA SECONDARIA SUPERIORE',
+                                            'A3-01' => 'A3-01 CAPO SQUADRA',
+                                            'A3-02' => 'A3-02 COORDINATORE TERRITORIALE DEL VOLONTARIATO',
+                                            'A3-03' => 'A3-03 VICE COORDINATORE DI SEGRETERIA E SUPPORTO ALLA SALA OPERATIVA',
+                                            'A3-04' => 'A3-04 PRESIDENTE ASSOCIAZIONE e/o COORD. GR. COMUNALE/INTERCOM.',
+                                            'A3-05' => 'A3-05 COMPONENTI CCV (eletti)',
+                                            'A3-06' => 'A3-06 SUPPORTO ALLA PIANIFICAZIONE',
+                                            'A4-01' => 'A4-01 **SOMMOZZATORI di Protezione civile: Operatore tecnico assistenza sommozzatori PC 1°livello "Attività subacquee e soccorso nautico"',
+                                            'A4-02' => 'A4-02 **SOMMOZZATORI di protezione civile Alta specializzazione "Attività subacquee"',
+                                            'A4-03' => 'A4-03 ATTIVITA\' OPERATORI CINOFILI',
+                                            'A4-04' => 'A4-04 ATTIVITA\' OPERATORI EQUESTRI',
+                                            'A4-05' => 'A4-05 CATTURA IMENOTTERI E BONIFICA',
+                                            'A4-06' => 'A4-06 T.S.A. - Tecniche Speleo Alpinistiche',
+                                            'A4-07' => 'A4-07 S.R.T. - Swiftwater Rescue Technician',
+                                            'A4-08' => 'A4-08 PATENTE PER OPERATORE RADIO AMATORIALE',
+                                            'A4-09' => 'A4-09 OPERATORE GRU SU AUTO-CARRO',
+                                            'A4-10' => 'A4-10 OPERATORE MULETTO',
+                                            'A4-11' => 'A4-11 OPERATORE PER PIATTAFORME DI LAVORO ELEVABILI (PLE)',
+                                            'A4-12' => 'A4-12 OPERATORE ESCAVATORE',
+                                            'A4-13' => 'A4-13 OPERATORE TRATTORE',
+                                            'A4-14' => 'A4-14 OPERATORE DRONI',
+                                            'A4-15' => 'A4-15 HACCP',
+                                            'A5-01' => 'A5-01 A.I.B. di 1° LIVELLO',
+                                            'A5-02' => 'A5-02 A.I.B. AGGIORNAMENTI',
+                                            'A5-03' => 'A5-03 CAPOSQUADRA A.I.B.',
+                                            'A5-04' => 'A5-04 D.O.S. (in gestione direttamente a RL)',
+                                            'Altro' => 'Altro da specificare'
+                                        ];
                                         $selectedType = $course['course_type'] ?? $_POST['course_type'] ?? '';
-                                        foreach ($types as $type):
+                                        foreach ($courseTypes as $code => $name):
                                         ?>
-                                            <option value="<?php echo htmlspecialchars($type); ?>" 
-                                                    <?php echo $selectedType === $type ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($type); ?>
+                                            <option value="<?php echo htmlspecialchars($code); ?>" 
+                                                    <?php echo $selectedType === $code ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($name); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label for="course_name" class="form-label">Nome Corso (personalizzato)</label>
+                                    <input type="text" class="form-control" id="course_name" name="course_name" 
+                                           value="<?php echo htmlspecialchars($course['course_name'] ?? $_POST['course_name'] ?? ''); ?>" 
+                                           placeholder="Lascia vuoto per usare il nome standard del tipo corso">
+                                    <small class="form-text text-muted">
+                                        Compila questo campo solo se vuoi personalizzare il nome del corso. Altrimenti verrà usato il nome del tipo corso selezionato.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="sspc_course_code" class="form-label">Codice Corso SSPC</label>
+                                    <input type="text" class="form-control" id="sspc_course_code" name="sspc_course_code" 
+                                           value="<?php echo htmlspecialchars($course['sspc_course_code'] ?? $_POST['sspc_course_code'] ?? ''); ?>"
+                                           placeholder="Es: A1-2025-001">
+                                    <small class="form-text text-muted">
+                                        Codice del corso nel Sistema di Supporto alla Protezione Civile
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="sspc_edition_code" class="form-label">Codice Edizione SSPC</label>
+                                    <input type="text" class="form-control" id="sspc_edition_code" name="sspc_edition_code" 
+                                           value="<?php echo htmlspecialchars($course['sspc_edition_code'] ?? $_POST['sspc_edition_code'] ?? ''); ?>"
+                                           placeholder="Es: ED-001">
+                                    <small class="form-text text-muted">
+                                        Codice dell'edizione nel Sistema di Supporto alla Protezione Civile
+                                    </small>
                                 </div>
                             </div>
                             

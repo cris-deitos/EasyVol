@@ -121,12 +121,61 @@ $pageTitle = 'Gestione Formazione';
                                 <label for="type" class="form-label">Tipo Corso</label>
                                 <select class="form-select" id="type" name="type">
                                     <option value="">Tutti</option>
-                                    <option value="BLSD" <?php echo $filters['type'] === 'BLSD' ? 'selected' : ''; ?>>BLSD</option>
-                                    <option value="AIB" <?php echo $filters['type'] === 'AIB' ? 'selected' : ''; ?>>AIB</option>
-                                    <option value="Radio" <?php echo $filters['type'] === 'Radio' ? 'selected' : ''; ?>>Radio</option>
-                                    <option value="Primo Soccorso" <?php echo $filters['type'] === 'Primo Soccorso' ? 'selected' : ''; ?>>Primo Soccorso</option>
-                                    <option value="DLgs 81/08" <?php echo $filters['type'] === 'DLgs 81/08' ? 'selected' : ''; ?>>D.Lgs 81/08</option>
-                                    <option value="Base PC" <?php echo $filters['type'] === 'Base PC' ? 'selected' : ''; ?>>Base Protezione Civile</option>
+                                    <optgroup label="Corsi Base">
+                                        <option value="A0" <?php echo $filters['type'] === 'A0' ? 'selected' : ''; ?>>A0 - Corso informativo</option>
+                                        <option value="A1" <?php echo $filters['type'] === 'A1' ? 'selected' : ''; ?>>A1 - Corso base</option>
+                                    </optgroup>
+                                    <optgroup label="Corsi A2 - Specializzazione">
+                                        <option value="A2-01" <?php echo $filters['type'] === 'A2-01' ? 'selected' : ''; ?>>A2-01 - Logistico gestionali</option>
+                                        <option value="A2-02" <?php echo $filters['type'] === 'A2-02' ? 'selected' : ''; ?>>A2-02 - Segreteria</option>
+                                        <option value="A2-03" <?php echo $filters['type'] === 'A2-03' ? 'selected' : ''; ?>>A2-03 - Cucina emergenza</option>
+                                        <option value="A2-04" <?php echo $filters['type'] === 'A2-04' ? 'selected' : ''; ?>>A2-04 - Radiocomunicazioni</option>
+                                        <option value="A2-05" <?php echo $filters['type'] === 'A2-05' ? 'selected' : ''; ?>>A2-05 - Alluvione</option>
+                                        <option value="A2-06" <?php echo $filters['type'] === 'A2-06' ? 'selected' : ''; ?>>A2-06 - Frane</option>
+                                        <option value="A2-07" <?php echo $filters['type'] === 'A2-07' ? 'selected' : ''; ?>>A2-07 - Alto pompaggio</option>
+                                        <option value="A2-08" <?php echo $filters['type'] === 'A2-08' ? 'selected' : ''; ?>>A2-08 - Motosega</option>
+                                        <option value="A2-09" <?php echo $filters['type'] === 'A2-09' ? 'selected' : ''; ?>>A2-09 - Sicurezza D.Lgs 81/08</option>
+                                        <option value="A2-10" <?php echo $filters['type'] === 'A2-10' ? 'selected' : ''; ?>>A2-10 - Topografia GPS</option>
+                                        <option value="A2-11" <?php echo $filters['type'] === 'A2-11' ? 'selected' : ''; ?>>A2-11 - Ricerca dispersi</option>
+                                        <option value="A2-12" <?php echo $filters['type'] === 'A2-12' ? 'selected' : ''; ?>>A2-12 - Natante emergenza</option>
+                                        <option value="A2-13" <?php echo $filters['type'] === 'A2-13' ? 'selected' : ''; ?>>A2-13 - Interventi zootecnici</option>
+                                        <option value="A2-14" <?php echo $filters['type'] === 'A2-14' ? 'selected' : ''; ?>>A2-14 - Piano PC</option>
+                                        <option value="A2-15" <?php echo $filters['type'] === 'A2-15' ? 'selected' : ''; ?>>A2-15 - Quaderni presidio</option>
+                                        <option value="A2-16" <?php echo $filters['type'] === 'A2-16' ? 'selected' : ''; ?>>A2-16 - Eventi rilevanti</option>
+                                        <option value="A2-17" <?php echo $filters['type'] === 'A2-17' ? 'selected' : ''; ?>>A2-17 - Scuola I° ciclo</option>
+                                        <option value="A2-18" <?php echo $filters['type'] === 'A2-18' ? 'selected' : ''; ?>>A2-18 - Scuola secondaria</option>
+                                    </optgroup>
+                                    <optgroup label="Corsi A3 - Coordinamento">
+                                        <option value="A3-01" <?php echo $filters['type'] === 'A3-01' ? 'selected' : ''; ?>>A3-01 - Capo squadra</option>
+                                        <option value="A3-02" <?php echo $filters['type'] === 'A3-02' ? 'selected' : ''; ?>>A3-02 - Coordinatore territoriale</option>
+                                        <option value="A3-03" <?php echo $filters['type'] === 'A3-03' ? 'selected' : ''; ?>>A3-03 - Vice coordinatore</option>
+                                        <option value="A3-04" <?php echo $filters['type'] === 'A3-04' ? 'selected' : ''; ?>>A3-04 - Presidente</option>
+                                        <option value="A3-05" <?php echo $filters['type'] === 'A3-05' ? 'selected' : ''; ?>>A3-05 - CCV</option>
+                                        <option value="A3-06" <?php echo $filters['type'] === 'A3-06' ? 'selected' : ''; ?>>A3-06 - Pianificazione</option>
+                                    </optgroup>
+                                    <optgroup label="Corsi A4 - Alta Specializzazione">
+                                        <option value="A4-01" <?php echo $filters['type'] === 'A4-01' ? 'selected' : ''; ?>>A4-01 - Sommozzatori 1°liv</option>
+                                        <option value="A4-02" <?php echo $filters['type'] === 'A4-02' ? 'selected' : ''; ?>>A4-02 - Sommozzatori avanz</option>
+                                        <option value="A4-03" <?php echo $filters['type'] === 'A4-03' ? 'selected' : ''; ?>>A4-03 - Cinofili</option>
+                                        <option value="A4-04" <?php echo $filters['type'] === 'A4-04' ? 'selected' : ''; ?>>A4-04 - Equestri</option>
+                                        <option value="A4-05" <?php echo $filters['type'] === 'A4-05' ? 'selected' : ''; ?>>A4-05 - Imenotteri</option>
+                                        <option value="A4-06" <?php echo $filters['type'] === 'A4-06' ? 'selected' : ''; ?>>A4-06 - TSA</option>
+                                        <option value="A4-07" <?php echo $filters['type'] === 'A4-07' ? 'selected' : ''; ?>>A4-07 - SRT</option>
+                                        <option value="A4-08" <?php echo $filters['type'] === 'A4-08' ? 'selected' : ''; ?>>A4-08 - Radio amatoriale</option>
+                                        <option value="A4-09" <?php echo $filters['type'] === 'A4-09' ? 'selected' : ''; ?>>A4-09 - Gru</option>
+                                        <option value="A4-10" <?php echo $filters['type'] === 'A4-10' ? 'selected' : ''; ?>>A4-10 - Muletto</option>
+                                        <option value="A4-11" <?php echo $filters['type'] === 'A4-11' ? 'selected' : ''; ?>>A4-11 - PLE</option>
+                                        <option value="A4-12" <?php echo $filters['type'] === 'A4-12' ? 'selected' : ''; ?>>A4-12 - Escavatore</option>
+                                        <option value="A4-13" <?php echo $filters['type'] === 'A4-13' ? 'selected' : ''; ?>>A4-13 - Trattore</option>
+                                        <option value="A4-14" <?php echo $filters['type'] === 'A4-14' ? 'selected' : ''; ?>>A4-14 - Droni</option>
+                                        <option value="A4-15" <?php echo $filters['type'] === 'A4-15' ? 'selected' : ''; ?>>A4-15 - HACCP</option>
+                                    </optgroup>
+                                    <optgroup label="Corsi A5 - AIB">
+                                        <option value="A5-01" <?php echo $filters['type'] === 'A5-01' ? 'selected' : ''; ?>>A5-01 - AIB 1° livello</option>
+                                        <option value="A5-02" <?php echo $filters['type'] === 'A5-02' ? 'selected' : ''; ?>>A5-02 - AIB aggiornamenti</option>
+                                        <option value="A5-03" <?php echo $filters['type'] === 'A5-03' ? 'selected' : ''; ?>>A5-03 - Caposquadra AIB</option>
+                                        <option value="A5-04" <?php echo $filters['type'] === 'A5-04' ? 'selected' : ''; ?>>A5-04 - DOS</option>
+                                    </optgroup>
                                     <option value="Altro" <?php echo $filters['type'] === 'Altro' ? 'selected' : ''; ?>>Altro</option>
                                 </select>
                             </div>
@@ -162,6 +211,7 @@ $pageTitle = 'Gestione Formazione';
                                     <tr>
                                         <th>Nome Corso</th>
                                         <th>Tipo</th>
+                                        <th>Cod. SSPC</th>
                                         <th>Data Inizio</th>
                                         <th>Data Fine</th>
                                         <th>Istruttore</th>
@@ -173,7 +223,7 @@ $pageTitle = 'Gestione Formazione';
                                 <tbody>
                                     <?php if (empty($courses)): ?>
                                         <tr>
-                                            <td colspan="8" class="text-center">Nessun corso trovato</td>
+                                            <td colspan="9" class="text-center">Nessun corso trovato</td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($courses as $course): ?>
@@ -182,6 +232,20 @@ $pageTitle = 'Gestione Formazione';
                                                     <strong><?php echo htmlspecialchars($course['course_name']); ?></strong>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($course['course_type'] ?? '-'); ?></td>
+                                                <td>
+                                                    <?php if (!empty($course['sspc_course_code']) || !empty($course['sspc_edition_code'])): ?>
+                                                        <small>
+                                                            <?php if (!empty($course['sspc_course_code'])): ?>
+                                                                <strong>C:</strong> <?php echo htmlspecialchars($course['sspc_course_code']); ?><br>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($course['sspc_edition_code'])): ?>
+                                                                <strong>E:</strong> <?php echo htmlspecialchars($course['sspc_edition_code']); ?>
+                                                            <?php endif; ?>
+                                                        </small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td><?php echo $course['start_date'] ? date('d/m/Y', strtotime($course['start_date'])) : '-'; ?></td>
                                                 <td><?php echo $course['end_date'] ? date('d/m/Y', strtotime($course['end_date'])) : '-'; ?></td>
                                                 <td><?php echo htmlspecialchars($course['instructor'] ?? '-'); ?></td>

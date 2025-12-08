@@ -116,6 +116,20 @@ $pageTitle = 'Dettaglio Corso: ' . $course['course_name'];
                                             <dt class="col-sm-4">Tipo:</dt>
                                             <dd class="col-sm-8"><?php echo htmlspecialchars($course['course_type'] ?? '-'); ?></dd>
                                             
+                                            <?php if (!empty($course['sspc_course_code'])): ?>
+                                            <dt class="col-sm-4">Codice Corso SSPC:</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge bg-primary"><?php echo htmlspecialchars($course['sspc_course_code']); ?></span>
+                                            </dd>
+                                            <?php endif; ?>
+                                            
+                                            <?php if (!empty($course['sspc_edition_code'])): ?>
+                                            <dt class="col-sm-4">Codice Edizione SSPC:</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge bg-secondary"><?php echo htmlspecialchars($course['sspc_edition_code']); ?></span>
+                                            </dd>
+                                            <?php endif; ?>
+                                            
                                             <dt class="col-sm-4">Stato:</dt>
                                             <dd class="col-sm-8">
                                                 <?php
