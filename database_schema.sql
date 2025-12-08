@@ -150,7 +150,8 @@ CREATE TABLE IF NOT EXISTS `import_logs` (
   KEY `import_type` (`import_type`),
   KEY `status` (`status`),
   KEY `created_by` (`created_by`),
-  KEY `started_at` (`started_at`)
+  KEY `started_at` (`started_at`),
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
@@ -460,7 +461,9 @@ CREATE TABLE IF NOT EXISTS `junior_member_sanctions` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `junior_member_id` (`junior_member_id`),
-  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+  KEY `created_by` (`created_by`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
