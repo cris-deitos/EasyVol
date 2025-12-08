@@ -39,5 +39,4 @@ ALTER TABLE `vehicle_maintenance`
 ADD COLUMN IF NOT EXISTS `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- Add index for created_by if it doesn't exist
--- Note: This will fail silently if the index already exists in some MySQL versions
 CREATE INDEX IF NOT EXISTS `idx_created_by` ON `vehicle_maintenance` (`created_by`);

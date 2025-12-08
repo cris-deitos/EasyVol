@@ -36,8 +36,7 @@
 - Added `notes` TEXT column after `status` field
 
 **Files**: 
-- Created migration: `migrations/add_notes_to_warehouse_items.sql`
-- Created comprehensive migration: `migrations/fix_vehicles_and_warehouse.sql`
+- Created migration: `migrations/fix_vehicles_and_warehouse.sql` (comprehensive)
 
 #### vehicle_maintenance Table
 **File**: `database_schema.sql`
@@ -64,15 +63,9 @@
 - Added `notes = ?` to UPDATE statement
 - Added `$data['notes'] ?? null` to parameters array
 
-## SQL Migrations
+## SQL Migration
 
-### Migration 1: add_notes_to_warehouse_items.sql
-```sql
-ALTER TABLE `warehouse_items` 
-ADD COLUMN `notes` TEXT NULL AFTER `status`;
-```
-
-### Migration 2: fix_vehicles_and_warehouse.sql (Comprehensive)
+### Migration: fix_vehicles_and_warehouse.sql (Comprehensive)
 Handles all fixes with IF NOT EXISTS clauses for safe re-running:
 - Adds notes to warehouse_items
 - Updates vehicle_maintenance enum values
@@ -101,10 +94,9 @@ Handles all fixes with IF NOT EXISTS clauses for safe re-running:
 mysql -u username -p database_name < migrations/fix_vehicles_and_warehouse.sql
 ```
 
-### Option 3: Run Individual Migrations
+### Option 3: Also Apply Scheduler Migration (if not already applied)
 ```bash
-mysql -u username -p database_name < migrations/add_notes_to_warehouse_items.sql
-# Then run the scheduler migration if not already applied
+# This adds reference tracking and other improvements
 mysql -u username -p database_name < migrations/add_scheduler_references.sql
 ```
 
@@ -128,10 +120,9 @@ mysql -u username -p database_name < migrations/add_scheduler_references.sql
 2. `src/Controllers/WarehouseController.php` - Added notes handling
 3. `database_schema.sql` - Updated table definitions
 
-### Created (3)
-1. `migrations/add_notes_to_warehouse_items.sql` - Simple migration
-2. `migrations/fix_vehicles_and_warehouse.sql` - Comprehensive migration
-3. `FIX_VEHICLES_WAREHOUSE_2024_12_08.md` - This documentation
+### Created (2)
+1. `migrations/fix_vehicles_and_warehouse.sql` - Comprehensive migration
+2. `FIX_VEHICLES_WAREHOUSE_2024_12_08.md` - This documentation
 
 ## Backward Compatibility
 
