@@ -965,9 +965,10 @@ class ApplicationController {
         $sql = "INSERT INTO members (
             registration_number, member_type, member_status, volunteer_status,
             last_name, first_name, birth_date, birth_place, tax_code,
+            worker_type, education_level,
             registration_date, approval_date,
             created_at
-        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
         $params = [
             $regNumber,
@@ -976,6 +977,8 @@ class ApplicationController {
             $data['birth_date'],
             $data['birth_place'], // Required field from form
             $data['tax_code'],
+            $data['worker_type'] ?? null,
+            $data['education_level'] ?? null,
             date('Y-m-d'),
             date('Y-m-d')
         ];
