@@ -205,9 +205,16 @@ finfo_close($finfo);
 $filename = basename($fullPath);
 $encodedFilename = rawurlencode($filename);
 
+// Determine if this is a download or inline view
+$download = isset($_GET['download']) && $_GET['download'] === '1';
+
 // Serve file
 header('Content-Type: ' . $mimeType);
-header("Content-Disposition: inline; filename*=UTF-8''" . $encodedFilename);
+if ($download) {
+    header("Content-Disposition: attachment; filename*=UTF-8''" . $encodedFilename);
+} else {
+    header("Content-Disposition: inline; filename*=UTF-8''" . $encodedFilename);
+}
 header('Content-Length: ' . filesize($fullPath));
 header('Cache-Control: private, max-age=3600');
 header('X-Content-Type-Options: nosniff');

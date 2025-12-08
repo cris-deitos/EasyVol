@@ -89,10 +89,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $finfo = new \finfo(FILEINFO_MIME_TYPE);
                 $mimeType = $finfo->file($uploadResult['path']);
                 
-                $data['file_name'] = basename($_FILES['document_file']['name']);
-                $data['file_path'] = $uploadResult['path'];
-                $data['file_size'] = $_FILES['document_file']['size'];
-                $data['mime_type'] = $mimeType;
+                // Store relative path from project root for database
+                $projectRoot = realpath(__DIR__ . '/../');
+                $absolutePath = realpath($uploadResult['path']);
+                
+                if ($projectRoot === false) {
+                    $errors[] = 'Errore nella risoluzione del percorso del progetto';
+                } elseif ($absolutePath === false) {
+                    $errors[] = 'Errore nella risoluzione del percorso del file caricato';
+                } else {
+                    // Normalize path separators and create relative path
+                    $projectRoot = str_replace('\\', '/', $projectRoot);
+                    $absolutePath = str_replace('\\', '/', $absolutePath);
+                    $relativePath = ltrim(str_replace($projectRoot, '', $absolutePath), '/\\');
+                    
+                    $data['file_name'] = basename($_FILES['document_file']['name']);
+                    $data['file_path'] = $relativePath;
+                    $data['file_size'] = $_FILES['document_file']['size'];
+                    $data['mime_type'] = $mimeType;
+                }
             } else {
                 $errors[] = 'Errore upload file: ' . $uploadResult['error'];
             }

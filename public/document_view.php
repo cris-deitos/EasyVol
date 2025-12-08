@@ -82,7 +82,7 @@ $pageTitle = 'Documento: ' . $document['title'];
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <a href="document_download.php?id=<?php echo $document['id']; ?>" class="btn btn-success">
+                            <a href="download.php?type=document&id=<?php echo $document['id']; ?>&download=1" class="btn btn-success">
                                 <i class="bi bi-download"></i> Download
                             </a>
                             <?php if ($app->checkPermission('documents', 'edit')): ?>
@@ -204,7 +204,7 @@ $pageTitle = 'Documento: ' . $document['title'];
                             </div>
                             <div class="card-body">
                                 <div class="d-grid gap-2">
-                                    <a href="document_download.php?id=<?php echo $document['id']; ?>" 
+                                    <a href="download.php?type=document&id=<?php echo $document['id']; ?>&download=1" 
                                        class="btn btn-success">
                                         <i class="bi bi-download"></i> Download Documento
                                     </a>
