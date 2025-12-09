@@ -272,7 +272,7 @@ class MemberController {
      * @return string
      */
     private function generateRegistrationNumber() {
-        // Get last registration number
+        // Get last registration number (numeric only, no leading zeros)
         $sql = "SELECT registration_number FROM members 
                 WHERE registration_number REGEXP '^[0-9]+$' 
                 ORDER BY CAST(registration_number AS UNSIGNED) DESC 
@@ -286,7 +286,8 @@ class MemberController {
             $nextNumber = 1;
         }
         
-        return str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        // Return plain number without leading zeros (1, 2, 3, 20, 33, 101, etc.)
+        return (string)$nextNumber;
     }
     
     /**

@@ -1349,22 +1349,39 @@ class ApplicationController {
      * @return string
      */
     private function generateRegistrationNumber($type = 'member') {
-        $table = $type === 'junior' ? 'junior_members' : 'members';
-        
-        $sql = "SELECT registration_number FROM $table 
-                WHERE registration_number REGEXP '^[0-9]+$' 
-                ORDER BY CAST(registration_number AS UNSIGNED) DESC 
-                LIMIT 1";
-        
-        $last = $this->db->fetchOne($sql);
-        
-        if ($last && is_numeric($last['registration_number'])) {
-            $nextNumber = intval($last['registration_number']) + 1;
+        if ($type === 'junior') {
+            // For cadetti: C-1, C-2, C-33, etc.
+            $sql = "SELECT registration_number FROM junior_members 
+                    WHERE registration_number LIKE 'C-%'
+                    ORDER BY CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) DESC 
+                    LIMIT 1";
+            
+            $last = $this->db->fetchOne($sql);
+            
+            if ($last && preg_match('/^C-(\d+)$/', $last['registration_number'], $matches)) {
+                $nextNumber = intval($matches[1]) + 1;
+            } else {
+                $nextNumber = 1;
+            }
+            
+            return 'C-' . $nextNumber;
         } else {
-            $nextNumber = 1;
+            // For soci: 1, 2, 3, 20, 33, 101, etc.
+            $sql = "SELECT registration_number FROM members 
+                    WHERE registration_number REGEXP '^[0-9]+$' 
+                    ORDER BY CAST(registration_number AS UNSIGNED) DESC 
+                    LIMIT 1";
+            
+            $last = $this->db->fetchOne($sql);
+            
+            if ($last && is_numeric($last['registration_number'])) {
+                $nextNumber = intval($last['registration_number']) + 1;
+            } else {
+                $nextNumber = 1;
+            }
+            
+            return (string)$nextNumber;
         }
-        
-        return str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
     }
     
     /**
