@@ -3,6 +3,11 @@
 -- 1. Course sessions with date, start time, and end time
 -- 2. Attendance tracking per session with hours
 -- 3. Exam results (pass/fail) and score (1-10) for participants
+--
+-- NOTE: This migration is designed to be run once on a fresh database or 
+-- on an existing database that doesn't have these columns yet.
+-- For MySQL < 8.0.12, IF NOT EXISTS is not supported in ALTER TABLE.
+-- The migration uses a stored procedure pattern for compatibility.
 
 -- Create training_sessions table for course dates with times
 CREATE TABLE IF NOT EXISTS `training_sessions` (
@@ -21,19 +26,74 @@ CREATE TABLE IF NOT EXISTS `training_sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Update training_attendance to link to sessions instead of just date
--- Add session_id column if it doesn't exist
-ALTER TABLE `training_attendance` 
-ADD COLUMN IF NOT EXISTS `session_id` int(11) DEFAULT NULL AFTER `course_id`,
-ADD COLUMN IF NOT EXISTS `hours_attended` decimal(5,2) DEFAULT NULL COMMENT 'Hours attended in this session',
-ADD KEY IF NOT EXISTS `session_id` (`session_id`);
+-- Using DROP PROCEDURE IF EXISTS pattern for MySQL 5.6 compatibility
+DELIMITER //
 
--- Add exam fields to training_participants
-ALTER TABLE `training_participants`
-ADD COLUMN IF NOT EXISTS `exam_passed` tinyint(1) DEFAULT NULL COMMENT 'Exam result: 1=passed, 0=failed, NULL=not taken',
-ADD COLUMN IF NOT EXISTS `exam_score` tinyint(2) DEFAULT NULL COMMENT 'Exam score from 1 to 10',
-ADD COLUMN IF NOT EXISTS `total_hours_attended` decimal(6,2) DEFAULT 0 COMMENT 'Total hours attended',
-ADD COLUMN IF NOT EXISTS `total_hours_absent` decimal(6,2) DEFAULT 0 COMMENT 'Total hours absent';
+DROP PROCEDURE IF EXISTS add_training_attendance_columns//
 
--- Add foreign key for session_id (conditional - may fail if already exists)
--- This needs to be run separately due to MySQL limitations
--- ALTER TABLE `training_attendance` ADD FOREIGN KEY (`session_id`) REFERENCES `training_sessions`(`id`) ON DELETE CASCADE;
+CREATE PROCEDURE add_training_attendance_columns()
+BEGIN
+    -- Add session_id column if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
+                   WHERE TABLE_SCHEMA = DATABASE() 
+                   AND TABLE_NAME = 'training_attendance' 
+                   AND COLUMN_NAME = 'session_id') THEN
+        ALTER TABLE `training_attendance` ADD COLUMN `session_id` int(11) DEFAULT NULL AFTER `course_id`;
+        ALTER TABLE `training_attendance` ADD KEY `session_id` (`session_id`);
+    END IF;
+    
+    -- Add hours_attended column if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
+                   WHERE TABLE_SCHEMA = DATABASE() 
+                   AND TABLE_NAME = 'training_attendance' 
+                   AND COLUMN_NAME = 'hours_attended') THEN
+        ALTER TABLE `training_attendance` ADD COLUMN `hours_attended` decimal(5,2) DEFAULT NULL COMMENT 'Hours attended in this session';
+    END IF;
+END//
+
+DROP PROCEDURE IF EXISTS add_training_participants_columns//
+
+CREATE PROCEDURE add_training_participants_columns()
+BEGIN
+    -- Add exam_passed column if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
+                   WHERE TABLE_SCHEMA = DATABASE() 
+                   AND TABLE_NAME = 'training_participants' 
+                   AND COLUMN_NAME = 'exam_passed') THEN
+        ALTER TABLE `training_participants` ADD COLUMN `exam_passed` tinyint(1) DEFAULT NULL COMMENT 'Exam result: 1=passed, 0=failed, NULL=not taken';
+    END IF;
+    
+    -- Add exam_score column if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
+                   WHERE TABLE_SCHEMA = DATABASE() 
+                   AND TABLE_NAME = 'training_participants' 
+                   AND COLUMN_NAME = 'exam_score') THEN
+        ALTER TABLE `training_participants` ADD COLUMN `exam_score` tinyint(2) DEFAULT NULL COMMENT 'Exam score from 1 to 10';
+    END IF;
+    
+    -- Add total_hours_attended column if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
+                   WHERE TABLE_SCHEMA = DATABASE() 
+                   AND TABLE_NAME = 'training_participants' 
+                   AND COLUMN_NAME = 'total_hours_attended') THEN
+        ALTER TABLE `training_participants` ADD COLUMN `total_hours_attended` decimal(6,2) DEFAULT 0 COMMENT 'Total hours attended';
+    END IF;
+    
+    -- Add total_hours_absent column if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
+                   WHERE TABLE_SCHEMA = DATABASE() 
+                   AND TABLE_NAME = 'training_participants' 
+                   AND COLUMN_NAME = 'total_hours_absent') THEN
+        ALTER TABLE `training_participants` ADD COLUMN `total_hours_absent` decimal(6,2) DEFAULT 0 COMMENT 'Total hours absent';
+    END IF;
+END//
+
+DELIMITER ;
+
+-- Execute the procedures
+CALL add_training_attendance_columns();
+CALL add_training_participants_columns();
+
+-- Clean up procedures
+DROP PROCEDURE IF EXISTS add_training_attendance_columns;
+DROP PROCEDURE IF EXISTS add_training_participants_columns;

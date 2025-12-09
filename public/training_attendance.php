@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('training', '
                 
                 if (empty($data['session_date']) || empty($data['start_time']) || empty($data['end_time'])) {
                     $errors[] = 'Data e orari sono obbligatori';
-                } elseif ($data['start_time'] >= $data['end_time']) {
+                } elseif (strtotime($data['start_time']) >= strtotime($data['end_time'])) {
                     $errors[] = 'L\'orario di fine deve essere successivo all\'orario di inizio';
                 } else {
                     $result = $controller->createSession($courseId, $data, $userId);
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('training', '
                 
                 if (empty($data['session_date']) || empty($data['start_time']) || empty($data['end_time'])) {
                     $errors[] = 'Data e orari sono obbligatori';
-                } elseif ($data['start_time'] >= $data['end_time']) {
+                } elseif (strtotime($data['start_time']) >= strtotime($data['end_time'])) {
                     $errors[] = 'L\'orario di fine deve essere successivo all\'orario di inizio';
                 } else {
                     $result = $controller->updateSession($sessionIdToUpdate, $data, $userId);
