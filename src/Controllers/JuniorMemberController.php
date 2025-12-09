@@ -413,26 +413,27 @@ class JuniorMemberController {
     }
     
     /**
-     * Genera matricola univoca per soci minorenni
+     * Genera matricola univoca per soci minorenni (cadetti)
      * 
      * @return string
      */
     private function generateRegistrationNumber() {
-        // Get last registration number for junior members (prefixed with J)
+        // Get last registration number for junior members (prefixed with C-)
         $sql = "SELECT registration_number FROM junior_members 
-                WHERE registration_number LIKE 'J%'
-                ORDER BY id DESC 
+                WHERE registration_number LIKE 'C-%'
+                ORDER BY CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) DESC 
                 LIMIT 1";
         
         $last = $this->db->fetchOne($sql);
         
-        if ($last && preg_match('/^J(\d+)$/', $last['registration_number'], $matches)) {
+        if ($last && preg_match('/^C-(\d+)$/', $last['registration_number'], $matches)) {
             $nextNumber = intval($matches[1]) + 1;
         } else {
             $nextNumber = 1;
         }
         
-        return 'J' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+        // Return C- prefixed number without leading zeros (C-1, C-2, C-33, etc.)
+        return 'C-' . $nextNumber;
     }
     
     /**
