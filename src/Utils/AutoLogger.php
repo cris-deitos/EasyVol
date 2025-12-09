@@ -265,7 +265,7 @@ class AutoLogger {
                     'qualifications' => 'Qualifiche',
                     'courses' => 'Corsi',
                     'licenses' => 'Patenti',
-                    'health' => 'Informazioni Sanitarie',
+                    'health' => 'Informazioni Alimentari',
                     'availability' => 'Disponibilità',
                     'fees' => 'Quote Sociali',
                     'sanctions' => 'Provvedimenti',

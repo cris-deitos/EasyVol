@@ -3,7 +3,7 @@
  * Registrazione Pubblica Soci Maggiorenni
  * 
  * Pagina pubblica per la registrazione di nuovi soci maggiorenni con tutti i dati richiesti
- * Include: anagrafica, recapiti, indirizzi, patenti, corsi, allergie/patologie, datore di lavoro
+ * Include: anagrafica, recapiti, indirizzi, patenti, corsi, informazioni alimentari
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
