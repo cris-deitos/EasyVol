@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Informazione Sanitaria - EasyVol</title>
+    <title>Informazione Alimentare - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
                         <a href="member_view.php?id=<?php echo $memberId; ?>" class="text-decoration-none text-muted"><i class="bi bi-arrow-left"></i></a>
-                        <?php echo $healthId > 0 ? 'Modifica' : 'Aggiungi'; ?> Informazione Sanitaria
+                        <?php echo $healthId > 0 ? 'Modifica' : 'Aggiungi'; ?> Informazione Alimentare
                     </h1>
                 </div>
                 <?php if (!empty($errors)): ?>
@@ -81,9 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label for="health_type" class="form-label">Tipo *</label>
                                 <select class="form-select" id="health_type" name="health_type" required>
                                     <option value="">Seleziona...</option>
-                                    <option value="allergie" <?php echo $health['health_type'] === 'allergie' ? 'selected' : ''; ?>>Allergie</option>
-                                    <option value="intolleranze" <?php echo $health['health_type'] === 'intolleranze' ? 'selected' : ''; ?>>Intolleranze</option>
-                                    <option value="patologie" <?php echo $health['health_type'] === 'patologie' ? 'selected' : ''; ?>>Patologie</option>
+                                    <option value="allergie" <?php echo $health['health_type'] === 'allergie' ? 'selected' : ''; ?>>Allergie Alimentari</option>
+                                    <option value="intolleranze" <?php echo $health['health_type'] === 'intolleranze' ? 'selected' : ''; ?>>Intolleranze Alimentari</option>
                                     <option value="vegano" <?php echo $health['health_type'] === 'vegano' ? 'selected' : ''; ?>>Dieta Vegana</option>
                                     <option value="vegetariano" <?php echo $health['health_type'] === 'vegetariano' ? 'selected' : ''; ?>>Dieta Vegetariana</option>
                                 </select>

@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Informazione Sanitaria - EasyVol</title>
+    <title>Informazione Alimentare - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
                         <a href="junior_member_view.php?id=<?php echo $memberId; ?>" class="text-decoration-none text-muted"><i class="bi bi-arrow-left"></i></a>
-                        Aggiungi Informazione Sanitaria
+                        Aggiungi Informazione Alimentare
                     </h1>
                 </div>
                 <?php if (!empty($errors)): ?>
@@ -65,9 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label for="health_type" class="form-label">Tipo *</label>
                                 <select class="form-select" id="health_type" name="health_type" required>
                                     <option value="">Seleziona...</option>
-                                    <option value="allergie">Allergie</option>
-                                    <option value="intolleranze">Intolleranze</option>
-                                    <option value="patologie">Patologie</option>
+                                    <option value="allergie">Allergie Alimentari</option>
+                                    <option value="intolleranze">Intolleranze Alimentari</option>
                                     <option value="vegano">Dieta Vegana</option>
                                     <option value="vegetariano">Dieta Vegetariana</option>
                                 </select>

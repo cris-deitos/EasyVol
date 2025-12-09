@@ -432,6 +432,19 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                                 </ul>
                                                                 <?php endif; ?>
                                                                 
+                                                                <?php if (!empty($appData['corso_base_pc'])): ?>
+                                                                <h6 class="bg-light p-2 border-start border-primary border-4">Corso Base Protezione Civile</h6>
+                                                                <dl class="row mb-3">
+                                                                    <dt class="col-sm-6">Corso Base di Protezione Civile riconosciuto da Regione Lombardia</dt>
+                                                                    <dd class="col-sm-6">
+                                                                        ✓ Completato
+                                                                        <?php if (!empty($appData['corso_base_pc_anno'])): ?>
+                                                                         - Anno: <?php echo htmlspecialchars($appData['corso_base_pc_anno']); ?>
+                                                                        <?php endif; ?>
+                                                                    </dd>
+                                                                </dl>
+                                                                <?php endif; ?>
+                                                                
                                                                 <?php if (!empty($appData['courses'])): ?>
                                                                 <h6 class="bg-light p-2 border-start border-primary border-4">Corsi e Specializzazioni</h6>
                                                                 <ul class="mb-3">
@@ -492,8 +505,8 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                                 
                                                             <?php endif; ?>
                                                             
-                                                            <?php if (!empty($appData['health_allergies']) || !empty($appData['health_intolerances']) || !empty($appData['health_conditions'])): ?>
-                                                            <h6 class="bg-light p-2 border-start border-primary border-4">Informazioni Sanitarie</h6>
+                                                            <?php if (!empty($appData['health_allergies']) || !empty($appData['health_intolerances']) || !empty($appData['health_vegetarian']) || !empty($appData['health_vegan'])): ?>
+                                                            <h6 class="bg-light p-2 border-start border-primary border-4">Informazioni Alimentari</h6>
                                                             <dl class="row mb-3">
                                                                 <?php if (!empty($appData['health_vegetarian'])): ?>
                                                                 <dd class="col-sm-12">✓ Vegetariano</dd>
@@ -502,16 +515,12 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                                 <dd class="col-sm-12">✓ Vegano</dd>
                                                                 <?php endif; ?>
                                                                 <?php if (!empty($appData['health_allergies'])): ?>
-                                                                <dt class="col-sm-3">Allergie</dt>
+                                                                <dt class="col-sm-3">Allergie Alimentari</dt>
                                                                 <dd class="col-sm-9"><?php echo nl2br(htmlspecialchars($appData['health_allergies'])); ?></dd>
                                                                 <?php endif; ?>
                                                                 <?php if (!empty($appData['health_intolerances'])): ?>
-                                                                <dt class="col-sm-3">Intolleranze</dt>
+                                                                <dt class="col-sm-3">Intolleranze Alimentari</dt>
                                                                 <dd class="col-sm-9"><?php echo nl2br(htmlspecialchars($appData['health_intolerances'])); ?></dd>
-                                                                <?php endif; ?>
-                                                                <?php if (!empty($appData['health_conditions'])): ?>
-                                                                <dt class="col-sm-3">Patologie</dt>
-                                                                <dd class="col-sm-9"><?php echo nl2br(htmlspecialchars($appData['health_conditions'])); ?></dd>
                                                                 <?php endif; ?>
                                                             </dl>
                                                             <?php endif; ?>

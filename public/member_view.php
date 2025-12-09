@@ -152,11 +152,6 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="employment-tab" data-bs-toggle="tab" data-bs-target="#employment" type="button" role="tab">
-                                    <i class="bi bi-briefcase"></i> Datore di Lavoro
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="qualifications-tab" data-bs-toggle="tab" data-bs-target="#qualifications" type="button" role="tab">
                                     <i class="bi bi-award"></i> Qualifiche
                                 </button>
@@ -173,7 +168,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="health-tab" data-bs-toggle="tab" data-bs-target="#health" type="button" role="tab">
-                                    <i class="bi bi-heart-pulse"></i> Allergie/Salute
+                                    <i class="bi bi-heart-pulse"></i> Info Alimentari
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -383,39 +378,6 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                 </div>
                             </div>
                             
-                            <!-- Datore di Lavoro -->
-                            <div class="tab-pane fade" id="employment" role="tabpanel">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="card-title mb-0">Datore di Lavoro</h5>
-                                            <?php if ($app->checkPermission('members', 'edit')): ?>
-                                                <button class="btn btn-sm btn-primary" onclick="addEmployment()">
-                                                    <i class="bi bi-plus"></i> Aggiungi Datore
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                        <?php if (!empty($member['employment'])): ?>
-                                            <?php foreach ($member['employment'] as $emp): ?>
-                                                <div class="border rounded p-3 mb-2">
-                                                    <h6><?php echo htmlspecialchars($emp['employer_name'] ?? 'N/D'); ?></h6>
-                                                    <p class="mb-1"><strong>Indirizzo:</strong> <?php echo htmlspecialchars($emp['employer_address'] ?? 'N/D'); ?></p>
-                                                    <p class="mb-1"><strong>Città:</strong> <?php echo htmlspecialchars($emp['employer_city'] ?? 'N/D'); ?></p>
-                                                    <p class="mb-1"><strong>Telefono:</strong> <?php echo htmlspecialchars($emp['employer_phone'] ?? 'N/D'); ?></p>
-                                                    <?php if ($app->checkPermission('members', 'edit')): ?>
-                                                        <button class="btn btn-sm btn-danger" onclick="deleteEmployment(<?php echo $emp['id']; ?>)">
-                                                            <i class="bi bi-trash"></i> Elimina
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <p class="text-muted">Nessun datore di lavoro inserito</p>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            
                             <!-- Qualifiche -->
                             <div class="tab-pane fade" id="qualifications" role="tabpanel">
                                 <div class="card">
@@ -573,7 +535,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="card-title mb-0">Allergie e Informazioni Sanitarie</h5>
+                                            <h5 class="card-title mb-0">Informazioni Alimentari</h5>
                                             <?php if ($app->checkPermission('members', 'edit')): ?>
                                                 <a href="member_health_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
                                                     <i class="bi bi-plus"></i> Aggiungi Informazione
@@ -876,16 +838,6 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
         function deleteAddress(id) {
             if (confirm('Sei sicuro di voler eliminare questo indirizzo?')) {
                 window.location.href = 'member_data.php?action=delete_address&id=' + id + '&member_id=' + memberId;
-            }
-        }
-        
-        function addEmployment() {
-            window.location.href = 'member_employment_edit.php?member_id=' + memberId;
-        }
-        
-        function deleteEmployment(id) {
-            if (confirm('Sei sicuro di voler eliminare questo datore di lavoro?')) {
-                window.location.href = 'member_data.php?action=delete_employment&id=' + id + '&member_id=' + memberId;
             }
         }
         
