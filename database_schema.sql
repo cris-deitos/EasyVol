@@ -795,6 +795,21 @@ CREATE TABLE IF NOT EXISTS `training_courses` (
   KEY `idx_sspc_edition_code` (`sspc_edition_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `training_sessions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) NOT NULL,
+  `session_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `course_id` (`course_id`),
+  KEY `session_date` (`session_date`),
+  FOREIGN KEY (`course_id`) REFERENCES `training_courses`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `training_participants` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `course_id` int(11) NOT NULL,
@@ -802,6 +817,10 @@ CREATE TABLE IF NOT EXISTS `training_participants` (
   `registration_date` date,
   `attendance_status` enum('iscritto', 'presente', 'assente', 'ritirato') DEFAULT 'iscritto',
   `final_grade` varchar(50),
+  `exam_passed` tinyint(1) DEFAULT NULL COMMENT 'Exam result: 1=passed, 0=failed, NULL=not taken',
+  `exam_score` tinyint(2) DEFAULT NULL COMMENT 'Exam score from 1 to 10',
+  `total_hours_attended` decimal(6,2) DEFAULT 0 COMMENT 'Total hours attended',
+  `total_hours_absent` decimal(6,2) DEFAULT 0 COMMENT 'Total hours absent',
   `certificate_issued` tinyint(1) DEFAULT 0,
   `certificate_file` varchar(255),
   PRIMARY KEY (`id`),
@@ -814,14 +833,18 @@ CREATE TABLE IF NOT EXISTS `training_participants` (
 CREATE TABLE IF NOT EXISTS `training_attendance` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `course_id` int(11) NOT NULL,
+  `session_id` int(11) DEFAULT NULL,
   `member_id` int(11) NOT NULL,
   `date` date NOT NULL,
   `present` tinyint(1) DEFAULT 0,
+  `hours_attended` decimal(5,2) DEFAULT NULL COMMENT 'Hours attended in this session',
   `notes` text,
   PRIMARY KEY (`id`),
   KEY `course_id` (`course_id`),
+  KEY `session_id` (`session_id`),
   KEY `member_id` (`member_id`),
   FOREIGN KEY (`course_id`) REFERENCES `training_courses`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`session_id`) REFERENCES `training_sessions`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
