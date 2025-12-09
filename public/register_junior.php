@@ -99,12 +99,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'mobile' => trim($_POST['mobile'] ?? ''),
                 'email' => trim($_POST['email'] ?? ''),
                 
-                // Salute
+                // Informazioni alimentari
                 'health_vegetarian' => !empty($_POST['health_vegetarian']),
                 'health_vegan' => !empty($_POST['health_vegan']),
                 'health_allergies' => trim($_POST['health_allergies'] ?? ''),
                 'health_intolerances' => trim($_POST['health_intolerances'] ?? ''),
-                'health_conditions' => trim($_POST['health_conditions'] ?? ''),
                 
                 // Genitori/Tutori
                 'guardians' => [],
@@ -468,9 +467,9 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                     </div>
                                 </div>
                                 
-                                <!-- INFORMAZIONI SANITARIE -->
+                                <!-- INFORMAZIONI ALIMENTARI -->
                                 <div class="section-header">
-                                    <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Informazioni Sanitarie</h5>
+                                    <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Informazioni Alimentari</h5>
                                 </div>
                                 
                                 <div class="row mb-3">
@@ -493,18 +492,13 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="health_allergies" class="form-label">Allergie</label>
+                                    <label for="health_allergies" class="form-label">Allergie Alimentari</label>
                                     <textarea class="form-control" id="health_allergies" name="health_allergies" rows="2"><?php echo htmlspecialchars($_POST['health_allergies'] ?? ''); ?></textarea>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label for="health_intolerances" class="form-label">Intolleranze Alimentari</label>
                                     <textarea class="form-control" id="health_intolerances" name="health_intolerances" rows="2"><?php echo htmlspecialchars($_POST['health_intolerances'] ?? ''); ?></textarea>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="health_conditions" class="form-label">Patologie</label>
-                                    <textarea class="form-control" id="health_conditions" name="health_conditions" rows="2"><?php echo htmlspecialchars($_POST['health_conditions'] ?? ''); ?></textarea>
                                 </div>
                                 
                                 <!-- DATI PADRE -->
@@ -736,7 +730,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="privacy_accepted" name="privacy_accepted" required>
                                         <label class="form-check-label" for="privacy_accepted">
-                                            Autorizzo il trattamento dei dati personali ai sensi del GDPR 2016/679 e del D.lgs. 196/2003 <span class="required-star">*</span>
+                                            Autorizzo il trattamento dei dati personali ai sensi del GDPR 2016/679 e del D.lgs. 196/2003 come modificato dal D.lgs. 10 agosto 2018 n. 101 <span class="required-star">*</span>
                                         </label>
                                     </div>
                                     <div class="form-check mt-2">

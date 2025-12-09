@@ -3,7 +3,7 @@
  * Registrazione Pubblica Soci Maggiorenni
  * 
  * Pagina pubblica per la registrazione di nuovi soci maggiorenni con tutti i dati richiesti
- * Include: anagrafica, recapiti, indirizzi, patenti, corsi, allergie/patologie, datore di lavoro
+ * Include: anagrafica, recapiti, indirizzi, patenti, corsi, informazioni alimentari, informazioni professionali
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
@@ -116,6 +116,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ['type' => 'Altro', 'description' => trim($_POST['license_altro_desc'] ?? ''), 'number' => trim($_POST['license_altro_number'] ?? ''), 'issue_date' => $_POST['license_altro_issue'] ?? '', 'expiry_date' => $_POST['license_altro_expiry'] ?? ''],
                 ], function($license) { return !empty($license['number']) || !empty($license['description']); }),
                 
+                // Corso Base Protezione Civile Regione Lombardia
+                'corso_base_pc' => !empty($_POST['corso_base_pc']),
+                'corso_base_pc_anno' => !empty($_POST['corso_base_pc_anno']) ? intval($_POST['corso_base_pc_anno']) : null,
+                
                 // Corsi e specializzazioni
                 'courses' => array_filter([
                     ['name' => trim($_POST['course_1_name'] ?? ''), 'completion_date' => $_POST['course_1_date'] ?? '', 'expiry_date' => $_POST['course_1_expiry'] ?? ''],
@@ -123,18 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ['name' => trim($_POST['course_3_name'] ?? ''), 'completion_date' => $_POST['course_3_date'] ?? '', 'expiry_date' => $_POST['course_3_expiry'] ?? ''],
                 ], function($course) { return !empty($course['name']); }),
                 
-                // Salute
+                // Informazioni alimentari
                 'health_vegetarian' => !empty($_POST['health_vegetarian']),
                 'health_vegan' => !empty($_POST['health_vegan']),
                 'health_allergies' => trim($_POST['health_allergies'] ?? ''),
                 'health_intolerances' => trim($_POST['health_intolerances'] ?? ''),
-                'health_conditions' => trim($_POST['health_conditions'] ?? ''),
-                
-                // Datore di lavoro
-                'employer_name' => trim($_POST['employer_name'] ?? ''),
-                'employer_address' => trim($_POST['employer_address'] ?? ''),
-                'employer_city' => trim($_POST['employer_city'] ?? ''),
-                'employer_phone' => trim($_POST['employer_phone'] ?? ''),
                 
                 // Informazioni professionali e formative
                 'worker_type' => !empty($_POST['worker_type']) ? $_POST['worker_type'] : null,
@@ -509,7 +506,31 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                     <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Corsi e Specializzazioni</h5>
                                 </div>
                                 
-                                <p class="text-muted small">Indica eventuali corsi di Protezione Civile o specializzazioni già in possesso</p>
+                                <!-- Corso Base Protezione Civile Regione Lombardia -->
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6>Corso Base di Protezione Civile riconosciuto da Regione Lombardia</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="corso_base_pc" name="corso_base_pc" 
+                                                           <?php echo !empty($_POST['corso_base_pc']) ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="corso_base_pc">
+                                                        Ho già effettuato il Corso Base di Protezione Civile riconosciuto da Regione Lombardia
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Anno di completamento</label>
+                                                <input type="number" class="form-control" name="corso_base_pc_anno" 
+                                                       value="<?php echo htmlspecialchars($_POST['corso_base_pc_anno'] ?? ''); ?>"
+                                                       min="1990" max="<?php echo date('Y'); ?>" placeholder="es. 2020">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-muted small">Indica eventuali altri corsi di Protezione Civile o specializzazioni già in possesso</p>
                                 
                                 <?php for ($i = 1; $i <= 3; $i++): ?>
                                 <div class="card mb-2">
@@ -536,9 +557,9 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                 </div>
                                 <?php endfor; ?>
                                 
-                                <!-- ALLERGIE E PATOLOGIE -->
+                                <!-- INFORMAZIONI ALIMENTARI -->
                                 <div class="section-header">
-                                    <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Informazioni Sanitarie</h5>
+                                    <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Informazioni Alimentari</h5>
                                 </div>
                                 
                                 <div class="row mb-3">
@@ -561,18 +582,13 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="health_allergies" class="form-label">Allergie</label>
+                                    <label for="health_allergies" class="form-label">Allergie Alimentari</label>
                                     <textarea class="form-control" id="health_allergies" name="health_allergies" rows="2"><?php echo htmlspecialchars($_POST['health_allergies'] ?? ''); ?></textarea>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label for="health_intolerances" class="form-label">Intolleranze Alimentari</label>
                                     <textarea class="form-control" id="health_intolerances" name="health_intolerances" rows="2"><?php echo htmlspecialchars($_POST['health_intolerances'] ?? ''); ?></textarea>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="health_conditions" class="form-label">Patologie</label>
-                                    <textarea class="form-control" id="health_conditions" name="health_conditions" rows="2"><?php echo htmlspecialchars($_POST['health_conditions'] ?? ''); ?></textarea>
                                 </div>
                                 
                                 <!-- INFORMAZIONI PROFESSIONALI E FORMATIVE -->
@@ -603,37 +619,6 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                             <option value="laurea_magistrale" <?php echo ($_POST['education_level'] ?? '') === 'laurea_magistrale' ? 'selected' : ''; ?>>Laurea Magistrale</option>
                                             <option value="dottorato" <?php echo ($_POST['education_level'] ?? '') === 'dottorato' ? 'selected' : ''; ?>>Dottorato</option>
                                         </select>
-                                    </div>
-                                </div>
-                                
-                                <!-- DATORE DI LAVORO -->
-                                <div class="section-header">
-                                    <h5 class="mb-0"><i class="bi bi-briefcase"></i> Datore di Lavoro</h5>
-                                </div>
-                                
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label for="employer_name" class="form-label">Ragione Sociale</label>
-                                        <input type="text" class="form-control" id="employer_name" name="employer_name" 
-                                               value="<?php echo htmlspecialchars($_POST['employer_name'] ?? ''); ?>">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="employer_address" class="form-label">Indirizzo</label>
-                                        <input type="text" class="form-control" id="employer_address" name="employer_address" 
-                                               value="<?php echo htmlspecialchars($_POST['employer_address'] ?? ''); ?>">
-                                    </div>
-                                </div>
-                                
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label for="employer_city" class="form-label">Città</label>
-                                        <input type="text" class="form-control" id="employer_city" name="employer_city" 
-                                               value="<?php echo htmlspecialchars($_POST['employer_city'] ?? ''); ?>">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="employer_phone" class="form-label">Telefono</label>
-                                        <input type="tel" class="form-control" id="employer_phone" name="employer_phone" 
-                                               value="<?php echo htmlspecialchars($_POST['employer_phone'] ?? ''); ?>">
                                     </div>
                                 </div>
                                 
@@ -722,7 +707,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="responsabilita_salute" name="responsabilita_salute" required>
                                         <label class="form-check-label" for="responsabilita_salute">
-                                            Sono consapevole che l'Associazione non è responsabile per la mancata comunicazione di eventuali problemi di salute <span class="required-star">*</span>
+                                            Sono consapevole che l'Associazione non è responsabile per la mancata comunicazione di eventuali problemi di salute tali da inibire tutte o specifiche attività di Protezione Civile <span class="required-star">*</span>
                                         </label>
                                     </div>
                                 </div>
@@ -742,7 +727,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="privacy_accepted" name="privacy_accepted" required>
                                         <label class="form-check-label" for="privacy_accepted">
-                                            Autorizzo il trattamento dei dati personali ai sensi del GDPR 2016/679 e del D.lgs. 196/2003 <span class="required-star">*</span>
+                                            Autorizzo il trattamento dei dati personali ai sensi del GDPR 2016/679 e del D.lgs. 196/2003 come modificato dal D.lgs. 10 agosto 2018 n. 101 <span class="required-star">*</span>
                                         </label>
                                     </div>
                                     <div class="form-check mt-2">

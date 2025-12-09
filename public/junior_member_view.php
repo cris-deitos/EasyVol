@@ -155,7 +155,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="health-tab" data-bs-toggle="tab" data-bs-target="#health" type="button" role="tab">
-                                    <i class="bi bi-heart-pulse"></i> Allergie/Salute
+                                    <i class="bi bi-heart-pulse"></i> Info Alimentari
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -344,12 +344,12 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                 </div>
                             </div>
                             
-                            <!-- Allergie/Salute -->
+                            <!-- Informazioni Alimentari -->
                             <div class="tab-pane fade" id="health" role="tabpanel">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="card-title mb-0">Allergie e Informazioni Sanitarie</h5>
+                                            <h5 class="card-title mb-0">Informazioni Alimentari</h5>
                                             <?php if ($app->checkPermission('junior_members', 'edit')): ?>
                                                 <button class="btn btn-sm btn-primary" onclick="addHealth()">
                                                     <i class="bi bi-plus"></i> Aggiungi Informazione
