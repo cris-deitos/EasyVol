@@ -518,8 +518,15 @@ class EmailSender {
         $baseUrl = $this->config['app']['base_url'] ?? '';
         if (empty($baseUrl)) {
             // Try to construct from common settings
-            $baseUrl = ($this->config['app']['url'] ?? 'https://sdi.protezionecivilebassogarda.it/EasyVol');
+            $baseUrl = $this->config['app']['url'] ?? '';
         }
+        
+        // If still empty, use a placeholder that will be visible
+        if (empty($baseUrl)) {
+            $baseUrl = 'URL_NON_CONFIGURATO';
+            error_log("Warning: app.base_url or app.url not configured in config. PDF download link in email will not work.");
+        }
+        
         $baseUrl = rtrim($baseUrl, '/');
         $pdfDownloadUrl = $baseUrl . '/public/application_pdf.php?token=' . htmlspecialchars($pdfToken) . '&download=1';
         

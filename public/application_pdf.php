@@ -17,13 +17,13 @@ $db = $app->getDb();
 // Get token from query parameter
 $token = $_GET['token'] ?? '';
 
-if (empty($token) || strlen($token) < 32) {
+// Validate token format first (must be 64 hex characters)
+if (empty($token) || strlen($token) !== 64 || !preg_match('/^[a-f0-9]{64}$/i', $token)) {
     http_response_code(400);
     die('Token non valido');
 }
 
-// Sanitize token - only allow alphanumeric characters
-$token = preg_replace('/[^a-zA-Z0-9]/', '', $token);
+// Token is already validated as hexadecimal, no need for additional sanitization
 
 // Find application by token
 try {
@@ -47,29 +47,29 @@ try {
     
     // Build full path and validate
     $basePath = realpath(__DIR__ . '/../');
-    $fullPath = realpath(__DIR__ . '/../' . ltrim($pdfPath, '/'));
+    $sanitizedPdfPath = ltrim($pdfPath, '/');
+    $fullPath = __DIR__ . '/../' . $sanitizedPdfPath;
+    $resolvedPath = realpath($fullPath);
     
-    // Security check: ensure the file is within the expected directory
-    if ($fullPath === false || $basePath === false || strpos($fullPath, $basePath) !== 0) {
-        http_response_code(403);
-        die('Accesso al file non consentito');
-    }
-    
-    if (!file_exists($fullPath)) {
+    // Security check: ensure the file exists and is within the expected directory
+    if ($resolvedPath === false) {
         http_response_code(404);
         die('File non trovato. Il PDF potrebbe essere stato rigenerato. Contatta l\'associazione.');
     }
     
+    if ($basePath === false || strpos($resolvedPath, $basePath . DIRECTORY_SEPARATOR) !== 0) {
+        http_response_code(403);
+        die('Accesso al file non consentito');
+    }
+    
     // Detect MIME type
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $fullPath);
+    $mimeType = finfo_file($finfo, $resolvedPath);
     finfo_close($finfo);
     
-    // Prepare filename
-    $appData = json_decode($application['application_data'], true);
-    $lastName = preg_replace('/[^A-Z0-9_-]/i', '', strtoupper($appData['last_name'] ?? 'DOMANDA'));
-    $firstName = preg_replace('/[^A-Z0-9_-]/i', '', strtoupper($appData['first_name'] ?? 'ISCRIZIONE'));
-    $filename = "domanda_iscrizione_{$lastName}_{$firstName}.pdf";
+    // Prepare filename - use application code for clarity
+    $appCode = preg_replace('/[^A-Z0-9_-]/i', '', $application['application_code'] ?? 'DOMANDA');
+    $filename = "domanda_iscrizione_{$appCode}.pdf";
     $encodedFilename = rawurlencode($filename);
     
     // Check if download or inline view
@@ -82,11 +82,11 @@ try {
     } else {
         header("Content-Disposition: inline; filename*=UTF-8''" . $encodedFilename);
     }
-    header('Content-Length: ' . filesize($fullPath));
+    header('Content-Length: ' . filesize($resolvedPath));
     header('Cache-Control: private, max-age=3600');
     header('X-Content-Type-Options: nosniff');
     
-    readfile($fullPath);
+    readfile($resolvedPath);
     exit;
     
 } catch (\Exception $e) {
