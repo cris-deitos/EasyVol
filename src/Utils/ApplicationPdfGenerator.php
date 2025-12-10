@@ -136,16 +136,17 @@ class ApplicationPdfGenerator {
             if (!empty($data['licenses'])) {
                 $html .= $this->addLicenses($data);
             }
-            if (!empty($data['courses'])) {
+            // Show courses section if corso_base_pc or courses exist
+            if (!empty($data['courses']) || !empty($data['corso_base_pc'])) {
                 $html .= $this->addCourses($data);
+            }
+            // Add professional info section only if data exists
+            if (!empty($data['worker_type']) || !empty($data['education_level'])) {
+                $html .= $this->addProfessionalInfo($data);
             }
         }
         
         $html .= $this->addHealthInfo($data);
-        
-        if ($application['application_type'] === 'adult' && !empty($data['employer'])) {
-            $html .= $this->addEmployer($data);
-        }
         
         if ($application['application_type'] === 'junior' && !empty($data['guardians'])) {
             $html .= $this->addGuardians($data);
@@ -154,7 +155,7 @@ class ApplicationPdfGenerator {
         $html .= $this->addRequest();
         $html .= $this->addDeclarations($application['application_type']);
         $html .= $this->addPrivacy();
-        $html .= $this->addDocumentsList();
+        $html .= $this->addDocumentsList($application['application_type']);
         $html .= $this->addSignatures($data, $application['application_type']);
         $html .= '</body>';
         
@@ -217,10 +218,19 @@ class ApplicationPdfGenerator {
      * Add title with application code and date
      */
     private function addTitle($application) {
-        $html = '<h1>DOMANDA DI ISCRIZIONE</h1>';
+        // Determine title based on application type
+        $isJunior = ($application['application_type'] ?? '') === 'junior';
+        $subtitle = $isJunior ? 'SOCIO MINORENNE (CADETTO)' : 'SOCIO MAGGIORENNE';
+        
+        // Format submission date with validation
+        $submissionDate = $application['submitted_at'] ?? '';
+        $submissionTimestamp = strtotime($submissionDate);
+        $formattedSubmissionDate = ($submissionTimestamp !== false) ? date('d/m/Y', $submissionTimestamp) : $submissionDate;
+        
+        $html = '<h1>DOMANDA DI ISCRIZIONE<br><span style="font-size: 12pt;">' . $subtitle . '</span></h1>';
         $html .= '<div style="text-align: center; margin-bottom: 20px;">';
         $html .= '<div><strong>Codice domanda:</strong> ' . htmlspecialchars($application['application_code']) . '</div>';
-        $html .= '<div><strong>Data compilazione:</strong> ' . date('d/m/Y', strtotime($application['submitted_at'])) . '</div>';
+        $html .= '<div><strong>Data compilazione:</strong> ' . htmlspecialchars($formattedSubmissionDate) . '</div>';
         $html .= '</div>';
         return $html;
     }
@@ -233,10 +243,28 @@ class ApplicationPdfGenerator {
         $html .= '<div class="info-row"><span class="label">Cognome:</span> <span class="value">' . htmlspecialchars($data['last_name'] ?? '') . '</span></div>';
         $html .= '<div class="info-row"><span class="label">Nome:</span> <span class="value">' . htmlspecialchars($data['first_name'] ?? '') . '</span></div>';
         $html .= '<div class="info-row"><span class="label">Codice Fiscale:</span> <span class="value">' . htmlspecialchars($data['tax_code'] ?? '') . '</span></div>';
-        $html .= '<div class="info-row"><span class="label">Data di nascita:</span> <span class="value">' . htmlspecialchars($data['birth_date'] ?? '') . '</span></div>';
-        $html .= '<div class="info-row"><span class="label">Luogo di nascita:</span> <span class="value">' . htmlspecialchars($data['birth_place'] ?? '') . '</span></div>';
-        $html .= '<div class="info-row"><span class="label">Sesso:</span> <span class="value">' . htmlspecialchars($data['gender'] ?? '') . '</span></div>';
-        $html .= '<div class="info-row"><span class="label">Nazionalità:</span> <span class="value">' . htmlspecialchars($data['nationality'] ?? '') . '</span></div>';
+        
+        // Format birth date with validation
+        $birthDate = $data['birth_date'] ?? '';
+        if (!empty($birthDate)) {
+            $timestamp = strtotime($birthDate);
+            if ($timestamp !== false) {
+                $birthDate = date('d/m/Y', $timestamp);
+            }
+        }
+        $html .= '<div class="info-row"><span class="label">Data di nascita:</span> <span class="value">' . htmlspecialchars($birthDate) . '</span></div>';
+        
+        // Luogo di nascita with provincia
+        $birthPlace = ($data['birth_place'] ?? '');
+        if (!empty($data['birth_province'])) {
+            $birthPlace .= ' (' . $data['birth_province'] . ')';
+        }
+        $html .= '<div class="info-row"><span class="label">Luogo di nascita:</span> <span class="value">' . htmlspecialchars($birthPlace) . '</span></div>';
+        
+        // Gender with label
+        $genderLabel = ($data['gender'] ?? '') === 'M' ? 'Maschile' : (($data['gender'] ?? '') === 'F' ? 'Femminile' : ($data['gender'] ?? ''));
+        $html .= '<div class="info-row"><span class="label">Sesso:</span> <span class="value">' . htmlspecialchars($genderLabel) . '</span></div>';
+        $html .= '<div class="info-row"><span class="label">Nazionalità:</span> <span class="value">' . htmlspecialchars($data['nationality'] ?? 'Italiana') . '</span></div>';
         return $html;
     }
     
@@ -245,17 +273,22 @@ class ApplicationPdfGenerator {
      */
     private function addAddresses($data) {
         $html = '<h2>RESIDENZA</h2>';
-        $html .= '<div class="info-row"><span class="label">Indirizzo:</span> <span class="value">' . htmlspecialchars($data['address'] ?? '') . '</span></div>';
-        $html .= '<div class="info-row"><span class="label">Città:</span> <span class="value">' . htmlspecialchars($data['city'] ?? '') . '</span></div>';
-        $html .= '<div class="info-row"><span class="label">Provincia:</span> <span class="value">' . htmlspecialchars($data['province'] ?? '') . '</span></div>';
-        $html .= '<div class="info-row"><span class="label">CAP:</span> <span class="value">' . htmlspecialchars($data['postal_code'] ?? '') . '</span></div>';
         
-        if (!empty($data['domicile_address'])) {
+        // Build residence address using form field names
+        $residenceAddress = trim(($data['residence_street'] ?? '') . ' ' . ($data['residence_number'] ?? ''));
+        $html .= '<div class="info-row"><span class="label">Indirizzo:</span> <span class="value">' . htmlspecialchars($residenceAddress) . '</span></div>';
+        $html .= '<div class="info-row"><span class="label">Città:</span> <span class="value">' . htmlspecialchars($data['residence_city'] ?? '') . '</span></div>';
+        $html .= '<div class="info-row"><span class="label">Provincia:</span> <span class="value">' . htmlspecialchars($data['residence_province'] ?? '') . '</span></div>';
+        $html .= '<div class="info-row"><span class="label">CAP:</span> <span class="value">' . htmlspecialchars($data['residence_cap'] ?? '') . '</span></div>';
+        
+        // Check for domicile using form field names
+        if (!empty($data['domicile_street'])) {
             $html .= '<h2>DOMICILIO</h2>';
-            $html .= '<div class="info-row"><span class="label">Indirizzo:</span> <span class="value">' . htmlspecialchars($data['domicile_address'] ?? '') . '</span></div>';
+            $domicileAddress = trim(($data['domicile_street'] ?? '') . ' ' . ($data['domicile_number'] ?? ''));
+            $html .= '<div class="info-row"><span class="label">Indirizzo:</span> <span class="value">' . htmlspecialchars($domicileAddress) . '</span></div>';
             $html .= '<div class="info-row"><span class="label">Città:</span> <span class="value">' . htmlspecialchars($data['domicile_city'] ?? '') . '</span></div>';
             $html .= '<div class="info-row"><span class="label">Provincia:</span> <span class="value">' . htmlspecialchars($data['domicile_province'] ?? '') . '</span></div>';
-            $html .= '<div class="info-row"><span class="label">CAP:</span> <span class="value">' . htmlspecialchars($data['domicile_postal_code'] ?? '') . '</span></div>';
+            $html .= '<div class="info-row"><span class="label">CAP:</span> <span class="value">' . htmlspecialchars($data['domicile_cap'] ?? '') . '</span></div>';
         }
         
         return $html;
@@ -280,9 +313,28 @@ class ApplicationPdfGenerator {
      */
     private function addLicenses($data) {
         $html = '<h2>PATENTI E ABILITAZIONI</h2>';
-        if (is_array($data['licenses'])) {
+        if (isset($data['licenses']) && is_array($data['licenses'])) {
             foreach ($data['licenses'] as $license) {
-                $html .= '<div class="info-row">• ' . htmlspecialchars($license['type'] ?? '') . ' - Rilasciata il: ' . htmlspecialchars($license['issue_date'] ?? '') . '</div>';
+                $licenseInfo = htmlspecialchars($license['type'] ?? '');
+                if (!empty($license['description'])) {
+                    $licenseInfo .= ' - ' . htmlspecialchars($license['description']);
+                }
+                if (!empty($license['number'])) {
+                    $licenseInfo .= ' N. ' . htmlspecialchars($license['number']);
+                }
+                if (!empty($license['issue_date'])) {
+                    $timestamp = strtotime($license['issue_date']);
+                    if ($timestamp !== false) {
+                        $licenseInfo .= ' - Rilasciata: ' . date('d/m/Y', $timestamp);
+                    }
+                }
+                if (!empty($license['expiry_date'])) {
+                    $timestamp = strtotime($license['expiry_date']);
+                    if ($timestamp !== false) {
+                        $licenseInfo .= ' - Scadenza: ' . date('d/m/Y', $timestamp);
+                    }
+                }
+                $html .= '<div class="info-row">• ' . $licenseInfo . '</div>';
             }
         }
         return $html;
@@ -293,9 +345,34 @@ class ApplicationPdfGenerator {
      */
     private function addCourses($data) {
         $html = '<h2>CORSI E SPECIALIZZAZIONI</h2>';
-        if (is_array($data['courses'])) {
+        
+        // Corso Base Protezione Civile
+        if (!empty($data['corso_base_pc'])) {
+            $corsoInfo = 'Corso Base di Protezione Civile riconosciuto da Regione Lombardia - Completato';
+            if (!empty($data['corso_base_pc_anno'])) {
+                $corsoInfo .= ' (Anno ' . htmlspecialchars($data['corso_base_pc_anno']) . ')';
+            }
+            $html .= '<div class="info-row">• ' . $corsoInfo . '</div>';
+        }
+        
+        // Other courses
+        if (isset($data['courses']) && is_array($data['courses'])) {
             foreach ($data['courses'] as $course) {
-                $html .= '<div class="info-row">• ' . htmlspecialchars($course['name'] ?? '') . ' (' . htmlspecialchars($course['date'] ?? '') . ')</div>';
+                if (empty($course['name'])) continue;
+                $courseInfo = htmlspecialchars($course['name'] ?? '');
+                if (!empty($course['completion_date'])) {
+                    $timestamp = strtotime($course['completion_date']);
+                    if ($timestamp !== false) {
+                        $courseInfo .= ' - Completato: ' . date('d/m/Y', $timestamp);
+                    }
+                }
+                if (!empty($course['expiry_date'])) {
+                    $timestamp = strtotime($course['expiry_date']);
+                    if ($timestamp !== false) {
+                        $courseInfo .= ' - Scadenza: ' . date('d/m/Y', $timestamp);
+                    }
+                }
+                $html .= '<div class="info-row">• ' . $courseInfo . '</div>';
             }
         }
         return $html;
@@ -305,17 +382,60 @@ class ApplicationPdfGenerator {
      * Add health info section
      */
     private function addHealthInfo($data) {
-        $html = '<h2>INFORMAZIONI SANITARIE</h2>';
-        $html .= '<div class="info-row"><span class="label">Vegetariano:</span> <span class="value">' . (($data['vegetarian'] ?? false) ? 'Sì' : 'No') . '</span></div>';
+        $html = '<h2>INFORMAZIONI ALIMENTARI</h2>';
         
-        if (!empty($data['allergies'])) {
-            $html .= '<div class="info-row"><span class="label">Allergie:</span> <span class="value">' . htmlspecialchars($data['allergies']) . '</span></div>';
+        // Dietary preferences
+        if (!empty($data['health_vegetarian'])) {
+            $html .= '<div class="info-row">✓ Vegetariano</div>';
         }
-        if (!empty($data['food_intolerances'])) {
-            $html .= '<div class="info-row"><span class="label">Intolleranze alimentari:</span> <span class="value">' . htmlspecialchars($data['food_intolerances']) . '</span></div>';
+        if (!empty($data['health_vegan'])) {
+            $html .= '<div class="info-row">✓ Vegano</div>';
         }
-        if (!empty($data['health_conditions'])) {
-            $html .= '<div class="info-row"><span class="label">Condizioni di salute:</span> <span class="value">' . htmlspecialchars($data['health_conditions']) . '</span></div>';
+        
+        // Allergies and intolerances
+        if (!empty($data['health_allergies'])) {
+            $html .= '<div class="info-row"><span class="label">Allergie Alimentari:</span> <span class="value">' . htmlspecialchars($data['health_allergies']) . '</span></div>';
+        }
+        if (!empty($data['health_intolerances'])) {
+            $html .= '<div class="info-row"><span class="label">Intolleranze Alimentari:</span> <span class="value">' . htmlspecialchars($data['health_intolerances']) . '</span></div>';
+        }
+        
+        return $html;
+    }
+    
+    /**
+     * Add professional info section (adults only)
+     */
+    private function addProfessionalInfo($data) {
+        $html = '';
+        
+        if (!empty($data['worker_type']) || !empty($data['education_level'])) {
+            $html = '<h2>INFORMAZIONI PROFESSIONALI E FORMATIVE</h2>';
+            
+            if (!empty($data['worker_type'])) {
+                $workerTypes = [
+                    'studente' => 'Studente',
+                    'dipendente_privato' => 'Dipendente Privato',
+                    'dipendente_pubblico' => 'Dipendente Pubblico',
+                    'lavoratore_autonomo' => 'Lavoratore Autonomo',
+                    'disoccupato' => 'Disoccupato',
+                    'pensionato' => 'Pensionato'
+                ];
+                $workerLabel = $workerTypes[$data['worker_type']] ?? $data['worker_type'];
+                $html .= '<div class="info-row"><span class="label">Tipo di Lavoratore:</span> <span class="value">' . htmlspecialchars($workerLabel) . '</span></div>';
+            }
+            
+            if (!empty($data['education_level'])) {
+                $educationLevels = [
+                    'licenza_media' => 'Licenza Media',
+                    'diploma_maturita' => 'Diploma di Maturità',
+                    'laurea_triennale' => 'Laurea Triennale',
+                    'laurea_magistrale' => 'Laurea Magistrale',
+                    'dottorato' => 'Dottorato'
+                ];
+                $educationLabel = $educationLevels[$data['education_level']] ?? $data['education_level'];
+                $html .= '<div class="info-row"><span class="label">Titolo di Studio:</span> <span class="value">' . htmlspecialchars($educationLabel) . '</span></div>';
+            }
         }
         
         return $html;
@@ -350,12 +470,39 @@ class ApplicationPdfGenerator {
         $html = '<h2>DATI GENITORI/TUTORI</h2>';
         
         foreach ($guardians as $idx => $guardian) {
-            $role = $guardian['role'] ?? 'Tutore';
-            $html .= '<div style="margin-top: 10px;"><strong>' . htmlspecialchars($role) . ':</strong></div>';
-            $html .= '<div class="info-row"><span class="label">Nome completo:</span> <span class="value">' . htmlspecialchars($guardian['full_name'] ?? '') . '</span></div>';
-            $html .= '<div class="info-row"><span class="label">Codice Fiscale:</span> <span class="value">' . htmlspecialchars($guardian['tax_code'] ?? '') . '</span></div>';
-            $html .= '<div class="info-row"><span class="label">Telefono:</span> <span class="value">' . htmlspecialchars($guardian['phone'] ?? '') . '</span></div>';
-            $html .= '<div class="info-row"><span class="label">Email:</span> <span class="value">' . htmlspecialchars($guardian['email'] ?? '') . '</span></div>';
+            // Use 'type' field (padre, madre, tutore)
+            $typeLabels = [
+                'padre' => 'PADRE',
+                'madre' => 'MADRE',
+                'tutore' => 'TUTORE'
+            ];
+            $type = $guardian['type'] ?? 'tutore';
+            $typeLabel = $typeLabels[$type] ?? strtoupper($type);
+            
+            $html .= '<div style="margin-top: 10px; background: #f8f9fa; padding: 5px;"><strong>' . htmlspecialchars($typeLabel) . '</strong></div>';
+            
+            // Full name from first_name + last_name
+            $fullName = trim(($guardian['first_name'] ?? '') . ' ' . ($guardian['last_name'] ?? ''));
+            $html .= '<div class="info-row"><span class="label">Nome e Cognome:</span> <span class="value">' . htmlspecialchars($fullName) . '</span></div>';
+            
+            if (!empty($guardian['tax_code'])) {
+                $html .= '<div class="info-row"><span class="label">Codice Fiscale:</span> <span class="value">' . htmlspecialchars($guardian['tax_code']) . '</span></div>';
+            }
+            if (!empty($guardian['birth_date'])) {
+                $timestamp = strtotime($guardian['birth_date']);
+                if ($timestamp !== false) {
+                    $html .= '<div class="info-row"><span class="label">Data di Nascita:</span> <span class="value">' . date('d/m/Y', $timestamp) . '</span></div>';
+                }
+            }
+            if (!empty($guardian['birth_place'])) {
+                $html .= '<div class="info-row"><span class="label">Luogo di Nascita:</span> <span class="value">' . htmlspecialchars($guardian['birth_place']) . '</span></div>';
+            }
+            if (!empty($guardian['phone'])) {
+                $html .= '<div class="info-row"><span class="label">Telefono:</span> <span class="value">' . htmlspecialchars($guardian['phone']) . '</span></div>';
+            }
+            if (!empty($guardian['email'])) {
+                $html .= '<div class="info-row"><span class="label">Email:</span> <span class="value">' . htmlspecialchars($guardian['email']) . '</span></div>';
+            }
         }
         
         return $html;
@@ -456,14 +603,19 @@ class ApplicationPdfGenerator {
     
     /**
      * Add documents list
+     * @param string $type Application type ('adult' or 'junior')
      */
-    private function addDocumentsList() {
+    private function addDocumentsList($type = 'adult') {
         $html = '<h2>DOCUMENTI DA ALLEGARE</h2>';
-        $html .= '<div class="document-item">• Fotocopia documento di identità valido</div>';
-        $html .= '<div class="document-item">• Fotocopia codice fiscale</div>';
-        $html .= '<div class="document-item">• N. 2 foto tessera</div>';
-        $html .= '<div class="document-item">• Certificato medico di idoneità fisica</div>';
-        $html .= '<div class="document-item">• Copia patenti/abilitazioni (se possedute)</div>';
+        
+        if ($type === 'adult') {
+            // For adult applications
+            $html .= '<div class="document-item">• Copie di Attestati e Specializzazioni personali in campi inerenti alla Protezione Civile</div>';
+            $html .= '<div class="document-item">• Copie Patenti di Guida per conduzione di mezzi speciali, Brevetti o Patentini per natanti o velivoli</div>';
+        } else {
+            // For junior applications - no document attachments required
+            $html .= '<div class="document-item">Nessun documento richiesto da allegare.</div>';
+        }
         
         return $html;
     }
@@ -474,35 +626,59 @@ class ApplicationPdfGenerator {
     private function addSignatures($data, $type) {
         $html = '<div style="margin-top: 30px;">';
         
+        // Pre-fill date and place from form data with validation
+        $compilationPlace = $data['compilation_place'] ?? '';
+        $compilationDate = '';
+        if (!empty($data['compilation_date'])) {
+            $timestamp = strtotime($data['compilation_date']);
+            if ($timestamp !== false) {
+                $compilationDate = date('d/m/Y', $timestamp);
+            } else {
+                $compilationDate = $data['compilation_date']; // Keep original if parsing fails
+            }
+        }
+        
         if ($type === 'junior') {
-            // For juniors: parent/guardian signatures
+            // For juniors: minor signature first
             $html .= '<div class="signature-box">';
-            $html .= '<strong>Firma del genitore/tutore legale</strong><br><br>';
+            $html .= '<strong>Firma del socio minorenne</strong><br><br>';
             $html .= '_______________________________________________<br>';
             $html .= '<div style="font-size: 8pt; margin-top: 5px;">(Per esteso e leggibile)</div>';
             $html .= '</div>';
             
-            // Second guardian if exists
+            // Parent/guardian signatures
             $guardians = $data['guardians'] ?? [];
-            if (count($guardians) > 1) {
-                $html .= '<div class="signature-box">';
-                $html .= '<strong>Firma del secondo genitore/tutore legale</strong><br><br>';
-                $html .= '_______________________________________________<br>';
-                $html .= '<div style="font-size: 8pt; margin-top: 5px;">(Per esteso e leggibile)</div>';
-                $html .= '</div>';
-            }
+            
+            // Father signature
+            $html .= '<div class="signature-box">';
+            $html .= '<strong>Firma del padre / tutore</strong><br><br>';
+            $html .= '_______________________________________________<br>';
+            $html .= '<div style="font-size: 8pt; margin-top: 5px;">(Per esteso e leggibile)</div>';
+            $html .= '</div>';
+            
+            // Mother signature
+            $html .= '<div class="signature-box">';
+            $html .= '<strong>Firma della madre / tutore</strong><br><br>';
+            $html .= '_______________________________________________<br>';
+            $html .= '<div style="font-size: 8pt; margin-top: 5px;">(Per esteso e leggibile)</div>';
+            $html .= '</div>';
+        } else {
+            // For adults: applicant signature
+            $html .= '<div class="signature-box">';
+            $html .= '<strong>Firma del richiedente</strong><br><br>';
+            $html .= '_______________________________________________<br>';
+            $html .= '<div style="font-size: 8pt; margin-top: 5px;">(Per esteso e leggibile)</div>';
+            $html .= '</div>';
         }
         
-        // Applicant signature (for all)
-        $html .= '<div class="signature-box">';
-        $html .= '<strong>Firma del richiedente</strong><br><br>';
-        $html .= '_______________________________________________<br>';
-        $html .= '<div style="font-size: 8pt; margin-top: 5px;">(Per esteso e leggibile)</div>';
-        $html .= '</div>';
-        
-        // Date and place
+        // Date and place - pre-filled from form data
         $html .= '<div style="margin-top: 20px; text-align: right;">';
-        $html .= 'Data: ___/___/_______ &nbsp;&nbsp;&nbsp; Luogo: _______________________';
+        if (!empty($compilationPlace) || !empty($compilationDate)) {
+            $html .= 'Luogo: <strong>' . htmlspecialchars($compilationPlace) . '</strong> &nbsp;&nbsp;&nbsp; ';
+            $html .= 'Data: <strong>' . htmlspecialchars($compilationDate) . '</strong>';
+        } else {
+            $html .= 'Data: ___/___/_______ &nbsp;&nbsp;&nbsp; Luogo: _______________________';
+        }
         $html .= '</div>';
         
         $html .= '</div>';

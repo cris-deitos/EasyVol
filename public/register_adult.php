@@ -162,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($result['success']) {
                 $success = true;
                 $applicationCode = $result['code'];
+                $pdfToken = $result['pdf_token'] ?? '';
                 
                 // Show warnings if PDF or email failed
                 if (!empty($result['processing_errors'])) {
@@ -233,19 +234,30 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                 <small>Conserva questo codice per future comunicazioni</small>
                             </div>
                             
+                            <?php if (!empty($pdfToken)): ?>
+                            <div class="alert alert-primary mt-3">
+                                <h5><i class="bi bi-file-pdf"></i> Scarica il Modulo PDF</h5>
+                                <p class="mb-2">Clicca il pulsante per scaricare il modulo PDF da stampare e firmare:</p>
+                                <a href="application_pdf.php?token=<?php echo htmlspecialchars($pdfToken); ?>&download=1" 
+                                   class="btn btn-danger btn-lg" target="_blank">
+                                    <i class="bi bi-download"></i> Scarica PDF Domanda
+                                </a>
+                            </div>
+                            <?php endif; ?>
+                            
                             <div class="alert alert-success mt-3">
                                 <p class="mb-2">
                                     <i class="bi bi-envelope-check"></i>
-                                    Abbiamo inviato un'email all'indirizzo <strong><?php echo htmlspecialchars($_POST['email'] ?? ''); ?></strong>
-                                    con il modulo PDF precompilato in allegato.
+                                    Abbiamo anche inviato un'email all'indirizzo <strong><?php echo htmlspecialchars($_POST['email'] ?? ''); ?></strong>
+                                    con un link per scaricare il PDF.
                                 </p>
+                                <small class="text-muted">Se non la trovi, controlla anche nella cartella spam.</small>
                             </div>
                             
                             <div class="alert alert-warning mt-4">
                                 <h5><i class="bi bi-list-check"></i> Prossimi Passi:</h5>
                                 <ol class="text-start mt-3">
-                                    <li><strong>Controlla la tua email</strong> (anche nella cartella spam se non la trovi)</li>
-                                    <li><strong>Stampa il modulo PDF</strong> allegato all'email</li>
+                                    <li><strong>Scarica e stampa il modulo PDF</strong> usando il pulsante qui sopra</li>
                                     <li><strong>Firma negli spazi indicati</strong></li>
                                     <li><strong>Consegna il modulo firmato</strong> presso la nostra sede insieme a:
                                         <ul class="mt-2">

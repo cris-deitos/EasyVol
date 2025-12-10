@@ -264,7 +264,11 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                         <?php foreach ($applications as $application): ?>
                                             <tr>
                                                 <td><?php echo htmlspecialchars($application['application_code']); ?></td>
-                                                <td><?php echo date('d/m/Y', strtotime($application['created_at'])); ?></td>
+                                                <td><?php 
+                                                    $dateStr = $application['submitted_at'] ?? $application['created_at'] ?? '';
+                                                    $timestamp = strtotime($dateStr);
+                                                    echo ($timestamp !== false) ? date('d/m/Y', $timestamp) : htmlspecialchars($dateStr);
+                                                ?></td>
                                                 <td>
                                                     <?php if ($application['application_type'] === 'junior'): ?>
                                                         <span class="badge bg-info">Minorenne</span>

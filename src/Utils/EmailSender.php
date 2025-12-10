@@ -510,8 +510,30 @@ class EmailSender {
      * @return string HTML email body
      */
     private function buildApplicationEmailBody($name, $application, $assocName, $assocAddress, $assocCity, $assocPhone, $assocEmail) {
-        $applicationDate = date('d/m/Y', strtotime($application['created_at']));
+        $dateStr = $application['submitted_at'] ?? $application['created_at'] ?? '';
+        $timestamp = strtotime($dateStr);
+        $applicationDate = ($timestamp !== false) ? date('d/m/Y', $timestamp) : $dateStr;
         $applicationCode = $application['application_code'];
+        $pdfToken = $application['pdf_download_token'] ?? '';
+        
+        // Build PDF download URL
+        $baseUrl = $this->config['app']['base_url'] ?? '';
+        if (empty($baseUrl)) {
+            // Try to construct from common settings
+            $baseUrl = $this->config['app']['url'] ?? '';
+        }
+        
+        // If still empty, use a placeholder that will be visible
+        if (empty($baseUrl)) {
+            $baseUrl = 'URL_NON_CONFIGURATO';
+            error_log("Warning: app.base_url or app.url not configured in config. PDF download link in email will not work.");
+        }
+        
+        $baseUrl = rtrim($baseUrl, '/');
+        $pdfDownloadUrl = $baseUrl . '/public/application_pdf.php?token=' . htmlspecialchars($pdfToken) . '&download=1';
+        
+        // Check if junior application
+        $isJunior = ($application['application_type'] ?? '') === 'junior';
         
         return "
     <!DOCTYPE html>
@@ -526,6 +548,9 @@ class EmailSender {
             .content { padding: 30px 20px; background: #f9f9f9; }
             .info-box { background: #e3f2fd; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; }
             .info-box p { margin: 5px 0; }
+            .download-box { background: #d4edda; border: 2px solid #28a745; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center; }
+            .download-btn { display: inline-block; background: #dc3545; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; }
+            .download-btn:hover { background: #c82333; }
             .steps { background: white; padding: 20px; margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; }
             .steps h3 { margin-top: 0; color: #007bff; }
             .steps ol { padding-left: 20px; }
@@ -551,9 +576,21 @@ class EmailSender {
                     <p><strong>DATA RICEZIONE:</strong> $applicationDate</p>
                 </div>
                 
-                <p><strong>In allegato</strong> trovi il modulo PDF completo precompilato con:</p>
+                " . (!empty($pdfToken) ? "
+                <div class='download-box'>
+                    <h3 style='margin-top: 0; color: #155724;'>📄 SCARICA IL MODULO PDF</h3>
+                    <p>Clicca il pulsante per scaricare il modulo PDF da stampare e firmare:</p>
+                    <a href='$pdfDownloadUrl' class='download-btn'>⬇️ SCARICA PDF DOMANDA</a>
+                    <p style='font-size: 12px; color: #666; margin-top: 15px;'>
+                        Se il pulsante non funziona, copia e incolla questo link nel browser:<br>
+                        <code style='word-break: break-all;'>$pdfDownloadUrl</code>
+                    </p>
+                </div>
+                " : "") . "
+                
+                <p>Il modulo PDF contiene:</p>
                 <ul>
-                    <li>Tutti i dati inseriti</li>
+                    <li>Tutti i dati inseriti nel modulo</li>
                     <li>Tutte le dichiarazioni obbligatorie accettate</li>
                     <li>Gli spazi per le firme</li>
                 </ul>
@@ -561,8 +598,9 @@ class EmailSender {
                 <div class='steps'>
                     <h3>📋 PROSSIMI PASSI:</h3>
                     <ol>
-                        <li><strong>Stampa</strong> il modulo PDF allegato a questa email</li>
-                        <li><strong>Firma</strong> negli spazi indicati</li>
+                        <li><strong>Scarica e stampa</strong> il modulo PDF usando il link qui sopra</li>
+                        <li><strong>Firma</strong> negli spazi indicati" . ($isJunior ? " (minore e genitori/tutori)" : "") . "</li>
+                        " . (!$isJunior ? "
                         <li><strong>Prepara copie di:</strong>
                             <ul>
                                 <li>Patenti di guida (se in possesso)</li>
@@ -570,6 +608,7 @@ class EmailSender {
                                 <li>Brevetti o patentini speciali (se presenti)</li>
                             </ul>
                         </li>
+                        " : "") . "
                         <li><strong>Consegna</strong> il tutto presso la nostra sede:<br>
                             <em>$assocAddress" . (!empty($assocCity) ? " - $assocCity" : "") . "</em>
                         </li>
