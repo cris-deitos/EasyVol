@@ -27,7 +27,17 @@ $config = $app->getConfig();
 $controller = new TrainingController($db, $config);
 $csrf = new CsrfProtection();
 
-$action = $_REQUEST['action'] ?? '';
+// Parse JSON input for POST requests - needed to get action from JSON body
+$jsonInput = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $rawInput = file_get_contents('php://input');
+    if (!empty($rawInput)) {
+        $jsonInput = json_decode($rawInput, true);
+    }
+}
+
+// Get action from JSON body first, then fallback to $_REQUEST
+$action = $jsonInput['action'] ?? $_REQUEST['action'] ?? '';
 
 try {
     switch ($action) {
@@ -65,10 +75,8 @@ try {
                 exit;
             }
             
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (!$input) {
-                $input = $_POST;
-            }
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
             
             if (!$csrf->validate($input['csrf_token'] ?? '')) {
                 http_response_code(403);
@@ -133,10 +141,8 @@ try {
                 exit;
             }
             
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (!$input) {
-                $input = $_POST;
-            }
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
             
             if (!$csrf->validate($input['csrf_token'] ?? '')) {
                 http_response_code(403);
@@ -192,10 +198,8 @@ try {
                 exit;
             }
             
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (!$input) {
-                $input = $_POST;
-            }
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
             
             if (!$csrf->validate($input['csrf_token'] ?? '')) {
                 http_response_code(403);
