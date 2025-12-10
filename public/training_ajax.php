@@ -30,9 +30,23 @@ $csrf = new CsrfProtection();
 // Parse JSON input for POST requests - needed to get action from JSON body
 $jsonInput = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check content length to prevent memory issues (max 1MB for AJAX requests)
+    $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
+    if ($contentLength > 1048576) { // 1MB limit
+        http_response_code(413);
+        echo json_encode(['error' => 'Payload troppo grande']);
+        exit;
+    }
+    
     $rawInput = file_get_contents('php://input');
     if (!empty($rawInput)) {
         $jsonInput = json_decode($rawInput, true);
+        // Handle JSON parsing errors
+        if ($jsonInput === null && json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            echo json_encode(['error' => 'JSON non valido']);
+            exit;
+        }
     }
 }
 
