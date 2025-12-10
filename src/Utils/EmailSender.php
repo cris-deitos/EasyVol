@@ -510,7 +510,9 @@ class EmailSender {
      * @return string HTML email body
      */
     private function buildApplicationEmailBody($name, $application, $assocName, $assocAddress, $assocCity, $assocPhone, $assocEmail) {
-        $applicationDate = date('d/m/Y', strtotime($application['submitted_at'] ?? $application['created_at']));
+        $dateStr = $application['submitted_at'] ?? $application['created_at'] ?? '';
+        $timestamp = strtotime($dateStr);
+        $applicationDate = ($timestamp !== false) ? date('d/m/Y', $timestamp) : $dateStr;
         $applicationCode = $application['application_code'];
         $pdfToken = $application['pdf_download_token'] ?? '';
         
