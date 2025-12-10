@@ -11,10 +11,10 @@ class SanctionService {
     /**
      * Valid sanction types
      */
-    const VALID_TYPES = ['decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'operativo'];
+    const VALID_TYPES = ['decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'attivo'];
     
     /**
-     * Suspension sanction types that can be reversed by 'operativo'
+     * Suspension sanction types that can be reversed by 'attivo'
      */
     const SUSPENSION_TYPES = ['in_aspettativa', 'sospeso', 'in_congedo'];
     
@@ -44,17 +44,17 @@ class SanctionService {
     public static function calculateNewStatus($sanctionType, $sanctionDate, $allSanctions) {
         $newStatus = $sanctionType;
         
-        // Special handling for operativo sanction
-        // 'operativo' is a valid sanction type but NOT a valid member_status
+        // Special handling for attivo sanction
+        // 'attivo' is a valid sanction type but NOT a valid member_status
         // It always sets the member status to 'attivo' (returning to active status)
-        if ($sanctionType === 'operativo') {
-            // Always return 'attivo' for 'operativo' sanction type
+        if ($sanctionType === 'attivo') {
+            // Always return 'attivo' for 'attivo' sanction type
             // This ensures the member is set to active status regardless of previous sanctions
             return 'attivo';
         }
         
         // Apply status consolidation logic
-        // If in_aspettativa or in_congedo -> set status to sospeso (unless already set to attivo by operativo)
+        // If in_aspettativa or in_congedo -> set status to sospeso (unless already set to attivo by attivo)
         if (in_array($sanctionType, self::CONSOLIDATE_TO_SOSPESO) && $newStatus === $sanctionType) {
             $newStatus = 'sospeso';
         }
