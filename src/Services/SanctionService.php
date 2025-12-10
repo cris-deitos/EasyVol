@@ -45,13 +45,12 @@ class SanctionService {
         $newStatus = $sanctionType;
         
         // Special handling for operativo sanction
+        // 'operativo' is a valid sanction type but NOT a valid member_status
+        // It always sets the member status to 'attivo' (returning to active status)
         if ($sanctionType === 'operativo') {
-            $hasPreviousSuspension = self::hasPreviousSuspension($sanctionDate, $allSanctions);
-            
-            // If operativo comes after a suspension, return to active status
-            if ($hasPreviousSuspension) {
-                $newStatus = 'attivo';
-            }
+            // Always return 'attivo' for 'operativo' sanction type
+            // This ensures the member is set to active status regardless of previous sanctions
+            return 'attivo';
         }
         
         // Apply status consolidation logic
