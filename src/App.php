@@ -280,57 +280,31 @@ class App {
         try {
             $userId = $_SESSION['user']['id'];
             
-            // Reload user data with role
+            // Reload user data with role - only for active users
             $stmt = $this->db->query(
                 "SELECT u.*, r.name as role_name 
                 FROM users u 
                 LEFT JOIN roles r ON u.role_id = r.id 
-                WHERE u.id = ?",
+                WHERE u.id = ? AND u.is_active = 1",
                 [$userId]
             );
             
             $userData = $stmt->fetch();
             
             if (!$userData) {
+                // User not found or inactive - clear session and force logout
+                unset($_SESSION['user']);
+                session_destroy();
                 return false;
             }
             
-            // Get role-based permissions
-            $rolePermissions = [];
-            if ($userData['role_id']) {
-                $stmt = $this->db->query(
-                    "SELECT p.* FROM permissions p
-                    INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                    WHERE rp.role_id = ?",
-                    [$userData['role_id']]
-                );
-                $rolePermissions = $stmt->fetchAll();
-            }
-            
-            // Get user-specific permissions
-            $stmt = $this->db->query(
-                "SELECT p.* FROM permissions p
-                INNER JOIN user_permissions up ON p.id = up.permission_id
-                WHERE up.user_id = ?",
-                [$userId]
-            );
-            $userPermissions = $stmt->fetchAll();
-            
-            // Merge permissions (user-specific permissions supplement role permissions)
-            $permissionsMap = [];
-            foreach ($rolePermissions as $perm) {
-                $key = $perm['module'] . '::' . $perm['action'];
-                $permissionsMap[$key] = $perm;
-            }
-            foreach ($userPermissions as $perm) {
-                $key = $perm['module'] . '::' . $perm['action'];
-                $permissionsMap[$key] = $perm;
-            }
+            // Use the loadUserPermissions helper to avoid code duplication
+            $permissions = $this->loadUserPermissions($userId, $userData['role_id']);
             
             // Update session with refreshed data
             $_SESSION['user']['role_id'] = $userData['role_id'];
             $_SESSION['user']['role_name'] = $userData['role_name'];
-            $_SESSION['user']['permissions'] = array_values($permissionsMap);
+            $_SESSION['user']['permissions'] = $permissions;
             
             return true;
             
@@ -342,7 +316,7 @@ class App {
     
     /**
      * Load permissions for a specific user (helper method)
-     * This is a static helper that can be used during login or permission refresh
+     * This is a helper that can be used during login or permission refresh
      * 
      * @param int $userId The user ID
      * @param int|null $roleId The role ID (optional)
@@ -375,7 +349,7 @@ class App {
             );
             $userPermissions = $stmt->fetchAll();
             
-            // Merge permissions
+            // Merge permissions (user-specific permissions supplement role permissions)
             $permissionsMap = [];
             foreach ($rolePermissions as $perm) {
                 $key = $perm['module'] . '::' . $perm['action'];
