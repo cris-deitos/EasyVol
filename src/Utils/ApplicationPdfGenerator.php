@@ -140,8 +140,10 @@ class ApplicationPdfGenerator {
             if (!empty($data['courses']) || !empty($data['corso_base_pc'])) {
                 $html .= $this->addCourses($data);
             }
-            // Add professional info section
-            $html .= $this->addProfessionalInfo($data);
+            // Add professional info section only if data exists
+            if (!empty($data['worker_type']) || !empty($data['education_level'])) {
+                $html .= $this->addProfessionalInfo($data);
+            }
         }
         
         $html .= $this->addHealthInfo($data);
@@ -313,10 +315,16 @@ class ApplicationPdfGenerator {
                     $licenseInfo .= ' N. ' . htmlspecialchars($license['number']);
                 }
                 if (!empty($license['issue_date'])) {
-                    $licenseInfo .= ' - Rilasciata: ' . date('d/m/Y', strtotime($license['issue_date']));
+                    $timestamp = strtotime($license['issue_date']);
+                    if ($timestamp !== false) {
+                        $licenseInfo .= ' - Rilasciata: ' . date('d/m/Y', $timestamp);
+                    }
                 }
                 if (!empty($license['expiry_date'])) {
-                    $licenseInfo .= ' - Scadenza: ' . date('d/m/Y', strtotime($license['expiry_date']));
+                    $timestamp = strtotime($license['expiry_date']);
+                    if ($timestamp !== false) {
+                        $licenseInfo .= ' - Scadenza: ' . date('d/m/Y', $timestamp);
+                    }
                 }
                 $html .= '<div class="info-row">• ' . $licenseInfo . '</div>';
             }
@@ -345,10 +353,16 @@ class ApplicationPdfGenerator {
                 if (empty($course['name'])) continue;
                 $courseInfo = htmlspecialchars($course['name'] ?? '');
                 if (!empty($course['completion_date'])) {
-                    $courseInfo .= ' - Completato: ' . date('d/m/Y', strtotime($course['completion_date']));
+                    $timestamp = strtotime($course['completion_date']);
+                    if ($timestamp !== false) {
+                        $courseInfo .= ' - Completato: ' . date('d/m/Y', $timestamp);
+                    }
                 }
                 if (!empty($course['expiry_date'])) {
-                    $courseInfo .= ' - Scadenza: ' . date('d/m/Y', strtotime($course['expiry_date']));
+                    $timestamp = strtotime($course['expiry_date']);
+                    if ($timestamp !== false) {
+                        $courseInfo .= ' - Scadenza: ' . date('d/m/Y', $timestamp);
+                    }
                 }
                 $html .= '<div class="info-row">• ' . $courseInfo . '</div>';
             }
