@@ -27,7 +27,31 @@ $config = $app->getConfig();
 $controller = new TrainingController($db, $config);
 $csrf = new CsrfProtection();
 
-$action = $_REQUEST['action'] ?? '';
+// Parse JSON input for POST requests - needed to get action from JSON body
+$jsonInput = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check content length to prevent memory issues (max 1MB for AJAX requests)
+    $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
+    if ($contentLength > 1048576) { // 1MB limit
+        http_response_code(413);
+        echo json_encode(['error' => 'Payload troppo grande']);
+        exit;
+    }
+    
+    $rawInput = file_get_contents('php://input');
+    if (!empty($rawInput)) {
+        $jsonInput = json_decode($rawInput, true);
+        // Handle JSON parsing errors
+        if ($jsonInput === null && json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            echo json_encode(['error' => 'JSON non valido']);
+            exit;
+        }
+    }
+}
+
+// Get action from JSON body first, then fallback to $_REQUEST
+$action = $jsonInput['action'] ?? $_REQUEST['action'] ?? '';
 
 try {
     switch ($action) {
@@ -65,10 +89,8 @@ try {
                 exit;
             }
             
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (!$input) {
-                $input = $_POST;
-            }
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
             
             if (!$csrf->validate($input['csrf_token'] ?? '')) {
                 http_response_code(403);
@@ -133,10 +155,8 @@ try {
                 exit;
             }
             
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (!$input) {
-                $input = $_POST;
-            }
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
             
             if (!$csrf->validate($input['csrf_token'] ?? '')) {
                 http_response_code(403);
@@ -192,10 +212,8 @@ try {
                 exit;
             }
             
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (!$input) {
-                $input = $_POST;
-            }
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
             
             if (!$csrf->validate($input['csrf_token'] ?? '')) {
                 http_response_code(403);
