@@ -222,10 +222,15 @@ class ApplicationPdfGenerator {
         $isJunior = ($application['application_type'] ?? '') === 'junior';
         $subtitle = $isJunior ? 'SOCIO MINORENNE (CADETTO)' : 'SOCIO MAGGIORENNE';
         
+        // Format submission date with validation
+        $submissionDate = $application['submitted_at'] ?? '';
+        $submissionTimestamp = strtotime($submissionDate);
+        $formattedSubmissionDate = ($submissionTimestamp !== false) ? date('d/m/Y', $submissionTimestamp) : $submissionDate;
+        
         $html = '<h1>DOMANDA DI ISCRIZIONE<br><span style="font-size: 12pt;">' . $subtitle . '</span></h1>';
         $html .= '<div style="text-align: center; margin-bottom: 20px;">';
         $html .= '<div><strong>Codice domanda:</strong> ' . htmlspecialchars($application['application_code']) . '</div>';
-        $html .= '<div><strong>Data compilazione:</strong> ' . date('d/m/Y', strtotime($application['submitted_at'])) . '</div>';
+        $html .= '<div><strong>Data compilazione:</strong> ' . htmlspecialchars($formattedSubmissionDate) . '</div>';
         $html .= '</div>';
         return $html;
     }
@@ -239,10 +244,13 @@ class ApplicationPdfGenerator {
         $html .= '<div class="info-row"><span class="label">Nome:</span> <span class="value">' . htmlspecialchars($data['first_name'] ?? '') . '</span></div>';
         $html .= '<div class="info-row"><span class="label">Codice Fiscale:</span> <span class="value">' . htmlspecialchars($data['tax_code'] ?? '') . '</span></div>';
         
-        // Format birth date
+        // Format birth date with validation
         $birthDate = $data['birth_date'] ?? '';
         if (!empty($birthDate)) {
-            $birthDate = date('d/m/Y', strtotime($birthDate));
+            $timestamp = strtotime($birthDate);
+            if ($timestamp !== false) {
+                $birthDate = date('d/m/Y', $timestamp);
+            }
         }
         $html .= '<div class="info-row"><span class="label">Data di nascita:</span> <span class="value">' . htmlspecialchars($birthDate) . '</span></div>';
         
@@ -481,7 +489,10 @@ class ApplicationPdfGenerator {
                 $html .= '<div class="info-row"><span class="label">Codice Fiscale:</span> <span class="value">' . htmlspecialchars($guardian['tax_code']) . '</span></div>';
             }
             if (!empty($guardian['birth_date'])) {
-                $html .= '<div class="info-row"><span class="label">Data di Nascita:</span> <span class="value">' . date('d/m/Y', strtotime($guardian['birth_date'])) . '</span></div>';
+                $timestamp = strtotime($guardian['birth_date']);
+                if ($timestamp !== false) {
+                    $html .= '<div class="info-row"><span class="label">Data di Nascita:</span> <span class="value">' . date('d/m/Y', $timestamp) . '</span></div>';
+                }
             }
             if (!empty($guardian['birth_place'])) {
                 $html .= '<div class="info-row"><span class="label">Luogo di Nascita:</span> <span class="value">' . htmlspecialchars($guardian['birth_place']) . '</span></div>';
@@ -615,11 +626,16 @@ class ApplicationPdfGenerator {
     private function addSignatures($data, $type) {
         $html = '<div style="margin-top: 30px;">';
         
-        // Pre-fill date and place from form data
+        // Pre-fill date and place from form data with validation
         $compilationPlace = $data['compilation_place'] ?? '';
         $compilationDate = '';
         if (!empty($data['compilation_date'])) {
-            $compilationDate = date('d/m/Y', strtotime($data['compilation_date']));
+            $timestamp = strtotime($data['compilation_date']);
+            if ($timestamp !== false) {
+                $compilationDate = date('d/m/Y', $timestamp);
+            } else {
+                $compilationDate = $data['compilation_date']; // Keep original if parsing fails
+            }
         }
         
         if ($type === 'junior') {
