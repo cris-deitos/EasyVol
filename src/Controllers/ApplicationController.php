@@ -113,16 +113,19 @@ class ApplicationController {
             // Genera codice univoco
             $code = $this->generateUniqueCode();
             
+            // Generate PDF download token (never expires for convenience)
+            $pdfToken = bin2hex(random_bytes(32));
+            
             // Prepara i dati JSON
             $applicationData = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             
-            // Inserisci domanda
+            // Inserisci domanda con token
             $sql = "INSERT INTO member_applications (
                 application_code, application_type, status,
-                application_data, submitted_at
-            ) VALUES (?, 'adult', 'pending', ?, NOW())";
+                application_data, pdf_download_token, submitted_at
+            ) VALUES (?, 'adult', 'pending', ?, ?, NOW())";
             
-            $params = [$code, $applicationData];
+            $params = [$code, $applicationData, $pdfToken];
             
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
@@ -150,7 +153,7 @@ class ApplicationController {
                         [$applicationId]
                     );
                     
-                    // Send email with PDF attachment
+                    // Send email with PDF link (and attempt attachment)
                     require_once __DIR__ . '/../Utils/EmailSender.php';
                     $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
                     $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
@@ -178,6 +181,7 @@ class ApplicationController {
                 'success' => true,
                 'id' => $applicationId,
                 'code' => $code,
+                'pdf_token' => $pdfToken,
                 'pdf_generated' => $pdfGenerated,
                 'email_sent' => $emailSent,
                 'processing_errors' => $processingErrors,
@@ -207,16 +211,19 @@ class ApplicationController {
             // Genera codice univoco
             $code = $this->generateUniqueCode();
             
+            // Generate PDF download token (never expires for convenience)
+            $pdfToken = bin2hex(random_bytes(32));
+            
             // Prepara i dati JSON
             $applicationData = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             
-            // Inserisci domanda
+            // Inserisci domanda con token
             $sql = "INSERT INTO member_applications (
                 application_code, application_type, status,
-                application_data, submitted_at
-            ) VALUES (?, 'junior', 'pending', ?, NOW())";
+                application_data, pdf_download_token, submitted_at
+            ) VALUES (?, 'junior', 'pending', ?, ?, NOW())";
             
-            $params = [$code, $applicationData];
+            $params = [$code, $applicationData, $pdfToken];
             
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
@@ -244,7 +251,7 @@ class ApplicationController {
                         [$applicationId]
                     );
                     
-                    // Send email with PDF attachment
+                    // Send email with PDF link (and attempt attachment)
                     require_once __DIR__ . '/../Utils/EmailSender.php';
                     $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
                     $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
@@ -272,6 +279,7 @@ class ApplicationController {
                 'success' => true,
                 'id' => $applicationId,
                 'code' => $code,
+                'pdf_token' => $pdfToken,
                 'pdf_generated' => $pdfGenerated,
                 'email_sent' => $emailSent,
                 'processing_errors' => $processingErrors,
