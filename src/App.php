@@ -283,9 +283,9 @@ class App {
             // Reload user data with role - only for active users
             $stmt = $this->db->query(
                 "SELECT u.*, r.name as role_name 
-                FROM users u 
-                LEFT JOIN roles r ON u.role_id = r.id 
-                WHERE u.id = ? AND u.is_active = 1",
+                 FROM users u 
+                 LEFT JOIN roles r ON u.role_id = r.id 
+                 WHERE u.id = ? AND u.is_active = 1",
                 [$userId]
             );
             
@@ -328,36 +328,44 @@ class App {
         }
         
         try {
-            // Get role-based permissions
-            $rolePermissions = [];
+            $allPermissions = [];
+            
+            // Use a single query with UNION to reduce database round trips
+            // This combines role-based permissions and user-specific permissions
             if ($roleId) {
                 $stmt = $this->db->query(
-                    "SELECT p.* FROM permissions p
-                    INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                    WHERE rp.role_id = ?",
-                    [$roleId]
+                    "SELECT p.id, p.module, p.action, p.description, 'role' as source 
+                     FROM permissions p
+                     INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                     WHERE rp.role_id = ?
+                     UNION
+                     SELECT p.id, p.module, p.action, p.description, 'user' as source
+                     FROM permissions p
+                     INNER JOIN user_permissions up ON p.id = up.permission_id
+                     WHERE up.user_id = ?",
+                    [$roleId, $userId]
                 );
-                $rolePermissions = $stmt->fetchAll();
+                $allPermissions = $stmt->fetchAll();
+            } else {
+                // No role assigned - only get user-specific permissions
+                $stmt = $this->db->query(
+                    "SELECT p.id, p.module, p.action, p.description, 'user' as source
+                     FROM permissions p
+                     INNER JOIN user_permissions up ON p.id = up.permission_id
+                     WHERE up.user_id = ?",
+                    [$userId]
+                );
+                $allPermissions = $stmt->fetchAll();
             }
             
-            // Get user-specific permissions
-            $stmt = $this->db->query(
-                "SELECT p.* FROM permissions p
-                INNER JOIN user_permissions up ON p.id = up.permission_id
-                WHERE up.user_id = ?",
-                [$userId]
-            );
-            $userPermissions = $stmt->fetchAll();
-            
-            // Merge permissions (user-specific permissions supplement role permissions)
+            // Deduplicate permissions (user permissions take precedence)
             $permissionsMap = [];
-            foreach ($rolePermissions as $perm) {
+            foreach ($allPermissions as $perm) {
                 $key = $perm['module'] . '::' . $perm['action'];
-                $permissionsMap[$key] = $perm;
-            }
-            foreach ($userPermissions as $perm) {
-                $key = $perm['module'] . '::' . $perm['action'];
-                $permissionsMap[$key] = $perm;
+                // User permissions override role permissions if duplicated
+                if (!isset($permissionsMap[$key]) || $perm['source'] === 'user') {
+                    $permissionsMap[$key] = $perm;
+                }
             }
             
             return array_values($permissionsMap);
