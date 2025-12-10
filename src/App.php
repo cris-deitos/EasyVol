@@ -19,6 +19,7 @@ class App {
     private $config;
     private $db;
     private $session;
+    private $permissionsRefreshed = false;
     
     private function __construct() {
         // Set error reporting
@@ -236,6 +237,13 @@ class App {
             return false;
         }
         
+        // Refresh permissions from database once per request
+        // This ensures permission changes take effect immediately without logout/login
+        if (!$this->permissionsRefreshed) {
+            $this->refreshUserPermissions();
+            $this->permissionsRefreshed = true;
+        }
+        
         $user = $this->getCurrentUser();
         
         // Admin has all permissions
@@ -255,6 +263,117 @@ class App {
         }
         
         return false;
+    }
+    
+    /**
+     * Refresh user permissions from database
+     * Call this method when permissions might have changed (e.g., after role/permission updates)
+     * This reloads the user's role and permissions from the database into the session
+     * 
+     * @return bool True if permissions were refreshed successfully, false otherwise
+     */
+    public function refreshUserPermissions() {
+        if (!$this->isLoggedIn() || !$this->isInstalled()) {
+            return false;
+        }
+        
+        try {
+            $userId = $_SESSION['user']['id'];
+            
+            // Reload user data with role - only for active users
+            $stmt = $this->db->query(
+                "SELECT u.*, r.name as role_name 
+                 FROM users u 
+                 LEFT JOIN roles r ON u.role_id = r.id 
+                 WHERE u.id = ? AND u.is_active = 1",
+                [$userId]
+            );
+            
+            $userData = $stmt->fetch();
+            
+            if (!$userData) {
+                // User not found or inactive - clear session and force logout
+                unset($_SESSION['user']);
+                session_destroy();
+                return false;
+            }
+            
+            // Use the loadUserPermissions helper to avoid code duplication
+            $permissions = $this->loadUserPermissions($userId, $userData['role_id']);
+            
+            // Update session with refreshed data
+            $_SESSION['user']['role_id'] = $userData['role_id'];
+            $_SESSION['user']['role_name'] = $userData['role_name'];
+            $_SESSION['user']['permissions'] = $permissions;
+            
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Failed to refresh user permissions: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Load permissions for a specific user (helper method)
+     * This is a helper that can be used during login or permission refresh
+     * 
+     * @param int $userId The user ID
+     * @param int|null $roleId The role ID (optional)
+     * @return array Array of permission objects
+     */
+    public function loadUserPermissions($userId, $roleId = null) {
+        if (!$this->isInstalled()) {
+            return [];
+        }
+        
+        try {
+            $allPermissions = [];
+            
+            // Use a single query with UNION to reduce database round trips
+            // This combines role-based permissions and user-specific permissions
+            if ($roleId) {
+                $stmt = $this->db->query(
+                    "SELECT p.id, p.module, p.action, p.description, 'role' as source 
+                     FROM permissions p
+                     INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                     WHERE rp.role_id = ?
+                     UNION
+                     SELECT p.id, p.module, p.action, p.description, 'user' as source
+                     FROM permissions p
+                     INNER JOIN user_permissions up ON p.id = up.permission_id
+                     WHERE up.user_id = ?",
+                    [$roleId, $userId]
+                );
+                $allPermissions = $stmt->fetchAll();
+            } else {
+                // No role assigned - only get user-specific permissions
+                $stmt = $this->db->query(
+                    "SELECT p.id, p.module, p.action, p.description, 'user' as source
+                     FROM permissions p
+                     INNER JOIN user_permissions up ON p.id = up.permission_id
+                     WHERE up.user_id = ?",
+                    [$userId]
+                );
+                $allPermissions = $stmt->fetchAll();
+            }
+            
+            // Deduplicate permissions (user permissions take precedence)
+            $permissionsMap = [];
+            foreach ($allPermissions as $perm) {
+                $key = $perm['module'] . '::' . $perm['action'];
+                // User permissions override role permissions if duplicated
+                if (!isset($permissionsMap[$key]) || $perm['source'] === 'user') {
+                    $permissionsMap[$key] = $perm;
+                }
+            }
+            
+            return array_values($permissionsMap);
+            
+        } catch (\Exception $e) {
+            error_log("Failed to load user permissions: " . $e->getMessage());
+            return [];
+        }
     }
     
     public function logActivity($action, $module = null, $recordId = null, $description = null) {
