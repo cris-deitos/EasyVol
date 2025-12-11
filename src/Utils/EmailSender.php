@@ -1,10 +1,15 @@
 <?php
 namespace EasyVol\Utils;
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+
 /**
  * Email Sender Utility
  * 
- * Gestisce l'invio di email per EasyVol usando la funzione mail() nativa di PHP
+ * Gestisce l'invio di email per EasyVol usando PHPMailer con supporto SMTP
+ * Supporta sia invio tramite SMTP che tramite sendmail (mail() PHP)
  */
 class EmailSender {
     private $config;
@@ -23,52 +28,89 @@ class EmailSender {
     }
     
     /**
-     * Build email headers from configuration
+     * Create and configure PHPMailer instance
      * 
-     * @param string|null $replyTo Optional Reply-To address
-     * @return array Array of email headers
+     * @return PHPMailer
      */
-    private function buildHeaders($replyTo = null) {
-        $charset = $this->config['email']['charset'] ?? 'UTF-8';
-        $encoding = $this->config['email']['encoding'] ?? '8bit';
-        $fromEmail = $this->config['email']['from_address'] ?? $this->config['email']['from_email'] ?? 'noreply@localhost';
-        $fromName = $this->config['email']['from_name'] ?? 'EasyVol';
-        $replyToEmail = $replyTo ?? $this->config['email']['reply_to'] ?? $fromEmail;
-        $returnPath = $this->config['email']['return_path'] ?? $fromEmail;
-        
-        $headers = [
-            'MIME-Version: 1.0',
-            "Content-type: text/html; charset=$charset",
-            "Content-Transfer-Encoding: $encoding",
-            "From: $fromName <$fromEmail>",
-            "Reply-To: $replyToEmail",
-            "Return-Path: $returnPath",
-            'X-Mailer: EasyVol/' . ($this->config['app']['version'] ?? '1.0')
-        ];
-        
-        // Add custom headers if configured
-        if (!empty($this->config['email']['additional_headers'])) {
-            if (is_array($this->config['email']['additional_headers'])) {
-                // Validate and filter dangerous headers
-                $dangerousHeaders = ['bcc:', 'cc:', 'to:', 'from:', 'content-type:', 'mime-version:'];
-                foreach ($this->config['email']['additional_headers'] as $header) {
-                    $headerLower = strtolower(trim($header));
-                    $isDangerous = false;
-                    foreach ($dangerousHeaders as $dangerous) {
-                        if (strpos($headerLower, $dangerous) === 0) {
-                            $isDangerous = true;
-                            error_log("Blocked dangerous header: $header");
-                            break;
-                        }
-                    }
-                    if (!$isDangerous && preg_match('/^[a-zA-Z0-9\-]+:/', $header)) {
-                        $headers[] = $header;
-                    }
-                }
-            }
+    private function createMailer() {
+        // Check if PHPMailer is available
+        if (!class_exists('\PHPMailer\PHPMailer\PHPMailer')) {
+            throw new \Exception('PHPMailer non è installato. Eseguire: composer install');
         }
         
-        return $headers;
+        $mailer = new PHPMailer(true); // Enable exceptions
+        
+        // Get email method from config (smtp or sendmail)
+        $method = $this->config['email']['method'] ?? 'smtp';
+        
+        if ($method === 'smtp') {
+            // Configure SMTP
+            $mailer->isSMTP();
+            $mailer->Host = $this->config['email']['smtp_host'] ?? '';
+            $mailer->Port = intval($this->config['email']['smtp_port'] ?? 587);
+            
+            // SMTP Authentication
+            $smtpAuth = $this->config['email']['smtp_auth'] ?? true;
+            if ($smtpAuth) {
+                $mailer->SMTPAuth = true;
+                $mailer->Username = $this->config['email']['smtp_username'] ?? '';
+                $mailer->Password = $this->config['email']['smtp_password'] ?? '';
+            } else {
+                $mailer->SMTPAuth = false;
+            }
+            
+            // SMTP Encryption
+            $encryption = $this->config['email']['smtp_encryption'] ?? 'tls';
+            if ($encryption === 'tls') {
+                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            } elseif ($encryption === 'ssl') {
+                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            } else {
+                $mailer->SMTPSecure = '';
+                $mailer->SMTPAutoTLS = false;
+            }
+            
+            // Debug mode
+            $debug = $this->config['email']['smtp_debug'] ?? false;
+            if ($debug) {
+                $mailer->SMTPDebug = SMTP::DEBUG_SERVER;
+                $mailer->Debugoutput = function($str, $level) {
+                    error_log("SMTP DEBUG [$level]: $str");
+                };
+            }
+        } else {
+            // Use PHP mail() function via sendmail
+            $mailer->isMail();
+        }
+        
+        // Character encoding
+        $mailer->CharSet = $this->config['email']['charset'] ?? PHPMailer::CHARSET_UTF8;
+        $mailer->Encoding = PHPMailer::ENCODING_BASE64;
+        
+        // Set From address
+        $fromEmail = $this->config['email']['from_address'] ?? $this->config['email']['from_email'] ?? 'noreply@localhost';
+        $fromName = $this->config['email']['from_name'] ?? 'EasyVol';
+        $mailer->setFrom($fromEmail, $fromName);
+        
+        // Set Reply-To if configured
+        $replyTo = $this->config['email']['reply_to'] ?? '';
+        if (!empty($replyTo)) {
+            $mailer->addReplyTo($replyTo);
+        }
+        
+        // Set Return-Path (bounce address)
+        $returnPath = $this->config['email']['return_path'] ?? '';
+        if (!empty($returnPath)) {
+            $mailer->Sender = $returnPath;
+        }
+        
+        // HTML email
+        $mailer->isHTML(true);
+        
+        // Add custom X-Mailer header
+        $mailer->XMailer = 'EasyVol/' . ($this->config['app']['version'] ?? '1.0');
+        
+        return $mailer;
     }
     
     /**
@@ -77,17 +119,18 @@ class EmailSender {
      * @param string|array $to Destinatario/i
      * @param string $subject Oggetto
      * @param string $body Corpo HTML
-     * @param array $attachments Allegati (array di path) - Not supported with native mail()
-     * @param string|array $cc CC - Not supported with native mail()
-     * @param string|array $bcc BCC - Not supported with native mail()
-     * @param string $replyTo Reply-To email
+     * @param array $attachments Allegati (array di ['path' => '/path/to/file', 'name' => 'filename.pdf'])
+     * @param string|array $cc CC recipients
+     * @param string|array $bcc BCC recipients
+     * @param string $replyTo Reply-To email (overrides config)
      * @return bool
      */
     public function send($to, $subject, $body, $attachments = [], $cc = [], $bcc = [], $replyTo = null) {
         try {
             // Check if email is enabled
             if (!($this->config['email']['enabled'] ?? false)) {
-                throw new \Exception('Email sending is disabled in configuration');
+                error_log('Email sending is disabled in configuration');
+                return false;
             }
             
             // Get primary recipient email
@@ -98,30 +141,57 @@ class EmailSender {
                 throw new \Exception("Invalid email address: $toEmail");
             }
             
-            // Build headers
-            $headers = $this->buildHeaders($replyTo);
+            // Create and configure mailer
+            $mailer = $this->createMailer();
             
-            // Note: Auto-CC feature removed to prevent unwanted duplicate emails
-            // If CC is needed, it should be explicitly handled by the caller
+            // Add recipient(s)
+            if (is_array($to)) {
+                foreach ($to as $email => $name) {
+                    if (is_numeric($email)) {
+                        // Indexed array: value is the email
+                        $mailer->addAddress($name);
+                    } else {
+                        // Associative array: key is email, value is name
+                        $mailer->addAddress($email, $name);
+                    }
+                }
+            } else {
+                $mailer->addAddress($toEmail);
+            }
             
-            // Additional sendmail parameters if configured
-            $additionalParams = $this->config['email']['sendmail_params'] ?? '';
+            // Add CC
+            if (!empty($cc)) {
+                $ccList = is_array($cc) ? $cc : [$cc];
+                foreach ($ccList as $ccEmail) {
+                    if (filter_var($ccEmail, FILTER_VALIDATE_EMAIL)) {
+                        $mailer->addCC($ccEmail);
+                    }
+                }
+            }
             
-            // Handle attachments using MIME multipart
+            // Add BCC
+            if (!empty($bcc)) {
+                $bccList = is_array($bcc) ? $bcc : [$bcc];
+                foreach ($bccList as $bccEmail) {
+                    if (filter_var($bccEmail, FILTER_VALIDATE_EMAIL)) {
+                        $mailer->addBCC($bccEmail);
+                    }
+                }
+            }
+            
+            // Override Reply-To if provided
+            if (!empty($replyTo) && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                $mailer->clearReplyTos();
+                $mailer->addReplyTo($replyTo);
+            }
+            
+            // Set subject and body
+            $mailer->Subject = $subject;
+            $mailer->Body = $body;
+            $mailer->AltBody = strip_tags($body); // Plain text alternative
+            
+            // Add attachments
             if (!empty($attachments) && is_array($attachments)) {
-                // Create boundary
-                $boundary = md5(time());
-                
-                // Override Content-Type for multipart (MIME-Version already set in buildHeaders)
-                $headers[] = "Content-Type: multipart/mixed; boundary=\"$boundary\"";
-                
-                // Build multipart message
-                $message = "--$boundary\r\n";
-                $message .= "Content-Type: text/html; charset=UTF-8\r\n";
-                $message .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-                $message .= $body . "\r\n\r\n";
-                
-                // Add each attachment
                 foreach ($attachments as $attachment) {
                     if (isset($attachment['path']) && file_exists($attachment['path'])) {
                         // Validate file size (max 10MB)
@@ -132,41 +202,14 @@ class EmailSender {
                             continue;
                         }
                         
-                        // Detect MIME type
-                        $mimeType = 'application/octet-stream';
-                        if (function_exists('mime_content_type')) {
-                            $detectedType = mime_content_type($attachment['path']);
-                            if ($detectedType !== false) {
-                                $mimeType = $detectedType;
-                            }
-                        }
-                        
                         $fileName = $attachment['name'] ?? basename($attachment['path']);
-                        $fileContent = file_get_contents($attachment['path']);
-                        $encodedContent = chunk_split(base64_encode($fileContent));
-                        
-                        $message .= "--$boundary\r\n";
-                        $message .= "Content-Type: $mimeType; name=\"$fileName\"\r\n";
-                        $message .= "Content-Transfer-Encoding: base64\r\n";
-                        $message .= "Content-Disposition: attachment; filename=\"$fileName\"\r\n\r\n";
-                        $message .= $encodedContent . "\r\n";
+                        $mailer->addAttachment($attachment['path'], $fileName);
                     }
                 }
-                
-                $message .= "--$boundary--";
-                $body = $message;
             }
             
-            // Send email (PHP 8 compatible)
-            if (!empty($additionalParams)) {
-                $result = mail($toEmail, $subject, $body, implode("\r\n", $headers), $additionalParams);
-            } else {
-                $result = mail($toEmail, $subject, $body, implode("\r\n", $headers));
-            }
-            
-            if (!$result) {
-                throw new \Exception("mail() function returned false");
-            }
+            // Send email
+            $result = $mailer->send();
             
             // Log success
             if ($this->db) {
@@ -174,6 +217,17 @@ class EmailSender {
             }
             
             return true;
+            
+        } catch (PHPMailerException $e) {
+            $errorMessage = "PHPMailer Error: " . $e->getMessage();
+            error_log("Email send failed: " . $errorMessage);
+            
+            // Log failure
+            if ($this->db) {
+                $this->logEmail($to, $subject, $body, 'failed', $errorMessage);
+            }
+            
+            return false;
             
         } catch (\Exception $e) {
             error_log("Email send failed: " . $e->getMessage());

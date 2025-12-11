@@ -32,9 +32,6 @@ AutoLogger::logPageAccess();
 $db = $app->getDb();
 $config = $app->getConfig();
 
-// Valid email encoding options
-define('VALID_EMAIL_ENCODINGS', ['7bit', '8bit', 'base64', 'quoted-printable']);
-
 $errors = [];
 $success = false;
 $successMessage = '';
@@ -244,14 +241,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
         } elseif ($formType === 'email') {
             // Handle email settings update - save to database instead of config file
             try {
+                // Basic email settings
+                $emailEnabled = isset($_POST['email_enabled']) ? '1' : '0';
+                $emailMethod = trim($_POST['email_method'] ?? 'smtp');
                 $fromAddress = trim($_POST['from_address'] ?? '');
                 $fromName = trim($_POST['from_name'] ?? '');
                 $replyTo = trim($_POST['reply_to'] ?? '');
                 $returnPath = trim($_POST['return_path'] ?? '');
                 $charset = trim($_POST['charset'] ?? 'UTF-8');
-                $encoding = trim($_POST['encoding'] ?? '8bit');
-                $sendmailParams = trim($_POST['sendmail_params'] ?? '');
-                $additionalHeaders = trim($_POST['additional_headers'] ?? '');
+                
+                // SMTP settings
+                $smtpHost = trim($_POST['smtp_host'] ?? '');
+                $smtpPort = intval($_POST['smtp_port'] ?? 587);
+                $smtpUsername = trim($_POST['smtp_username'] ?? '');
+                $smtpPassword = $_POST['smtp_password'] ?? ''; // Don't trim password
+                $smtpEncryption = trim($_POST['smtp_encryption'] ?? 'tls');
+                $smtpAuth = isset($_POST['smtp_auth']) ? '1' : '0';
+                $smtpDebug = isset($_POST['smtp_debug']) ? '1' : '0';
                 
                 // Validate required fields
                 if (empty($fromAddress) || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
@@ -264,22 +270,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $errors[] = 'Return-Path non valido';
                 }
                 
-                // Validate encoding
-                if (!in_array($encoding, VALID_EMAIL_ENCODINGS)) {
-                    $errors[] = 'Encoding non valido';
+                // Validate email method
+                if (!in_array($emailMethod, ['smtp', 'sendmail'])) {
+                    $errors[] = 'Metodo di invio email non valido';
+                }
+                
+                // Validate SMTP encryption
+                if (!in_array($smtpEncryption, ['tls', 'ssl', ''])) {
+                    $errors[] = 'Tipo di crittografia SMTP non valido';
+                }
+                
+                // Validate SMTP port
+                if ($smtpPort < 1 || $smtpPort > 65535) {
+                    $errors[] = 'Porta SMTP non valida (1-65535)';
+                }
+                
+                // Validate charset
+                if (!in_array($charset, ['UTF-8', 'ISO-8859-1', 'ISO-8859-15'])) {
+                    $errors[] = 'Charset non valido';
                 }
                 
                 if (empty($errors)) {
                     // Save email configuration to database in a transaction
                     $emailSettings = [
+                        'email_enabled' => $emailEnabled,
+                        'email_method' => $emailMethod,
                         'email_from_address' => $fromAddress,
                         'email_from_name' => $fromName,
                         'email_reply_to' => $replyTo,
                         'email_return_path' => $returnPath,
                         'email_charset' => $charset,
-                        'email_encoding' => $encoding,
-                        'email_sendmail_params' => $sendmailParams,
-                        'email_additional_headers' => $additionalHeaders,
+                        'email_smtp_host' => $smtpHost,
+                        'email_smtp_port' => (string)$smtpPort,
+                        'email_smtp_username' => $smtpUsername,
+                        'email_smtp_password' => $smtpPassword,
+                        'email_smtp_encryption' => $smtpEncryption,
+                        'email_smtp_auth' => $smtpAuth,
+                        'email_smtp_debug' => $smtpDebug,
                     ];
                     
                     // Use transaction for atomicity and better performance
@@ -575,7 +602,7 @@ $pageTitle = 'Impostazioni Sistema';
                     <div class="tab-pane fade" id="email" role="tabpanel">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="mb-0">Configurazione Email</h5>
+                                <h5 class="mb-0"><i class="bi bi-envelope-fill me-2"></i>Configurazione Email (PHPMailer/SMTP)</h5>
                             </div>
                             <div class="card-body">
                                 <div class="alert alert-info">
@@ -583,6 +610,10 @@ $pageTitle = 'Impostazioni Sistema';
                                     Stato Email: 
                                     <?php if ($config['email']['enabled'] ?? false): ?>
                                         <span class="badge bg-success">Attivo</span>
+                                        <?php 
+                                        $method = $config['email']['method'] ?? 'smtp';
+                                        echo ' - Metodo: <span class="badge bg-primary">' . htmlspecialchars(strtoupper($method)) . '</span>';
+                                        ?>
                                     <?php else: ?>
                                         <span class="badge bg-danger">Disattivo</span>
                                     <?php endif; ?>
@@ -592,101 +623,250 @@ $pageTitle = 'Impostazioni Sistema';
                                     <?php echo CsrfProtection::getHiddenField(); ?>
                                     <input type="hidden" name="form_type" value="email">
                                     
+                                    <!-- Email Enable/Disable -->
                                     <div class="mb-3">
-                                        <label for="from_address" class="form-label">Indirizzo Email Mittente *</label>
-                                        <input type="email" class="form-control" id="from_address" name="from_address" 
-                                               value="<?php echo htmlspecialchars($config['email']['from_address'] ?? ''); ?>" 
-                                               required
-                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="from_name" class="form-label">Nome Mittente *</label>
-                                        <input type="text" class="form-control" id="from_name" name="from_name" 
-                                               value="<?php echo htmlspecialchars($config['email']['from_name'] ?? ''); ?>" 
-                                               required
-                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="reply_to" class="form-label">Indirizzo per Risposte</label>
-                                        <input type="email" class="form-control" id="reply_to" name="reply_to" 
-                                               value="<?php echo htmlspecialchars($config['email']['reply_to'] ?? ''); ?>"
-                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="return_path" class="form-label">Return-Path</label>
-                                        <input type="email" class="form-control" id="return_path" name="return_path" 
-                                               value="<?php echo htmlspecialchars($config['email']['return_path'] ?? ''); ?>"
-                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
-                                        <small class="text-muted">Indirizzo email per gestire i bounce (email non consegnate)</small>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="email_enabled" name="email_enabled" value="1"
+                                                   <?php echo ($config['email']['enabled'] ?? false) ? 'checked' : ''; ?>
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                            <label class="form-check-label" for="email_enabled">
+                                                <strong>Abilita Invio Email</strong>
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">Attiva/disattiva l'invio di email dal sistema (scadenze, iscrizioni, quote, notifiche utenti)</small>
                                     </div>
                                     
                                     <hr class="my-4">
-                                    <h6>Configurazione Sendmail</h6>
+                                    <h6><i class="bi bi-person-lines-fill me-2"></i>Informazioni Mittente</h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="from_address" class="form-label">Indirizzo Email Mittente *</label>
+                                            <input type="email" class="form-control" id="from_address" name="from_address" 
+                                                   value="<?php echo htmlspecialchars($config['email']['from_address'] ?? ''); ?>" 
+                                                   required
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="from_name" class="form-label">Nome Mittente *</label>
+                                            <input type="text" class="form-control" id="from_name" name="from_name" 
+                                                   value="<?php echo htmlspecialchars($config['email']['from_name'] ?? 'EasyVol'); ?>" 
+                                                   required
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="reply_to" class="form-label">Indirizzo per Risposte (Reply-To)</label>
+                                            <input type="email" class="form-control" id="reply_to" name="reply_to" 
+                                                   value="<?php echo htmlspecialchars($config['email']['reply_to'] ?? ''); ?>"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                            <small class="text-muted">Indirizzo email a cui verranno inviate le risposte</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="return_path" class="form-label">Return-Path (Bounce)</label>
+                                            <input type="email" class="form-control" id="return_path" name="return_path" 
+                                                   value="<?php echo htmlspecialchars($config['email']['return_path'] ?? ''); ?>"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                            <small class="text-muted">Indirizzo per email non consegnate</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-4">
+                                    <h6><i class="bi bi-gear-fill me-2"></i>Metodo di Invio</h6>
                                     
                                     <div class="mb-3">
-                                        <label for="charset" class="form-label">Charset</label>
-                                        <select class="form-select" id="charset" name="charset"
+                                        <label for="email_method" class="form-label">Metodo di Invio Email</label>
+                                        <select class="form-select" id="email_method" name="email_method"
                                                 <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
-                                            <option value="UTF-8" <?php echo ($config['email']['charset'] ?? 'UTF-8') === 'UTF-8' ? 'selected' : ''; ?>>UTF-8</option>
-                                            <option value="ISO-8859-1" <?php echo ($config['email']['charset'] ?? '') === 'ISO-8859-1' ? 'selected' : ''; ?>>ISO-8859-1</option>
-                                            <option value="ISO-8859-15" <?php echo ($config['email']['charset'] ?? '') === 'ISO-8859-15' ? 'selected' : ''; ?>>ISO-8859-15</option>
+                                            <option value="smtp" <?php echo ($config['email']['method'] ?? 'smtp') === 'smtp' ? 'selected' : ''; ?>>SMTP (Consigliato)</option>
+                                            <option value="sendmail" <?php echo ($config['email']['method'] ?? '') === 'sendmail' ? 'selected' : ''; ?>>Sendmail (mail() PHP)</option>
                                         </select>
-                                        <small class="text-muted">Codifica caratteri delle email</small>
+                                        <small class="text-muted">SMTP è raccomandato per maggiore affidabilità e compatibilità</small>
                                     </div>
                                     
-                                    <div class="mb-3">
-                                        <label for="encoding" class="form-label">Encoding</label>
-                                        <select class="form-select" id="encoding" name="encoding"
-                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
-                                            <?php 
-                                            $currentEncoding = $config['email']['encoding'] ?? '8bit';
-                                            foreach (VALID_EMAIL_ENCODINGS as $encodingOption): 
-                                            ?>
-                                                <option value="<?php echo htmlspecialchars($encodingOption); ?>" 
-                                                        <?php echo $currentEncoding === $encodingOption ? 'selected' : ''; ?>>
-                                                    <?php echo htmlspecialchars($encodingOption); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <small class="text-muted">Metodo di codifica del contenuto</small>
+                                    <hr class="my-4">
+                                    <h6><i class="bi bi-hdd-network-fill me-2"></i>Configurazione Server SMTP</h6>
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <strong>Importante:</strong> Configura questi parametri per inviare email tramite il tuo server SMTP (Gmail, Outlook, server personale, ecc.)
                                     </div>
                                     
-                                    <div class="mb-3">
-                                        <label for="sendmail_params" class="form-label">Parametri Sendmail</label>
-                                        <input type="text" class="form-control" id="sendmail_params" name="sendmail_params" 
-                                               value="<?php echo htmlspecialchars($config['email']['sendmail_params'] ?? ''); ?>"
-                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
-                                        <small class="text-muted">Parametri aggiuntivi per la funzione mail() di PHP (es: '-f bounce@example.com')</small>
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label for="smtp_host" class="form-label">Host SMTP *</label>
+                                            <input type="text" class="form-control" id="smtp_host" name="smtp_host" 
+                                                   value="<?php echo htmlspecialchars($config['email']['smtp_host'] ?? ''); ?>"
+                                                   placeholder="es: smtp.gmail.com, smtp.office365.com"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                            <small class="text-muted">Indirizzo del server SMTP</small>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="smtp_port" class="form-label">Porta SMTP *</label>
+                                            <input type="number" class="form-control" id="smtp_port" name="smtp_port" 
+                                                   value="<?php echo htmlspecialchars($config['email']['smtp_port'] ?? '587'); ?>"
+                                                   min="1" max="65535"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                            <small class="text-muted">587 (TLS) o 465 (SSL)</small>
+                                        </div>
                                     </div>
                                     
-                                    <div class="mb-3">
-                                        <label for="additional_headers" class="form-label">Header Aggiuntivi</label>
-                                        <textarea class="form-control" id="additional_headers" name="additional_headers" 
-                                                  rows="4"
-                                                  <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>><?php 
-                                            // Display additional headers - convert array to string
-                                            $headers = $config['email']['additional_headers'] ?? '';
-                                            if (is_array($headers)) {
-                                                echo htmlspecialchars(implode("\n", $headers));
-                                            } else {
-                                                echo htmlspecialchars($headers);
-                                            }
-                                        ?></textarea>
-                                        <small class="text-muted">Header personalizzati, uno per riga (es: X-Priority: 1). Non includere header pericolosi come BCC, CC, To, From.</small>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="smtp_username" class="form-label">Username SMTP</label>
+                                            <input type="text" class="form-control" id="smtp_username" name="smtp_username" 
+                                                   value="<?php echo htmlspecialchars($config['email']['smtp_username'] ?? ''); ?>"
+                                                   placeholder="es: tuoemail@gmail.com"
+                                                   autocomplete="off"
+                                                   <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                            <small class="text-muted">Solitamente il tuo indirizzo email</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="smtp_password" class="form-label">Password SMTP</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="smtp_password" name="smtp_password" 
+                                                       value="<?php echo htmlspecialchars($config['email']['smtp_password'] ?? ''); ?>"
+                                                       placeholder="Password o App Password"
+                                                       autocomplete="new-password"
+                                                       <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                                <button class="btn btn-outline-secondary" type="button" id="togglePassword" onclick="togglePasswordVisibility()">
+                                                    <i class="bi bi-eye" id="toggleIcon"></i>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Per Gmail usa "App Password" (non la password normale)</small>
+                                        </div>
                                     </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="smtp_encryption" class="form-label">Crittografia</label>
+                                            <select class="form-select" id="smtp_encryption" name="smtp_encryption"
+                                                    <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                                <option value="tls" <?php echo ($config['email']['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : ''; ?>>TLS (Raccomandato - Porta 587)</option>
+                                                <option value="ssl" <?php echo ($config['email']['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : ''; ?>>SSL (Porta 465)</option>
+                                                <option value="" <?php echo ($config['email']['smtp_encryption'] ?? '') === '' ? 'selected' : ''; ?>>Nessuna (non sicuro)</option>
+                                            </select>
+                                            <small class="text-muted">Tipo di crittografia per la connessione SMTP</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="smtp_auth" name="smtp_auth" value="1"
+                                                       <?php echo ($config['email']['smtp_auth'] ?? true) ? 'checked' : ''; ?>
+                                                       <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                                <label class="form-check-label" for="smtp_auth">
+                                                    Richiedi Autenticazione SMTP
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">La maggior parte dei server SMTP richiede autenticazione</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-4">
+                                    <h6><i class="bi bi-sliders me-2"></i>Opzioni Avanzate</h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="charset" class="form-label">Charset</label>
+                                            <select class="form-select" id="charset" name="charset"
+                                                    <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                                <option value="UTF-8" <?php echo ($config['email']['charset'] ?? 'UTF-8') === 'UTF-8' ? 'selected' : ''; ?>>UTF-8 (Raccomandato)</option>
+                                                <option value="ISO-8859-1" <?php echo ($config['email']['charset'] ?? '') === 'ISO-8859-1' ? 'selected' : ''; ?>>ISO-8859-1</option>
+                                                <option value="ISO-8859-15" <?php echo ($config['email']['charset'] ?? '') === 'ISO-8859-15' ? 'selected' : ''; ?>>ISO-8859-15</option>
+                                            </select>
+                                            <small class="text-muted">Codifica caratteri delle email</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="smtp_debug" name="smtp_debug" value="1"
+                                                       <?php echo ($config['email']['smtp_debug'] ?? false) ? 'checked' : ''; ?>
+                                                       <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                                <label class="form-check-label" for="smtp_debug">
+                                                    Abilita Debug SMTP (solo per diagnostica)
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">Abilita log dettagliati per risolvere problemi</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-4">
                                     
                                     <?php if ($app->checkPermission('settings', 'edit')): ?>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bi bi-save"></i> Salva Modifiche
-                                        </button>
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-save"></i> Salva Configurazione Email
+                                            </button>
+                                            <a href="test_sendmail.php" class="btn btn-outline-secondary" target="_blank">
+                                                <i class="bi bi-send"></i> Invia Email di Test
+                                            </a>
+                                        </div>
                                     <?php endif; ?>
                                 </form>
+                                
+                                <hr class="my-4">
+                                <h6><i class="bi bi-lightbulb me-2"></i>Configurazioni SMTP Comuni</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Provider</th>
+                                                <th>Host SMTP</th>
+                                                <th>Porta</th>
+                                                <th>Crittografia</th>
+                                                <th>Note</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Gmail</strong></td>
+                                                <td>smtp.gmail.com</td>
+                                                <td>587</td>
+                                                <td>TLS</td>
+                                                <td>Richiede "App Password" (2FA abilitato)</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Outlook/Office365</strong></td>
+                                                <td>smtp.office365.com</td>
+                                                <td>587</td>
+                                                <td>TLS</td>
+                                                <td>Usa email e password account</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Yahoo</strong></td>
+                                                <td>smtp.mail.yahoo.com</td>
+                                                <td>465</td>
+                                                <td>SSL</td>
+                                                <td>Richiede "App Password"</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Aruba PEC</strong></td>
+                                                <td>smtps.pec.aruba.it</td>
+                                                <td>465</td>
+                                                <td>SSL</td>
+                                                <td>Per email PEC certificate</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <script>
+                    function togglePasswordVisibility() {
+                        var passwordInput = document.getElementById('smtp_password');
+                        var toggleIcon = document.getElementById('toggleIcon');
+                        if (passwordInput.type === 'password') {
+                            passwordInput.type = 'text';
+                            toggleIcon.classList.remove('bi-eye');
+                            toggleIcon.classList.add('bi-eye-slash');
+                        } else {
+                            passwordInput.type = 'password';
+                            toggleIcon.classList.remove('bi-eye-slash');
+                            toggleIcon.classList.add('bi-eye');
+                        }
+                    }
+                    </script>
                     
                     <!-- Backup -->
                     <div class="tab-pane fade" id="backup" role="tabpanel">

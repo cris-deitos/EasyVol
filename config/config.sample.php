@@ -32,14 +32,20 @@ return [
     
     'email' => [
         'enabled' => true,
+        'method' => 'smtp', // 'smtp' or 'sendmail'
         'from_address' => 'noreply@example.com',
         'from_name' => 'EasyVol',
         'reply_to' => 'noreply@example.com',
         'return_path' => 'noreply@example.com',
         'charset' => 'UTF-8',
-        'encoding' => '8bit', // 7bit, 8bit, base64, quoted-printable
-        'sendmail_params' => null, // Additional parameters for mail() function (e.g., '-f bounce@example.com')
-        'additional_headers' => [], // Additional custom headers as array
+        // SMTP Settings (used when method = 'smtp')
+        'smtp_host' => 'smtp.gmail.com', // e.g., smtp.gmail.com, smtp.office365.com
+        'smtp_port' => 587, // 587 for TLS, 465 for SSL
+        'smtp_username' => '',
+        'smtp_password' => '', // For Gmail, use App Password
+        'smtp_encryption' => 'tls', // 'tls', 'ssl', or '' for none
+        'smtp_auth' => true, // Require authentication
+        'smtp_debug' => false, // Enable debug logging
     ],
     
     'telegram' => [
