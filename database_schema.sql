@@ -932,6 +932,7 @@ CREATE TABLE IF NOT EXISTS `radio_directory` (
 CREATE TABLE IF NOT EXISTS `radio_assignments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `radio_id` int(11) NOT NULL,
+  `member_id` int(11) NULL COMMENT 'Foreign key to members table for volunteer assignments',
   `assignee_first_name` varchar(100) NOT NULL,
   `assignee_last_name` varchar(100) NOT NULL,
   `assignee_phone` varchar(50),
@@ -941,9 +942,12 @@ CREATE TABLE IF NOT EXISTS `radio_assignments` (
   `return_by` int(11),
   `return_date` datetime,
   `status` enum('assegnata', 'restituita') DEFAULT 'assegnata',
+  `notes` text,
   PRIMARY KEY (`id`),
   KEY `radio_id` (`radio_id`),
-  FOREIGN KEY (`radio_id`) REFERENCES `radio_directory`(`id`) ON DELETE CASCADE
+  KEY `member_id` (`member_id`),
+  FOREIGN KEY (`radio_id`) REFERENCES `radio_directory`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================

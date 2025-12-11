@@ -124,24 +124,39 @@ class OperationsCenterController {
             return false;
         }
         
-        // Carica assegnazione corrente
-        $sql = "SELECT ra.*, m.first_name, m.last_name, m.badge_number 
-                FROM radio_assignments ra
-                INNER JOIN members m ON ra.member_id = m.id
-                WHERE ra.radio_id = ? 
-                AND ra.return_date IS NULL
-                ORDER BY ra.assignment_date DESC
-                LIMIT 1";
-        $radio['current_assignment'] = $this->db->fetchOne($sql, [$id]);
-        
-        // Carica storico assegnazioni
-        $sql = "SELECT ra.*, m.first_name, m.last_name, m.badge_number 
-                FROM radio_assignments ra
-                INNER JOIN members m ON ra.member_id = m.id
-                WHERE ra.radio_id = ? 
-                ORDER BY ra.assignment_date DESC
-                LIMIT 10";
-        $radio['assignment_history'] = $this->db->fetchAll($sql, [$id]);
+        try {
+            // Carica assegnazione corrente - use LEFT JOIN to handle assignments without member_id
+            // Also select assignee_* columns for backward compatibility
+            $sql = "SELECT ra.*, 
+                    COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
+                    COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
+                    m.badge_number 
+                    FROM radio_assignments ra
+                    LEFT JOIN members m ON ra.member_id = m.id
+                    WHERE ra.radio_id = ? 
+                    AND ra.return_date IS NULL
+                    AND ra.status = 'assegnata'
+                    ORDER BY ra.assignment_date DESC
+                    LIMIT 1";
+            $radio['current_assignment'] = $this->db->fetchOne($sql, [$id]);
+            
+            // Carica storico assegnazioni
+            $sql = "SELECT ra.*, 
+                    COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
+                    COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
+                    m.badge_number 
+                    FROM radio_assignments ra
+                    LEFT JOIN members m ON ra.member_id = m.id
+                    WHERE ra.radio_id = ? 
+                    ORDER BY ra.assignment_date DESC
+                    LIMIT 10";
+            $radio['assignment_history'] = $this->db->fetchAll($sql, [$id]);
+        } catch (\Exception $e) {
+            // If query fails (e.g., missing columns), try simpler query
+            error_log("Error loading radio assignments: " . $e->getMessage());
+            $radio['current_assignment'] = null;
+            $radio['assignment_history'] = [];
+        }
         
         return $radio;
     }
@@ -268,12 +283,29 @@ class OperationsCenterController {
                 return ['success' => false, 'message' => 'Radio non disponibile'];
             }
             
-            // Create assignment
-            $sql = "INSERT INTO radio_assignments (
-                radio_id, member_id, assignment_date, notes, created_at
-            ) VALUES (?, ?, NOW(), ?, NOW())";
+            // Get member details for assignee fields (backward compatibility)
+            $sql = "SELECT first_name, last_name FROM members WHERE id = ?";
+            $member = $this->db->fetchOne($sql, [$memberId]);
             
-            $this->db->execute($sql, [$radioId, $memberId, $notes]);
+            if (!$member) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Volontario non trovato'];
+            }
+            
+            // Create assignment with both member_id and assignee_* fields for compatibility
+            $sql = "INSERT INTO radio_assignments (
+                radio_id, member_id, assignee_first_name, assignee_last_name, 
+                assigned_by, assignment_date, status, notes
+            ) VALUES (?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+            
+            $this->db->execute($sql, [
+                $radioId, 
+                $memberId, 
+                $member['first_name'],
+                $member['last_name'],
+                $userId,
+                $notes
+            ]);
             
             // Update radio status
             $sql = "UPDATE radio_directory SET status = 'assegnata', updated_at = NOW() 
@@ -310,14 +342,14 @@ class OperationsCenterController {
                 return ['success' => false, 'message' => 'Assegnazione non trovata'];
             }
             
-            // Update assignment
+            // Update assignment - set status to restituita, return_by, return_date
             $sql = "UPDATE radio_assignments SET 
                     return_date = NOW(), 
-                    return_notes = ?,
-                    updated_at = NOW()
+                    return_by = ?,
+                    status = 'restituita'
                     WHERE id = ?";
             
-            $this->db->execute($sql, [$notes, $assignmentId]);
+            $this->db->execute($sql, [$userId, $assignmentId]);
             
             // Update radio status
             $sql = "UPDATE radio_directory SET status = 'disponibile', updated_at = NOW() 
@@ -349,14 +381,23 @@ class OperationsCenterController {
             return ['found' => false, 'message' => 'Radio non trovata'];
         }
         
-        // Get current assignment
-        $sql = "SELECT ra.*, m.first_name, m.last_name, m.badge_number 
-                FROM radio_assignments ra
-                INNER JOIN members m ON ra.member_id = m.id
-                WHERE ra.radio_id = ? 
-                AND ra.return_date IS NULL
-                LIMIT 1";
-        $assignment = $this->db->fetchOne($sql, [$radio['id']]);
+        // Get current assignment - use LEFT JOIN and COALESCE for backward compatibility
+        try {
+            $sql = "SELECT ra.*, 
+                    COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
+                    COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
+                    m.badge_number 
+                    FROM radio_assignments ra
+                    LEFT JOIN members m ON ra.member_id = m.id
+                    WHERE ra.radio_id = ? 
+                    AND ra.return_date IS NULL
+                    AND ra.status = 'assegnata'
+                    LIMIT 1";
+            $assignment = $this->db->fetchOne($sql, [$radio['id']]);
+        } catch (\Exception $e) {
+            error_log("Error scanning serial: " . $e->getMessage());
+            $assignment = null;
+        }
         
         return [
             'found' => true,

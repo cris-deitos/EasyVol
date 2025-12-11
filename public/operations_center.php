@@ -182,7 +182,7 @@ $pageTitle = 'Centrale Operativa';
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
                                                     <strong><?php echo htmlspecialchars($radio['name']); ?></strong>
-                                                    <?php if ($radio['identifier']): ?>
+                                                    <?php if (!empty($radio['identifier'])): ?>
                                                         <br><small class="text-muted"><?php echo htmlspecialchars($radio['identifier']); ?></small>
                                                     <?php endif; ?>
                                                 </div>
