@@ -70,12 +70,16 @@ class EmailSender {
                 $mailer->SMTPAutoTLS = false;
             }
             
-            // Debug mode
+            // Debug mode - WARNING: This logs sensitive information including auth details
             $debug = $this->config['email']['smtp_debug'] ?? false;
             if ($debug) {
                 $mailer->SMTPDebug = SMTP::DEBUG_SERVER;
+                // Filter sensitive data from debug output
                 $mailer->Debugoutput = function($str, $level) {
-                    error_log("SMTP DEBUG [$level]: $str");
+                    // Mask password and auth data in debug output
+                    $filtered = preg_replace('/AUTH LOGIN.*$/mi', 'AUTH LOGIN [CREDENTIALS HIDDEN]', $str);
+                    $filtered = preg_replace('/\d{3}.*base64.*/i', '[BASE64 AUTH DATA HIDDEN]', $filtered);
+                    error_log("SMTP DEBUG [$level]: $filtered");
                 };
             }
         } else {

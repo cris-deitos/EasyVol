@@ -854,8 +854,8 @@ $pageTitle = 'Impostazioni Sistema';
                     
                     <script>
                     function togglePasswordVisibility() {
-                        var passwordInput = document.getElementById('smtp_password');
-                        var toggleIcon = document.getElementById('toggleIcon');
+                        const passwordInput = document.getElementById('smtp_password');
+                        const toggleIcon = document.getElementById('toggleIcon');
                         if (passwordInput.type === 'password') {
                             passwordInput.type = 'text';
                             toggleIcon.classList.remove('bi-eye');
