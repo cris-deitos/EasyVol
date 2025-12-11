@@ -148,9 +148,9 @@ $pageTitle = 'Dettaglio Radio';
                                         <h6 class="alert-heading"><i class="bi bi-person-badge"></i> Assegnata a:</h6>
                                         <p class="mb-2">
                                             <strong>
-                                                <?php echo htmlspecialchars($radio['current_assignment']['first_name'] . ' ' . $radio['current_assignment']['last_name']); ?>
+                                                <?php echo htmlspecialchars(($radio['current_assignment']['first_name'] ?? '') . ' ' . ($radio['current_assignment']['last_name'] ?? '')); ?>
                                             </strong>
-                                            <?php if ($radio['current_assignment']['badge_number']): ?>
+                                            <?php if (!empty($radio['current_assignment']['badge_number'])): ?>
                                                 <br>Matricola: <?php echo htmlspecialchars($radio['current_assignment']['badge_number']); ?>
                                             <?php endif; ?>
                                         </p>
@@ -160,7 +160,7 @@ $pageTitle = 'Dettaglio Radio';
                                                 Assegnata il: <?php echo date('d/m/Y H:i', strtotime($radio['current_assignment']['assignment_date'])); ?>
                                             </small>
                                         </p>
-                                        <?php if ($radio['current_assignment']['notes']): ?>
+                                        <?php if (!empty($radio['current_assignment']['notes'])): ?>
                                             <p class="mb-2">
                                                 <small>Note: <?php echo htmlspecialchars($radio['current_assignment']['notes']); ?></small>
                                             </p>
@@ -223,9 +223,9 @@ $pageTitle = 'Dettaglio Radio';
                                             <tr>
                                                 <td>
                                                     <strong>
-                                                        <?php echo htmlspecialchars($assignment['first_name'] . ' ' . $assignment['last_name']); ?>
+                                                        <?php echo htmlspecialchars(($assignment['first_name'] ?? '') . ' ' . ($assignment['last_name'] ?? '')); ?>
                                                     </strong>
-                                                    <?php if ($assignment['badge_number']): ?>
+                                                    <?php if (!empty($assignment['badge_number'])): ?>
                                                         <br><small class="text-muted">Mat. <?php echo htmlspecialchars($assignment['badge_number']); ?></small>
                                                     <?php endif; ?>
                                                 </td>
@@ -238,10 +238,10 @@ $pageTitle = 'Dettaglio Radio';
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if ($assignment['notes']): ?>
+                                                    <?php if (!empty($assignment['notes'])): ?>
                                                         <small><?php echo htmlspecialchars($assignment['notes']); ?></small>
                                                     <?php endif; ?>
-                                                    <?php if ($assignment['return_notes']): ?>
+                                                    <?php if (!empty($assignment['return_notes'])): ?>
                                                         <br><small class="text-muted">Restituzione: <?php echo htmlspecialchars($assignment['return_notes']); ?></small>
                                                     <?php endif; ?>
                                                 </td>
