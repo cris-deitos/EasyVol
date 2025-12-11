@@ -2,20 +2,21 @@
 /**
  * Cron Job: Email Queue Processor
  * 
- * Processa la coda delle email da inviare
+ * Processa la coda delle email da inviare usando PHPMailer/SMTP
  * Eseguire ogni 5 minuti con crontab -e:
  * Cron syntax: (asterisk)/5 (asterisk) (asterisk) (asterisk) (asterisk) php /path/to/easyvol/cron/email_queue.php
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\EmailSender;
 
 try {
-    // Initialize app without authentication
-    $app = new App(false);
-    $db = $app->getDatabase();
+    // Initialize app
+    $app = App::getInstance();
+    $db = $app->getDb();
     $config = $app->getConfig();
     
     // Check if email is enabled

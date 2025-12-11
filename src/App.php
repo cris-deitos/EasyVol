@@ -13,7 +13,7 @@ class App {
     /**
      * Optional email configuration fields that can have empty values
      */
-    const OPTIONAL_EMAIL_FIELDS = ['reply_to', 'return_path', 'sendmail_params', 'additional_headers'];
+    const OPTIONAL_EMAIL_FIELDS = ['reply_to', 'return_path', 'smtp_host', 'smtp_username', 'smtp_password', 'smtp_encryption'];
     
     private static $instance = null;
     private $config;
@@ -117,14 +117,20 @@ class App {
             if (!empty($emailConfigs)) {
                 // Map database config keys to config array keys
                 $keyMapping = [
+                    'email_enabled' => 'enabled',
+                    'email_method' => 'method',
                     'email_from_address' => 'from_address',
                     'email_from_name' => 'from_name',
                     'email_reply_to' => 'reply_to',
                     'email_return_path' => 'return_path',
                     'email_charset' => 'charset',
-                    'email_encoding' => 'encoding',
-                    'email_sendmail_params' => 'sendmail_params',
-                    'email_additional_headers' => 'additional_headers',
+                    'email_smtp_host' => 'smtp_host',
+                    'email_smtp_port' => 'smtp_port',
+                    'email_smtp_username' => 'smtp_username',
+                    'email_smtp_password' => 'smtp_password',
+                    'email_smtp_encryption' => 'smtp_encryption',
+                    'email_smtp_auth' => 'smtp_auth',
+                    'email_smtp_debug' => 'smtp_debug',
                 ];
                 
                 foreach ($emailConfigs as $row) {
@@ -134,9 +140,14 @@ class App {
                     if (isset($keyMapping[$dbKey])) {
                         $configKey = $keyMapping[$dbKey];
                         
-                        // Special handling for additional_headers - convert to array
-                        if ($configKey === 'additional_headers' && !empty($value)) {
-                            $value = array_filter(array_map('trim', explode("\n", $value)));
+                        // Special handling for boolean-like fields
+                        if (in_array($configKey, ['enabled', 'smtp_auth', 'smtp_debug'])) {
+                            $value = ($value === '1' || $value === 'true' || $value === true);
+                        }
+                        
+                        // Special handling for smtp_port - convert to integer
+                        if ($configKey === 'smtp_port') {
+                            $value = intval($value) ?: 587;
                         }
                         
                         // Override config if value is not empty, or if it's an optional field
