@@ -58,17 +58,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token di sicurezza non valido';
     } else {
+        // Convert empty strings to null for optional fields
+        $insuranceExpiry = trim($_POST['insurance_expiry'] ?? '');
+        $inspectionExpiry = trim($_POST['inspection_expiry'] ?? '');
+        $year = trim($_POST['year'] ?? '');
+        
         $data = [
             'vehicle_type' => $_POST['vehicle_type'] ?? 'veicolo',
             'name' => trim($_POST['name'] ?? ''),
             'license_plate' => trim($_POST['license_plate'] ?? ''),
             'brand' => trim($_POST['brand'] ?? ''),
             'model' => trim($_POST['model'] ?? ''),
-            'year' => $_POST['year'] ?? null,
+            'year' => $year !== '' ? (int)$year : null,
             'serial_number' => trim($_POST['serial_number'] ?? ''),
             'status' => $_POST['status'] ?? 'operativo',
-            'insurance_expiry' => $_POST['insurance_expiry'] ?? null,
-            'inspection_expiry' => $_POST['inspection_expiry'] ?? null,
+            'insurance_expiry' => $insuranceExpiry !== '' ? $insuranceExpiry : null,
+            'inspection_expiry' => $inspectionExpiry !== '' ? $inspectionExpiry : null,
             'notes' => trim($_POST['notes'] ?? ''),
             'generate_qr' => isset($_POST['generate_qr']) ? 1 : 0
         ];
