@@ -6,10 +6,7 @@
 -- Add member_id column if it doesn't exist (for linking to members table)
 ALTER TABLE `radio_assignments`
 ADD COLUMN IF NOT EXISTS `member_id` INT(11) NULL AFTER `radio_id`,
-ADD COLUMN IF NOT EXISTS `notes` TEXT NULL AFTER `status`,
-ADD COLUMN IF NOT EXISTS `return_notes` TEXT NULL AFTER `notes`,
-ADD COLUMN IF NOT EXISTS `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER `return_notes`,
-ADD COLUMN IF NOT EXISTS `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`;
+ADD COLUMN IF NOT EXISTS `notes` TEXT NULL AFTER `status`;
 
 -- Add foreign key for member_id if it doesn't exist
 -- Using a procedure to safely add the index and foreign key

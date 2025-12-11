@@ -348,7 +348,6 @@ class OperationsCenterController {
                     return_by = ?,
                     status = 'restituita'
                     WHERE id = ?";
-            
             $this->db->execute($sql, [$userId, $assignmentId]);
             
             // Update radio status
@@ -358,9 +357,13 @@ class OperationsCenterController {
             
             $this->db->commit();
             
-            // Log activity
+            // Log activity - include notes in description if provided
+            $description = "Radio restituita";
+            if (!empty($notes)) {
+                $description .= " - Note: " . substr($notes, 0, 100);
+            }
             $this->logActivity($userId, 'operations_center', 'return_radio', $assignment['radio_id'], 
-                "Radio restituita");
+                $description);
             
             return ['success' => true];
         } catch (\Exception $e) {
