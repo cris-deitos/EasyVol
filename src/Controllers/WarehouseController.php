@@ -271,11 +271,20 @@ class WarehouseController {
                 return false;
             }
             
-            $qrGen = new QrCodeGenerator();
-            $qrData = "ITEM:" . $itemId . ":" . $item['name'];
-            $filename = 'item_' . $itemId . '.png';
+            // Build full path for QR code file
+            $uploadsPath = $this->config['uploads']['path'] ?? (__DIR__ . '/../../uploads');
+            $qrDirectory = $uploadsPath . '/qrcodes';
             
-            $qrPath = $qrGen->generate($qrData, $filename);
+            // Create directory if it doesn't exist
+            if (!is_dir($qrDirectory)) {
+                mkdir($qrDirectory, 0755, true);
+            }
+            
+            $filename = $qrDirectory . '/item_' . $itemId . '.png';
+            $itemCode = $item['code'] ?? $item['name'];
+            
+            // Use the static method properly
+            $qrPath = QrCodeGenerator::generateForWarehouseItem($itemId, $itemCode, $filename);
             
             // Aggiorna path nel database
             $sql = "UPDATE warehouse_items SET qr_code = ? WHERE id = ?";

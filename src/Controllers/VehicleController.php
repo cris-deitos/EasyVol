@@ -450,14 +450,20 @@ class VehicleController {
                 return false;
             }
             
-            $qrGen = new QrCodeGenerator();
-            $qrData = "VEHICLE:" . $vehicleId . ":" . $vehicle['name'];
-            $filename = 'vehicle_' . $vehicleId . '.png';
+            // Build full path for QR code file
+            $uploadsPath = $this->config['uploads']['path'] ?? (__DIR__ . '/../../uploads');
+            $qrDirectory = $uploadsPath . '/qrcodes';
             
-            $qrPath = $qrGen->generate($qrData, $filename);
+            // Create directory if it doesn't exist
+            if (!is_dir($qrDirectory)) {
+                mkdir($qrDirectory, 0755, true);
+            }
             
-            // Aggiorna path nel database se necessario
-            // Per ora il QR viene salvato ma non tracciato nel DB
+            $filename = $qrDirectory . '/vehicle_' . $vehicleId . '.png';
+            $plateNumber = $vehicle['license_plate'] ?? $vehicle['name'];
+            
+            // Use the static method properly
+            $qrPath = QrCodeGenerator::generateForVehicle($vehicleId, $plateNumber, $filename);
             
             return $qrPath;
             
