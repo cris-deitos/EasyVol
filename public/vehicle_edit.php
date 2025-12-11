@@ -63,13 +63,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $inspectionExpiry = trim($_POST['inspection_expiry'] ?? '');
         $year = trim($_POST['year'] ?? '');
         
+        // Validate year if provided (must be between 1900 and next year)
+        $yearValue = null;
+        if ($year !== '') {
+            $yearInt = (int)$year;
+            $maxYear = (int)date('Y') + 1;
+            if ($yearInt >= 1900 && $yearInt <= $maxYear) {
+                $yearValue = $yearInt;
+            } else {
+                $errors[] = "Anno non valido. Deve essere compreso tra 1900 e $maxYear.";
+            }
+        }
+        
         $data = [
             'vehicle_type' => $_POST['vehicle_type'] ?? 'veicolo',
             'name' => trim($_POST['name'] ?? ''),
             'license_plate' => trim($_POST['license_plate'] ?? ''),
             'brand' => trim($_POST['brand'] ?? ''),
             'model' => trim($_POST['model'] ?? ''),
-            'year' => $year !== '' ? (int)$year : null,
+            'year' => $yearValue,
             'serial_number' => trim($_POST['serial_number'] ?? ''),
             'status' => $_POST['status'] ?? 'operativo',
             'insurance_expiry' => $insuranceExpiry !== '' ? $insuranceExpiry : null,
@@ -78,23 +90,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'generate_qr' => isset($_POST['generate_qr']) ? 1 : 0
         ];
         
-        try {
-            if ($isEdit) {
-                $result = $controller->update($vehicleId, $data, $app->getUserId());
-            } else {
-                $result = $controller->create($data, $app->getUserId());
-                $vehicleId = $result;
+        // Don't proceed if there are validation errors
+        if (!empty($errors)) {
+            // Continue to show form with errors
+        } else {
+            try {
+                if ($isEdit) {
+                    $result = $controller->update($vehicleId, $data, $app->getUserId());
+                } else {
+                    $result = $controller->create($data, $app->getUserId());
+                    $vehicleId = $result;
+                }
+                
+                if ($result) {
+                    $success = true;
+                    header('Location: vehicle_view.php?id=' . $vehicleId . '&success=1');
+                    exit;
+                } else {
+                    $errors[] = 'Errore durante il salvataggio';
+                }
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
             }
-            
-            if ($result) {
-                $success = true;
-                header('Location: vehicle_view.php?id=' . $vehicleId . '&success=1');
-                exit;
-            } else {
-                $errors[] = 'Errore durante il salvataggio';
-            }
-        } catch (\Exception $e) {
-            $errors[] = $e->getMessage();
         }
     }
 }
