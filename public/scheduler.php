@@ -139,6 +139,16 @@ $pageTitle = 'Scadenzario';
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label for="category" class="form-label">Categoria</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Tutte</option>
+                                    <option value="qualifiche" <?php echo (isset($filters['category']) && $filters['category'] === 'qualifiche') ? 'selected' : ''; ?>>Qualifiche/Corsi</option>
+                                    <option value="patenti" <?php echo (isset($filters['category']) && $filters['category'] === 'patenti') ? 'selected' : ''; ?>>Patenti</option>
+                                    <option value="veicoli" <?php echo (isset($filters['category']) && $filters['category'] === 'veicoli') ? 'selected' : ''; ?>>Mezzi</option>
+                                    <option value="documenti_veicoli" <?php echo (isset($filters['category']) && $filters['category'] === 'documenti_veicoli') ? 'selected' : ''; ?>>Documenti Mezzi</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <label for="from_date" class="form-label">Dal</label>
                                 <input type="date" class="form-control" id="from_date" name="from_date" 
                                        value="<?php echo isset($filters['from_date']) ? htmlspecialchars($filters['from_date']) : ''; ?>">
@@ -148,17 +158,16 @@ $pageTitle = 'Scadenzario';
                                 <input type="date" class="form-control" id="to_date" name="to_date" 
                                        value="<?php echo isset($filters['to_date']) ? htmlspecialchars($filters['to_date']) : ''; ?>">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label for="search" class="form-label">Ricerca</label>
-                                <input type="text" class="form-control" id="search" name="search" 
-                                       value="<?php echo isset($filters['search']) ? htmlspecialchars($filters['search']) : ''; ?>"
-                                       placeholder="Titolo, descrizione...">
-                            </div>
-                            <div class="col-md-1">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-search"></i>
-                                </button>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="search" name="search" 
+                                           value="<?php echo isset($filters['search']) ? htmlspecialchars($filters['search']) : ''; ?>"
+                                           placeholder="Titolo...">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

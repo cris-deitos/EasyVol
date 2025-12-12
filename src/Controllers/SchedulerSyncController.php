@@ -23,6 +23,7 @@ class SchedulerSyncController {
     
     /**
      * Sincronizza scadenza qualifica/corso membro
+     * Solo per soci attivi - se il socio non è attivo, rimuove l'item dallo scadenziario
      * 
      * @param int $courseId ID del corso
      * @param int $memberId ID del membro
@@ -30,8 +31,8 @@ class SchedulerSyncController {
      */
     public function syncQualificationExpiry($courseId, $memberId) {
         try {
-            // Ottieni dettagli del corso
-            $sql = "SELECT mc.*, m.first_name, m.last_name 
+            // Ottieni dettagli del corso con stato del membro
+            $sql = "SELECT mc.*, m.first_name, m.last_name, m.member_status 
                     FROM member_courses mc
                     JOIN members m ON mc.member_id = m.id
                     WHERE mc.id = ?";
@@ -39,6 +40,11 @@ class SchedulerSyncController {
             
             if (!$course || !$course['expiry_date']) {
                 return true; // Nessuna scadenza da sincronizzare
+            }
+            
+            // Se il socio non è attivo, rimuovi l'item dallo scadenziario se esiste
+            if ($course['member_status'] !== 'attivo') {
+                return $this->removeSchedulerItem('qualification', $courseId);
             }
             
             // Verifica se esiste già un item per questa qualifica
@@ -76,6 +82,7 @@ class SchedulerSyncController {
     
     /**
      * Sincronizza scadenza patente membro
+     * Solo per soci attivi - se il socio non è attivo, rimuove l'item dallo scadenziario
      * 
      * @param int $licenseId ID della patente
      * @param int $memberId ID del membro
@@ -83,8 +90,8 @@ class SchedulerSyncController {
      */
     public function syncLicenseExpiry($licenseId, $memberId) {
         try {
-            // Ottieni dettagli della patente
-            $sql = "SELECT ml.*, m.first_name, m.last_name 
+            // Ottieni dettagli della patente con stato del membro
+            $sql = "SELECT ml.*, m.first_name, m.last_name, m.member_status 
                     FROM member_licenses ml
                     JOIN members m ON ml.member_id = m.id
                     WHERE ml.id = ?";
@@ -92,6 +99,11 @@ class SchedulerSyncController {
             
             if (!$license || !$license['expiry_date']) {
                 return true; // Nessuna scadenza da sincronizzare
+            }
+            
+            // Se il socio non è attivo, rimuovi l'item dallo scadenziario se esiste
+            if ($license['member_status'] !== 'attivo') {
+                return $this->removeSchedulerItem('license', $licenseId);
             }
             
             // Verifica se esiste già un item per questa patente
@@ -494,6 +506,65 @@ class SchedulerSyncController {
         } catch (\Exception $e) {
             error_log("Errore ottenimento link riferimento: " . $e->getMessage());
             return null;
+        }
+    }
+    
+    /**
+     * Rimuove tutti gli item dallo scadenziario per un membro specifico
+     * Usato quando un membro diventa non attivo
+     * Ottimizzato con operazioni bulk per performance migliori
+     * 
+     * @param int $memberId ID del membro
+     * @return bool
+     */
+    public function removeAllMemberSchedulerItems($memberId) {
+        try {
+            // Rimuovi tutti gli item qualifiche/corsi del membro in una singola query
+            $sql = "DELETE si FROM scheduler_items si
+                    INNER JOIN member_courses mc ON si.reference_type = 'qualification' AND si.reference_id = mc.id
+                    WHERE mc.member_id = ?";
+            $this->db->execute($sql, [$memberId]);
+            
+            // Rimuovi tutti gli item patenti del membro in una singola query
+            $sql = "DELETE si FROM scheduler_items si
+                    INNER JOIN member_licenses ml ON si.reference_type = 'license' AND si.reference_id = ml.id
+                    WHERE ml.member_id = ?";
+            $this->db->execute($sql, [$memberId]);
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore rimozione scheduler items per membro: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Sincronizza tutti gli item dallo scadenziario per un membro specifico
+     * Usato quando un membro diventa attivo
+     * 
+     * @param int $memberId ID del membro
+     * @return bool
+     */
+    public function syncAllMemberExpiries($memberId) {
+        try {
+            // Sincronizza tutti i corsi del membro
+            $sql = "SELECT id FROM member_courses WHERE member_id = ? AND expiry_date IS NOT NULL";
+            $courses = $this->db->fetchAll($sql, [$memberId]);
+            foreach ($courses as $course) {
+                $this->syncQualificationExpiry($course['id'], $memberId);
+            }
+            
+            // Sincronizza tutte le patenti del membro
+            $sql = "SELECT id FROM member_licenses WHERE member_id = ? AND expiry_date IS NOT NULL";
+            $licenses = $this->db->fetchAll($sql, [$memberId]);
+            foreach ($licenses as $license) {
+                $this->syncLicenseExpiry($license['id'], $memberId);
+            }
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore sincronizzazione scheduler items per membro: " . $e->getMessage());
+            return false;
         }
     }
 }

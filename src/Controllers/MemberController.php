@@ -17,6 +17,7 @@ class MemberController {
     private $db;
     private $memberModel;
     private $config;
+    private $schedulerSyncController = null;
     
     /**
      * Constructor
@@ -31,8 +32,21 @@ class MemberController {
     }
     
     /**
-     * Lista soci con filtri e paginazione
+     * Ottieni un'istanza del SchedulerSyncController (lazy loading)
+     * Helper method per ridurre duplicazione del codice
      * 
+     * @return SchedulerSyncController
+     */
+    private function getSchedulerSyncController() {
+        if ($this->schedulerSyncController === null) {
+            $this->schedulerSyncController = new SchedulerSyncController($this->db, $this->config);
+        }
+        return $this->schedulerSyncController;
+    }
+    
+    /**
+     * Lista soci con filtri e paginazione
+     *
      * @param array $filters Filtri
      * @param int $page Pagina corrente
      * @param int $perPage Elementi per pagina
@@ -127,6 +141,11 @@ class MemberController {
         try {
             $this->db->beginTransaction();
             
+            // Ottieni lo stato precedente del membro
+            $previousMember = $this->get($id);
+            $previousStatus = $previousMember ? $previousMember['member_status'] : null;
+            $newStatus = $data['member_status'] ?? 'attivo';
+            
             // Valida dati
             $this->validateMemberData($data, $id);
             
@@ -140,7 +159,7 @@ class MemberController {
             
             $params = [
                 $data['member_type'] ?? 'ordinario',
-                $data['member_status'] ?? 'attivo',
+                $newStatus,
                 $data['volunteer_status'] ?? 'aspirante',
                 $data['last_name'],
                 $data['first_name'],
@@ -157,6 +176,19 @@ class MemberController {
             ];
             
             $this->db->execute($sql, $params);
+            
+            // Gestisci sincronizzazione scadenze in base allo stato del membro
+            if ($previousStatus !== $newStatus) {
+                $syncController = $this->getSchedulerSyncController();
+                
+                if ($newStatus === 'attivo') {
+                    // Membro diventato attivo: sincronizza tutte le scadenze
+                    $syncController->syncAllMemberExpiries($id);
+                } else {
+                    // Membro diventato non attivo: rimuovi tutte le scadenze dallo scadenziario
+                    $syncController->removeAllMemberSchedulerItems($id);
+                }
+            }
             
             // Log attività
             $this->logActivity($userId, 'member', 'update', $id, 'Aggiornato socio');
