@@ -1107,6 +1107,10 @@ $pageTitle = 'Impostazioni Sistema';
                                         // Sanitize filename to prevent header injection
                                         $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $templateData['name']);
                                         $safeName = substr($safeName, 0, 100); // Limit filename length
+                                        // Fallback if sanitized name is empty
+                                        if (empty(trim($safeName)) || $safeName === '_') {
+                                            $safeName = 'template_export_' . $templateData['entity_type'] ?? 'unknown';
+                                        }
                                         header('Content-Type: application/json');
                                         header('Content-Disposition: attachment; filename="template_' . $safeName . '.json"');
                                         echo json_encode($templateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -1128,6 +1132,13 @@ $pageTitle = 'Impostazioni Sistema';
                                             throw new \Exception('File troppo grande (max 1MB)');
                                         }
                                         
+                                        // Validate file extension
+                                        $fileName = $_FILES['template_file']['name'];
+                                        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                                        if ($fileExt !== 'json') {
+                                            throw new \Exception('Estensione file non valida. Sono ammessi solo file .json');
+                                        }
+                                        
                                         // Validate MIME type
                                         $finfo = new \finfo(FILEINFO_MIME_TYPE);
                                         $mimeType = $finfo->file($_FILES['template_file']['tmp_name']);
@@ -1139,7 +1150,12 @@ $pageTitle = 'Impostazioni Sistema';
                                         $templateData = json_decode($jsonContent, true);
                                         
                                         if (json_last_error() !== JSON_ERROR_NONE) {
-                                            throw new \Exception('File JSON non valido');
+                                            throw new \Exception('File JSON non valido: ' . json_last_error_msg());
+                                        }
+                                        
+                                        // Validate required template structure
+                                        if (!isset($templateData['name']) || !isset($templateData['entity_type'])) {
+                                            throw new \Exception('Struttura template non valida. Campi richiesti: name, entity_type');
                                         }
                                         
                                         $printTemplateController->importTemplate($templateData, $userId);
