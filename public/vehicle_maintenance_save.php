@@ -47,9 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($_POST['date'])) {
         $errors[] = 'Data obbligatoria';
     }
-    if (empty($_POST['description'])) {
-        $errors[] = 'Descrizione obbligatoria';
-    }
     
     if (empty($errors) && $vehicleId > 0) {
         try {
