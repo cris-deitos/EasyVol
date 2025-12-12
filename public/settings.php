@@ -1071,7 +1071,10 @@ $pageTitle = 'Impostazioni Sistema';
                         $printTemplateError = '';
                         
                         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type']) && $_POST['form_type'] === 'print_template') {
-                            if ($app->checkPermission('settings', 'edit')) {
+                            // Validate CSRF token for print template actions
+                            if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+                                $printTemplateError = 'Token di sicurezza non valido';
+                            } elseif ($app->checkPermission('settings', 'edit')) {
                                 $action = $_POST['template_action'] ?? '';
                                 $userId = $_SESSION['user_id'];
                                 
@@ -1291,10 +1294,27 @@ $pageTitle = 'Impostazioni Sistema';
                                                             <?php echo $template['page_orientation'] === 'landscape' ? '(Orizzontale)' : ''; ?>
                                                         </td>
                                                         <td>
-                                                            <?php if ($template['is_active']): ?>
-                                                                <span class="badge bg-success">Attivo</span>
+                                                            <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                                            <form method="POST" style="display: inline;">
+                                                                <?php echo CsrfProtection::getHiddenField(); ?>
+                                                                <input type="hidden" name="form_type" value="print_template">
+                                                                <input type="hidden" name="template_id" value="<?php echo $template['id']; ?>">
+                                                                <input type="hidden" name="template_action" value="toggle_active">
+                                                                <button type="submit" class="btn btn-sm <?php echo $template['is_active'] ? 'btn-success' : 'btn-secondary'; ?>" 
+                                                                        title="<?php echo $template['is_active'] ? 'Disattiva' : 'Attiva'; ?>">
+                                                                    <?php if ($template['is_active']): ?>
+                                                                        <i class="bi bi-check-circle"></i> Attivo
+                                                                    <?php else: ?>
+                                                                        <i class="bi bi-x-circle"></i> Disattivo
+                                                                    <?php endif; ?>
+                                                                </button>
+                                                            </form>
                                                             <?php else: ?>
-                                                                <span class="badge bg-secondary">Disattivo</span>
+                                                                <?php if ($template['is_active']): ?>
+                                                                    <span class="badge bg-success">Attivo</span>
+                                                                <?php else: ?>
+                                                                    <span class="badge bg-secondary">Disattivo</span>
+                                                                <?php endif; ?>
                                                             <?php endif; ?>
                                                         </td>
                                                         <td>
