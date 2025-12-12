@@ -34,6 +34,8 @@ class MemberController {
     /**
      * Ottieni un'istanza del SchedulerSyncController (lazy loading)
      * Helper method per ridurre duplicazione del codice
+     * 
+     * @return SchedulerSyncController
      */
     private function getSchedulerSyncController() {
         if ($this->schedulerSyncController === null) {
