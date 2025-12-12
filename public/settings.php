@@ -1088,9 +1088,9 @@ $pageTitle = 'Impostazioni Sistema';
                                     try {
                                         $template = $printTemplateController->getById((int)$_POST['template_id']);
                                         if ($template) {
-                                            $printTemplateController->update((int)$_POST['template_id'], array_merge($template, [
-                                                'is_active' => !$template['is_active']
-                                            ]), $userId);
+                                            // Update only the is_active field, preserving all other fields
+                                            $template['is_active'] = $template['is_active'] ? 0 : 1;
+                                            $printTemplateController->update((int)$_POST['template_id'], $template, $userId);
                                             $printTemplateMessage = 'Stato template aggiornato';
                                         }
                                     } catch (\Exception $e) {
@@ -1101,8 +1101,11 @@ $pageTitle = 'Impostazioni Sistema';
                                 if ($action === 'export' && isset($_POST['template_id'])) {
                                     try {
                                         $templateData = $printTemplateController->exportTemplate((int)$_POST['template_id']);
+                                        // Sanitize filename to prevent header injection
+                                        $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $templateData['name']);
+                                        $safeName = substr($safeName, 0, 100); // Limit filename length
                                         header('Content-Type: application/json');
-                                        header('Content-Disposition: attachment; filename="template_' . $templateData['name'] . '.json"');
+                                        header('Content-Disposition: attachment; filename="template_' . $safeName . '.json"');
                                         echo json_encode($templateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
                                         exit;
                                     } catch (\Exception $e) {
@@ -1112,6 +1115,23 @@ $pageTitle = 'Impostazioni Sistema';
                                 
                                 if ($action === 'import' && isset($_FILES['template_file'])) {
                                     try {
+                                        // Validate file upload
+                                        if ($_FILES['template_file']['error'] !== UPLOAD_ERR_OK) {
+                                            throw new \Exception('Errore durante l\'upload del file');
+                                        }
+                                        
+                                        // Validate file size (max 1MB for JSON template)
+                                        if ($_FILES['template_file']['size'] > 1048576) {
+                                            throw new \Exception('File troppo grande (max 1MB)');
+                                        }
+                                        
+                                        // Validate MIME type
+                                        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                                        $mimeType = $finfo->file($_FILES['template_file']['tmp_name']);
+                                        if ($mimeType !== 'application/json' && $mimeType !== 'text/plain') {
+                                            throw new \Exception('Tipo di file non valido. Sono ammessi solo file JSON.');
+                                        }
+                                        
                                         $jsonContent = file_get_contents($_FILES['template_file']['tmp_name']);
                                         $templateData = json_decode($jsonContent, true);
                                         
@@ -1204,7 +1224,7 @@ $pageTitle = 'Impostazioni Sistema';
                                                 <button type="submit" class="btn btn-primary me-2">
                                                     <i class="bi bi-funnel"></i> Filtra
                                                 </button>
-                                                <a href="settings.php#print-templates" class="btn btn-secondary" onclick="document.getElementById('print-templates-tab').click();">
+                                                <a href="settings.php?tab=print-templates" class="btn btn-secondary">
                                                     <i class="bi bi-x-circle"></i> Reset
                                                 </a>
                                             </div>
