@@ -620,7 +620,7 @@ CREATE TABLE IF NOT EXISTS `vehicle_maintenance` (
   `vehicle_id` int(11) NOT NULL,
   `maintenance_type` enum('revisione', 'manutenzione_ordinaria', 'manutenzione_straordinaria', 'anomalie', 'guasti', 'riparazioni', 'sostituzioni', 'ordinaria', 'straordinaria', 'guasto', 'riparazione', 'sostituzione', 'danno', 'incidente') NOT NULL,
   `date` date NOT NULL,
-  `description` text NOT NULL,
+  `description` text,
   `cost` decimal(10,2),
   `performed_by` varchar(255),
   `notes` text,
