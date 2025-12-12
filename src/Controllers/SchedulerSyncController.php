@@ -512,25 +512,24 @@ class SchedulerSyncController {
     /**
      * Rimuove tutti gli item dallo scadenziario per un membro specifico
      * Usato quando un membro diventa non attivo
+     * Ottimizzato con operazioni bulk per performance migliori
      * 
      * @param int $memberId ID del membro
      * @return bool
      */
     public function removeAllMemberSchedulerItems($memberId) {
         try {
-            // Trova tutti i corsi del membro e rimuovi i relativi item
-            $sql = "SELECT id FROM member_courses WHERE member_id = ?";
-            $courses = $this->db->fetchAll($sql, [$memberId]);
-            foreach ($courses as $course) {
-                $this->removeSchedulerItem('qualification', $course['id']);
-            }
+            // Rimuovi tutti gli item qualifiche/corsi del membro in una singola query
+            $sql = "DELETE si FROM scheduler_items si
+                    INNER JOIN member_courses mc ON si.reference_type = 'qualification' AND si.reference_id = mc.id
+                    WHERE mc.member_id = ?";
+            $this->db->execute($sql, [$memberId]);
             
-            // Trova tutte le patenti del membro e rimuovi i relativi item
-            $sql = "SELECT id FROM member_licenses WHERE member_id = ?";
-            $licenses = $this->db->fetchAll($sql, [$memberId]);
-            foreach ($licenses as $license) {
-                $this->removeSchedulerItem('license', $license['id']);
-            }
+            // Rimuovi tutti gli item patenti del membro in una singola query
+            $sql = "DELETE si FROM scheduler_items si
+                    INNER JOIN member_licenses ml ON si.reference_type = 'license' AND si.reference_id = ml.id
+                    WHERE ml.member_id = ?";
+            $this->db->execute($sql, [$memberId]);
             
             return true;
         } catch (\Exception $e) {

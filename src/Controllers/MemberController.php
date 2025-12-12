@@ -17,6 +17,7 @@ class MemberController {
     private $db;
     private $memberModel;
     private $config;
+    private $schedulerSyncController = null;
     
     /**
      * Constructor
@@ -31,8 +32,19 @@ class MemberController {
     }
     
     /**
+     * Ottieni un'istanza del SchedulerSyncController (lazy loading)
+     * Helper method per ridurre duplicazione del codice
+     */
+    private function getSchedulerSyncController() {
+        if ($this->schedulerSyncController === null) {
+            $this->schedulerSyncController = new SchedulerSyncController($this->db, $this->config);
+        }
+        return $this->schedulerSyncController;
+    }
+    
+    /**
      * Lista soci con filtri e paginazione
-     * 
+     *
      * @param array $filters Filtri
      * @param int $page Pagina corrente
      * @param int $perPage Elementi per pagina
@@ -165,7 +177,7 @@ class MemberController {
             
             // Gestisci sincronizzazione scadenze in base allo stato del membro
             if ($previousStatus !== $newStatus) {
-                $syncController = new SchedulerSyncController($this->db, $this->config);
+                $syncController = $this->getSchedulerSyncController();
                 
                 if ($newStatus === 'attivo') {
                     // Membro diventato attivo: sincronizza tutte le scadenze

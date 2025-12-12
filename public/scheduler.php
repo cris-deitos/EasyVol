@@ -158,17 +158,16 @@ $pageTitle = 'Scadenzario';
                                 <input type="date" class="form-control" id="to_date" name="to_date" 
                                        value="<?php echo isset($filters['to_date']) ? htmlspecialchars($filters['to_date']) : ''; ?>">
                             </div>
-                            <div class="col-md-1">
+                            <div class="col-md-2">
                                 <label for="search" class="form-label">Ricerca</label>
-                                <input type="text" class="form-control" id="search" name="search" 
-                                       value="<?php echo isset($filters['search']) ? htmlspecialchars($filters['search']) : ''; ?>"
-                                       placeholder="Cerca...">
-                            </div>
-                            <div class="col-md-1">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-search"></i>
-                                </button>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="search" name="search" 
+                                           value="<?php echo isset($filters['search']) ? htmlspecialchars($filters['search']) : ''; ?>"
+                                           placeholder="Titolo...">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
