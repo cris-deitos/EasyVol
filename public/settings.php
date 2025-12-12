@@ -12,6 +12,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Middleware\CsrfProtection;
 use EasyVol\Utils\FileUploader;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -419,6 +420,11 @@ $pageTitle = 'Impostazioni Sistema';
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import" type="button" role="tab">
                             <i class="bi bi-file-earmark-arrow-up"></i> Import CSV
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="print-templates-tab" data-bs-toggle="tab" data-bs-target="#print-templates" type="button" role="tab">
+                            <i class="bi bi-printer"></i> Modelli di Stampa
                         </button>
                     </li>
                 </ul>
@@ -1053,11 +1059,424 @@ $pageTitle = 'Impostazioni Sistema';
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Modelli di Stampa -->
+                    <div class="tab-pane fade" id="print-templates" role="tabpanel">
+                        <?php
+                        // Initialize Print Template Controller
+                        $printTemplateController = new PrintTemplateController($db, $config);
+                        
+                        // Handle print template actions
+                        $printTemplateMessage = '';
+                        $printTemplateError = '';
+                        
+                        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type']) && $_POST['form_type'] === 'print_template') {
+                            // Validate CSRF token for print template actions
+                            if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+                                $printTemplateError = 'Token di sicurezza non valido';
+                            } elseif ($app->checkPermission('settings', 'edit')) {
+                                $action = $_POST['template_action'] ?? '';
+                                $userId = $_SESSION['user_id'];
+                                
+                                if ($action === 'delete' && isset($_POST['template_id'])) {
+                                    try {
+                                        $printTemplateController->delete((int)$_POST['template_id']);
+                                        $printTemplateMessage = 'Template eliminato con successo';
+                                    } catch (\Exception $e) {
+                                        $printTemplateError = 'Errore durante l\'eliminazione: ' . $e->getMessage();
+                                    }
+                                }
+                                
+                                if ($action === 'toggle_active' && isset($_POST['template_id'])) {
+                                    try {
+                                        $template = $printTemplateController->getById((int)$_POST['template_id']);
+                                        if ($template) {
+                                            // Update only the is_active field, preserving all other fields
+                                            $template['is_active'] = $template['is_active'] ? 0 : 1;
+                                            $printTemplateController->update((int)$_POST['template_id'], $template, $userId);
+                                            $printTemplateMessage = 'Stato template aggiornato';
+                                        }
+                                    } catch (\Exception $e) {
+                                        $printTemplateError = 'Errore durante l\'aggiornamento: ' . $e->getMessage();
+                                    }
+                                }
+                                
+                                if ($action === 'export' && isset($_POST['template_id'])) {
+                                    try {
+                                        $templateData = $printTemplateController->exportTemplate((int)$_POST['template_id']);
+                                        // Sanitize filename to prevent header injection
+                                        $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $templateData['name']);
+                                        $safeName = substr($safeName, 0, 100); // Limit filename length
+                                        // Fallback if sanitized name is empty
+                                        if (empty(trim($safeName)) || $safeName === '_') {
+                                            $safeName = 'template_export_' . $templateData['entity_type'] ?? 'unknown';
+                                        }
+                                        header('Content-Type: application/json');
+                                        header('Content-Disposition: attachment; filename="template_' . $safeName . '.json"');
+                                        echo json_encode($templateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                                        exit;
+                                    } catch (\Exception $e) {
+                                        $printTemplateError = 'Errore durante l\'esportazione: ' . $e->getMessage();
+                                    }
+                                }
+                                
+                                if ($action === 'import' && isset($_FILES['template_file'])) {
+                                    try {
+                                        // Validate file upload
+                                        if ($_FILES['template_file']['error'] !== UPLOAD_ERR_OK) {
+                                            throw new \Exception('Errore durante l\'upload del file');
+                                        }
+                                        
+                                        // Validate file size (max 1MB for JSON template)
+                                        if ($_FILES['template_file']['size'] > 1048576) {
+                                            throw new \Exception('File troppo grande (max 1MB)');
+                                        }
+                                        
+                                        // Validate file extension
+                                        $fileName = $_FILES['template_file']['name'];
+                                        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                                        if ($fileExt !== 'json') {
+                                            throw new \Exception('Estensione file non valida. Sono ammessi solo file .json');
+                                        }
+                                        
+                                        // Validate MIME type
+                                        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                                        $mimeType = $finfo->file($_FILES['template_file']['tmp_name']);
+                                        if ($mimeType !== 'application/json' && $mimeType !== 'text/plain') {
+                                            throw new \Exception('Tipo di file non valido. Sono ammessi solo file JSON.');
+                                        }
+                                        
+                                        $jsonContent = file_get_contents($_FILES['template_file']['tmp_name']);
+                                        $templateData = json_decode($jsonContent, true);
+                                        
+                                        if (json_last_error() !== JSON_ERROR_NONE) {
+                                            throw new \Exception('File JSON non valido: ' . json_last_error_msg());
+                                        }
+                                        
+                                        // Validate required template structure
+                                        if (!isset($templateData['name']) || !isset($templateData['entity_type'])) {
+                                            throw new \Exception('Struttura template non valida. Campi richiesti: name, entity_type');
+                                        }
+                                        
+                                        $printTemplateController->importTemplate($templateData, $userId);
+                                        $printTemplateMessage = 'Template importato con successo';
+                                    } catch (\Exception $e) {
+                                        $printTemplateError = 'Errore durante l\'importazione: ' . $e->getMessage();
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Get filters
+                        $printFilters = [];
+                        if (!empty($_GET['pt_entity_type'])) {
+                            $printFilters['entity_type'] = $_GET['pt_entity_type'];
+                        }
+                        if (!empty($_GET['pt_template_type'])) {
+                            $printFilters['template_type'] = $_GET['pt_template_type'];
+                        }
+                        
+                        $printTemplates = $printTemplateController->getAll($printFilters);
+                        ?>
+                        
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-printer me-2"></i>Gestione Modelli di Stampa</h5>
+                                <div class="btn-group">
+                                    <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                    <a href="print_template_editor.php" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-plus-circle"></i> Nuovo Template
+                                    </a>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#importTemplateModal">
+                                        <i class="bi bi-upload"></i> Importa
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <?php if ($printTemplateMessage): ?>
+                                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                        <?php echo htmlspecialchars($printTemplateMessage); ?>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if ($printTemplateError): ?>
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                        <?php echo htmlspecialchars($printTemplateError); ?>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Sistema di Modelli di Stampa</strong><br>
+                                    Crea, modifica e gestisci modelli di stampa per le varie sezioni del gestionale: Soci, Cadetti, Mezzi, Riunioni.
+                                </div>
+                                
+                                <!-- Filters -->
+                                <div class="card mb-3">
+                                    <div class="card-body bg-light">
+                                        <form method="GET" class="row g-3">
+                                            <input type="hidden" name="tab" value="print-templates">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Tipo Entità</label>
+                                                <select name="pt_entity_type" class="form-select">
+                                                    <option value="">Tutti</option>
+                                                    <option value="members" <?php echo ($_GET['pt_entity_type'] ?? '') === 'members' ? 'selected' : ''; ?>>Soci</option>
+                                                    <option value="junior_members" <?php echo ($_GET['pt_entity_type'] ?? '') === 'junior_members' ? 'selected' : ''; ?>>Cadetti (Minorenni)</option>
+                                                    <option value="vehicles" <?php echo ($_GET['pt_entity_type'] ?? '') === 'vehicles' ? 'selected' : ''; ?>>Mezzi</option>
+                                                    <option value="meetings" <?php echo ($_GET['pt_entity_type'] ?? '') === 'meetings' ? 'selected' : ''; ?>>Riunioni</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Tipo Template</label>
+                                                <select name="pt_template_type" class="form-select">
+                                                    <option value="">Tutti</option>
+                                                    <option value="single" <?php echo ($_GET['pt_template_type'] ?? '') === 'single' ? 'selected' : ''; ?>>Singolo</option>
+                                                    <option value="list" <?php echo ($_GET['pt_template_type'] ?? '') === 'list' ? 'selected' : ''; ?>>Lista</option>
+                                                    <option value="multi_page" <?php echo ($_GET['pt_template_type'] ?? '') === 'multi_page' ? 'selected' : ''; ?>>Multi-pagina</option>
+                                                    <option value="relational" <?php echo ($_GET['pt_template_type'] ?? '') === 'relational' ? 'selected' : ''; ?>>Relazionale</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 d-flex align-items-end">
+                                                <button type="submit" class="btn btn-primary me-2">
+                                                    <i class="bi bi-funnel"></i> Filtra
+                                                </button>
+                                                <a href="settings.php?tab=print-templates" class="btn btn-secondary">
+                                                    <i class="bi bi-x-circle"></i> Reset
+                                                </a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                
+                                <!-- Templates List -->
+                                <?php if (empty($printTemplates)): ?>
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        Nessun modello di stampa trovato. 
+                                        <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                        <a href="print_template_editor.php" class="alert-link">Crea il tuo primo template!</a>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Nome</th>
+                                                    <th>Sezione</th>
+                                                    <th>Tipo</th>
+                                                    <th>Formato</th>
+                                                    <th>Stato</th>
+                                                    <th>Default</th>
+                                                    <th>Azioni</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($printTemplates as $template): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <strong><?php echo htmlspecialchars($template['name']); ?></strong>
+                                                            <?php if ($template['description']): ?>
+                                                                <br><small class="text-muted"><?php echo htmlspecialchars($template['description']); ?></small>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php
+                                                            $entityLabels = [
+                                                                'members' => '<span class="badge bg-primary">Soci</span>',
+                                                                'junior_members' => '<span class="badge bg-info">Cadetti</span>',
+                                                                'vehicles' => '<span class="badge bg-warning">Mezzi</span>',
+                                                                'meetings' => '<span class="badge bg-secondary">Riunioni</span>',
+                                                            ];
+                                                            echo $entityLabels[$template['entity_type']] ?? $template['entity_type'];
+                                                            ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php
+                                                            $typeLabels = [
+                                                                'single' => 'Singolo',
+                                                                'list' => 'Lista',
+                                                                'multi_page' => 'Multi-pagina',
+                                                                'relational' => 'Relazionale',
+                                                            ];
+                                                            echo $typeLabels[$template['template_type']] ?? $template['template_type'];
+                                                            ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php echo strtoupper($template['page_format']); ?>
+                                                            <?php echo $template['page_orientation'] === 'landscape' ? '(Orizzontale)' : ''; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                                            <form method="POST" style="display: inline;">
+                                                                <?php echo CsrfProtection::getHiddenField(); ?>
+                                                                <input type="hidden" name="form_type" value="print_template">
+                                                                <input type="hidden" name="template_id" value="<?php echo $template['id']; ?>">
+                                                                <input type="hidden" name="template_action" value="toggle_active">
+                                                                <button type="submit" class="btn btn-sm <?php echo $template['is_active'] ? 'btn-success' : 'btn-secondary'; ?>" 
+                                                                        title="<?php echo $template['is_active'] ? 'Disattiva' : 'Attiva'; ?>">
+                                                                    <?php if ($template['is_active']): ?>
+                                                                        <i class="bi bi-check-circle"></i> Attivo
+                                                                    <?php else: ?>
+                                                                        <i class="bi bi-x-circle"></i> Disattivo
+                                                                    <?php endif; ?>
+                                                                </button>
+                                                            </form>
+                                                            <?php else: ?>
+                                                                <?php if ($template['is_active']): ?>
+                                                                    <span class="badge bg-success">Attivo</span>
+                                                                <?php else: ?>
+                                                                    <span class="badge bg-secondary">Disattivo</span>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($template['is_default']): ?>
+                                                                <i class="bi bi-star-fill text-warning" title="Template predefinito"></i>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                                                <a href="print_template_editor.php?id=<?php echo $template['id']; ?>" 
+                                                                   class="btn btn-outline-primary" title="Modifica">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </a>
+                                                                <?php endif; ?>
+                                                                <button type="button" class="btn btn-outline-info" 
+                                                                        onclick="window.open('print_preview.php?template_id=<?php echo $template['id']; ?>', '_blank')" title="Anteprima">
+                                                                    <i class="bi bi-eye"></i>
+                                                                </button>
+                                                                <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                                                <form method="POST" style="display: inline;">
+                                                                    <?php echo CsrfProtection::getHiddenField(); ?>
+                                                                    <input type="hidden" name="form_type" value="print_template">
+                                                                    <input type="hidden" name="template_id" value="<?php echo $template['id']; ?>">
+                                                                    <input type="hidden" name="template_action" value="export">
+                                                                    <button type="submit" class="btn btn-outline-secondary" title="Esporta">
+                                                                        <i class="bi bi-download"></i>
+                                                                    </button>
+                                                                </form>
+                                                                <form method="POST" style="display: inline;" 
+                                                                      onsubmit="return confirm('Sei sicuro di voler eliminare questo template?');">
+                                                                    <?php echo CsrfProtection::getHiddenField(); ?>
+                                                                    <input type="hidden" name="form_type" value="print_template">
+                                                                    <input type="hidden" name="template_id" value="<?php echo $template['id']; ?>">
+                                                                    <input type="hidden" name="template_action" value="delete">
+                                                                    <button type="submit" class="btn btn-outline-danger" title="Elimina">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </form>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <hr class="my-4">
+                                
+                                <h6><i class="bi bi-lightbulb me-2"></i>Tipi di Modelli Disponibili</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-2">
+                                            <div class="card-body py-2">
+                                                <strong><i class="bi bi-file-earmark"></i> Singolo</strong>
+                                                <br><small class="text-muted">Stampa dettaglio di un singolo record (es. scheda socio)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-2">
+                                            <div class="card-body py-2">
+                                                <strong><i class="bi bi-list"></i> Lista</strong>
+                                                <br><small class="text-muted">Elenco tabellare di più record (es. elenco soci)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-2">
+                                            <div class="card-body py-2">
+                                                <strong><i class="bi bi-files"></i> Multi-pagina</strong>
+                                                <br><small class="text-muted">Una pagina per ogni record selezionato</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-2">
+                                            <div class="card-body py-2">
+                                                <strong><i class="bi bi-diagram-3"></i> Relazionale</strong>
+                                                <br><small class="text-muted">Include dati da tabelle correlate (contatti, indirizzi, ecc.)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Import Template Modal -->
+                    <div class="modal fade" id="importTemplateModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="POST" enctype="multipart/form-data">
+                                    <?php echo CsrfProtection::getHiddenField(); ?>
+                                    <input type="hidden" name="form_type" value="print_template">
+                                    <input type="hidden" name="template_action" value="import">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Importa Template</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">File JSON Template</label>
+                                            <input type="file" name="template_file" class="form-control" accept=".json" required>
+                                            <div class="form-text">Seleziona un file JSON esportato da un template esistente</div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-upload"></i> Importa
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-switch to print-templates tab if filtering print templates
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates') {
+                const printTemplatesTab = document.getElementById('print-templates-tab');
+                if (printTemplatesTab) {
+                    const tab = new bootstrap.Tab(printTemplatesTab);
+                    tab.show();
+                }
+            }
+            
+            // Handle hash-based tab switching
+            if (window.location.hash === '#print-templates') {
+                const printTemplatesTab = document.getElementById('print-templates-tab');
+                if (printTemplatesTab) {
+                    const tab = new bootstrap.Tab(printTemplatesTab);
+                    tab.show();
+                }
+            }
+        });
+    </script>
 </body>
 </html>
