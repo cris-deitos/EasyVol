@@ -191,15 +191,17 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <?php endif; ?>
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
         
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -269,7 +271,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
         .logo-section h1 {
             font-size: 28px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -280,7 +282,6 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
         .step-indicator {
             display: flex;
             justify-content: center;
-            align-items: center;
             margin-bottom: 30px;
         }
         
@@ -298,7 +299,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
         }
         
         .step.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             color: white;
         }
         
@@ -346,7 +347,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
             font-size: 16px;
             font-weight: 600;
             border-radius: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             border: none;
             color: white;
             transition: all 0.3s ease;
@@ -355,7 +356,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
         }
         
         .btn-secondary {
