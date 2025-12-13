@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <option value="in_aspettativa" <?php echo $sanction['sanction_type'] === 'in_aspettativa' ? 'selected' : ''; ?>>In Aspettativa</option>
                                             <option value="sospeso" <?php echo $sanction['sanction_type'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                             <option value="in_congedo" <?php echo $sanction['sanction_type'] === 'in_congedo' ? 'selected' : ''; ?>>In Congedo</option>
-                                            <option value="operativo" <?php echo $sanction['sanction_type'] === 'operativo' ? 'selected' : ''; ?>>Attivo</option>
+                                            <option value="attivo" <?php echo $sanction['sanction_type'] === 'attivo' ? 'selected' : ''; ?>>Attivo</option>
                                         </select>
                                     </div>
                                     

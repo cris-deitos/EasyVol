@@ -199,7 +199,7 @@ $pageTitle = $isEdit ? 'Modifica Socio' : 'Nuovo Socio';
                                     <label for="tax_code" class="form-label">Codice Fiscale</label>
                                     <input type="text" class="form-control text-uppercase" id="tax_code" name="tax_code" 
                                            value="<?php echo htmlspecialchars($member['tax_code'] ?? ''); ?>" 
-                                           maxlength="16" pattern="[A-Z0-9]{16}">
+                                           maxlength="16" pattern="^([A-Z0-9]{16}|)$" title="Codice fiscale deve essere esattamente 16 caratteri alfanumerici o vuoto">
                                 </div>
                                 <div class="col-md-3">
                                     <label for="birth_date" class="form-label">Data di Nascita *</label>

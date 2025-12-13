@@ -33,7 +33,10 @@ $controller = new MemberController($db, $config);
 $filters = [
     'status' => $_GET['status'] ?? '',
     'volunteer_status' => $_GET['volunteer_status'] ?? '',
-    'search' => $_GET['search'] ?? ''
+    'role' => $_GET['role'] ?? '',
+    'search' => $_GET['search'] ?? '',
+    'hide_dismissed' => isset($_GET['hide_dismissed']) ? $_GET['hide_dismissed'] : '1',
+    'sort_by' => $_GET['sort_by'] ?? 'alphabetical'
 ];
 
 // Paginazione
@@ -42,6 +45,9 @@ $perPage = 20;
 
 // Ottieni membri
 $members = $controller->index($filters, $page, $perPage);
+
+// Get available roles for filter dropdown
+$availableRoles = $db->fetchAll("SELECT DISTINCT role_name FROM member_roles ORDER BY role_name");
 
 // Log page access
 AutoLogger::logPageAccess();
@@ -148,35 +154,65 @@ $pageTitle = 'Gestione Soci';
                                        value="<?php echo htmlspecialchars($filters['search']); ?>" 
                                        placeholder="Nome, cognome, matricola...">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label for="status" class="form-label">Stato</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="">Tutti</option>
                                     <option value="attivo" <?php echo $filters['status'] === 'attivo' ? 'selected' : ''; ?>>Attivo</option>
                                     <option value="sospeso" <?php echo $filters['status'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                     <option value="dimesso" <?php echo $filters['status'] === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
-                                    <option value="deceduto" <?php echo $filters['status'] === 'deceduto' ? 'selected' : ''; ?>>Deceduto</option>
+                                    <option value="decaduto" <?php echo $filters['status'] === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label for="volunteer_status" class="form-label">Qualifica</label>
+                            <div class="col-md-2">
+                                <label for="volunteer_status" class="form-label">Stato Volontario</label>
                                 <select class="form-select" id="volunteer_status" name="volunteer_status">
-                                    <option value="">Tutte</option>
-                                    <option value="aspirante" <?php echo $filters['volunteer_status'] === 'aspirante' ? 'selected' : ''; ?>>Aspirante</option>
-                                    <option value="volontario" <?php echo $filters['volunteer_status'] === 'volontario' ? 'selected' : ''; ?>>Volontario</option>
-                                    <option value="operatore" <?php echo $filters['volunteer_status'] === 'operatore' ? 'selected' : ''; ?>>Operatore</option>
-                                    <option value="coordinatore" <?php echo $filters['volunteer_status'] === 'coordinatore' ? 'selected' : ''; ?>>Coordinatore</option>
+                                    <option value="">Tutti</option>
+                                    <option value="operativo" <?php echo $filters['volunteer_status'] === 'operativo' ? 'selected' : ''; ?>>Operativo</option>
+                                    <option value="in_formazione" <?php echo $filters['volunteer_status'] === 'in_formazione' ? 'selected' : ''; ?>>In Formazione</option>
+                                    <option value="non_operativo" <?php echo $filters['volunteer_status'] === 'non_operativo' ? 'selected' : ''; ?>>Non Operativo</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <label for="role" class="form-label">Qualifica/Mansione</label>
+                                <select class="form-select" id="role" name="role">
+                                    <option value="">Tutte</option>
+                                    <?php foreach ($availableRoles as $r): ?>
+                                        <option value="<?php echo htmlspecialchars($r['role_name']); ?>" 
+                                                <?php echo $filters['role'] === $r['role_name'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($r['role_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="sort_by" class="form-label">Ordina per</label>
+                                <select class="form-select" id="sort_by" name="sort_by">
+                                    <option value="alphabetical" <?php echo $filters['sort_by'] === 'alphabetical' ? 'selected' : ''; ?>>Alfabetico</option>
+                                    <option value="registration_number" <?php echo $filters['sort_by'] === 'registration_number' ? 'selected' : ''; ?>>Matricola</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="d-grid gap-2">
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="bi bi-search"></i> Cerca
+                                        <i class="bi bi-search"></i>
                                     </button>
                                 </div>
                             </div>
                         </form>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="hide_dismissed" 
+                                           <?php echo $filters['hide_dismissed'] === '1' ? 'checked' : ''; ?> 
+                                           onchange="toggleDismissed()">
+                                    <label class="form-check-label" for="hide_dismissed">
+                                        Nascondi dimessi/decaduti
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -280,6 +316,19 @@ $pageTitle = 'Gestione Soci';
                 // TODO: Implement delete functionality
                 window.location.href = 'member_delete.php?id=' + memberId;
             }
+        }
+        
+        function toggleDismissed() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isChecked = document.getElementById('hide_dismissed').checked;
+            
+            if (isChecked) {
+                urlParams.set('hide_dismissed', '1');
+            } else {
+                urlParams.set('hide_dismissed', '0');
+            }
+            
+            window.location.search = urlParams.toString();
         }
         
         // Print list functionality
