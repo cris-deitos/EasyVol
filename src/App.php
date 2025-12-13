@@ -110,61 +110,87 @@ class App {
         }
     }
     
-    private function loadEmailConfigFromDatabase() {
-        try {
-            // Load email configuration from database
-            $emailConfigs = $this->db->fetchAll(
-                "SELECT config_key, config_value FROM config WHERE config_key LIKE 'email_%'"
-            );
+private function loadEmailConfigFromDatabase() {
+    try {
+        // Inizializza SEMPRE i valori di default
+        if (!isset($this->config['email'])) {
+            $this->config['email'] = [];
+        }
+        
+        // Valori di default se il database è vuoto
+        $defaults = [
+            'enabled' => false,
+            'method' => 'smtp',
+            'from_address' => '',
+            'from_name' => 'EasyVol',
+            'reply_to' => '',
+            'return_path' => '',
+            'charset' => 'UTF-8',
+            'smtp_host' => '',
+            'smtp_port' => 587,
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'smtp_encryption' => 'tls',
+            'smtp_auth' => true,
+            'smtp_debug' => false,
+        ];
+        
+        // Applica i defaults
+        foreach ($defaults as $key => $value) {
+            if (! isset($this->config['email'][$key])) {
+                $this->config['email'][$key] = $value;
+            }
+        }
+        
+        // Carica dal database e sovrascrivi i defaults se esistono
+        $emailConfigs = $this->db->fetchAll(
+            "SELECT config_key, config_value FROM config WHERE config_key LIKE 'email_%'"
+        );
+        
+        if (!empty($emailConfigs)) {
+            // Map database config keys to config array keys
+            $keyMapping = [
+                'email_enabled' => 'enabled',
+                'email_method' => 'method',
+                'email_from_address' => 'from_address',
+                'email_from_name' => 'from_name',
+                'email_reply_to' => 'reply_to',
+                'email_return_path' => 'return_path',
+                'email_charset' => 'charset',
+                'email_smtp_host' => 'smtp_host',
+                'email_smtp_port' => 'smtp_port',
+                'email_smtp_username' => 'smtp_username',
+                'email_smtp_password' => 'smtp_password',
+                'email_smtp_encryption' => 'smtp_encryption',
+                'email_smtp_auth' => 'smtp_auth',
+                'email_smtp_debug' => 'smtp_debug',
+            ];
             
-            if (!empty($emailConfigs)) {
-                // Map database config keys to config array keys
-                $keyMapping = [
-                    'email_enabled' => 'enabled',
-                    'email_method' => 'method',
-                    'email_from_address' => 'from_address',
-                    'email_from_name' => 'from_name',
-                    'email_reply_to' => 'reply_to',
-                    'email_return_path' => 'return_path',
-                    'email_charset' => 'charset',
-                    'email_smtp_host' => 'smtp_host',
-                    'email_smtp_port' => 'smtp_port',
-                    'email_smtp_username' => 'smtp_username',
-                    'email_smtp_password' => 'smtp_password',
-                    'email_smtp_encryption' => 'smtp_encryption',
-                    'email_smtp_auth' => 'smtp_auth',
-                    'email_smtp_debug' => 'smtp_debug',
-                ];
-                
-                foreach ($emailConfigs as $row) {
-                    $dbKey = $row['config_key'];
-                    $value = $row['config_value'];
+            foreach ($emailConfigs as $config) {
+                $dbKey = $config['config_key'];
+                if (isset($keyMapping[$dbKey])) {
+                    $configKey = $keyMapping[$dbKey];
+                    $value = $config['config_value'];
                     
-                    if (isset($keyMapping[$dbKey])) {
-                        $configKey = $keyMapping[$dbKey];
-                        
-                        // Special handling for boolean-like fields
-                        if (in_array($configKey, ['enabled', 'smtp_auth', 'smtp_debug'])) {
-                            $value = ($value === '1' || $value === 'true' || $value === true);
-                        }
-                        
-                        // Special handling for smtp_port - convert to integer
-                        if ($configKey === 'smtp_port') {
-                            $value = intval($value) ?: 587;
-                        }
-                        
-                        // Override config if value is not empty, or if it's an optional field
-                        if ($value !== '' || in_array($configKey, self::OPTIONAL_EMAIL_FIELDS)) {
-                            $this->config['email'][$configKey] = $value;
-                        }
+                    // Converti valori booleani
+                    if (in_array($configKey, ['enabled', 'smtp_auth', 'smtp_debug'])) {
+                        $value = ($value === '1' || $value === 'true' || $value === true);
                     }
+                    
+                    // Converti porta a intero
+                    if ($configKey === 'smtp_port') {
+                        $value = (int)$value;
+                    }
+                    
+                    $this->config['email'][$configKey] = $value;
                 }
             }
-        } catch (\Exception $e) {
-            error_log("Failed to load email config from database: " . $e->getMessage());
-            // Continue with file-based config
         }
+    } catch (\Exception $e) {
+        error_log("Failed to load email config from database: " . $e->getMessage());
+        // In caso di errore, mantieni i defaults
     }
+}
     
     public static function getInstance() {
         if (self::$instance === null) {
