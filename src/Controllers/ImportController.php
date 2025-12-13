@@ -139,6 +139,8 @@ class ImportController {
                     'tax_code' => 'Codice Fiscale',
                     'gender' => 'Sesso (M/F)',
                     'nationality' => 'Nazionalità',
+                    'worker_type' => 'Tipo Lavoratore (studente/dipendente_privato/dipendente_pubblico/lavoratore_autonomo/disoccupato/pensionato)',
+                    'education_level' => 'Titolo di Studio (licenza_media/diploma_maturita/laurea_triennale/laurea_magistrale/dottorato)',
                     'registration_date' => 'Data Iscrizione',
                     'approval_date' => 'Data Approvazione',
                     'member_type' => 'Tipo Socio (ordinario/fondatore)',
@@ -241,7 +243,10 @@ class ImportController {
                     'minimum_quantity' => 'Quantità Minima',
                     'unit' => 'Unità di Misura',
                     'location' => 'Posizione',
-                    'status' => 'Stato'
+                    'qr_code' => 'Codice QR',
+                    'barcode' => 'Codice a Barre',
+                    'status' => 'Stato',
+                    'notes' => 'Note'
                 ]
             ]
         ];
@@ -268,6 +273,8 @@ class ImportController {
                 'codice_fiscale' => 'tax_code',
                 'sesso' => 'gender',
                 'nazionalita' => 'nationality',
+                'tipo_lavoratore' => 'worker_type',
+                'titolo_studio' => 'education_level',
                 'data_iscrizione' => 'registration_date',
                 'data_approvazione' => 'approval_date',
                 'tipo_socio' => 'member_type',
@@ -348,7 +355,10 @@ class ImportController {
                 'quantita_minima' => 'minimum_quantity',
                 'unita' => 'unit',
                 'posizione' => 'location',
-                'stato' => 'status'
+                'codice_qr' => 'qr_code',
+                'codice_barre' => 'barcode',
+                'stato' => 'status',
+                'note' => 'notes'
             ]
         ];
         
@@ -549,6 +559,8 @@ class ImportController {
             'tax_code' => $data['tax_code'] ?? null,
             'gender' => $this->parseGender($data['gender'] ?? ''),
             'nationality' => $data['nationality'] ?? 'Italiana',
+            'worker_type' => $this->parseWorkerType($data['worker_type'] ?? ''),
+            'education_level' => $this->parseEducationLevel($data['education_level'] ?? ''),
             'registration_date' => $this->parseDate($data['registration_date'] ?? ''),
             'approval_date' => $this->parseDate($data['approval_date'] ?? ''),
             'member_type' => $this->parseMemberType($data['member_type'] ?? ''),
@@ -818,7 +830,10 @@ class ImportController {
             'minimum_quantity' => $this->parseInteger($data['minimum_quantity'] ?? null, 0),
             'unit' => $data['unit'] ?? null,
             'location' => $data['location'] ?? null,
-            'status' => $this->parseWarehouseStatus($data['status'] ?? '')
+            'qr_code' => $data['qr_code'] ?? null,
+            'barcode' => $data['barcode'] ?? null,
+            'status' => $this->parseWarehouseStatus($data['status'] ?? ''),
+            'notes' => $data['notes'] ?? null
         ];
         
         // Insert item
@@ -929,6 +944,36 @@ class ImportController {
             return $status;
         }
         return 'in_formazione';
+    }
+    
+    /**
+     * Helper: Parse worker type
+     */
+    private function parseWorkerType($type) {
+        if (empty($type)) {
+            return null;
+        }
+        $type = strtolower(trim($type));
+        $validTypes = ['studente', 'dipendente_privato', 'dipendente_pubblico', 'lavoratore_autonomo', 'disoccupato', 'pensionato'];
+        if (in_array($type, $validTypes)) {
+            return $type;
+        }
+        return null;
+    }
+    
+    /**
+     * Helper: Parse education level
+     */
+    private function parseEducationLevel($level) {
+        if (empty($level)) {
+            return null;
+        }
+        $level = strtolower(trim($level));
+        $validLevels = ['licenza_media', 'diploma_maturita', 'laurea_triennale', 'laurea_magistrale', 'dottorato'];
+        if (in_array($level, $validLevels)) {
+            return $level;
+        }
+        return null;
     }
     
     /**
