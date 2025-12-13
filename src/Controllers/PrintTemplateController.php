@@ -425,6 +425,26 @@ class PrintTemplateController {
                 }
                 $sql .= " ORDER BY meeting_date DESC";
                 break;
+                
+            case 'member_applications':
+                if (!empty($filters['application_type'])) {
+                    $sql .= " AND application_type = ?";
+                    $params[] = $filters['application_type'];
+                }
+                if (!empty($filters['status'])) {
+                    $sql .= " AND status = ?";
+                    $params[] = $filters['status'];
+                }
+                if (!empty($filters['date_from'])) {
+                    $sql .= " AND submitted_at >= ?";
+                    $params[] = $filters['date_from'];
+                }
+                if (!empty($filters['date_to'])) {
+                    $sql .= " AND submitted_at <= ?";
+                    $params[] = $filters['date_to'];
+                }
+                $sql .= " ORDER BY submitted_at DESC";
+                break;
         }
         
         return $this->db->fetchAll($sql, $params);
@@ -597,12 +617,20 @@ class PrintTemplateController {
             'volunteer_status' => 'Stato volontario',
             'email' => 'Email',
             'phone' => 'Telefono',
+            'mobile' => 'Cellulare',
+            'pec' => 'PEC',
             'license_plate' => 'Targa',
             'vehicle_type' => 'Tipo mezzo',
             'model' => 'Modello',
             'meeting_date' => 'Data riunione',
             'meeting_type' => 'Tipo riunione',
             'location' => 'Luogo',
+            'application_code' => 'Codice domanda',
+            'application_type' => 'Tipo domanda',
+            'status' => 'Stato',
+            'submitted_at' => 'Data invio',
+            'approved_at' => 'Data approvazione',
+            'application_data' => 'Dati domanda',
         ];
         
         return $descriptions[$field] ?? ucfirst(str_replace('_', ' ', $field));
@@ -627,6 +655,7 @@ class PrintTemplateController {
                 'member_health' => 'Salute',
                 'member_fees' => 'Quote',
                 'member_notes' => 'Note',
+                'member_sanctions' => 'Sanzioni',
             ],
             'junior_members' => [
                 'junior_member_guardians' => 'Genitori/Tutori',
@@ -634,6 +663,8 @@ class PrintTemplateController {
                 'junior_member_addresses' => 'Indirizzi',
                 'junior_member_health' => 'Salute',
                 'junior_member_fees' => 'Quote',
+                'junior_member_notes' => 'Note',
+                'junior_member_sanctions' => 'Sanzioni',
             ],
             'vehicles' => [
                 'vehicle_maintenance' => 'Manutenzioni',
@@ -643,6 +674,9 @@ class PrintTemplateController {
                 'meeting_participants' => 'Partecipanti',
                 'meeting_agenda' => 'Ordine del giorno',
                 'meeting_attachments' => 'Allegati',
+            ],
+            'member_applications' => [
+                'member_application_guardians' => 'Genitori/Tutori',
             ],
         ];
         

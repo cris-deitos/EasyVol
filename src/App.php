@@ -71,7 +71,7 @@ class App {
                         $association['address_cap'] ?? ''
                     ]);
                     if (!empty($provinceCap)) {
-                        $cityParts[] = '(' . implode(') ', $provinceCap) . ')';
+                        $cityParts[] = '(' . implode(' ', $provinceCap) . ')';
                     }
                 }
                 $city = !empty($cityParts) ? implode(' ', $cityParts) : '';
