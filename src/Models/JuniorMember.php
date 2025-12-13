@@ -143,11 +143,13 @@ class JuniorMember {
     }
     
     public function addGuardian($juniorMemberId, $data) {
+        $data = $this->uppercaseFields($data, 'guardian');
         $data['junior_member_id'] = $juniorMemberId;
         return $this->db->insert('junior_member_guardians', $data);
     }
     
     public function updateGuardian($id, $data) {
+        $data = $this->uppercaseFields($data, 'guardian');
         return $this->db->update('junior_member_guardians', $data, 'id = ?', [$id]);
     }
     
@@ -161,11 +163,13 @@ class JuniorMember {
     }
     
     public function addAddress($juniorMemberId, $data) {
+        $data = $this->uppercaseFields($data, 'address');
         $data['junior_member_id'] = $juniorMemberId;
         return $this->db->insert('junior_member_addresses', $data);
     }
     
     public function updateAddress($id, $data) {
+        $data = $this->uppercaseFields($data, 'address');
         return $this->db->update('junior_member_addresses', $data, 'id = ?', [$id]);
     }
     
@@ -249,5 +253,30 @@ class JuniorMember {
     
     public function deleteSanction($id) {
         return $this->db->delete('junior_member_sanctions', 'id = ?', [$id]);
+    }
+    
+    /**
+     * Force uppercase on text fields before saving
+     * 
+     * @param array $data Data to transform
+     * @param string $type Type of data (address, guardian, etc.)
+     * @return array Transformed data
+     */
+    private function uppercaseFields($data, $type = 'default') {
+        $fieldMap = [
+            'address' => ['street', 'city', 'province'],
+            'guardian' => ['last_name', 'first_name'],
+            'default' => []
+        ];
+        
+        $fields = $fieldMap[$type] ?? $fieldMap['default'];
+        
+        foreach ($fields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                $data[$field] = mb_strtoupper($data[$field], 'UTF-8');
+            }
+        }
+        
+        return $data;
     }
 }

@@ -803,5 +803,32 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
     </footer>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Force uppercase on text fields for better data consistency
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fields that should be uppercase
+            const uppercaseFields = [
+                'last_name', 'first_name', 'birth_place', 'birth_province', 'nationality',
+                'residence_street', 'residence_city', 'residence_province',
+                'domicile_street', 'domicile_city', 'domicile_province',
+                'compilation_place',
+                'father_last_name', 'father_first_name', 'father_birth_place',
+                'mother_last_name', 'mother_first_name', 'mother_birth_place',
+                'tutor_last_name', 'tutor_first_name', 'tutor_birth_place'
+            ];
+            
+            uppercaseFields.forEach(function(fieldName) {
+                const field = document.getElementById(fieldName);
+                if (field) {
+                    field.addEventListener('input', function() {
+                        const start = this.selectionStart;
+                        const end = this.selectionEnd;
+                        this.value = this.value.toUpperCase();
+                        this.setSelectionRange(start, end);
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

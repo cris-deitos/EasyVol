@@ -116,6 +116,9 @@ class ApplicationController {
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
             
+            // Force uppercase on text fields
+            $data = $this->uppercaseApplicationData($data);
+            
             // Prepara i dati JSON
             $applicationData = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             
@@ -213,6 +216,9 @@ class ApplicationController {
             
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
+            
+            // Force uppercase on text fields
+            $data = $this->uppercaseApplicationData($data);
             
             // Prepara i dati JSON
             $applicationData = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -966,6 +972,9 @@ class ApplicationController {
      * @return int ID socio creato
      */
     private function createMemberFromApplication($data, $userId) {
+        // Force uppercase on data before creating member
+        $data = $this->uppercaseApplicationData($data);
+        
         // Genera numero registrazione
         $regNumber = $this->generateRegistrationNumber('member');
         
@@ -1114,6 +1123,9 @@ class ApplicationController {
      * @return int ID cadetto creato
      */
     private function createJuniorMemberFromApplication($data, $userId) {
+        // Force uppercase on data before creating junior member
+        $data = $this->uppercaseApplicationData($data);
+        
         // Genera numero registrazione
         $regNumber = $this->generateRegistrationNumber('junior');
         
@@ -1451,5 +1463,77 @@ class ApplicationController {
         } catch (\Exception $e) {
             error_log("Errore log attività: " . $e->getMessage());
         }
+    }
+    
+    /**
+     * Force uppercase on text fields in application data
+     * 
+     * @param array $data Application data
+     * @return array Modified data with uppercase fields
+     */
+    private function uppercaseApplicationData($data) {
+        // Text fields that should be uppercase
+        $textFields = [
+            'last_name', 'first_name', 'birth_place', 'birth_province', 'nationality',
+            'residence_street', 'residence_city', 'residence_province',
+            'domicile_street', 'domicile_city', 'domicile_province',
+            'compilation_place'
+        ];
+        
+        // Apply uppercase to main fields
+        foreach ($textFields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                $data[$field] = mb_strtoupper($data[$field], 'UTF-8');
+            }
+        }
+        
+        // Handle licenses array
+        if (isset($data['licenses']) && is_array($data['licenses'])) {
+            foreach ($data['licenses'] as &$license) {
+                if (isset($license['description']) && is_string($license['description'])) {
+                    $license['description'] = mb_strtoupper($license['description'], 'UTF-8');
+                }
+            }
+            unset($license);
+        }
+        
+        // Handle courses array
+        if (isset($data['courses']) && is_array($data['courses'])) {
+            foreach ($data['courses'] as &$course) {
+                if (isset($course['name']) && is_string($course['name'])) {
+                    $course['name'] = mb_strtoupper($course['name'], 'UTF-8');
+                }
+            }
+            unset($course);
+        }
+        
+        // Handle guardians array (for junior members)
+        if (isset($data['guardians']) && is_array($data['guardians'])) {
+            foreach ($data['guardians'] as &$guardian) {
+                if (isset($guardian['last_name']) && is_string($guardian['last_name'])) {
+                    $guardian['last_name'] = mb_strtoupper($guardian['last_name'], 'UTF-8');
+                }
+                if (isset($guardian['first_name']) && is_string($guardian['first_name'])) {
+                    $guardian['first_name'] = mb_strtoupper($guardian['first_name'], 'UTF-8');
+                }
+                if (isset($guardian['birth_place']) && is_string($guardian['birth_place'])) {
+                    $guardian['birth_place'] = mb_strtoupper($guardian['birth_place'], 'UTF-8');
+                }
+            }
+            unset($guardian);
+        }
+        
+        // Handle employment data
+        if (isset($data['employer_name']) && is_string($data['employer_name'])) {
+            $data['employer_name'] = mb_strtoupper($data['employer_name'], 'UTF-8');
+        }
+        if (isset($data['employer_address']) && is_string($data['employer_address'])) {
+            $data['employer_address'] = mb_strtoupper($data['employer_address'], 'UTF-8');
+        }
+        if (isset($data['employer_city']) && is_string($data['employer_city'])) {
+            $data['employer_city'] = mb_strtoupper($data['employer_city'], 'UTF-8');
+        }
+        
+        return $data;
     }
 }

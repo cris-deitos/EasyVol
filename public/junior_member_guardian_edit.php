@@ -158,5 +158,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Force uppercase on text fields
+        document.addEventListener('DOMContentLoaded', function() {
+            const uppercaseFields = ['last_name', 'first_name'];
+            
+            uppercaseFields.forEach(function(fieldName) {
+                const field = document.getElementById(fieldName);
+                if (field) {
+                    field.addEventListener('input', function() {
+                        const start = this.selectionStart;
+                        const end = this.selectionEnd;
+                        this.value = this.value.toUpperCase();
+                        this.setSelectionRange(start, end);
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

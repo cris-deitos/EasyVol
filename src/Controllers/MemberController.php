@@ -82,6 +82,9 @@ class MemberController {
                 $data['registration_number'] = $this->generateRegistrationNumber();
             }
             
+            // Force uppercase on text fields
+            $data = $this->uppercaseTextFields($data);
+            
             // Valida dati
             $this->validateMemberData($data);
             
@@ -145,6 +148,9 @@ class MemberController {
             $previousMember = $this->get($id);
             $previousStatus = $previousMember ? $previousMember['member_status'] : null;
             $newStatus = $data['member_status'] ?? 'attivo';
+            
+            // Force uppercase on text fields
+            $data = $this->uppercaseTextFields($data);
             
             // Valida dati
             $this->validateMemberData($data, $id);
@@ -391,5 +397,26 @@ class MemberController {
         } catch (\Exception $e) {
             error_log("Errore log attività: " . $e->getMessage());
         }
+    }
+    
+    /**
+     * Force uppercase on text fields
+     * 
+     * @param array $data Member data
+     * @return array Modified data with uppercase fields
+     */
+    private function uppercaseTextFields($data) {
+        // Text fields that should be uppercase
+        $textFields = [
+            'last_name', 'first_name', 'birth_place', 'birth_province', 'nationality'
+        ];
+        
+        foreach ($textFields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                $data[$field] = mb_strtoupper($data[$field], 'UTF-8');
+            }
+        }
+        
+        return $data;
     }
 }
