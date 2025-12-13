@@ -1472,17 +1472,14 @@ $pageTitle = 'Impostazioni Sistema';
             // Whitelist of valid tab identifiers for security
             const VALID_TAB_IDS = ['general', 'association', 'email', 'backup', 'import', 'print-templates'];
             
-            // Helper: Validate and construct tab button ID from tab identifier
-            function getValidatedTabId(tabIdentifier) {
+            // Helper: Validate tab identifier and construct tab button ID
+            function getValidatedTabButtonId(tabIdentifier) {
                 return VALID_TAB_IDS.includes(tabIdentifier) ? tabIdentifier + '-tab' : null;
             }
             
-            // Helper: Extract and validate tab identifier from target selector
-            function extractValidatedTabId(targetSelector) {
-                if (targetSelector && targetSelector.startsWith('#')) {
-                    return getValidatedTabId(targetSelector.substring(1));
-                }
-                return null;
+            // Helper: Validate tab identifier
+            function isValidTabId(tabIdentifier) {
+                return VALID_TAB_IDS.includes(tabIdentifier);
             }
             
             document.addEventListener('DOMContentLoaded', function() {
@@ -1502,7 +1499,7 @@ $pageTitle = 'Impostazioni Sistema';
                 
                 for (const [tabId, condition] of Object.entries(urlTabMap)) {
                     if (condition) {
-                        activeTabId = getValidatedTabId(tabId);
+                        activeTabId = getValidatedTabButtonId(tabId);
                         break;
                     }
                 }
@@ -1510,13 +1507,15 @@ $pageTitle = 'Impostazioni Sistema';
                 // Priority 2: Hash-based navigation (only if no URL parameters)
                 if (!activeTabId && window.location.hash) {
                     const hash = window.location.hash.substring(1);
-                    activeTabId = getValidatedTabId(hash);
+                    activeTabId = getValidatedTabButtonId(hash);
                 }
                 
                 // Priority 3: localStorage persistence (only if no URL params or hash)
                 if (!activeTabId) {
-                    const savedTab = localStorage.getItem('easyvol_settings_active_tab');
-                    activeTabId = extractValidatedTabId(savedTab);
+                    const savedTabId = localStorage.getItem('easyvol_settings_active_tab');
+                    if (savedTabId && isValidTabId(savedTabId)) {
+                        activeTabId = getValidatedTabButtonId(savedTabId);
+                    }
                 }
                 
                 // Activate the determined tab
@@ -1530,10 +1529,14 @@ $pageTitle = 'Impostazioni Sistema';
                 
                 // Save active tab to localStorage for persistence using event delegation
                 document.getElementById('settingsTabs').addEventListener('shown.bs.tab', function(event) {
-                    const targetId = event.target.getAttribute('data-bs-target');
-                    const validatedTabId = extractValidatedTabId(targetId);
-                    if (validatedTabId) {
-                        localStorage.setItem('easyvol_settings_active_tab', targetId);
+                    const targetSelector = event.target.getAttribute('data-bs-target');
+                    // Extract tab identifier from selector (e.g., '#email' -> 'email')
+                    if (targetSelector && targetSelector.startsWith('#')) {
+                        const tabId = targetSelector.substring(1);
+                        if (isValidTabId(tabId)) {
+                            // Store just the tab identifier (without '#')
+                            localStorage.setItem('easyvol_settings_active_tab', tabId);
+                        }
                     }
                 });
             });
