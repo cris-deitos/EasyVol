@@ -43,6 +43,7 @@ if ($participantId <= 0) {
     exit;
 }
 
+// Validate status - allow all valid statuses for flexibility (currently frontend only sends 'present' and 'absent')
 if (!in_array($status, ['invited', 'present', 'absent', 'delegated'])) {
     echo json_encode(['success' => false, 'message' => 'Stato non valido']);
     exit;

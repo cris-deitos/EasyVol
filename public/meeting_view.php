@@ -338,12 +338,12 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                             <td>
                                                                 <div class="btn-group btn-group-sm" role="group">
                                                                     <button type="button" class="btn btn-success" 
-                                                                            onclick="updateAttendance(<?php echo $participant['id']; ?>, 'present', <?php echo $meeting['id']; ?>)"
+                                                                            onclick="updateAttendance(<?php echo $participant['id']; ?>, 'present')"
                                                                             title="Segna come Presente">
                                                                         <i class="bi bi-check-circle"></i>
                                                                     </button>
                                                                     <button type="button" class="btn btn-danger" 
-                                                                            onclick="updateAttendance(<?php echo $participant['id']; ?>, 'absent', <?php echo $meeting['id']; ?>)"
+                                                                            onclick="updateAttendance(<?php echo $participant['id']; ?>, 'absent')"
                                                                             title="Segna come Assente">
                                                                         <i class="bi bi-x-circle"></i>
                                                                     </button>
@@ -458,7 +458,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
         }
         
         // Update attendance status
-        function updateAttendance(participantId, status, meetingId) {
+        function updateAttendance(participantId, status) {
             const statusLabel = status === 'present' ? 'Presente' : 'Assente';
             if (!confirm('Confermi di voler segnare il partecipante come ' + statusLabel + '?')) {
                 return;
