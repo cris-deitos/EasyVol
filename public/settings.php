@@ -1507,10 +1507,7 @@ $pageTitle = 'Impostazioni Sistema';
                     if (savedTab && savedTab.startsWith('#')) {
                         const tabId = savedTab.substring(1);
                         if (VALID_TAB_IDS.includes(tabId)) {
-                            const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + savedTab + '"]');
-                            if (savedTabButton) {
-                                activeTabId = savedTabButton.id;
-                            }
+                            activeTabId = tabId + '-tab';
                         }
                     }
                 }
@@ -1527,8 +1524,12 @@ $pageTitle = 'Impostazioni Sistema';
                 // Save active tab to localStorage for persistence using event delegation
                 document.getElementById('settingsTabs').addEventListener('shown.bs.tab', function(event) {
                     const targetId = event.target.getAttribute('data-bs-target');
-                    if (targetId) {
-                        localStorage.setItem('easyvol_settings_active_tab', targetId);
+                    // Validate targetId format (#tabname) before saving
+                    if (targetId && targetId.startsWith('#')) {
+                        const tabId = targetId.substring(1);
+                        if (VALID_TAB_IDS.includes(tabId)) {
+                            localStorage.setItem('easyvol_settings_active_tab', targetId);
+                        }
                     }
                 });
             });
