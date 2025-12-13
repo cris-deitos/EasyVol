@@ -40,15 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    // Validate vehicle ID - must be a positive integer
+    // Validate and sanitize vehicle ID - must be a positive integer
     if ($vehicleId <= 0 || !is_numeric($_POST['vehicle_id'] ?? '')) {
         $_SESSION['error'] = 'ID veicolo non valido';
         header('Location: vehicles.php');
         exit;
     }
-    
-    // Sanitize vehicle ID to prevent path traversal
-    $vehicleId = intval($vehicleId);
     
     // Check if file was uploaded
     if (!isset($_FILES['document_file']) || $_FILES['document_file']['error'] === UPLOAD_ERR_NO_FILE) {
@@ -84,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (empty($errors)) {
             try {
-                // Create upload directory if it doesn't exist (vehicleId already sanitized above)
-                $uploadDir = __DIR__ . '/../uploads/vehicles/' . $vehicleId;
+                // Create upload directory if it doesn't exist (vehicleId already validated and sanitized above)
+                $uploadDir = sprintf('%s/../uploads/vehicles/%d', __DIR__, $vehicleId);
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
@@ -106,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data = [
                         'document_type' => $_POST['document_type'],
                         'file_name' => $file['name'],
-                        'file_path' => '../uploads/vehicles/' . $vehicleId . '/' . $filename,
+                        'file_path' => sprintf('../uploads/vehicles/%d/%s', $vehicleId, $filename),
                         'expiry_date' => $expiryDate !== '' ? $expiryDate : null
                     ];
                     
