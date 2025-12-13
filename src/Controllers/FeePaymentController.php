@@ -14,6 +14,10 @@ class FeePaymentController {
     private $db;
     private $config;
     
+    // Member type constants
+    const MEMBER_TYPE_ADULT = 'adult';
+    const MEMBER_TYPE_JUNIOR = 'junior';
+    
     /**
      * Constructor
      * 
@@ -26,6 +30,16 @@ class FeePaymentController {
     }
     
     /**
+     * Determina se la matricola appartiene a un socio minorenne (cadetto)
+     * 
+     * @param string $registrationNumber Matricola
+     * @return bool
+     */
+    public static function isJuniorMember($registrationNumber) {
+        return strtoupper(substr($registrationNumber, 0, 1)) === 'C';
+    }
+    
+    /**
      * Verifica match matricola e cognome socio
      * 
      * @param string $registrationNumber Matricola
@@ -34,13 +48,13 @@ class FeePaymentController {
      */
     public function verifyMember($registrationNumber, $lastName) {
         // Check if registration number starts with 'C' for junior members (cadetti minorenni)
-        if (strtoupper(substr($registrationNumber, 0, 1)) === 'C') {
+        if (self::isJuniorMember($registrationNumber)) {
             return $this->verifyJuniorMember($registrationNumber, $lastName);
         }
         
         // Regular member verification
         $sql = "SELECT m.id, m.registration_number, m.last_name, m.first_name, 
-                mc.value as email, 'adult' as member_type
+                mc.value as email, '" . self::MEMBER_TYPE_ADULT . "' as member_type
                 FROM members m
                 LEFT JOIN member_contacts mc ON m.id = mc.member_id 
                     AND mc.contact_type = 'email'
@@ -61,7 +75,7 @@ class FeePaymentController {
      */
     private function verifyJuniorMember($registrationNumber, $lastName) {
         $sql = "SELECT jm.id, jm.registration_number, jm.last_name, jm.first_name, 
-                jmc.value as email, 'junior' as member_type
+                jmc.value as email, '" . self::MEMBER_TYPE_JUNIOR . "' as member_type
                 FROM junior_members jm
                 LEFT JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id 
                     AND jmc.contact_type = 'email'
@@ -206,8 +220,8 @@ class FeePaymentController {
                  m.id as member_id,
                  jm.id as junior_member_id,
                  CASE 
-                     WHEN m.id IS NOT NULL THEN 'adult'
-                     WHEN jm.id IS NOT NULL THEN 'junior'
+                     WHEN m.id IS NOT NULL THEN '" . self::MEMBER_TYPE_ADULT . "'
+                     WHEN jm.id IS NOT NULL THEN '" . self::MEMBER_TYPE_JUNIOR . "'
                      ELSE NULL
                  END as member_type
                 FROM fee_payment_requests fpr
@@ -227,7 +241,7 @@ class FeePaymentController {
             }
             
             // Insert into appropriate fees table based on member type
-            if ($request['member_type'] === 'junior') {
+            if ($request['member_type'] === self::MEMBER_TYPE_JUNIOR) {
                 // Insert into junior_member_fees
                 $sql = "INSERT INTO junior_member_fees (
                     junior_member_id, year, payment_date, amount, receipt_file, 
