@@ -131,6 +131,8 @@ class FeePaymentController {
      * @return array
      */
     public function getPaymentRequests($filters = [], $page = 1, $perPage = 20) {
+        // Note: Registration numbers starting with 'C' are junior members, others are adult members
+        // This ensures no overlap between the two tables for the same registration number
         $sql = "SELECT fpr.*, 
                 COALESCE(m.id, jm.id) as member_id, 
                 COALESCE(m.first_name, jm.first_name) as first_name,
