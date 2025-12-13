@@ -55,10 +55,24 @@ class JuniorMemberController {
         }
         
         $whereClause = implode(' AND ', $where);
+        
+        // Ensure pagination parameters are safe integers
+        $page = max(1, (int)$page);
+        $perPage = max(1, (int)$perPage);
         $offset = ($page - 1) * $perPage;
         
+        // Note: $whereClause is built from parameterized conditions above, safe from SQL injection
+        // Get first guardian by priority: padre > madre > tutore
         $sql = "SELECT jm.*, 
-                CONCAT(jm.first_name, ' ', jm.last_name) as full_name
+                CONCAT(jm.first_name, ' ', jm.last_name) as full_name,
+                (SELECT jmg.first_name FROM junior_member_guardians jmg 
+                 WHERE jmg.junior_member_id = jm.id 
+                 ORDER BY FIELD(jmg.guardian_type, 'padre', 'madre', 'tutore'), jmg.id 
+                 LIMIT 1) as guardian_first_name,
+                (SELECT jmg.last_name FROM junior_member_guardians jmg 
+                 WHERE jmg.junior_member_id = jm.id 
+                 ORDER BY FIELD(jmg.guardian_type, 'padre', 'madre', 'tutore'), jmg.id 
+                 LIMIT 1) as guardian_last_name
                 FROM junior_members jm
                 WHERE $whereClause
                 ORDER BY jm.last_name, jm.first_name

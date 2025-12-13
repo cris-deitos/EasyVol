@@ -198,7 +198,14 @@ $pageTitle = 'Gestione Soci Minorenni';
                                                 <td><?php echo date('d/m/Y', strtotime($member['birth_date'])); ?></td>
                                                 <td><?php echo $age; ?> anni</td>
                                                 <td>
-                                                    <?php echo htmlspecialchars($member['guardian_first_name'] . ' ' . $member['guardian_last_name']); ?>
+                                                    <?php 
+                                                    $guardianName = trim(($member['guardian_first_name'] ?? '') . ' ' . ($member['guardian_last_name'] ?? ''));
+                                                    if (!empty($guardianName)) {
+                                                        echo htmlspecialchars($guardianName);
+                                                    } else {
+                                                        echo '<span class="text-muted">-</span>';
+                                                    }
+                                                    ?>
                                                 </td>
                                                 <td>
                                                     <?php
