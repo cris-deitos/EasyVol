@@ -199,8 +199,9 @@ $pageTitle = 'Gestione Soci Minorenni';
                                                 <td><?php echo $age; ?> anni</td>
                                                 <td>
                                                     <?php 
-                                                    if (!empty($member['guardian_first_name']) || !empty($member['guardian_last_name'])) {
-                                                        echo htmlspecialchars(trim(($member['guardian_first_name'] ?? '') . ' ' . ($member['guardian_last_name'] ?? '')));
+                                                    $guardianName = trim(($member['guardian_first_name'] ?? '') . ' ' . ($member['guardian_last_name'] ?? ''));
+                                                    if (!empty($guardianName)) {
+                                                        echo htmlspecialchars($guardianName);
                                                     } else {
                                                         echo '<span class="text-muted">-</span>';
                                                     }

@@ -59,10 +59,12 @@ class JuniorMemberController {
         
         $sql = "SELECT jm.*, 
                 CONCAT(jm.first_name, ' ', jm.last_name) as full_name,
-                (SELECT first_name FROM junior_member_guardians WHERE junior_member_id = jm.id LIMIT 1) as guardian_first_name,
-                (SELECT last_name FROM junior_member_guardians WHERE junior_member_id = jm.id LIMIT 1) as guardian_last_name
+                MIN(jmg.first_name) as guardian_first_name,
+                MIN(jmg.last_name) as guardian_last_name
                 FROM junior_members jm
+                LEFT JOIN junior_member_guardians jmg ON jm.id = jmg.junior_member_id
                 WHERE $whereClause
+                GROUP BY jm.id
                 ORDER BY jm.last_name, jm.first_name
                 LIMIT $perPage OFFSET $offset";
         
