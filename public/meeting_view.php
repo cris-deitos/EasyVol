@@ -198,7 +198,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                     <strong class="text-success">
                                                         <?php 
                                                         $present = array_filter($meeting['participants'] ?? [], function($p) {
-                                                            return $p['attendance'] === 'presente';
+                                                            return ($p['attendance_status'] ?? '') === 'present';
                                                         });
                                                         echo count($present);
                                                         ?>
@@ -211,7 +211,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                     <strong class="text-danger">
                                                         <?php 
                                                         $absent = array_filter($meeting['participants'] ?? [], function($p) {
-                                                            return $p['attendance'] === 'assente';
+                                                            return ($p['attendance_status'] ?? '') === 'absent';
                                                         });
                                                         echo count($absent);
                                                         ?>
@@ -283,20 +283,51 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                             <tbody>
                                                 <?php foreach ($meeting['participants'] as $participant): ?>
                                                     <tr>
-                                                        <td><?php echo htmlspecialchars($participant['member_name']); ?></td>
+                                                        <td>
+                                                            <?php 
+                                                            // Construct member name based on member type
+                                                            $memberName = '';
+                                                            if ($participant['member_type'] === 'junior') {
+                                                                $firstName = $participant['junior_first_name'] ?? '';
+                                                                $lastName = $participant['junior_last_name'] ?? '';
+                                                                if ($firstName || $lastName) {
+                                                                    $memberName = trim($firstName . ' ' . $lastName);
+                                                                }
+                                                            } else {
+                                                                $firstName = $participant['first_name'] ?? '';
+                                                                $lastName = $participant['last_name'] ?? '';
+                                                                if ($firstName || $lastName) {
+                                                                    $memberName = trim($firstName . ' ' . $lastName);
+                                                                }
+                                                            }
+                                                            // Fallback to participant_name if available
+                                                            if (empty($memberName)) {
+                                                                $memberName = $participant['participant_name'] ?? 'N/A';
+                                                            }
+                                                            echo htmlspecialchars($memberName);
+                                                            ?>
+                                                        </td>
                                                         <td><?php echo htmlspecialchars($participant['role'] ?? '-'); ?></td>
                                                         <td>
                                                             <?php 
-                                                            $attendance = $participant['attendance'] ?? 'assente';
+                                                            $attendance = $participant['attendance_status'] ?? 'invited';
                                                             $attendanceClass = [
-                                                                'presente' => 'success',
-                                                                'assente' => 'danger',
-                                                                'giustificato' => 'warning'
+                                                                'present' => 'success',
+                                                                'absent' => 'danger',
+                                                                'delegated' => 'warning',
+                                                                'invited' => 'secondary'
+                                                            ];
+                                                            $attendanceLabels = [
+                                                                'present' => 'Presente',
+                                                                'absent' => 'Assente',
+                                                                'delegated' => 'Delegato',
+                                                                'invited' => 'Invitato'
                                                             ];
                                                             $class = $attendanceClass[$attendance] ?? 'secondary';
+                                                            $label = $attendanceLabels[$attendance] ?? 'Non definito';
                                                             ?>
                                                             <span class="badge bg-<?php echo $class; ?>">
-                                                                <?php echo htmlspecialchars(ucfirst($attendance)); ?>
+                                                                <?php echo htmlspecialchars($label); ?>
                                                             </span>
                                                         </td>
                                                         <td><?php echo htmlspecialchars($participant['notes'] ?? '-'); ?></td>
@@ -333,7 +364,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                 <div class="d-flex w-100 justify-content-between">
                                                     <h5 class="mb-1">
                                                         <?php echo htmlspecialchars($item['order_number']); ?>. 
-                                                        <?php echo htmlspecialchars($item['title']); ?>
+                                                        <?php echo htmlspecialchars($item['subject'] ?? ''); ?>
                                                     </h5>
                                                     <?php if (!empty($item['vote_result'])): ?>
                                                         <span class="badge bg-<?php echo $item['vote_result'] == 'approvato' ? 'success' : 'danger'; ?>">
