@@ -1,0 +1,233 @@
+/**
+ * EasyCO - Emergency Operations Center Styling
+ * Orange/Yellow branding for emergency operations
+ */
+
+:root {
+    --easyco-primary: #ff8c00;      /* Dark Orange */
+    --easyco-secondary: #ffa500;    /* Orange */
+    --easyco-accent: #ffb84d;       /* Light Orange */
+    --easyco-warning: #ff6b00;      /* Red Orange */
+    --easyco-success: #28a745;      /* Green */
+    --easyco-info: #17a2b8;         /* Cyan */
+}
+
+/* Login Page Gradient */
+body.easyco-login {
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+}
+
+body.easyco-login .login-card h2 {
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body.easyco-login .input-group-text {
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+}
+
+body.easyco-login .btn-login {
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+    box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4);
+}
+
+body.easyco-login .btn-login:hover {
+    box-shadow: 0 6px 20px rgba(255, 140, 0, 0.5);
+    background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%);
+}
+
+body.easyco-login .form-control:focus {
+    border-color: #ff8c00;
+    box-shadow: 0 0 0 0.2rem rgba(255, 140, 0, 0.15);
+}
+
+body.easyco-login a {
+    color: #ff8c00 !important;
+}
+
+/* Navbar EasyCO */
+.navbar.easyco-navbar {
+    background: linear-gradient(90deg, #ff8c00 0%, #ff6b00 100%) !important;
+    border-bottom: 3px solid #ffb84d;
+}
+
+.navbar.easyco-navbar .navbar-brand {
+    font-weight: bold;
+    color: #fff !important;
+}
+
+.navbar.easyco-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar.easyco-navbar .nav-link:hover {
+    color: #fff !important;
+}
+
+.navbar.easyco-navbar .dropdown-menu {
+    border: 2px solid var(--easyco-accent);
+}
+
+/* Sidebar EasyCO */
+.sidebar.easyco-sidebar {
+    border-right: 3px solid var(--easyco-accent);
+}
+
+.sidebar.easyco-sidebar .nav-link {
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.sidebar.easyco-sidebar .nav-link:hover {
+    background-color: rgba(255, 140, 0, 0.1);
+    color: var(--easyco-primary);
+}
+
+.sidebar.easyco-sidebar .nav-link.active {
+    color: var(--easyco-primary);
+    background-color: rgba(255, 140, 0, 0.15);
+    border-left: 4px solid var(--easyco-primary);
+}
+
+.sidebar.easyco-sidebar .nav-link i {
+    color: var(--easyco-primary);
+}
+
+/* EasyCO Buttons */
+.btn-easyco-primary {
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 8px rgba(255, 140, 0, 0.3);
+}
+
+.btn-easyco-primary:hover {
+    background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%);
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.4);
+    color: white;
+}
+
+.btn-outline-easyco-primary {
+    border: 2px solid var(--easyco-primary);
+    color: var(--easyco-primary);
+}
+
+.btn-outline-easyco-primary:hover {
+    background: var(--easyco-primary);
+    color: white;
+}
+
+/* EasyCO Cards */
+.card.easyco-card {
+    border-top: 3px solid var(--easyco-primary);
+}
+
+.card-header.easyco-header {
+    background: linear-gradient(90deg, #ff8c00 0%, #ff6b00 100%);
+    color: white;
+    font-weight: 600;
+}
+
+/* EasyCO Badges */
+.badge.bg-easyco-primary {
+    background-color: var(--easyco-primary) !important;
+}
+
+.badge.bg-easyco-warning {
+    background-color: var(--easyco-warning) !important;
+}
+
+/* EasyCO Stats Cards */
+.card-stat.easyco-stat {
+    border-left: 4px solid var(--easyco-primary);
+    transition: transform 0.2s ease;
+}
+
+.card-stat.easyco-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-stat.easyco-stat h2 {
+    color: var(--easyco-primary);
+}
+
+/* EasyCO Emergency Alert */
+.alert-easyco-emergency {
+    background: linear-gradient(135deg, #ff6b00 0%, #dc3545 100%);
+    color: white;
+    border: none;
+    font-weight: 600;
+}
+
+/* EasyCO Page Titles */
+.easyco-page-title {
+    color: var(--easyco-primary);
+    border-bottom: 3px solid var(--easyco-accent);
+}
+
+.easyco-page-title i {
+    color: var(--easyco-primary);
+}
+
+/* EasyCO Links */
+a.easyco-link {
+    color: var(--easyco-primary);
+    text-decoration: none;
+}
+
+a.easyco-link:hover {
+    color: var(--easyco-warning);
+    text-decoration: underline;
+}
+
+/* EasyCO Table Styling */
+.table.easyco-table thead {
+    background-color: rgba(255, 140, 0, 0.1);
+    border-bottom: 2px solid var(--easyco-primary);
+}
+
+.table.easyco-table thead th {
+    color: var(--easyco-primary);
+    font-weight: 600;
+}
+
+.table.easyco-table tbody tr:hover {
+    background-color: rgba(255, 140, 0, 0.05);
+}
+
+/* EasyCO Logo */
+.easyco-logo-text {
+    font-weight: 700;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Emergency Pulse Animation */
+@keyframes easyco-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+.easyco-emergency-pulse {
+    animation: easyco-pulse 2s ease-in-out infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar.easyco-sidebar {
+        border-right: none;
+        border-bottom: 3px solid var(--easyco-accent);
+    }
+}

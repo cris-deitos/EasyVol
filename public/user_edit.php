@@ -75,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'full_name' => trim($_POST['full_name'] ?? ''),
             'member_id' => !empty($_POST['member_id']) ? intval($_POST['member_id']) : null,
             'role_id' => !empty($_POST['role_id']) ? intval($_POST['role_id']) : null,
-            'is_active' => isset($_POST['is_active']) ? 1 : 0
+            'is_active' => isset($_POST['is_active']) ? 1 : 0,
+            'is_operations_center_user' => isset($_POST['is_operations_center_user']) ? 1 : 0
         ];
         
         // Validazione
@@ -298,6 +299,17 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                 <label class="form-check-label" for="is_active">
                                     Utente Attivo
                                 </label>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="is_operations_center_user" name="is_operations_center_user" 
+                                       <?php echo (isset($user) && $user['is_operations_center_user']) ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="is_operations_center_user">
+                                    <i class="bi bi-broadcast"></i> Utente Centrale Operativa (EasyCO)
+                                </label>
+                                <div class="form-text">
+                                    L'utente potrà accedere al sistema EasyCO tramite un login dedicato con funzionalità limitate
+                                </div>
                             </div>
                             
                             <div class="border rounded p-3 mb-3 bg-light">

@@ -116,8 +116,8 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             
             $sql = "INSERT INTO users (
                 username, password, email, full_name, member_id, 
-                role_id, is_active, must_change_password, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                role_id, is_active, is_operations_center_user, must_change_password, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['username'],
@@ -127,6 +127,7 @@ public function index($filters = [], $page = 1, $perPage = 20) {
                 $data['member_id'] ?? null,
                 $data['role_id'] ?? null,
                 isset($data['is_active']) ? (int)$data['is_active'] : 1,
+                isset($data['is_operations_center_user']) ? (int)$data['is_operations_center_user'] : 0,
                 $mustChangePassword
             ];
             
@@ -184,7 +185,7 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             
             $sql = "UPDATE users SET
                 username = ?, email = ?, full_name = ?, member_id = ?,
-                role_id = ?, is_active = ?, updated_at = NOW()
+                role_id = ?, is_active = ?, is_operations_center_user = ?, updated_at = NOW()
                 WHERE id = ?";
             
             $params = [
@@ -194,6 +195,7 @@ public function index($filters = [], $page = 1, $perPage = 20) {
                 $data['member_id'] ?? null,
                 $data['role_id'] ?? null,
                 isset($data['is_active']) ? (int)$data['is_active'] : 1,
+                isset($data['is_operations_center_user']) ? (int)$data['is_operations_center_user'] : 0,
                 $id
             ];
             
