@@ -457,11 +457,19 @@ class PrintTemplateController {
      * @param int $recordId Record ID
      * @param string $relationTable Related table name
      * @return array
+     * @throws \Exception if relation table is not valid for entity type
      */
     private function loadRelatedData($entityType, $recordId, $relationTable) {
+        // Validate that the relation table is allowed for this entity type
+        $availableRelations = $this->getAvailableRelations($entityType);
+        if (!isset($availableRelations[$relationTable])) {
+            throw new \Exception("Invalid relation table: " . htmlspecialchars($relationTable) . " for entity type: " . htmlspecialchars($entityType));
+        }
+        
         // Determine foreign key based on entity type
         $foreignKey = $this->getForeignKey($entityType);
         
+        // The relation table is now validated through getAvailableRelations
         $sql = "SELECT * FROM {$relationTable} WHERE {$foreignKey} = ?";
         return $this->db->fetchAll($sql, [$recordId]);
     }
@@ -471,9 +479,23 @@ class PrintTemplateController {
      * 
      * @param string $entityType Entity type
      * @return string
+     * @throws \Exception if entity type is not whitelisted
      */
     private function getTableName($entityType) {
-        return $entityType;
+        // Whitelist of allowed entity types to prevent SQL injection
+        $allowedTables = [
+            'members' => 'members',
+            'junior_members' => 'junior_members',
+            'member_applications' => 'member_applications',
+            'vehicles' => 'vehicles',
+            'meetings' => 'meetings',
+        ];
+        
+        if (!isset($allowedTables[$entityType])) {
+            throw new \Exception("Invalid entity type: " . htmlspecialchars($entityType));
+        }
+        
+        return $allowedTables[$entityType];
     }
     
     /**
