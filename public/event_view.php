@@ -324,7 +324,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                             <tbody>
                                                 <?php foreach ($event['participants'] as $participant): ?>
                                                     <tr>
-                                                        <td><?php echo htmlspecialchars($participant['member_name']); ?></td>
+                                                        <td><?php echo htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']); ?></td>
                                                         <td><?php echo htmlspecialchars($participant['role'] ?? '-'); ?></td>
                                                         <td><?php echo htmlspecialchars($participant['hours'] ?? 0); ?></td>
                                                         <td><?php echo htmlspecialchars($participant['notes'] ?? '-'); ?></td>

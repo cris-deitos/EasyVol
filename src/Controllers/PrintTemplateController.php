@@ -823,7 +823,7 @@ class PrintTemplateController {
             ],
             'events' => [
                 'interventions' => 'Interventi',
-                'event_members' => 'Membri Coinvolti',
+                'event_participants' => 'Membri Coinvolti',
                 'event_vehicles' => 'Mezzi Utilizzati',
             ],
         ];

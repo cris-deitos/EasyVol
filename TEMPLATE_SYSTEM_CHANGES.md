@@ -9,7 +9,7 @@ Il sistema di gestione template è stato completamente verificato e migliorato c
 1. **Aggiunto Supporto Entità "Eventi" (events)**
    - Il controller ora supporta pienamente l'entità "events"
    - Aggiunti filtri per tipo evento, stato, range date
-   - Relazioni disponibili: interventions, event_members, event_vehicles
+   - Relazioni disponibili: interventions, event_participants, event_vehicles
    - Interfaccia utente aggiornata per mostrare Eventi come opzione
 
 2. **Motore Template Handlebars Potenziato**
