@@ -14,8 +14,13 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
 class EmailSender {
     /**
      * Fallback base URL when no configuration is provided
-     * This maintains backwards compatibility with the original hardcoded value.
-     * Users should configure email.base_url in settings for their installation.
+     * This maintains backwards compatibility with the original hardcoded value from this codebase.
+     * 
+     * IMPORTANT: Users deploying to their own environment should configure email.base_url 
+     * in Settings > Email to use their own URL instead of this fallback.
+     * 
+     * This fallback ensures emails still work in legacy installations that haven't 
+     * configured the new setting yet.
      */
     const FALLBACK_BASE_URL = 'https://sdi.protezionecivilebassogarda.it/EasyVol';
     
