@@ -574,8 +574,12 @@ class EmailSender {
         $applicationCode = $application['application_code'];
         $pdfToken = $application['pdf_download_token'] ?? '';
         
-        // Build PDF download URL
-        $baseUrl = $this->config['app']['base_url'] ?? '';
+        // Build PDF download URL - use email base_url if configured
+        $baseUrl = $this->config['email']['base_url'] ?? '';
+        if (empty($baseUrl)) {
+            // Fallback to app base_url for backwards compatibility
+            $baseUrl = $this->config['app']['base_url'] ?? '';
+        }
         if (empty($baseUrl)) {
             // Try to construct from common settings
             $baseUrl = $this->config['app']['url'] ?? '';
@@ -584,7 +588,7 @@ class EmailSender {
         // If still empty, use a placeholder that will be visible
         if (empty($baseUrl)) {
             $baseUrl = 'URL_NON_CONFIGURATO';
-            error_log("Warning: app.base_url or app.url not configured in config. PDF download link in email will not work.");
+            error_log("Warning: email.base_url, app.base_url or app.url not configured in config. PDF download link in email will not work.");
         }
         
         $baseUrl = rtrim($baseUrl, '/');
@@ -759,7 +763,8 @@ class EmailSender {
             }
             
             $assocName = $this->config['association']['name'] ?? 'Associazione';
-            $loginUrl = 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
+            $baseUrl = $this->config['email']['base_url'] ?? '';
+            $loginUrl = !empty($baseUrl) ? rtrim($baseUrl, '/') . '/public/login.php' : 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
             
             $subject = "🎉 Benvenuto in EasyVol - Credenziali di Accesso";
             
@@ -859,7 +864,8 @@ class EmailSender {
             }
             
             $assocName = $this->config['association']['name'] ?? 'Associazione';
-            $loginUrl = 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
+            $baseUrl = $this->config['email']['base_url'] ?? '';
+            $loginUrl = !empty($baseUrl) ? rtrim($baseUrl, '/') . '/public/login.php' : 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
             
             $subject = "🔑 Reset Password - EasyVol";
             

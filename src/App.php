@@ -13,7 +13,7 @@ class App {
     /**
      * Optional email configuration fields that can have empty values
      */
-    const OPTIONAL_EMAIL_FIELDS = ['reply_to', 'return_path', 'smtp_host', 'smtp_username', 'smtp_password', 'smtp_encryption'];
+    const OPTIONAL_EMAIL_FIELDS = ['reply_to', 'return_path', 'base_url', 'smtp_host', 'smtp_username', 'smtp_password', 'smtp_encryption'];
     
     private static $instance = null;
     private $config;
@@ -126,6 +126,7 @@ private function loadEmailConfigFromDatabase() {
             'reply_to' => '',
             'return_path' => '',
             'charset' => 'UTF-8',
+            'base_url' => '',
             'smtp_host' => '',
             'smtp_port' => 587,
             'smtp_username' => '',
@@ -157,6 +158,7 @@ private function loadEmailConfigFromDatabase() {
                 'email_reply_to' => 'reply_to',
                 'email_return_path' => 'return_path',
                 'email_charset' => 'charset',
+                'email_base_url' => 'base_url',
                 'email_smtp_host' => 'smtp_host',
                 'email_smtp_port' => 'smtp_port',
                 'email_smtp_username' => 'smtp_username',
