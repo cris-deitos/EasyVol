@@ -262,9 +262,9 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-people"></i> Partecipanti</h5>
                                     <?php if ($app->checkPermission('meetings', 'edit')): ?>
-                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
-                                            <i class="bi bi-plus-circle"></i> Aggiungi Partecipante
-                                        </button>
+                                        <a href="meeting_participants.php?id=<?php echo $meeting['id']; ?>" class="btn btn-sm btn-success">
+                                            <i class="bi bi-plus-circle"></i> Gestisci Partecipanti
+                                        </a>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -278,6 +278,9 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                     <th>Qualifica</th>
                                                     <th>Presenza</th>
                                                     <th>Note</th>
+                                                    <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                        <th>Azioni</th>
+                                                    <?php endif; ?>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -331,6 +334,22 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                             </span>
                                                         </td>
                                                         <td><?php echo htmlspecialchars($participant['notes'] ?? '-'); ?></td>
+                                                        <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                            <td>
+                                                                <div class="btn-group btn-group-sm" role="group">
+                                                                    <button type="button" class="btn btn-success" 
+                                                                            onclick="updateAttendance(<?php echo $participant['id']; ?>, 'present')"
+                                                                            title="Segna come Presente">
+                                                                        <i class="bi bi-check-circle"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-danger" 
+                                                                            onclick="updateAttendance(<?php echo $participant['id']; ?>, 'absent')"
+                                                                            title="Segna come Assente">
+                                                                        <i class="bi bi-x-circle"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        <?php endif; ?>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
@@ -436,6 +455,36 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                 const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
                 modal.hide();
             }
+        }
+        
+        // Update attendance status
+        function updateAttendance(participantId, status) {
+            const statusLabel = status === 'present' ? 'Presente' : 'Assente';
+            if (!confirm('Confermi di voler segnare il partecipante come ' + statusLabel + '?')) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('participant_id', participantId);
+            formData.append('status', status);
+            
+            fetch('meeting_update_attendance.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Stato aggiornato con successo');
+                    window.location.reload();
+                } else {
+                    alert('Errore: ' + (data.message || 'Impossibile aggiornare lo stato'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante l\'aggiornamento dello stato');
+            });
         }
     </script>
 

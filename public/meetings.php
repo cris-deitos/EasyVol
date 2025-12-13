@@ -160,6 +160,10 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                                                class="btn btn-sm btn-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>
+                                                            <a href="meeting_participants.php?id=<?php echo $meeting['id']; ?>" 
+                                                               class="btn btn-sm btn-success" title="Gestisci Partecipanti">
+                                                                <i class="bi bi-people-fill"></i>
+                                                            </a>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>
