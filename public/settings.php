@@ -1475,6 +1475,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let activeTab = null;
     
     // 1. Priorità URL success parameter
+    // Note: 'email' key maps to 'mail' tab for backward compatibility with existing URLs
     const successMap = {
         'email': 'mail',
         'association': 'association',
