@@ -156,7 +156,7 @@ Esempio per contatti:
 
 ### Events (Eventi)
 - `interventions` - Interventi registrati
-- `event_members` - Membri coinvolti
+- `event_participants` - Membri coinvolti
 - `event_vehicles` - Mezzi utilizzati
 
 ## Formattazione Automatica
