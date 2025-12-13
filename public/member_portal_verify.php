@@ -352,7 +352,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                            name="registration_number" 
                            required 
                            autofocus
-                           placeholder="Es: 001"
+                           placeholder="Es: 1"
                            value="<?= htmlspecialchars($_POST['registration_number'] ?? '') ?>">
                 </div>
                 
