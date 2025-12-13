@@ -479,6 +479,8 @@ CREATE TABLE IF NOT EXISTS `member_applications` (
   `status` enum('pending', 'approved', 'rejected') DEFAULT 'pending',
   `application_data` longtext NOT NULL COMMENT 'JSON data with all member information',
   `pdf_file` varchar(255),
+  `pdf_download_token` varchar(64) DEFAULT NULL COMMENT 'Token for public PDF download access',
+  `pdf_token_expires_at` timestamp NULL DEFAULT NULL COMMENT 'Expiry for PDF download token',
   `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `processed_at` timestamp NULL,
   `processed_by` int(11),
@@ -486,7 +488,8 @@ CREATE TABLE IF NOT EXISTS `member_applications` (
   `member_id` int(11) DEFAULT NULL COMMENT 'ID of created member after approval',
   PRIMARY KEY (`id`),
   KEY `status` (`status`),
-  KEY `application_type` (`application_type`)
+  KEY `application_type` (`application_type`),
+  KEY `idx_pdf_download_token` (`pdf_download_token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `fee_payment_requests` (
