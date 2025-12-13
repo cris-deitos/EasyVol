@@ -111,7 +111,7 @@ switch ($type) {
         $sql = "SELECT photo_path FROM members WHERE id = ?";
         $file = $db->fetchOne($sql, [$id]);
         
-        if ($file && ! empty($file['photo_path'])) {
+        if ($file && !empty($file['photo_path'])) {
             $filePath = $file['photo_path'];
             
             // Photos can be viewed by anyone with member access

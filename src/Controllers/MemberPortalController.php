@@ -291,7 +291,7 @@ class MemberPortalController {
             return true;
             
         } catch (\Exception $e) {
-            $this->db->rollback();
+            $this->db->rollBack();
             AutoLogger::logActivity('member_portal', 'update_failed', $memberId, [
                 'error' => $e->getMessage()
             ]);
