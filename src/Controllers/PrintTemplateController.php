@@ -425,6 +425,26 @@ class PrintTemplateController {
                 }
                 $sql .= " ORDER BY meeting_date DESC";
                 break;
+                
+            case 'member_applications':
+                if (!empty($filters['application_type'])) {
+                    $sql .= " AND application_type = ?";
+                    $params[] = $filters['application_type'];
+                }
+                if (!empty($filters['status'])) {
+                    $sql .= " AND status = ?";
+                    $params[] = $filters['status'];
+                }
+                if (!empty($filters['date_from'])) {
+                    $sql .= " AND submitted_at >= ?";
+                    $params[] = $filters['date_from'];
+                }
+                if (!empty($filters['date_to'])) {
+                    $sql .= " AND submitted_at <= ?";
+                    $params[] = $filters['date_to'];
+                }
+                $sql .= " ORDER BY submitted_at DESC";
+                break;
         }
         
         return $this->db->fetchAll($sql, $params);
@@ -437,11 +457,19 @@ class PrintTemplateController {
      * @param int $recordId Record ID
      * @param string $relationTable Related table name
      * @return array
+     * @throws \Exception if relation table is not valid for entity type
      */
     private function loadRelatedData($entityType, $recordId, $relationTable) {
+        // Validate that the relation table is allowed for this entity type
+        $availableRelations = $this->getAvailableRelations($entityType);
+        if (!isset($availableRelations[$relationTable])) {
+            throw new \Exception("Invalid relation table: " . htmlspecialchars($relationTable) . " for entity type: " . htmlspecialchars($entityType));
+        }
+        
         // Determine foreign key based on entity type
         $foreignKey = $this->getForeignKey($entityType);
         
+        // The relation table is now validated through getAvailableRelations
         $sql = "SELECT * FROM {$relationTable} WHERE {$foreignKey} = ?";
         return $this->db->fetchAll($sql, [$recordId]);
     }
@@ -451,8 +479,22 @@ class PrintTemplateController {
      * 
      * @param string $entityType Entity type
      * @return string
+     * @throws \Exception if entity type is not whitelisted
      */
     private function getTableName($entityType) {
+        // Whitelist of allowed entity types to prevent SQL injection
+        $allowedTypes = [
+            'members',
+            'junior_members',
+            'member_applications',
+            'vehicles',
+            'meetings',
+        ];
+        
+        if (!in_array($entityType, $allowedTypes, true)) {
+            throw new \Exception("Invalid entity type: " . htmlspecialchars($entityType));
+        }
+        
         return $entityType;
     }
     
@@ -463,9 +505,16 @@ class PrintTemplateController {
      * @return string
      */
     private function getForeignKey($entityType) {
-        // Remove trailing 's' if exists
-        $singular = rtrim($entityType, 's');
-        return $singular . '_id';
+        // Map entity types to their foreign key column names
+        $foreignKeys = [
+            'members' => 'member_id',
+            'junior_members' => 'junior_member_id',
+            'member_applications' => 'application_id',
+            'vehicles' => 'vehicle_id',
+            'meetings' => 'meeting_id',
+        ];
+        
+        return $foreignKeys[$entityType] ?? 'id';
     }
     
     /**
@@ -597,12 +646,20 @@ class PrintTemplateController {
             'volunteer_status' => 'Stato volontario',
             'email' => 'Email',
             'phone' => 'Telefono',
+            'mobile' => 'Cellulare',
+            'pec' => 'PEC',
             'license_plate' => 'Targa',
             'vehicle_type' => 'Tipo mezzo',
             'model' => 'Modello',
             'meeting_date' => 'Data riunione',
             'meeting_type' => 'Tipo riunione',
             'location' => 'Luogo',
+            'application_code' => 'Codice domanda',
+            'application_type' => 'Tipo domanda',
+            'status' => 'Stato',
+            'submitted_at' => 'Data invio',
+            'approved_at' => 'Data approvazione',
+            'application_data' => 'Dati domanda',
         ];
         
         return $descriptions[$field] ?? ucfirst(str_replace('_', ' ', $field));
@@ -627,6 +684,7 @@ class PrintTemplateController {
                 'member_health' => 'Salute',
                 'member_fees' => 'Quote',
                 'member_notes' => 'Note',
+                'member_sanctions' => 'Sanzioni',
             ],
             'junior_members' => [
                 'junior_member_guardians' => 'Genitori/Tutori',
@@ -634,6 +692,8 @@ class PrintTemplateController {
                 'junior_member_addresses' => 'Indirizzi',
                 'junior_member_health' => 'Salute',
                 'junior_member_fees' => 'Quote',
+                'junior_member_notes' => 'Note',
+                'junior_member_sanctions' => 'Sanzioni',
             ],
             'vehicles' => [
                 'vehicle_maintenance' => 'Manutenzioni',
@@ -643,6 +703,9 @@ class PrintTemplateController {
                 'meeting_participants' => 'Partecipanti',
                 'meeting_agenda' => 'Ordine del giorno',
                 'meeting_attachments' => 'Allegati',
+            ],
+            'member_applications' => [
+                'member_application_guardians' => 'Genitori/Tutori',
             ],
         ];
         

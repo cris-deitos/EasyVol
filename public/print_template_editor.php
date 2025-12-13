@@ -198,6 +198,7 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                                             <select name="entity_type" id="entityType" class="form-select" required>
                                                 <option value="members" <?php echo ($template['entity_type'] ?? $entityType) === 'members' ? 'selected' : ''; ?>>Soci</option>
                                                 <option value="junior_members" <?php echo ($template['entity_type'] ?? '') === 'junior_members' ? 'selected' : ''; ?>>Soci Minorenni</option>
+                                                <option value="member_applications" <?php echo ($template['entity_type'] ?? '') === 'member_applications' ? 'selected' : ''; ?>>Domande di Iscrizione</option>
                                                 <option value="vehicles" <?php echo ($template['entity_type'] ?? '') === 'vehicles' ? 'selected' : ''; ?>>Mezzi</option>
                                                 <option value="meetings" <?php echo ($template['entity_type'] ?? '') === 'meetings' ? 'selected' : ''; ?>>Riunioni</option>
                                             </select>
