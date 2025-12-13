@@ -1470,6 +1470,7 @@ $pageTitle = 'Impostazioni Sistema';
         // Bootstrap 5 Tab Management
         (function() {
             // Whitelist of valid tab identifiers for security
+            // NOTE: When adding new tabs to the HTML, add their identifiers here
             const VALID_TAB_IDS = ['general', 'association', 'email', 'backup', 'import', 'print-templates'];
             
             // Helper: Validate tab identifier and construct tab button ID
@@ -1487,7 +1488,10 @@ $pageTitle = 'Impostazioni Sistema';
                 let activeTabId = null;
                 
                 // Priority 1: URL parameters (highest priority)
-                // Map of URL conditions to tab identifiers
+                // Map URL conditions to tab identifiers
+                // 'success' parameter: Set after form submission redirects
+                // 'tab' parameter: Direct tab navigation
+                // Special parameters: Legacy support (e.g., pt_entity_type for print-templates)
                 const urlTabMap = {
                     'email': urlParams.get('success') === 'email' || urlParams.get('tab') === 'email',
                     'association': urlParams.get('success') === 'association' || urlParams.get('tab') === 'association',
@@ -1528,17 +1532,20 @@ $pageTitle = 'Impostazioni Sistema';
                 }
                 
                 // Save active tab to localStorage for persistence using event delegation
-                document.getElementById('settingsTabs').addEventListener('shown.bs.tab', function(event) {
-                    const targetSelector = event.target.getAttribute('data-bs-target');
-                    // Extract tab identifier from selector (e.g., '#email' -> 'email')
-                    if (targetSelector && targetSelector.startsWith('#')) {
-                        const tabId = targetSelector.substring(1);
-                        if (isValidTabId(tabId)) {
-                            // Store just the tab identifier (without '#')
-                            localStorage.setItem('easyvol_settings_active_tab', tabId);
+                const tabsContainer = document.getElementById('settingsTabs');
+                if (tabsContainer) {
+                    tabsContainer.addEventListener('shown.bs.tab', function(event) {
+                        const targetSelector = event.target.getAttribute('data-bs-target');
+                        // Extract tab identifier from selector (e.g., '#email' -> 'email')
+                        if (targetSelector && targetSelector.startsWith('#')) {
+                            const tabId = targetSelector.substring(1);
+                            if (isValidTabId(tabId)) {
+                                // Store just the tab identifier (without '#')
+                                localStorage.setItem('easyvol_settings_active_tab', tabId);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             });
         })();
     </script>
