@@ -406,15 +406,11 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             height: 600,
             menubar: true,
             plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount'
             ],
-            toolbar: 'undo redo | blocks | ' +
-                'bold italic forecolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'table | code | insertVariable',
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
             content_style: 'body { font-family: Arial, sans-serif; font-size: 12pt; }',
+          
             setup: function (editor) {
                 // Add custom button for inserting variables
                 editor.ui.registry.addButton('insertVariable', {
