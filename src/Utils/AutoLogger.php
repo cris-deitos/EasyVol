@@ -345,4 +345,32 @@ class AutoLogger {
         
         self::$app->logActivity('export', $module, null, $desc);
     }
+    /**
+ * Log a custom activity
+ * 
+ * @param string $module Module name
+ * @param string $action Action performed
+ * @param int|null $recordId Related record ID
+ * @param array|string|null $details Additional details
+ */
+public static function logActivity($module, $action, $recordId = null, $details = null) {
+    if (!self:: $app) {
+        self::$app = App::getInstance();
+    }
+    
+    // Solo se l'utente è loggato, altrimenti logga comunque per pagine pubbliche
+    if (! self::$app->isInstalled()) {
+        return;
+    }
+    
+    $description = is_array($details) ? json_encode($details, JSON_UNESCAPED_UNICODE) : $details;
+    
+    // Per pagine pubbliche, usa un metodo alternativo di logging
+    try {
+        self:: $app->logActivity($action, $module, $recordId, $description);
+    } catch (\Exception $e) {
+        // Se fallisce (es. utente non loggato), logga su file
+        error_log("MemberPortal Activity:  [$module] $action - " . ($description ??  ''));
+    }
+}
 }
