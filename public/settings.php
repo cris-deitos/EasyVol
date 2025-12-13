@@ -1467,23 +1467,65 @@ $pageTitle = 'Impostazioni Sistema';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-switch to print-templates tab if filtering print templates
+        // Bootstrap 5 Tab Management
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
+            let activeTabId = null;
+            
+            // Determine which tab to show based on URL parameters or hash
             if (urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates') {
-                const printTemplatesTab = document.getElementById('print-templates-tab');
-                if (printTemplatesTab) {
-                    const tab = new bootstrap.Tab(printTemplatesTab);
+                activeTabId = 'print-templates-tab';
+            } else if (urlParams.get('success') === 'email' || urlParams.get('tab') === 'email') {
+                activeTabId = 'email-tab';
+            } else if (urlParams.get('success') === 'association' || urlParams.get('tab') === 'association') {
+                activeTabId = 'association-tab';
+            } else if (urlParams.get('success') === 'database_fix' || urlParams.get('tab') === 'backup') {
+                activeTabId = 'backup-tab';
+            } else if (urlParams.get('tab') === 'import') {
+                activeTabId = 'import-tab';
+            } else if (urlParams.get('tab') === 'general') {
+                activeTabId = 'general-tab';
+            }
+            
+            // Handle hash-based tab switching
+            if (window.location.hash) {
+                const hash = window.location.hash.substring(1); // Remove #
+                const hashTabId = hash + '-tab';
+                const hashTab = document.getElementById(hashTabId);
+                if (hashTab) {
+                    activeTabId = hashTabId;
+                }
+            }
+            
+            // Activate the determined tab
+            if (activeTabId) {
+                const tabElement = document.getElementById(activeTabId);
+                if (tabElement) {
+                    const tab = new bootstrap.Tab(tabElement);
                     tab.show();
                 }
             }
             
-            // Handle hash-based tab switching
-            if (window.location.hash === '#print-templates') {
-                const printTemplatesTab = document.getElementById('print-templates-tab');
-                if (printTemplatesTab) {
-                    const tab = new bootstrap.Tab(printTemplatesTab);
-                    tab.show();
+            // Save active tab to localStorage for persistence
+            const tabButtons = document.querySelectorAll('#settingsTabs button[data-bs-toggle="tab"]');
+            tabButtons.forEach(function(button) {
+                button.addEventListener('shown.bs.tab', function(event) {
+                    const targetId = event.target.getAttribute('data-bs-target');
+                    if (targetId) {
+                        localStorage.setItem('easyvol_settings_active_tab', targetId);
+                    }
+                });
+            });
+            
+            // Restore last active tab if no URL parameter is present and no hash
+            if (!activeTabId && !window.location.hash && !urlParams.get('tab') && !urlParams.get('success')) {
+                const savedTab = localStorage.getItem('easyvol_settings_active_tab');
+                if (savedTab) {
+                    const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + savedTab + '"]');
+                    if (savedTabButton) {
+                        const tab = new bootstrap.Tab(savedTabButton);
+                        tab.show();
+                    }
                 }
             }
         });
