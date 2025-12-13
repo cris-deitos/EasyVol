@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\VehicleController;
+use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
 
@@ -484,7 +485,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form action="vehicle_maintenance_save.php" method="POST">
-                    <?php use EasyVol\Middleware\CsrfProtection; echo CsrfProtection::getHiddenField(); ?>
+                    <?php echo CsrfProtection::getHiddenField(); ?>
                     <input type="hidden" name="vehicle_id" value="<?php echo $vehicleId; ?>">
                     
                     <div class="modal-header">

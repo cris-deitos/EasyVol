@@ -84,11 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (empty($errors)) {
             try {
-                // Sanitize vehicleId for use in path (already validated as positive integer above)
-                $safeVehicleId = intval($vehicleId);
-                
-                // Create upload directory if it doesn't exist
-                $uploadDir = __DIR__ . '/../uploads/vehicles/' . $safeVehicleId;
+                // Create upload directory if it doesn't exist (vehicleId already sanitized above)
+                $uploadDir = __DIR__ . '/../uploads/vehicles/' . $vehicleId;
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
@@ -109,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data = [
                         'document_type' => $_POST['document_type'],
                         'file_name' => $file['name'],
-                        'file_path' => '../uploads/vehicles/' . $safeVehicleId . '/' . $filename,
+                        'file_path' => '../uploads/vehicles/' . $vehicleId . '/' . $filename,
                         'expiry_date' => $expiryDate !== '' ? $expiryDate : null
                     ];
                     
