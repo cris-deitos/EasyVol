@@ -483,19 +483,19 @@ class PrintTemplateController {
      */
     private function getTableName($entityType) {
         // Whitelist of allowed entity types to prevent SQL injection
-        $allowedTables = [
-            'members' => 'members',
-            'junior_members' => 'junior_members',
-            'member_applications' => 'member_applications',
-            'vehicles' => 'vehicles',
-            'meetings' => 'meetings',
+        $allowedTypes = [
+            'members',
+            'junior_members',
+            'member_applications',
+            'vehicles',
+            'meetings',
         ];
         
-        if (!isset($allowedTables[$entityType])) {
+        if (!in_array($entityType, $allowedTypes, true)) {
             throw new \Exception("Invalid entity type: " . htmlspecialchars($entityType));
         }
         
-        return $allowedTables[$entityType];
+        return $entityType;
     }
     
     /**
@@ -505,9 +505,16 @@ class PrintTemplateController {
      * @return string
      */
     private function getForeignKey($entityType) {
-        // Remove trailing 's' if exists
-        $singular = rtrim($entityType, 's');
-        return $singular . '_id';
+        // Map entity types to their foreign key column names
+        $foreignKeys = [
+            'members' => 'member_id',
+            'junior_members' => 'junior_member_id',
+            'member_applications' => 'application_id',
+            'vehicles' => 'vehicle_id',
+            'meetings' => 'meeting_id',
+        ];
+        
+        return $foreignKeys[$entityType] ?? 'id';
     }
     
     /**
