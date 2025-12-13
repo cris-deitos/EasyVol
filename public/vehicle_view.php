@@ -568,7 +568,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form action="vehicle_document_upload.php" method="POST" enctype="multipart/form-data">
-                    <?php use EasyVol\Middleware\CsrfProtection; echo CsrfProtection::getHiddenField(); ?>
+                    <?php echo CsrfProtection::getHiddenField(); ?>
                     <input type="hidden" name="vehicle_id" value="<?php echo $vehicleId; ?>">
                     
                     <div class="modal-header">
