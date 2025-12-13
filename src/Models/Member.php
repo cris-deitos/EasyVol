@@ -33,13 +33,30 @@ class Member {
                 COUNT(DISTINCT ma.id) as address_count
                 FROM members m
                 LEFT JOIN member_contacts mc ON m.id = mc.member_id
-                LEFT JOIN member_addresses ma ON m.id = ma.member_id
-                WHERE 1=1";
+                LEFT JOIN member_addresses ma ON m.id = ma.member_id";
+        
+        // Add LEFT JOIN for role filter if needed
+        if (!empty($filters['role'])) {
+            $sql .= " LEFT JOIN member_roles mr ON m.id = mr.member_id AND mr.role_name = ?";
+        }
+        
+        $sql .= " WHERE 1=1";
         $params = [];
+        
+        // Add role filter parameter
+        if (!empty($filters['role'])) {
+            $params[] = $filters['role'];
+            $sql .= " AND mr.id IS NOT NULL";
+        }
         
         if (!empty($filters['status'])) {
             $sql .= " AND m.member_status = ?";
             $params[] = $filters['status'];
+        }
+        
+        // Hide dismissed/lapsed filter
+        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
+            $sql .= " AND m.member_status NOT IN ('dimesso', 'decaduto')";
         }
         
         if (!empty($filters['volunteer_status'])) {
@@ -56,7 +73,15 @@ class Member {
             $params[] = $search;
         }
         
-        $sql .= " GROUP BY m.id ORDER BY m.last_name, m.first_name";
+        $sql .= " GROUP BY m.id";
+        
+        // Add sorting
+        $sortBy = $filters['sort_by'] ?? 'alphabetical';
+        if ($sortBy === 'registration_number') {
+            $sql .= " ORDER BY CAST(m.registration_number AS UNSIGNED) ASC";
+        } else {
+            $sql .= " ORDER BY m.last_name, m.first_name";
+        }
         
         // Add pagination
         $offset = ($page - 1) * $perPage;
