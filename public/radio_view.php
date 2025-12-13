@@ -41,17 +41,36 @@ $pageTitle = 'Dettaglio Radio';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($pageTitle); ?> - EasyVol</title>
+    <?php 
+    $user = $app->getCurrentUser();
+    $isCoUser = isset($user['is_operations_center_user']) && $user['is_operations_center_user'];
+    ?>
+    <title><?php echo htmlspecialchars($pageTitle); ?> - <?php echo $isCoUser ? 'EasyCO' : 'EasyVol'; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../assets/css/main.css">
+    <?php if ($isCoUser): ?>
+        <link rel="stylesheet" href="../assets/css/easyco.css">
+    <?php endif; ?>
 </head>
 <body>
-    <?php include '../src/Views/includes/navbar.php'; ?>
+    <?php 
+    if ($isCoUser) {
+        include '../src/Views/includes/navbar_operations.php';
+    } else {
+        include '../src/Views/includes/navbar.php';
+    }
+    ?>
     
     <div class="container-fluid">
         <div class="row">
-            <?php include '../src/Views/includes/sidebar.php'; ?>
+            <?php 
+            if ($isCoUser) {
+                include '../src/Views/includes/sidebar_operations.php';
+            } else {
+                include '../src/Views/includes/sidebar.php';
+            }
+            ?>
             
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
