@@ -189,6 +189,10 @@ class PrintTemplateController {
             case 'multi_page':
                 return $this->generateMultiPage($template, $options);
             case 'relational':
+                // Check if this is a list with relations or single with relations
+                if ($template['data_scope'] === 'filtered' || $template['data_scope'] === 'all') {
+                    return $this->generateListWithRelations($template, $options);
+                }
                 return $this->generateRelational($template, $options);
             default:
                 throw new \Exception("Tipo template non valido");
@@ -340,6 +344,40 @@ class PrintTemplateController {
     }
     
     /**
+     * Generate list document with related data for each record
+     * 
+     * @param array $template Template data
+     * @param array $options Options (filters)
+     * @return array
+     */
+    private function generateListWithRelations($template, $options) {
+        $filters = $options['filters'] ?? [];
+        $records = $this->loadRecords($template['entity_type'], $filters);
+        
+        // Load related data for each record
+        $relations = $template['relations'] ? json_decode($template['relations'], true) : [];
+        
+        foreach ($records as &$record) {
+            foreach ($relations as $relationTable) {
+                $relatedData = $this->loadRelatedData($template['entity_type'], $record['id'], $relationTable);
+                $record[$relationTable] = $relatedData;
+            }
+        }
+        
+        $html = $this->renderHandlebars($template['html_content'], ['records' => $records]);
+        
+        return [
+            'html' => $html,
+            'css' => $template['css_content'],
+            'header' => $template['show_header'] ? $template['header_content'] : '',
+            'footer' => $template['show_footer'] ? $template['footer_content'] : '',
+            'watermark' => $template['watermark'],
+            'page_format' => $template['page_format'],
+            'page_orientation' => $template['page_orientation']
+        ];
+    }
+    
+    /**
      * Load single record
      * 
      * @param string $entityType Entity type
@@ -445,6 +483,26 @@ class PrintTemplateController {
                 }
                 $sql .= " ORDER BY submitted_at DESC";
                 break;
+                
+            case 'events':
+                if (!empty($filters['event_type'])) {
+                    $sql .= " AND event_type = ?";
+                    $params[] = $filters['event_type'];
+                }
+                if (!empty($filters['status'])) {
+                    $sql .= " AND status = ?";
+                    $params[] = $filters['status'];
+                }
+                if (!empty($filters['date_from'])) {
+                    $sql .= " AND start_date >= ?";
+                    $params[] = $filters['date_from'];
+                }
+                if (!empty($filters['date_to'])) {
+                    $sql .= " AND start_date <= ?";
+                    $params[] = $filters['date_to'];
+                }
+                $sql .= " ORDER BY start_date DESC";
+                break;
         }
         
         return $this->db->fetchAll($sql, $params);
@@ -489,6 +547,7 @@ class PrintTemplateController {
             'member_applications',
             'vehicles',
             'meetings',
+            'events',
         ];
         
         if (!in_array($entityType, $allowedTypes, true)) {
@@ -512,6 +571,7 @@ class PrintTemplateController {
             'member_applications' => 'application_id',
             'vehicles' => 'vehicle_id',
             'meetings' => 'meeting_id',
+            'events' => 'event_id',
         ];
         
         return $foreignKeys[$entityType] ?? 'id';
@@ -567,8 +627,13 @@ class PrintTemplateController {
             $output = '';
             
             if (isset($data[$arrayKey]) && is_array($data[$arrayKey])) {
+                $index = 0;
                 foreach ($data[$arrayKey] as $item) {
                     $itemOutput = $loopContent;
+                    
+                    // Replace @index helper (1-based for display)
+                    $itemOutput = str_replace('{{@index}}', $index + 1, $itemOutput);
+                    
                     // Replace variables in loop
                     foreach ($item as $key => $value) {
                         if ($value === null) {
@@ -580,19 +645,63 @@ class PrintTemplateController {
                             $value = date('d/m/Y', strtotime($value));
                         }
                         
+                        // Handle datetime fields - only for fields ending with '_datetime' or starting with 'start_' or 'end_' containing 'time'
+                        if ((strpos($key, '_datetime') !== false || 
+                            (strpos($key, 'start_') === 0 && strpos($key, 'time') !== false) ||
+                            (strpos($key, 'end_') === 0 && strpos($key, 'time') !== false)) 
+                            && !empty($value)) {
+                            // Check if value contains both date and time
+                            if (preg_match('/\d{4}-\d{2}-\d{2}/', $value) && strtotime($value)) {
+                                $value = date('d/m/Y H:i', strtotime($value));
+                            }
+                        }
+                        
                         $itemOutput = str_replace('{{' . $key . '}}', htmlspecialchars($value), $itemOutput);
                     }
+                    
+                    // Handle {{#if field}} conditional blocks within loops
+                    $itemOutput = $this->processConditionals($itemOutput, $item);
+                    
                     $output .= $itemOutput;
+                    $index++;
                 }
             }
             
             return $output;
         }, $content);
         
+        // Handle top-level {{#if field}} conditional blocks
+        $content = $this->processConditionals($content, $data);
+        
         // Replace remaining simple variables
         $content = $this->replaceVariables($content, $data);
         
         return $content;
+    }
+    
+    /**
+     * Process {{#if field}} conditional blocks
+     * 
+     * @param string $content Template content
+     * @param array $data Data array
+     * @return string
+     */
+    private function processConditionals($content, $data) {
+        return preg_replace_callback(
+            '/\{\{#if\s+([a-zA-Z_]+)\}\}(.*?)\{\{\/if\}\}/s',
+            function($matches) use ($data) {
+                $fieldName = $matches[1];
+                $ifContent = $matches[2];
+                
+                // Show content only if field exists and is not null/empty string
+                // Allow zero values (0, '0') as valid content
+                if (isset($data[$fieldName]) && $data[$fieldName] !== null && $data[$fieldName] !== '') {
+                    return $ifContent;
+                }
+                return '';
+            },
+            $content
+        );
     }
     
     /**
@@ -660,6 +769,11 @@ class PrintTemplateController {
             'submitted_at' => 'Data invio',
             'approved_at' => 'Data approvazione',
             'application_data' => 'Dati domanda',
+            'event_type' => 'Tipo evento',
+            'title' => 'Titolo',
+            'description' => 'Descrizione',
+            'start_date' => 'Data inizio',
+            'end_date' => 'Data fine',
         ];
         
         return $descriptions[$field] ?? ucfirst(str_replace('_', ' ', $field));
@@ -706,6 +820,11 @@ class PrintTemplateController {
             ],
             'member_applications' => [
                 'member_application_guardians' => 'Genitori/Tutori',
+            ],
+            'events' => [
+                'interventions' => 'Interventi',
+                'event_members' => 'Membri Coinvolti',
+                'event_vehicles' => 'Mezzi Utilizzati',
             ],
         ];
         
