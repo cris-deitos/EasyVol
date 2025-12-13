@@ -130,6 +130,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
+                // Insert default email configuration into config table
+                $emailConfigDefaults = [
+                    'email_enabled' => '1',
+                    'email_method' => 'smtp',
+                    'email_from_address' => $assocEmail ?: 'noreply@example.com',
+                    'email_from_name' => $assocName ?: 'EasyVol',
+                    'email_reply_to' => '',
+                    'email_return_path' => '',
+                    'email_charset' => 'UTF-8',
+                    'email_smtp_host' => '',
+                    'email_smtp_port' => '587',
+                    'email_smtp_username' => '',
+                    'email_smtp_password' => '',
+                    'email_smtp_encryption' => 'tls',
+                    'email_smtp_auth' => '1',
+                    'email_smtp_debug' => '0',
+                ];
+                
+                $stmt = $pdo->prepare("INSERT IGNORE INTO config (config_key, config_value) VALUES (?, ?)");
+                foreach ($emailConfigDefaults as $key => $value) {
+                    $stmt->execute([$key, $value]);
+                }
+                
                 // Save configuration file
                 $sampleConfig = require __DIR__ . '/../config/config.sample.php';
                 $sampleConfig['database'] = [
