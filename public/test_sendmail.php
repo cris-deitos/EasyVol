@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($testEmail)) {
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><i class="bi bi-envelope-check"></i> Test Email (PHPMailer/SMTP)</h1>
-                    <a href="settings.php#email-tab" class="btn btn-outline-secondary">
+                    <a href="settings.php#mail-tab" class="btn btn-outline-secondary">
                         <i class="bi bi-gear"></i> Impostazioni Email
                     </a>
                 </div>

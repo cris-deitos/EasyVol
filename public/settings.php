@@ -409,7 +409,7 @@ $pageTitle = 'Impostazioni Sistema';
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab">
+                        <button class="nav-link" id="mail-tab" data-bs-toggle="tab" data-bs-target="#mail" type="button" role="tab">
                             <i class="bi bi-envelope"></i> Email
                         </button>
                     </li>
@@ -615,7 +615,7 @@ $pageTitle = 'Impostazioni Sistema';
                     </div>
                     
                     <!-- Email -->
-                    <div class="tab-pane fade" id="email" role="tabpanel">
+                    <div class="tab-pane fade" id="mail" role="tabpanel">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="bi bi-envelope-fill me-2"></i>Configurazione Email (PHPMailer/SMTP)</h5>
@@ -1469,14 +1469,15 @@ $pageTitle = 'Impostazioni Sistema';
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const VALID_TABS = ['general', 'association', 'email', 'backup', 'import', 'print-templates'];
+    const VALID_TABS = ['general', 'association', 'mail', 'backup', 'import', 'print-templates'];
     
     // Determina quale tab aprire
     let activeTab = null;
     
     // 1. Priorità URL success parameter
+    // Note: 'email' key maps to 'mail' tab for backward compatibility with existing URLs
     const successMap = {
-        'email': 'email',
+        'email': 'mail',
         'association': 'association',
         'database_fix': 'backup'
     };
