@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     'address_city' => trim($_POST['address_city'] ?? ''),
                     'address_province' => trim($_POST['address_province'] ?? ''),
                     'address_cap' => trim($_POST['address_cap'] ?? ''),
+                    'phone' => trim($_POST['phone'] ?? ''),
                     'email' => trim($_POST['email'] ?? ''),
                     'pec' => trim($_POST['pec'] ?? ''),
                     'tax_code' => trim($_POST['tax_code'] ?? ''),
@@ -124,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $allowedColumns = [
                         'name', 'logo', 'address_street', 'address_number', 
                         'address_city', 'address_province', 'address_cap', 
-                        'email', 'pec', 'tax_code'
+                        'phone', 'email', 'pec', 'tax_code'
                     ];
                     
                     // Filter associationData to only include whitelisted columns
@@ -568,6 +569,15 @@ $pageTitle = 'Impostazioni Sistema';
                                                    maxlength="10"
                                                    <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
                                         </div>
+                                    </div>
+                                    
+                                    <!-- Phone -->
+                                    <div class="mb-3">
+                                        <label for="phone" class="form-label">Telefono</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" 
+                                               value="<?php echo htmlspecialchars($associationData['phone'] ?? ''); ?>"
+                                               placeholder="es. +39 030 1234567"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
                                     </div>
                                     
                                     <!-- Email -->

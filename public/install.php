@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assocEmail = $_POST['assoc_email'] ?? '';
         $assocPec = $_POST['assoc_pec'] ?? '';
         $assocTaxCode = $_POST['assoc_tax_code'] ?? '';
+        $assocPhone = $_POST['assoc_phone'] ?? '';
         $assocStreet = $_POST['assoc_street'] ?? '';
         $assocNumber = $_POST['assoc_number'] ?? '';
         $assocCity = $_POST['assoc_city'] ?? '';
@@ -95,8 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 
                 // Insert association data
-                $stmt = $pdo->prepare("INSERT INTO association (name, email, pec, tax_code, address_street, address_number, address_city, address_province, address_cap) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$assocName, $assocEmail, $assocPec, $assocTaxCode, $assocStreet, $assocNumber, $assocCity, $assocProvince, $assocCap]);
+                $stmt = $pdo->prepare("INSERT INTO association (name, email, pec, tax_code, phone, address_street, address_number, address_city, address_province, address_cap) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$assocName, $assocEmail, $assocPec, $assocTaxCode, $assocPhone, $assocStreet, $assocNumber, $assocCity, $assocProvince, $assocCap]);
                 
                 // Create admin role
                 $stmt = $pdo->prepare("INSERT INTO roles (name, description) VALUES ('admin', 'Administrator with full access')");
@@ -298,6 +299,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="mb-3">
                             <label class="form-label">Codice Fiscale</label>
                             <input type="text" class="form-control" name="assoc_tax_code">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Telefono</label>
+                            <input type="tel" class="form-control" name="assoc_phone" placeholder="es. +39 030 1234567">
                         </div>
                         <div class="row">
                             <div class="col-md-8 mb-3">
