@@ -697,8 +697,8 @@ $pageTitle = 'Impostazioni Sistema';
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label for="base_url" class="form-label">URL di Base per Link nelle Email</label>
-                                        <input type="url" class="form-control" id="base_url" name="base_url" 
+                                        <label for="email_base_url" class="form-label">URL di Base per Link nelle Email</label>
+                                        <input type="url" class="form-control" id="email_base_url" name="base_url" 
                                                value="<?php echo htmlspecialchars($config['email']['base_url'] ?? ''); ?>"
                                                placeholder="es: https://sdi.protezionecivilebassogarda.it/EasyVol"
                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>

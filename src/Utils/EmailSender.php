@@ -56,7 +56,7 @@ class EmailSender {
         // If still empty, use fallback constant
         if (empty($baseUrl)) {
             $baseUrl = self::FALLBACK_BASE_URL;
-            error_log("Warning: email.base_url, app.base_url or app.url not configured. Using fallback URL: " . self::FALLBACK_BASE_URL);
+            error_log("Warning: email.base_url not configured in settings. Using fallback URL: " . self::FALLBACK_BASE_URL);
         }
         
         return rtrim($baseUrl, '/');
