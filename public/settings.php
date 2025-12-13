@@ -1467,26 +1467,91 @@ $pageTitle = 'Impostazioni Sistema';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-switch to print-templates tab if filtering print templates
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates') {
-                const printTemplatesTab = document.getElementById('print-templates-tab');
-                if (printTemplatesTab) {
-                    const tab = new bootstrap.Tab(printTemplatesTab);
-                    tab.show();
-                }
+        // Bootstrap 5 Tab Management
+        (function() {
+            // Whitelist of valid tab identifiers for security
+            // NOTE: When adding new tabs to the HTML, add their identifiers here
+            // Expected HTML structure:
+            //   - Tab button: <button id="{identifier}-tab" data-bs-target="#{identifier}">
+            //   - Tab pane: <div id="{identifier}" class="tab-pane">
+            const VALID_TAB_IDS = ['general', 'association', 'email', 'backup', 'import', 'print-templates'];
+            
+            // Helper: Validate tab identifier
+            function isValidTabId(tabIdentifier) {
+                return VALID_TAB_IDS.includes(tabIdentifier);
             }
             
-            // Handle hash-based tab switching
-            if (window.location.hash === '#print-templates') {
-                const printTemplatesTab = document.getElementById('print-templates-tab');
-                if (printTemplatesTab) {
-                    const tab = new bootstrap.Tab(printTemplatesTab);
-                    tab.show();
-                }
+            // Helper: Validate tab identifier and construct tab button ID
+            function getValidatedTabButtonId(tabIdentifier) {
+                return isValidTabId(tabIdentifier) ? tabIdentifier + '-tab' : null;
             }
-        });
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                const urlParams = new URLSearchParams(window.location.search);
+                let activeTabId = null;
+                
+                // Priority 1: URL parameters (highest priority)
+                // Map URL conditions to tab identifiers
+                // 'success' parameter: Set after form submission redirects (email, association, backup have forms)
+                // 'tab' parameter: Direct tab navigation (all tabs support this)
+                // Special parameters: Legacy support (e.g., pt_entity_type for print-templates)
+                // NOTE: 'backup' tab uses 'database_fix' success value because the form handles database fixes
+                const urlTabMap = {
+                    'email': urlParams.get('success') === 'email' || urlParams.get('tab') === 'email',
+                    'association': urlParams.get('success') === 'association' || urlParams.get('tab') === 'association',
+                    'backup': urlParams.get('success') === 'database_fix' || urlParams.get('tab') === 'backup',  // 'database_fix' = backup form's success value
+                    'import': urlParams.get('tab') === 'import',  // No form submission, tab navigation only
+                    'general': urlParams.get('tab') === 'general',  // No form submission, tab navigation only
+                    'print-templates': urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates'
+                };
+                
+                for (const [tabId, condition] of Object.entries(urlTabMap)) {
+                    if (condition) {
+                        activeTabId = getValidatedTabButtonId(tabId);
+                        break;
+                    }
+                }
+                
+                // Priority 2: Hash-based navigation (only if no URL parameters)
+                if (!activeTabId && window.location.hash) {
+                    const hash = window.location.hash.substring(1);
+                    activeTabId = getValidatedTabButtonId(hash);
+                }
+                
+                // Priority 3: localStorage persistence (only if no URL params or hash)
+                if (!activeTabId) {
+                    const savedTabId = localStorage.getItem('easyvol_settings_active_tab');
+                    if (savedTabId && isValidTabId(savedTabId)) {
+                        activeTabId = getValidatedTabButtonId(savedTabId);
+                    }
+                }
+                
+                // Activate the determined tab
+                if (activeTabId) {
+                    const tabElement = document.getElementById(activeTabId);
+                    if (tabElement) {
+                        const tab = new bootstrap.Tab(tabElement);
+                        tab.show();
+                    }
+                }
+                
+                // Save active tab to localStorage for persistence using event delegation
+                const tabsContainer = document.getElementById('settingsTabs');
+                if (tabsContainer) {
+                    tabsContainer.addEventListener('shown.bs.tab', function(event) {
+                        const targetSelector = event.target.getAttribute('data-bs-target');
+                        // Extract tab identifier from selector (e.g., '#email' -> 'email')
+                        if (targetSelector && targetSelector.startsWith('#')) {
+                            const tabId = targetSelector.substring(1);
+                            if (isValidTabId(tabId)) {
+                                // Store just the tab identifier (without '#')
+                                localStorage.setItem('easyvol_settings_active_tab', tabId);
+                            }
+                        }
+                    });
+                }
+            });
+        })();
     </script>
 </body>
 </html>
