@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `member_id` int(11) DEFAULT NULL,
   `role_id` int(11) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
+  `is_operations_center_user` tinyint(1) DEFAULT 0 COMMENT 'Flag to identify operations center users (EasyCO)',
   `must_change_password` tinyint(1) DEFAULT 0 COMMENT 'Flag to force password change on next login',
   `last_login` timestamp NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -63,7 +64,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`),
   KEY `member_id` (`member_id`),
-  KEY `role_id` (`role_id`)
+  KEY `role_id` (`role_id`),
+  KEY `idx_is_operations_center_user` (`is_operations_center_user`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `roles` (
@@ -162,6 +164,7 @@ CREATE TABLE IF NOT EXISTS `import_logs` (
 CREATE TABLE IF NOT EXISTS `members` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `registration_number` varchar(50) UNIQUE,
+  `badge_number` varchar(20) DEFAULT NULL COMMENT 'Numero tesserino',
   `member_type` enum('ordinario', 'fondatore') DEFAULT 'ordinario',
   `member_status` enum('attivo', 'decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo') DEFAULT 'attivo',
   `volunteer_status` enum('operativo', 'non_operativo', 'in_formazione') DEFAULT 'in_formazione',
@@ -188,7 +191,8 @@ CREATE TABLE IF NOT EXISTS `members` (
   KEY `last_name` (`last_name`),
   KEY `member_status` (`member_status`),
   KEY `worker_type` (`worker_type`),
-  KEY `education_level` (`education_level`)
+  KEY `education_level` (`education_level`),
+  KEY `idx_badge_number` (`badge_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `member_addresses` (
@@ -346,6 +350,26 @@ CREATE TABLE IF NOT EXISTS `member_attachments` (
   `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `member_id` (`member_id`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- MEMBER VERIFICATION CODES (PORTALE SOCI)
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `member_verification_codes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `code` varchar(10) NOT NULL COMMENT 'Verification code (6-10 characters)',
+  `email` varchar(255) NOT NULL COMMENT 'Email where code was sent',
+  `expires_at` timestamp NOT NULL COMMENT 'Expiration time for the code',
+  `used` tinyint(1) DEFAULT 0 COMMENT 'Whether the code has been used',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  KEY `code` (`code`),
+  KEY `expires_at` (`expires_at`),
+  KEY `used` (`used`),
   FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
