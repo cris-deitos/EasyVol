@@ -201,6 +201,7 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                                                 <option value="member_applications" <?php echo ($template['entity_type'] ?? '') === 'member_applications' ? 'selected' : ''; ?>>Domande di Iscrizione</option>
                                                 <option value="vehicles" <?php echo ($template['entity_type'] ?? '') === 'vehicles' ? 'selected' : ''; ?>>Mezzi</option>
                                                 <option value="meetings" <?php echo ($template['entity_type'] ?? '') === 'meetings' ? 'selected' : ''; ?>>Riunioni</option>
+                                                <option value="events" <?php echo ($template['entity_type'] ?? '') === 'events' ? 'selected' : ''; ?>>Eventi</option>
                                             </select>
                                         </div>
                                         

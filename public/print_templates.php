@@ -164,6 +164,7 @@ $pageTitle = 'Gestione Template Stampe';
                                     <option value="member_applications" <?php echo ($_GET['entity_type'] ?? '') === 'member_applications' ? 'selected' : ''; ?>>Domande di Iscrizione</option>
                                     <option value="vehicles" <?php echo ($_GET['entity_type'] ?? '') === 'vehicles' ? 'selected' : ''; ?>>Mezzi</option>
                                     <option value="meetings" <?php echo ($_GET['entity_type'] ?? '') === 'meetings' ? 'selected' : ''; ?>>Riunioni</option>
+                                    <option value="events" <?php echo ($_GET['entity_type'] ?? '') === 'events' ? 'selected' : ''; ?>>Eventi</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
@@ -238,6 +239,7 @@ $pageTitle = 'Gestione Template Stampe';
                                                         'member_applications' => 'Domande di Iscrizione',
                                                         'vehicles' => 'Mezzi',
                                                         'meetings' => 'Riunioni',
+                                                        'events' => 'Eventi',
                                                     ];
                                                     echo $entityLabels[$template['entity_type']] ?? $template['entity_type'];
                                                     ?>

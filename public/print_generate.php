@@ -34,6 +34,9 @@ switch ($entityType) {
     case 'meetings':
         $permissionModule = 'meetings';
         break;
+    case 'events':
+        $permissionModule = 'events';
+        break;
     default:
         $permissionModule = $entityType;
 }

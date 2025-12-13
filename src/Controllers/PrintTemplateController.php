@@ -445,6 +445,26 @@ class PrintTemplateController {
                 }
                 $sql .= " ORDER BY submitted_at DESC";
                 break;
+                
+            case 'events':
+                if (!empty($filters['event_type'])) {
+                    $sql .= " AND event_type = ?";
+                    $params[] = $filters['event_type'];
+                }
+                if (!empty($filters['status'])) {
+                    $sql .= " AND status = ?";
+                    $params[] = $filters['status'];
+                }
+                if (!empty($filters['date_from'])) {
+                    $sql .= " AND start_date >= ?";
+                    $params[] = $filters['date_from'];
+                }
+                if (!empty($filters['date_to'])) {
+                    $sql .= " AND start_date <= ?";
+                    $params[] = $filters['date_to'];
+                }
+                $sql .= " ORDER BY start_date DESC";
+                break;
         }
         
         return $this->db->fetchAll($sql, $params);
@@ -489,6 +509,7 @@ class PrintTemplateController {
             'member_applications',
             'vehicles',
             'meetings',
+            'events',
         ];
         
         if (!in_array($entityType, $allowedTypes, true)) {
@@ -512,6 +533,7 @@ class PrintTemplateController {
             'member_applications' => 'application_id',
             'vehicles' => 'vehicle_id',
             'meetings' => 'meeting_id',
+            'events' => 'event_id',
         ];
         
         return $foreignKeys[$entityType] ?? 'id';
@@ -660,6 +682,11 @@ class PrintTemplateController {
             'submitted_at' => 'Data invio',
             'approved_at' => 'Data approvazione',
             'application_data' => 'Dati domanda',
+            'event_type' => 'Tipo evento',
+            'title' => 'Titolo',
+            'description' => 'Descrizione',
+            'start_date' => 'Data inizio',
+            'end_date' => 'Data fine',
         ];
         
         return $descriptions[$field] ?? ucfirst(str_replace('_', ' ', $field));
@@ -706,6 +733,11 @@ class PrintTemplateController {
             ],
             'member_applications' => [
                 'member_application_guardians' => 'Genitori/Tutori',
+            ],
+            'events' => [
+                'interventions' => 'Interventi',
+                'event_members' => 'Membri Coinvolti',
+                'event_vehicles' => 'Mezzi Utilizzati',
             ],
         ];
         
