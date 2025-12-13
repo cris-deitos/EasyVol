@@ -1472,7 +1472,7 @@ $pageTitle = 'Impostazioni Sistema';
             const urlParams = new URLSearchParams(window.location.search);
             let activeTabId = null;
             
-            // Determine which tab to show based on URL parameters or hash
+            // Priority 1: URL parameters (highest priority)
             if (urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates') {
                 activeTabId = 'print-templates-tab';
             } else if (urlParams.get('success') === 'email' || urlParams.get('tab') === 'email') {
@@ -1487,13 +1487,24 @@ $pageTitle = 'Impostazioni Sistema';
                 activeTabId = 'general-tab';
             }
             
-            // Handle hash-based tab switching
-            if (window.location.hash) {
+            // Priority 2: Hash-based navigation (only if no URL parameters)
+            if (!activeTabId && window.location.hash) {
                 const hash = window.location.hash.substring(1); // Remove #
                 const hashTabId = hash + '-tab';
                 const hashTab = document.getElementById(hashTabId);
                 if (hashTab) {
                     activeTabId = hashTabId;
+                }
+            }
+            
+            // Priority 3: localStorage persistence (only if no URL params or hash)
+            if (!activeTabId) {
+                const savedTab = localStorage.getItem('easyvol_settings_active_tab');
+                if (savedTab) {
+                    const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + savedTab + '"]');
+                    if (savedTabButton) {
+                        activeTabId = savedTabButton.id;
+                    }
                 }
             }
             
@@ -1516,18 +1527,6 @@ $pageTitle = 'Impostazioni Sistema';
                     }
                 });
             });
-            
-            // Restore last active tab if no URL parameter is present and no hash
-            if (!activeTabId && !window.location.hash && !urlParams.get('tab') && !urlParams.get('success')) {
-                const savedTab = localStorage.getItem('easyvol_settings_active_tab');
-                if (savedTab) {
-                    const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + savedTab + '"]');
-                    if (savedTabButton) {
-                        const tab = new bootstrap.Tab(savedTabButton);
-                        tab.show();
-                    }
-                }
-            }
         });
     </script>
 </body>
