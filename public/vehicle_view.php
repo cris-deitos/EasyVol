@@ -562,5 +562,66 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
             </div>
         </div>
     </div>
+
+    <!-- Modal Carica Documento -->
+    <div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="vehicle_document_upload.php" method="POST" enctype="multipart/form-data">
+                    <?php use EasyVol\Middleware\CsrfProtection; echo CsrfProtection::getHiddenField(); ?>
+                    <input type="hidden" name="vehicle_id" value="<?php echo $vehicleId; ?>">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="uploadDocumentModalLabel">
+                            <i class="bi bi-upload"></i> Carica Documento
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="document_type" class="form-label">Tipo Documento *</label>
+                            <select class="form-select" id="document_type" name="document_type" required>
+                                <option value="">Seleziona tipo...</option>
+                                <option value="Carta di Circolazione">Carta di Circolazione</option>
+                                <option value="Assicurazione">Assicurazione</option>
+                                <option value="Revisione">Revisione</option>
+                                <option value="Libretto di Navigazione">Libretto di Navigazione</option>
+                                <option value="Certificato di Omologazione">Certificato di Omologazione</option>
+                                <option value="Contratto di Locazione">Contratto di Locazione</option>
+                                <option value="Atto di Proprietà">Atto di Proprietà</option>
+                                <option value="Altro">Altro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="document_file" class="form-label">File *</label>
+                            <input type="file" class="form-control" id="document_file" name="document_file" required>
+                            <div class="form-text">
+                                Formati supportati: JPG, PNG, GIF, PDF, DOC, DOCX, XLS, XLSX (max 10MB)
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="expiry_date" class="form-label">Data Scadenza</label>
+                            <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                            <div class="form-text">
+                                Opzionale. Se il documento ha una scadenza, inseriscila qui per ricevere notifiche.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Annulla
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Carica Documento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
