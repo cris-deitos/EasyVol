@@ -303,7 +303,7 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                             
                             <div class="form-check mb-3">
                                 <input type="checkbox" class="form-check-input" id="is_operations_center_user" name="is_operations_center_user" 
-                                       <?php echo (isset($user) && $user['is_operations_center_user']) ? 'checked' : ''; ?>>
+                                       <?php echo (isset($user) && isset($user['is_operations_center_user']) && $user['is_operations_center_user']) ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="is_operations_center_user">
                                     <i class="bi bi-broadcast"></i> Utente Centrale Operativa (EasyCO)
                                 </label>

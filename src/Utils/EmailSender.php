@@ -12,6 +12,18 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
  * Supporta sia invio tramite SMTP che tramite sendmail (mail() PHP)
  */
 class EmailSender {
+    /**
+     * Fallback base URL when no configuration is provided
+     * This maintains backwards compatibility with the original hardcoded value from this codebase.
+     * 
+     * IMPORTANT: Users deploying to their own environment should configure email.base_url 
+     * in Settings > Email to use their own URL instead of this fallback.
+     * 
+     * This fallback ensures emails still work in legacy installations that haven't 
+     * configured the new setting yet.
+     */
+    const FALLBACK_BASE_URL = 'https://sdi.protezionecivilebassogarda.it/EasyVol';
+    
     private $config;
     private $db;
     private $emailLogsTableExists = null;
@@ -25,6 +37,34 @@ class EmailSender {
     public function __construct($config, $db = null) {
         $this->config = $config;
         $this->db = $db;
+    }
+    
+    /**
+     * Resolve base URL for email links from configuration
+     * 
+     * @return string Base URL (without trailing slash)
+     */
+    private function resolveEmailBaseUrl() {
+        // Try email base_url first (preferred)
+        $baseUrl = $this->config['email']['base_url'] ?? '';
+        
+        if (empty($baseUrl)) {
+            // Fallback to app base_url for backwards compatibility
+            $baseUrl = $this->config['app']['base_url'] ?? '';
+        }
+        
+        if (empty($baseUrl)) {
+            // Try to construct from common settings
+            $baseUrl = $this->config['app']['url'] ?? '';
+        }
+        
+        // If still empty, use fallback constant
+        if (empty($baseUrl)) {
+            $baseUrl = self::FALLBACK_BASE_URL;
+            error_log("Warning: email.base_url not configured in settings. Using fallback URL: " . self::FALLBACK_BASE_URL);
+        }
+        
+        return rtrim($baseUrl, '/');
     }
     
     /**
@@ -574,20 +614,8 @@ class EmailSender {
         $applicationCode = $application['application_code'];
         $pdfToken = $application['pdf_download_token'] ?? '';
         
-        // Build PDF download URL
-        $baseUrl = $this->config['app']['base_url'] ?? '';
-        if (empty($baseUrl)) {
-            // Try to construct from common settings
-            $baseUrl = $this->config['app']['url'] ?? '';
-        }
-        
-        // If still empty, use a placeholder that will be visible
-        if (empty($baseUrl)) {
-            $baseUrl = 'URL_NON_CONFIGURATO';
-            error_log("Warning: app.base_url or app.url not configured in config. PDF download link in email will not work.");
-        }
-        
-        $baseUrl = rtrim($baseUrl, '/');
+        // Build PDF download URL using configured base URL
+        $baseUrl = $this->resolveEmailBaseUrl();
         $pdfDownloadUrl = $baseUrl . '/public/application_pdf.php?token=' . htmlspecialchars($pdfToken) . '&download=1';
         
         // Check if junior application
@@ -759,7 +787,8 @@ class EmailSender {
             }
             
             $assocName = $this->config['association']['name'] ?? 'Associazione';
-            $loginUrl = 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
+            $baseUrl = $this->resolveEmailBaseUrl();
+            $loginUrl = $baseUrl . '/public/login.php';
             
             $subject = "🎉 Benvenuto in EasyVol - Credenziali di Accesso";
             
@@ -859,7 +888,8 @@ class EmailSender {
             }
             
             $assocName = $this->config['association']['name'] ?? 'Associazione';
-            $loginUrl = 'https://sdi.protezionecivilebassogarda.it/EasyVol/public/login.php';
+            $baseUrl = $this->resolveEmailBaseUrl();
+            $loginUrl = $baseUrl . '/public/login.php';
             
             $subject = "🔑 Reset Password - EasyVol";
             

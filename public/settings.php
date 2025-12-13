@@ -251,6 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                 $replyTo = trim($_POST['reply_to'] ?? '');
                 $returnPath = trim($_POST['return_path'] ?? '');
                 $charset = trim($_POST['charset'] ?? 'UTF-8');
+                $baseUrl = trim($_POST['base_url'] ?? '');
                 
                 // SMTP settings
                 $smtpHost = trim($_POST['smtp_host'] ?? '');
@@ -292,6 +293,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $errors[] = 'Charset non valido';
                 }
                 
+                // Validate base URL
+                if (!empty($baseUrl) && !filter_var($baseUrl, FILTER_VALIDATE_URL)) {
+                    $errors[] = 'URL di base non valido';
+                }
+                
                 if (empty($errors)) {
                     // Save email configuration to database in a transaction
                     $emailSettings = [
@@ -302,6 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         'email_reply_to' => $replyTo,
                         'email_return_path' => $returnPath,
                         'email_charset' => $charset,
+                        'email_base_url' => $baseUrl,
                         'email_smtp_host' => $smtpHost,
                         'email_smtp_port' => (string)$smtpPort,
                         'email_smtp_username' => $smtpUsername,
@@ -687,6 +694,15 @@ $pageTitle = 'Impostazioni Sistema';
                                                    <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
                                             <small class="text-muted">Indirizzo per email non consegnate</small>
                                         </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="email_base_url" class="form-label">URL di Base per Link nelle Email</label>
+                                        <input type="url" class="form-control" id="email_base_url" name="base_url" 
+                                               value="<?php echo htmlspecialchars($config['email']['base_url'] ?? ''); ?>"
+                                               placeholder="es: https://sdi.protezionecivilebassogarda.it/EasyVol"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        <small class="text-muted">URL di partenza del gestionale per comporre i link nelle email (es: moduli PDF, login). Il sistema aggiungerà automaticamente /public/...</small>
                                     </div>
                                     
                                     <hr class="my-4">
