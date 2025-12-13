@@ -189,6 +189,10 @@ class PrintTemplateController {
             case 'multi_page':
                 return $this->generateMultiPage($template, $options);
             case 'relational':
+                // Check if this is a list with relations or single with relations
+                if ($template['data_scope'] === 'filtered' || $template['data_scope'] === 'all') {
+                    return $this->generateListWithRelations($template, $options);
+                }
                 return $this->generateRelational($template, $options);
             default:
                 throw new \Exception("Tipo template non valido");
@@ -327,6 +331,40 @@ class PrintTemplateController {
         }
         
         $html = $this->renderHandlebars($template['html_content'], $record);
+        
+        return [
+            'html' => $html,
+            'css' => $template['css_content'],
+            'header' => $template['show_header'] ? $template['header_content'] : '',
+            'footer' => $template['show_footer'] ? $template['footer_content'] : '',
+            'watermark' => $template['watermark'],
+            'page_format' => $template['page_format'],
+            'page_orientation' => $template['page_orientation']
+        ];
+    }
+    
+    /**
+     * Generate list document with related data for each record
+     * 
+     * @param array $template Template data
+     * @param array $options Options (filters)
+     * @return array
+     */
+    private function generateListWithRelations($template, $options) {
+        $filters = $options['filters'] ?? [];
+        $records = $this->loadRecords($template['entity_type'], $filters);
+        
+        // Load related data for each record
+        $relations = $template['relations'] ? json_decode($template['relations'], true) : [];
+        
+        foreach ($records as &$record) {
+            foreach ($relations as $relationTable) {
+                $relatedData = $this->loadRelatedData($template['entity_type'], $record['id'], $relationTable);
+                $record[$relationTable] = $relatedData;
+            }
+        }
+        
+        $html = $this->renderHandlebars($template['html_content'], ['records' => $records]);
         
         return [
             'html' => $html,
@@ -589,8 +627,13 @@ class PrintTemplateController {
             $output = '';
             
             if (isset($data[$arrayKey]) && is_array($data[$arrayKey])) {
+                $index = 0;
                 foreach ($data[$arrayKey] as $item) {
                     $itemOutput = $loopContent;
+                    
+                    // Replace @index helper (1-based for display)
+                    $itemOutput = str_replace('{{@index}}', $index + 1, $itemOutput);
+                    
                     // Replace variables in loop
                     foreach ($item as $key => $value) {
                         if ($value === null) {
@@ -602,14 +645,55 @@ class PrintTemplateController {
                             $value = date('d/m/Y', strtotime($value));
                         }
                         
+                        // Handle datetime fields
+                        if (strpos($key, '_time') !== false && !empty($value)) {
+                            if (strtotime($value)) {
+                                $value = date('d/m/Y H:i', strtotime($value));
+                            }
+                        }
+                        
                         $itemOutput = str_replace('{{' . $key . '}}', htmlspecialchars($value), $itemOutput);
                     }
+                    
+                    // Handle {{#if field}} conditional blocks within loops
+                    $itemOutput = preg_replace_callback(
+                        '/\{\{#if\s+([a-zA-Z_]+)\}\}(.*?)\{\{\/if\}\}/s',
+                        function($ifMatches) use ($item) {
+                            $fieldName = $ifMatches[1];
+                            $ifContent = $ifMatches[2];
+                            
+                            // Show content only if field exists and is not empty
+                            if (isset($item[$fieldName]) && !empty($item[$fieldName])) {
+                                return $ifContent;
+                            }
+                            return '';
+                        },
+                        $itemOutput
+                    );
+                    
                     $output .= $itemOutput;
+                    $index++;
                 }
             }
             
             return $output;
         }, $content);
+        
+        // Handle top-level {{#if field}} conditional blocks
+        $content = preg_replace_callback(
+            '/\{\{#if\s+([a-zA-Z_]+)\}\}(.*?)\{\{\/if\}\}/s',
+            function($matches) use ($data) {
+                $fieldName = $matches[1];
+                $ifContent = $matches[2];
+                
+                // Show content only if field exists and is not empty
+                if (isset($data[$fieldName]) && !empty($data[$fieldName])) {
+                    return $ifContent;
+                }
+                return '';
+            },
+            $content
+        );
         
         // Replace remaining simple variables
         $content = $this->replaceVariables($content, $data);
