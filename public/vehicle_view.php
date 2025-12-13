@@ -440,8 +440,10 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab');
-            if (tab) {
-                const tabElement = document.querySelector('#' + tab + '-tab');
+            // Validate tab parameter against whitelist to prevent XSS
+            const allowedTabs = ['info', 'maintenance', 'documents'];
+            if (tab && allowedTabs.includes(tab)) {
+                const tabElement = document.getElementById(tab + '-tab');
                 if (tabElement) {
                     const bsTab = new bootstrap.Tab(tabElement);
                     bsTab.show();
