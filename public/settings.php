@@ -615,7 +615,7 @@ $pageTitle = 'Impostazioni Sistema';
                     </div>
                     
                     <!-- Email -->
-                    <div class="tab-pane fade" id="email" role="tabpanel" style="display:  block !important;">
+                    <div class="tab-pane fade show active" id="email" role="tabpanel" style="display:  block !important;">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="bi bi-envelope-fill me-2"></i>Configurazione Email (PHPMailer/SMTP)</h5>
