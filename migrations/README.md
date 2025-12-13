@@ -90,6 +90,9 @@ Insert default print templates.
 ### make_maintenance_description_optional.sql
 Make maintenance description optional.
 
+### add_operations_center_user_flag.sql
+Add `is_operations_center_user` flag to users table for EasyCO (Centrale Operativa) access system. This migration enables a parallel login system for operations center users with limited functionality.
+
 ## Important Notes
 
 - Always backup your database before applying migrations

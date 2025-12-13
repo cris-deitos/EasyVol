@@ -40,27 +40,3 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         </ul>
     </div>
 </nav>
-
-<style>
-.sidebar.easyco-sidebar {
-    position: fixed;
-    top: 56px;
-    bottom: 0;
-    left: 0;
-    z-index: 100;
-    padding: 48px 0 0;
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-    overflow-y: auto;
-}
-
-.sidebar.easyco-sidebar .nav-link {
-    font-weight: 500;
-    padding: 10px 15px;
-    font-size: 0.9rem;
-}
-
-.sidebar.easyco-sidebar .nav-link i {
-    margin-right: 8px;
-    font-size: 1rem;
-}
-</style>

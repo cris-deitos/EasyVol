@@ -72,11 +72,22 @@ body.easyco-login a {
 
 /* Sidebar EasyCO */
 .sidebar.easyco-sidebar {
+    position: fixed;
+    top: 56px;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+    overflow-y: auto;
     border-right: 3px solid var(--easyco-accent);
 }
 
 .sidebar.easyco-sidebar .nav-link {
     color: #333;
+    font-weight: 500;
+    padding: 10px 15px;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
 }
 
@@ -93,6 +104,8 @@ body.easyco-login a {
 
 .sidebar.easyco-sidebar .nav-link i {
     color: var(--easyco-primary);
+    margin-right: 8px;
+    font-size: 1rem;
 }
 
 /* EasyCO Buttons */

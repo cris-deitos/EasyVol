@@ -37,6 +37,10 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $radios = $controller->indexRadios($filters, $page, 50);
 $stats = $controller->getRadioStats();
 
+// Check if user is CO user (needed for branding)
+$user = $app->getCurrentUser();
+$isCoUser = isset($user['is_operations_center_user']) && $user['is_operations_center_user'];
+
 $pageTitle = 'Rubrica Radio';
 ?>
 <!DOCTYPE html>
@@ -53,10 +57,7 @@ $pageTitle = 'Rubrica Radio';
     <?php endif; ?>
 </head>
 <body>
-    <?php 
-    // Use EasyCO components if user is CO user
-    $user = $app->getCurrentUser();
-    $isCoUser = isset($user['is_operations_center_user']) && $user['is_operations_center_user'];
+    <?php
     
     if ($isCoUser) {
         include '../src/Views/includes/navbar_operations.php';

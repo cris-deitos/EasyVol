@@ -12,7 +12,12 @@ $app = App::getInstance();
 
 // Check authentication and permissions
 if (!$app->isLoggedIn()) {
-    header('Location: login.php');
+    // Check if this is a CO user request
+    if (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], 'operations') !== false) {
+        header('Location: login_co.php');
+    } else {
+        header('Location: login.php');
+    }
     exit;
 }
 
