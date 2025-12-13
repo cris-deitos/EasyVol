@@ -802,10 +802,10 @@ $associationName = $config['association']['name'] ?? 'Associazione';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let contactIndex = <?= count($memberData['contacts'] ?? [1]) ?>;
-        let courseIndex = <?= count($memberData['courses'] ?? [1]) ?>;
-        let licenseIndex = <?= count($memberData['licenses'] ?? [1]) ?>;
-        let healthIndex = <?= count($memberData['health'] ?? [1]) ?>;
+        let contactIndex = <?= !empty($memberData['contacts']) ? count($memberData['contacts']) : 1 ?>;
+        let courseIndex = <?= !empty($memberData['courses']) ? count($memberData['courses']) : 1 ?>;
+        let licenseIndex = <?= !empty($memberData['licenses']) ? count($memberData['licenses']) : 1 ?>;
+        let healthIndex = <?= !empty($memberData['health']) ? count($memberData['health']) : 1 ?>;
         
         function removeItem(btn) {
             btn.closest('.repeater-item').remove();

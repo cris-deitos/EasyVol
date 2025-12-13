@@ -477,9 +477,10 @@ class MemberPortalController {
      */
     private function generateVerificationCode() {
         $characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
         $code = '';
         for ($i = 0; $i < self::CODE_LENGTH; $i++) {
-            $code .= $characters[random_int(0, strlen($characters) - 1)];
+            $code .= $characters[random_int(0, $charactersLength - 1)];
         }
         return $code;
     }
