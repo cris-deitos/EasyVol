@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data = [
                         'document_type' => $_POST['document_type'],
                         'file_name' => $file['name'],
-                        'file_path' => sprintf('../uploads/vehicles/%d/%s', $vehicleId, $filename),
+                        'file_path' => sprintf('uploads/vehicles/%d/%s', $vehicleId, $filename),
                         'expiry_date' => $expiryDate !== '' ? $expiryDate : null
                     ];
                     
