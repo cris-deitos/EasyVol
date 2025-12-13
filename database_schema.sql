@@ -888,7 +888,7 @@ CREATE TABLE IF NOT EXISTS `event_participants` (
   KEY `member_id` (`member_id`),
   FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks member participation in events';
 
 CREATE TABLE IF NOT EXISTS `event_vehicles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -907,7 +907,7 @@ CREATE TABLE IF NOT EXISTS `event_vehicles` (
   KEY `vehicle_id` (`vehicle_id`),
   FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks vehicle usage in events';
 
 CREATE TABLE IF NOT EXISTS `interventions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
