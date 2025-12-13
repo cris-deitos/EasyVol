@@ -35,18 +35,20 @@ class Member {
                 LEFT JOIN member_contacts mc ON m.id = mc.member_id
                 LEFT JOIN member_addresses ma ON m.id = ma.member_id";
         
-        // Add LEFT JOIN for role filter if needed
+        $params = [];
+        
+        // Add LEFT JOIN for role filter if needed (with proper parameter binding)
         if (!empty($filters['role'])) {
-            $sql .= " LEFT JOIN member_roles mr ON m.id = mr.member_id AND mr.role_name = ?";
+            $sql .= " INNER JOIN member_roles mr ON m.id = mr.member_id";
+            // We'll add the role filter in WHERE clause for clarity and security
         }
         
         $sql .= " WHERE 1=1";
-        $params = [];
         
-        // Add role filter parameter
+        // Add role filter in WHERE clause
         if (!empty($filters['role'])) {
+            $sql .= " AND mr.role_name = ?";
             $params[] = $filters['role'];
-            $sql .= " AND mr.id IS NOT NULL";
         }
         
         if (!empty($filters['status'])) {
