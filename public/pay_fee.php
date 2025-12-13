@@ -207,7 +207,9 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 20px 0;
         }
         
         body::before,
@@ -246,6 +248,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
             max-width: 600px;
             width: 100%;
             padding: 20px;
+            margin: auto;
         }
         
         .form-container {
