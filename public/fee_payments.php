@@ -225,7 +225,12 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                                         <td><?php echo htmlspecialchars($request['registration_number']); ?></td>
                                         <td>
                                             <?php if ($request['member_id']): ?>
-                                            <a href="member_view.php?id=<?php echo $request['member_id']; ?>">
+                                            <?php 
+                                            // Check if it's a junior member (registration number starts with C)
+                                            $isJunior = FeePaymentController::isJuniorMember($request['registration_number']);
+                                            $viewPage = $isJunior ? 'junior_member_view.php' : 'member_view.php';
+                                            ?>
+                                            <a href="<?php echo $viewPage; ?>?id=<?php echo $request['member_id']; ?>">
                                                 <?php echo htmlspecialchars($request['first_name'] . ' ' . $request['last_name']); ?>
                                             </a>
                                             <?php else: ?>

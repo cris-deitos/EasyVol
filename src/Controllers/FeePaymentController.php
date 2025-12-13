@@ -14,6 +14,10 @@ class FeePaymentController {
     private $db;
     private $config;
     
+    // Member type constants
+    const MEMBER_TYPE_ADULT = 'adult';
+    const MEMBER_TYPE_JUNIOR = 'junior';
+    
     /**
      * Constructor
      * 
@@ -26,6 +30,16 @@ class FeePaymentController {
     }
     
     /**
+     * Determina se la matricola appartiene a un socio minorenne (cadetto)
+     * 
+     * @param string $registrationNumber Matricola
+     * @return bool
+     */
+    public static function isJuniorMember($registrationNumber) {
+        return strtoupper(substr($registrationNumber, 0, 1)) === 'C';
+    }
+    
+    /**
      * Verifica match matricola e cognome socio
      * 
      * @param string $registrationNumber Matricola
@@ -33,13 +47,40 @@ class FeePaymentController {
      * @return array|false Dati socio se trovato, false altrimenti
      */
     public function verifyMember($registrationNumber, $lastName) {
+        // Check if registration number starts with 'C' for junior members (cadetti minorenni)
+        if (self::isJuniorMember($registrationNumber)) {
+            return $this->verifyJuniorMember($registrationNumber, $lastName);
+        }
+        
+        // Regular member verification
         $sql = "SELECT m.id, m.registration_number, m.last_name, m.first_name, 
-                mc.value as email
+                mc.value as email, '" . self::MEMBER_TYPE_ADULT . "' as member_type
                 FROM members m
                 LEFT JOIN member_contacts mc ON m.id = mc.member_id 
                     AND mc.contact_type = 'email'
                 WHERE m.registration_number = ? 
                 AND LOWER(m.last_name) = LOWER(?)
+                LIMIT 1";
+        
+        $stmt = $this->db->query($sql, [$registrationNumber, $lastName]);
+        return $stmt->fetch();
+    }
+    
+    /**
+     * Verifica match matricola e cognome socio minorenne
+     * 
+     * @param string $registrationNumber Matricola
+     * @param string $lastName Cognome
+     * @return array|false Dati socio minorenne se trovato, false altrimenti
+     */
+    private function verifyJuniorMember($registrationNumber, $lastName) {
+        $sql = "SELECT jm.id, jm.registration_number, jm.last_name, jm.first_name, 
+                jmc.value as email, '" . self::MEMBER_TYPE_JUNIOR . "' as member_type
+                FROM junior_members jm
+                LEFT JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id 
+                    AND jmc.contact_type = 'email'
+                WHERE jm.registration_number = ? 
+                AND LOWER(jm.last_name) = LOWER(?)
                 LIMIT 1";
         
         $stmt = $this->db->query($sql, [$registrationNumber, $lastName]);
@@ -90,11 +131,16 @@ class FeePaymentController {
      * @return array
      */
     public function getPaymentRequests($filters = [], $page = 1, $perPage = 20) {
+        // Note: Registration numbers starting with 'C' are junior members, others are adult members
+        // This ensures no overlap between the two tables for the same registration number
         $sql = "SELECT fpr.*, 
-                m.id as member_id, m.first_name, 
+                COALESCE(m.id, jm.id) as member_id, 
+                COALESCE(m.first_name, jm.first_name) as first_name,
+                COALESCE(m.last_name, jm.last_name) as last_name,
                 u.full_name as processed_by_name
                 FROM fee_payment_requests fpr
                 LEFT JOIN members m ON fpr.registration_number = m.registration_number
+                LEFT JOIN junior_members jm ON fpr.registration_number = jm.registration_number
                 LEFT JOIN users u ON fpr.processed_by = u.id
                 WHERE 1=1";
         
@@ -170,11 +216,19 @@ class FeePaymentController {
         try {
             $this->db->beginTransaction();
             
-            // Get request details
+            // Get request details and check both adult and junior members
             $stmt = $this->db->query(
-                "SELECT fpr.*, m.id as member_id 
+                "SELECT fpr.*, 
+                 m.id as member_id,
+                 jm.id as junior_member_id,
+                 CASE 
+                     WHEN m.id IS NOT NULL THEN '" . self::MEMBER_TYPE_ADULT . "'
+                     WHEN jm.id IS NOT NULL THEN '" . self::MEMBER_TYPE_JUNIOR . "'
+                     ELSE NULL
+                 END as member_type
                 FROM fee_payment_requests fpr
                 LEFT JOIN members m ON fpr.registration_number = m.registration_number
+                LEFT JOIN junior_members jm ON fpr.registration_number = jm.registration_number
                 WHERE fpr.id = ?",
                 [$requestId]
             );
@@ -184,24 +238,42 @@ class FeePaymentController {
                 throw new \Exception('Richiesta non valida o già processata');
             }
             
-            if (!$request['member_id']) {
+            if (!$request['member_id'] && !$request['junior_member_id']) {
                 throw new \Exception('Socio non trovato');
             }
             
-            // Insert into member_fees
-            $sql = "INSERT INTO member_fees (
-                member_id, year, payment_date, amount, receipt_file, 
-                verified, verified_by, verified_at
-            ) VALUES (?, ?, ?, ?, ?, 1, ?, NOW())";
-            
-            $this->db->execute($sql, [
-                $request['member_id'],
-                $request['payment_year'],
-                $request['payment_date'],
-                $request['amount'] ?? null,
-                $request['receipt_file'],
-                $userId
-            ]);
+            // Insert into appropriate fees table based on member type
+            if ($request['member_type'] === self::MEMBER_TYPE_JUNIOR) {
+                // Insert into junior_member_fees
+                $sql = "INSERT INTO junior_member_fees (
+                    junior_member_id, year, payment_date, amount, receipt_file, 
+                    verified, verified_by, verified_at
+                ) VALUES (?, ?, ?, ?, ?, 1, ?, NOW())";
+                
+                $this->db->execute($sql, [
+                    $request['junior_member_id'],
+                    $request['payment_year'],
+                    $request['payment_date'],
+                    $request['amount'] ?? null,
+                    $request['receipt_file'],
+                    $userId
+                ]);
+            } else {
+                // Insert into member_fees
+                $sql = "INSERT INTO member_fees (
+                    member_id, year, payment_date, amount, receipt_file, 
+                    verified, verified_by, verified_at
+                ) VALUES (?, ?, ?, ?, ?, 1, ?, NOW())";
+                
+                $this->db->execute($sql, [
+                    $request['member_id'],
+                    $request['payment_year'],
+                    $request['payment_date'],
+                    $request['amount'] ?? null,
+                    $request['receipt_file'],
+                    $userId
+                ]);
+            }
             
             // Update request status
             $this->db->execute(
@@ -215,6 +287,10 @@ class FeePaymentController {
             
             // Send approval email using new method
             try {
+                // Try to get member data from both adult and junior members tables
+                $feeRequest = null;
+                
+                // First try adult members
                 $feeRequest = $this->db->fetchOne(
                     "SELECT fpr.*, m.first_name, m.last_name, mc.value as email 
                      FROM fee_payment_requests fpr
@@ -223,6 +299,18 @@ class FeePaymentController {
                      WHERE fpr.id = ?",
                     [$requestId]
                 );
+                
+                // If not found in adult members, try junior members
+                if (!$feeRequest) {
+                    $feeRequest = $this->db->fetchOne(
+                        "SELECT fpr.*, jm.first_name, jm.last_name, jmc.value as email 
+                         FROM fee_payment_requests fpr
+                         JOIN junior_members jm ON fpr.registration_number = jm.registration_number
+                         LEFT JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id AND jmc.contact_type = 'email'
+                         WHERE fpr.id = ?",
+                        [$requestId]
+                    );
+                }
                 
                 if ($feeRequest && !empty($feeRequest['email'])) {
                     require_once __DIR__ . '/../Utils/EmailSender.php';
@@ -361,7 +449,7 @@ class FeePaymentController {
         try {
             $emailSender = new EmailSender($this->config, $this->db);
             
-            // Get member email
+            // Get member email - try adult members first
             $stmt = $this->db->query(
                 "SELECT m.first_name, m.last_name, mc.value as email
                 FROM members m
@@ -370,6 +458,18 @@ class FeePaymentController {
                 [$request['registration_number']]
             );
             $member = $stmt->fetch();
+            
+            // If not found, try junior members
+            if (!$member) {
+                $stmt = $this->db->query(
+                    "SELECT jm.first_name, jm.last_name, jmc.value as email
+                    FROM junior_members jm
+                    LEFT JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id AND jmc.contact_type = 'email'
+                    WHERE jm.registration_number = ?",
+                    [$request['registration_number']]
+                );
+                $member = $stmt->fetch();
+            }
             
             if (!empty($member['email'])) {
                 $subject = "Pagamento quota approvato";
@@ -400,7 +500,7 @@ class FeePaymentController {
         try {
             $emailSender = new EmailSender($this->config, $this->db);
             
-            // Get member email
+            // Get member email - try adult members first
             $stmt = $this->db->query(
                 "SELECT m.first_name, m.last_name, mc.value as email
                 FROM members m
@@ -409,6 +509,18 @@ class FeePaymentController {
                 [$request['registration_number']]
             );
             $member = $stmt->fetch();
+            
+            // If not found, try junior members
+            if (!$member) {
+                $stmt = $this->db->query(
+                    "SELECT jm.first_name, jm.last_name, jmc.value as email
+                    FROM junior_members jm
+                    LEFT JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id AND jmc.contact_type = 'email'
+                    WHERE jm.registration_number = ?",
+                    [$request['registration_number']]
+                );
+                $member = $stmt->fetch();
+            }
             
             if (!empty($member['email'])) {
                 $subject = "Ricevuta pagamento quota non approvata";
