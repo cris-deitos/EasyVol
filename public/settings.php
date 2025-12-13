@@ -1468,65 +1468,71 @@ $pageTitle = 'Impostazioni Sistema';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Bootstrap 5 Tab Management
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            let activeTabId = null;
+        (function() {
+            // Whitelist of valid tab identifiers for security
+            const VALID_TAB_IDS = ['general', 'association', 'email', 'backup', 'import', 'print-templates'];
             
-            // Priority 1: URL parameters (highest priority)
-            if (urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates') {
-                activeTabId = 'print-templates-tab';
-            } else if (urlParams.get('success') === 'email' || urlParams.get('tab') === 'email') {
-                activeTabId = 'email-tab';
-            } else if (urlParams.get('success') === 'association' || urlParams.get('tab') === 'association') {
-                activeTabId = 'association-tab';
-            } else if (urlParams.get('success') === 'database_fix' || urlParams.get('tab') === 'backup') {
-                activeTabId = 'backup-tab';
-            } else if (urlParams.get('tab') === 'import') {
-                activeTabId = 'import-tab';
-            } else if (urlParams.get('tab') === 'general') {
-                activeTabId = 'general-tab';
-            }
-            
-            // Priority 2: Hash-based navigation (only if no URL parameters)
-            if (!activeTabId && window.location.hash) {
-                const hash = window.location.hash.substring(1); // Remove #
-                const hashTabId = hash + '-tab';
-                const hashTab = document.getElementById(hashTabId);
-                if (hashTab) {
-                    activeTabId = hashTabId;
+            document.addEventListener('DOMContentLoaded', function() {
+                const urlParams = new URLSearchParams(window.location.search);
+                let activeTabId = null;
+                
+                // Priority 1: URL parameters (highest priority)
+                if (urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates') {
+                    activeTabId = 'print-templates-tab';
+                } else if (urlParams.get('success') === 'email' || urlParams.get('tab') === 'email') {
+                    activeTabId = 'email-tab';
+                } else if (urlParams.get('success') === 'association' || urlParams.get('tab') === 'association') {
+                    activeTabId = 'association-tab';
+                } else if (urlParams.get('success') === 'database_fix' || urlParams.get('tab') === 'backup') {
+                    activeTabId = 'backup-tab';
+                } else if (urlParams.get('tab') === 'import') {
+                    activeTabId = 'import-tab';
+                } else if (urlParams.get('tab') === 'general') {
+                    activeTabId = 'general-tab';
                 }
-            }
-            
-            // Priority 3: localStorage persistence (only if no URL params or hash)
-            if (!activeTabId) {
-                const savedTab = localStorage.getItem('easyvol_settings_active_tab');
-                // Whitelist of valid tab targets for security
-                const validTabs = ['#general', '#association', '#email', '#backup', '#import', '#print-templates'];
-                if (savedTab && validTabs.includes(savedTab)) {
-                    const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + CSS.escape(savedTab) + '"]');
-                    if (savedTabButton) {
-                        activeTabId = savedTabButton.id;
+                
+                // Priority 2: Hash-based navigation (only if no URL parameters)
+                if (!activeTabId && window.location.hash) {
+                    const hash = window.location.hash.substring(1); // Remove #
+                    // Validate hash against whitelist
+                    if (VALID_TAB_IDS.includes(hash)) {
+                        activeTabId = hash + '-tab';
                     }
                 }
-            }
-            
-            // Activate the determined tab
-            if (activeTabId) {
-                const tabElement = document.getElementById(activeTabId);
-                if (tabElement) {
-                    const tab = new bootstrap.Tab(tabElement);
-                    tab.show();
+                
+                // Priority 3: localStorage persistence (only if no URL params or hash)
+                if (!activeTabId) {
+                    const savedTab = localStorage.getItem('easyvol_settings_active_tab');
+                    // Validate savedTab format (#tabname) and extract tab identifier
+                    if (savedTab && savedTab.startsWith('#')) {
+                        const tabId = savedTab.substring(1);
+                        if (VALID_TAB_IDS.includes(tabId)) {
+                            const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + savedTab + '"]');
+                            if (savedTabButton) {
+                                activeTabId = savedTabButton.id;
+                            }
+                        }
+                    }
                 }
-            }
-            
-            // Save active tab to localStorage for persistence using event delegation
-            document.getElementById('settingsTabs').addEventListener('shown.bs.tab', function(event) {
-                const targetId = event.target.getAttribute('data-bs-target');
-                if (targetId) {
-                    localStorage.setItem('easyvol_settings_active_tab', targetId);
+                
+                // Activate the determined tab
+                if (activeTabId) {
+                    const tabElement = document.getElementById(activeTabId);
+                    if (tabElement) {
+                        const tab = new bootstrap.Tab(tabElement);
+                        tab.show();
+                    }
                 }
+                
+                // Save active tab to localStorage for persistence using event delegation
+                document.getElementById('settingsTabs').addEventListener('shown.bs.tab', function(event) {
+                    const targetId = event.target.getAttribute('data-bs-target');
+                    if (targetId) {
+                        localStorage.setItem('easyvol_settings_active_tab', targetId);
+                    }
+                });
             });
-        });
+        })();
     </script>
 </body>
 </html>
