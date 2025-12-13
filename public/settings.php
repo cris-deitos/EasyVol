@@ -399,7 +399,7 @@ $pageTitle = 'Impostazioni Sistema';
                 <!-- Tabs -->
                 <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
                             <i class="bi bi-gear"></i> Generali
                         </button>
                     </li>
@@ -409,7 +409,7 @@ $pageTitle = 'Impostazioni Sistema';
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab">
+                        <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab">
                             <i class="bi bi-envelope"></i> Email
                         </button>
                     </li>
@@ -615,7 +615,7 @@ $pageTitle = 'Impostazioni Sistema';
                     </div>
                     
                     <!-- Email -->
-                    <div class="tab-pane fade show active" id="email" role="tabpanel">
+                    <div class="tab-pane fade" id="email" role="tabpanel" style="display:  block !important;">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="bi bi-envelope-fill me-2"></i>Configurazione Email (PHPMailer/SMTP)</h5>
