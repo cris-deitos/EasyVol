@@ -184,11 +184,13 @@ class Member {
     }
     
     public function addAddress($memberId, $data) {
+        $data = $this->uppercaseFields($data, 'address');
         $data['member_id'] = $memberId;
         return $this->db->insert('member_addresses', $data);
     }
     
     public function updateAddress($id, $data) {
+        $data = $this->uppercaseFields($data, 'address');
         return $this->db->update('member_addresses', $data, 'id = ?', [$id]);
     }
     
@@ -234,6 +236,7 @@ class Member {
     }
     
     public function addEmployment($memberId, $data) {
+        $data = $this->uppercaseFields($data, 'employment');
         $data['member_id'] = $memberId;
         return $this->db->insert('member_employment', $data);
     }
@@ -248,6 +251,7 @@ class Member {
     }
     
     public function addLicense($memberId, $data) {
+        $data = $this->uppercaseFields($data, 'license');
         $data['member_id'] = $memberId;
         $licenseId = $this->db->insert('member_licenses', $data);
         
@@ -261,6 +265,7 @@ class Member {
     }
     
     public function updateLicense($id, $data) {
+        $data = $this->uppercaseFields($data, 'license');
         // Get member_id before update for sync
         $license = $this->db->fetchOne("SELECT member_id FROM member_licenses WHERE id = ?", [$id]);
         if (!$license) {
@@ -298,6 +303,7 @@ class Member {
     }
     
     public function addCourse($memberId, $data) {
+        $data = $this->uppercaseFields($data, 'course');
         $data['member_id'] = $memberId;
         $courseId = $this->db->insert('member_courses', $data);
         
@@ -311,6 +317,7 @@ class Member {
     }
     
     public function updateCourse($id, $data) {
+        $data = $this->uppercaseFields($data, 'course');
         // Get member_id before update for sync
         $course = $this->db->fetchOne("SELECT member_id FROM member_courses WHERE id = ?", [$id]);
         if (!$course) {
@@ -463,5 +470,32 @@ class Member {
     
     public function deleteSanction($id) {
         return $this->db->delete('member_sanctions', 'id = ?', [$id]);
+    }
+    
+    /**
+     * Force uppercase on text fields before saving
+     * 
+     * @param array $data Data to transform
+     * @param string $type Type of data (address, contact, license, course, employment, etc.)
+     * @return array Transformed data
+     */
+    private function uppercaseFields($data, $type = 'default') {
+        $fieldMap = [
+            'address' => ['street', 'city', 'province'],
+            'license' => ['license_type'],
+            'course' => ['course_name', 'course_type'],
+            'employment' => ['employer_name', 'employer_address', 'employer_city'],
+            'default' => []
+        ];
+        
+        $fields = $fieldMap[$type] ?? $fieldMap['default'];
+        
+        foreach ($fields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                $data[$field] = mb_strtoupper($data[$field], 'UTF-8');
+            }
+        }
+        
+        return $data;
     }
 }
