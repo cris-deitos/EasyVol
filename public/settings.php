@@ -1500,8 +1500,10 @@ $pageTitle = 'Impostazioni Sistema';
             // Priority 3: localStorage persistence (only if no URL params or hash)
             if (!activeTabId) {
                 const savedTab = localStorage.getItem('easyvol_settings_active_tab');
-                if (savedTab) {
-                    const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + savedTab + '"]');
+                // Whitelist of valid tab targets for security
+                const validTabs = ['#general', '#association', '#email', '#backup', '#import', '#print-templates'];
+                if (savedTab && validTabs.includes(savedTab)) {
+                    const savedTabButton = document.querySelector('#settingsTabs button[data-bs-target="' + CSS.escape(savedTab) + '"]');
                     if (savedTabButton) {
                         activeTabId = savedTabButton.id;
                     }
@@ -1517,15 +1519,12 @@ $pageTitle = 'Impostazioni Sistema';
                 }
             }
             
-            // Save active tab to localStorage for persistence
-            const tabButtons = document.querySelectorAll('#settingsTabs button[data-bs-toggle="tab"]');
-            tabButtons.forEach(function(button) {
-                button.addEventListener('shown.bs.tab', function(event) {
-                    const targetId = event.target.getAttribute('data-bs-target');
-                    if (targetId) {
-                        localStorage.setItem('easyvol_settings_active_tab', targetId);
-                    }
-                });
+            // Save active tab to localStorage for persistence using event delegation
+            document.getElementById('settingsTabs').addEventListener('shown.bs.tab', function(event) {
+                const targetId = event.target.getAttribute('data-bs-target');
+                if (targetId) {
+                    localStorage.setItem('easyvol_settings_active_tab', targetId);
+                }
             });
         });
     </script>
