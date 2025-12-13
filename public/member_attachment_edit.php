@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (move_uploaded_file($file['tmp_name'], $filepath)) {
                         $data = [
                             'file_name' => $file['name'],
-                            'file_path' => '../uploads/members/' . $memberId . '/' . $filename,
+                            'file_path' => 'uploads/members/' . $memberId . '/' . $filename,
                             'file_type' => $mimeType,
                             'description' => $description
                         ];
