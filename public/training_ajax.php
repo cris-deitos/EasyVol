@@ -92,7 +92,7 @@ try {
             // Use already parsed JSON input or fallback to $_POST
             $input = $jsonInput ?? $_POST;
             
-            if (!$csrf->validate($input['csrf_token'] ?? '')) {
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Token di sicurezza non valido']);
                 exit;
@@ -158,7 +158,7 @@ try {
             // Use already parsed JSON input or fallback to $_POST
             $input = $jsonInput ?? $_POST;
             
-            if (!$csrf->validate($input['csrf_token'] ?? '')) {
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Token di sicurezza non valido']);
                 exit;
@@ -215,7 +215,7 @@ try {
             // Use already parsed JSON input or fallback to $_POST
             $input = $jsonInput ?? $_POST;
             
-            if (!$csrf->validate($input['csrf_token'] ?? '')) {
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Token di sicurezza non valido']);
                 exit;
