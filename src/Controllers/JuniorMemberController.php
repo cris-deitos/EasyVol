@@ -396,7 +396,7 @@ class JuniorMemberController {
      * @return array
      */
     private function getContacts($memberId) {
-        $sql = "SELECT * FROM junior_member_contacts WHERE junior_member_id = ? ORDER BY is_primary DESC, id";
+        $sql = "SELECT * FROM junior_member_contacts WHERE junior_member_id = ? ORDER BY id";
         return $this->db->fetchAll($sql, [$memberId]);
     }
     
@@ -407,7 +407,7 @@ class JuniorMemberController {
      * @return array
      */
     private function getAddresses($memberId) {
-        $sql = "SELECT * FROM junior_member_addresses WHERE junior_member_id = ? ORDER BY is_primary DESC, id";
+        $sql = "SELECT * FROM junior_member_addresses WHERE junior_member_id = ? ORDER BY id";
         return $this->db->fetchAll($sql, [$memberId]);
     }
     
