@@ -616,6 +616,7 @@ $pageTitle = 'Impostazioni Sistema';
                     
                     <!-- Email -->
                     <div class="tab-pane fade" id="email" role="tabpanel">
+                        <h1 style="color: red; font-size: 50px;">TEST VISIBILITÀ</h1>
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="bi bi-envelope-fill me-2"></i>Configurazione Email (PHPMailer/SMTP)</h5>
