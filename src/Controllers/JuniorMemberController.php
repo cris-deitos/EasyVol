@@ -58,7 +58,9 @@ class JuniorMemberController {
         $offset = ($page - 1) * $perPage;
         
         $sql = "SELECT jm.*, 
-                CONCAT(jm.first_name, ' ', jm.last_name) as full_name
+                CONCAT(jm.first_name, ' ', jm.last_name) as full_name,
+                (SELECT first_name FROM junior_member_guardians WHERE junior_member_id = jm.id LIMIT 1) as guardian_first_name,
+                (SELECT last_name FROM junior_member_guardians WHERE junior_member_id = jm.id LIMIT 1) as guardian_last_name
                 FROM junior_members jm
                 WHERE $whereClause
                 ORDER BY jm.last_name, jm.first_name
