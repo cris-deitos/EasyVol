@@ -278,6 +278,7 @@ CREATE TABLE IF NOT EXISTS `member_availability` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `member_id` int(11) NOT NULL,
   `availability_type` enum('comunale', 'provinciale', 'regionale', 'nazionale', 'internazionale') NOT NULL,
+  `notes` text,
   PRIMARY KEY (`id`),
   KEY `member_id` (`member_id`),
   FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
