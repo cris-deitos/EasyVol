@@ -55,6 +55,10 @@ class JuniorMemberController {
         }
         
         $whereClause = implode(' AND ', $where);
+        
+        // Ensure pagination parameters are safe integers
+        $page = max(1, (int)$page);
+        $perPage = max(1, (int)$perPage);
         $offset = ($page - 1) * $perPage;
         
         // Note: $whereClause is built from parameterized conditions above, safe from SQL injection
