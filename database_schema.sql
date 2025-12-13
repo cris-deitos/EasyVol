@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS `association` (
   `address_city` varchar(100),
   `address_province` varchar(5),
   `address_cap` varchar(10),
+  `phone` varchar(50),
   `email` varchar(255),
   `pec` varchar(255),
   `tax_code` varchar(50),
