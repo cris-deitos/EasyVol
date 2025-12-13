@@ -309,7 +309,11 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
                     <label for="registration_number" class="form-label">Matricola *</label>
                     <input type="text" class="form-control" id="registration_number" 
                            name="registration_number" required
+                           placeholder="Es: 1 per Volontari, C-1 per Cadetti"
                            value="<?php echo htmlspecialchars($_POST['registration_number'] ?? ''); ?>">
+                    <div class="form-text">
+                        Inserisci il numero di matricola.  Per i Cadetti usa il prefisso C- (es:  C-1)
+                    </div>
                 </div>
                 
                 <div class="mb-3">
