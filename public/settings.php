@@ -1472,44 +1472,51 @@ $pageTitle = 'Impostazioni Sistema';
             // Whitelist of valid tab identifiers for security
             const VALID_TAB_IDS = ['general', 'association', 'email', 'backup', 'import', 'print-templates'];
             
+            // Helper: Validate and construct tab button ID from tab identifier
+            function getValidatedTabId(tabIdentifier) {
+                return VALID_TAB_IDS.includes(tabIdentifier) ? tabIdentifier + '-tab' : null;
+            }
+            
+            // Helper: Extract and validate tab identifier from target selector
+            function extractValidatedTabId(targetSelector) {
+                if (targetSelector && targetSelector.startsWith('#')) {
+                    return getValidatedTabId(targetSelector.substring(1));
+                }
+                return null;
+            }
+            
             document.addEventListener('DOMContentLoaded', function() {
                 const urlParams = new URLSearchParams(window.location.search);
                 let activeTabId = null;
                 
                 // Priority 1: URL parameters (highest priority)
-                if (urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates') {
-                    activeTabId = 'print-templates-tab';
-                } else if (urlParams.get('success') === 'email' || urlParams.get('tab') === 'email') {
-                    activeTabId = 'email-tab';
-                } else if (urlParams.get('success') === 'association' || urlParams.get('tab') === 'association') {
-                    activeTabId = 'association-tab';
-                } else if (urlParams.get('success') === 'database_fix' || urlParams.get('tab') === 'backup') {
-                    activeTabId = 'backup-tab';
-                } else if (urlParams.get('tab') === 'import') {
-                    activeTabId = 'import-tab';
-                } else if (urlParams.get('tab') === 'general') {
-                    activeTabId = 'general-tab';
+                // Map of URL conditions to tab identifiers
+                const urlTabMap = {
+                    'email': urlParams.get('success') === 'email' || urlParams.get('tab') === 'email',
+                    'association': urlParams.get('success') === 'association' || urlParams.get('tab') === 'association',
+                    'backup': urlParams.get('success') === 'database_fix' || urlParams.get('tab') === 'backup',
+                    'import': urlParams.get('tab') === 'import',
+                    'general': urlParams.get('tab') === 'general',
+                    'print-templates': urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates'
+                };
+                
+                for (const [tabId, condition] of Object.entries(urlTabMap)) {
+                    if (condition) {
+                        activeTabId = getValidatedTabId(tabId);
+                        break;
+                    }
                 }
                 
                 // Priority 2: Hash-based navigation (only if no URL parameters)
                 if (!activeTabId && window.location.hash) {
-                    const hash = window.location.hash.substring(1); // Remove #
-                    // Validate hash against whitelist
-                    if (VALID_TAB_IDS.includes(hash)) {
-                        activeTabId = hash + '-tab';
-                    }
+                    const hash = window.location.hash.substring(1);
+                    activeTabId = getValidatedTabId(hash);
                 }
                 
                 // Priority 3: localStorage persistence (only if no URL params or hash)
                 if (!activeTabId) {
                     const savedTab = localStorage.getItem('easyvol_settings_active_tab');
-                    // Validate savedTab format (#tabname) and extract tab identifier
-                    if (savedTab && savedTab.startsWith('#')) {
-                        const tabId = savedTab.substring(1);
-                        if (VALID_TAB_IDS.includes(tabId)) {
-                            activeTabId = tabId + '-tab';
-                        }
-                    }
+                    activeTabId = extractValidatedTabId(savedTab);
                 }
                 
                 // Activate the determined tab
@@ -1524,12 +1531,9 @@ $pageTitle = 'Impostazioni Sistema';
                 // Save active tab to localStorage for persistence using event delegation
                 document.getElementById('settingsTabs').addEventListener('shown.bs.tab', function(event) {
                     const targetId = event.target.getAttribute('data-bs-target');
-                    // Validate targetId format (#tabname) before saving
-                    if (targetId && targetId.startsWith('#')) {
-                        const tabId = targetId.substring(1);
-                        if (VALID_TAB_IDS.includes(tabId)) {
-                            localStorage.setItem('easyvol_settings_active_tab', targetId);
-                        }
+                    const validatedTabId = extractValidatedTabId(targetId);
+                    if (validatedTabId) {
+                        localStorage.setItem('easyvol_settings_active_tab', targetId);
                     }
                 });
             });
