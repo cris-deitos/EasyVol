@@ -13,6 +13,11 @@ use EasyVol\Controllers\MemberPortalController;
 use EasyVol\Middleware\CsrfProtection;
 use EasyVol\Utils\AutoLogger;
 
+// Assicurati che la sessione sia avviata
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 $app = App::getInstance(); // Public page - no authentication required
 
 // Redirect to install if not configured
