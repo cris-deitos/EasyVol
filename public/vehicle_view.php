@@ -101,6 +101,22 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                     </div>
                 </div>
                 
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <?php echo htmlspecialchars($_SESSION['success']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['success']); ?>
+                <?php endif; ?>
+                
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <?php echo htmlspecialchars($_SESSION['error']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['error']); ?>
+                <?php endif; ?>
+                
                 <!-- Tabs -->
                 <ul class="nav nav-tabs mb-3" id="vehicleTab" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -419,6 +435,21 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                 modal.hide();
             }
         }
+        
+        // Handle tab parameter from URL (e.g., after saving maintenance)
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            // Validate tab parameter against whitelist to prevent XSS
+            const allowedTabs = ['info', 'maintenance', 'documents'];
+            if (tab && allowedTabs.includes(tab)) {
+                const tabElement = document.getElementById(tab + '-tab');
+                if (tabElement) {
+                    const bsTab = new bootstrap.Tab(tabElement);
+                    bsTab.show();
+                }
+            }
+        });
     </script>
 
     <!-- Print Template Selection Modal -->
