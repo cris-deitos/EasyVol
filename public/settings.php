@@ -1473,14 +1473,14 @@ $pageTitle = 'Impostazioni Sistema';
             // NOTE: When adding new tabs to the HTML, add their identifiers here
             const VALID_TAB_IDS = ['general', 'association', 'email', 'backup', 'import', 'print-templates'];
             
-            // Helper: Validate tab identifier and construct tab button ID
-            function getValidatedTabButtonId(tabIdentifier) {
-                return VALID_TAB_IDS.includes(tabIdentifier) ? tabIdentifier + '-tab' : null;
-            }
-            
             // Helper: Validate tab identifier
             function isValidTabId(tabIdentifier) {
                 return VALID_TAB_IDS.includes(tabIdentifier);
+            }
+            
+            // Helper: Validate tab identifier and construct tab button ID
+            function getValidatedTabButtonId(tabIdentifier) {
+                return isValidTabId(tabIdentifier) ? tabIdentifier + '-tab' : null;
             }
             
             document.addEventListener('DOMContentLoaded', function() {
@@ -1489,15 +1489,15 @@ $pageTitle = 'Impostazioni Sistema';
                 
                 // Priority 1: URL parameters (highest priority)
                 // Map URL conditions to tab identifiers
-                // 'success' parameter: Set after form submission redirects
-                // 'tab' parameter: Direct tab navigation
+                // 'success' parameter: Set after form submission redirects (email, association, backup have forms)
+                // 'tab' parameter: Direct tab navigation (all tabs support this)
                 // Special parameters: Legacy support (e.g., pt_entity_type for print-templates)
                 const urlTabMap = {
                     'email': urlParams.get('success') === 'email' || urlParams.get('tab') === 'email',
                     'association': urlParams.get('success') === 'association' || urlParams.get('tab') === 'association',
                     'backup': urlParams.get('success') === 'database_fix' || urlParams.get('tab') === 'backup',
-                    'import': urlParams.get('tab') === 'import',
-                    'general': urlParams.get('tab') === 'general',
+                    'import': urlParams.get('tab') === 'import',  // No form submission, tab navigation only
+                    'general': urlParams.get('tab') === 'general',  // No form submission, tab navigation only
                     'print-templates': urlParams.has('pt_entity_type') || urlParams.has('pt_template_type') || urlParams.get('tab') === 'print-templates'
                 };
                 
