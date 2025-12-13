@@ -335,6 +335,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="bi bi-key"></i> Password dimenticata?
                 </a>
             </div>
+            
+            <div class="text-center mt-2">
+                <a href="member_portal_verify.php" class="text-decoration-none" style="color: #667eea;">
+                    <i class="bi bi-person-badge"></i> Portale Soci
+                </a>
+            </div>
 
         </div>
     </div>

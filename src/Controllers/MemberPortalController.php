@@ -401,13 +401,12 @@ class MemberPortalController {
         // Insert new health data
         foreach ($healthData as $health) {
             if (!empty($health['type']) && !empty($health['description'])) {
-                $sql = "INSERT INTO member_health (member_id, health_type, description, notes) 
-                        VALUES (?, ?, ?, ?)";
+                $sql = "INSERT INTO member_health (member_id, health_type, description) 
+                        VALUES (?, ?, ?)";
                 $this->db->execute($sql, [
                     $memberId,
                     $health['type'],
-                    $health['description'],
-                    $health['notes'] ?? ''
+                    $health['description']
                 ]);
                 $changes[] = "Info alimentare aggiornata: " . $health['type'];
             }

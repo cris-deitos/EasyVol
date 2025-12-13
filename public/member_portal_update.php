@@ -99,7 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $health = [];
             foreach ($_POST['health'] as $idx => $h) {
                 if (!empty($h['type']) && !empty($h['description'])) {
-                    $health[] = $h;
+                    $health[] = [
+                        'type' => $h['type'],
+                        'description' => $h['description']
+                    ];
                 }
             }
             $updateData['health'] = $health;
@@ -718,7 +721,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                                 <?php 
                                 $healthData = $memberData['health'] ?? [];
                                 if (empty($healthData)) {
-                                    $healthData = [['health_type' => '', 'description' => '', 'notes' => '']];
+                                    $healthData = [['health_type' => '', 'description' => '']];
                                 }
                                 foreach ($healthData as $idx => $health): 
                                 ?>
@@ -728,19 +731,16 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                                             <label class="form-label">Tipo</label>
                                             <select name="health[<?= $idx ?>][type]" class="form-select">
                                                 <option value="">Seleziona...</option>
-                                                <option value="allergia" <?= ($health['health_type'] ?? '') == 'allergia' ? 'selected' : '' ?>>Allergia</option>
-                                                <option value="intolleranza" <?= ($health['health_type'] ?? '') == 'intolleranza' ? 'selected' : '' ?>>Intolleranza</option>
-                                                <option value="dieta" <?= ($health['health_type'] ?? '') == 'dieta' ? 'selected' : '' ?>>Dieta Speciale</option>
-                                                <option value="altro" <?= ($health['health_type'] ?? '') == 'altro' ? 'selected' : '' ?>>Altro</option>
+                                                <option value="vegano" <?= ($health['health_type'] ?? '') == 'vegano' ? 'selected' : '' ?>>Vegano</option>
+                                                <option value="vegetariano" <?= ($health['health_type'] ?? '') == 'vegetariano' ? 'selected' : '' ?>>Vegetariano</option>
+                                                <option value="allergie" <?= ($health['health_type'] ?? '') == 'allergie' ? 'selected' : '' ?>>Allergie</option>
+                                                <option value="intolleranze" <?= ($health['health_type'] ?? '') == 'intolleranze' ? 'selected' : '' ?>>Intolleranze</option>
+                                                <option value="patologie" <?= ($health['health_type'] ?? '') == 'patologie' ? 'selected' : '' ?>>Patologie</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Descrizione</label>
-                                            <input type="text" name="health[<?= $idx ?>][description]" class="form-control" value="<?= htmlspecialchars($health['description'] ?? '') ?>" placeholder="Es: Celiachia, Vegana, Lattosio">
-                                        </div>
-                                        <div class="col-md-10">
-                                            <label class="form-label">Note</label>
-                                            <input type="text" name="health[<?= $idx ?>][notes]" class="form-control" value="<?= htmlspecialchars($health['notes'] ?? '') ?>">
+                                            <input type="text" name="health[<?= $idx ?>][description]" class="form-control" value="<?= htmlspecialchars($health['description'] ?? '') ?>" placeholder="Es: Celiachia, Lattosio, ecc.">
                                         </div>
                                         <div class="col-md-2 d-flex align-items-end">
                                             <button type="button" class="btn btn-remove w-100" onclick="removeItem(this)">
@@ -920,19 +920,16 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                             <label class="form-label">Tipo</label>
                             <select name="health[${healthIndex}][type]" class="form-select">
                                 <option value="">Seleziona...</option>
-                                <option value="allergia">Allergia</option>
-                                <option value="intolleranza">Intolleranza</option>
-                                <option value="dieta">Dieta Speciale</option>
-                                <option value="altro">Altro</option>
+                                <option value="vegano">Vegano</option>
+                                <option value="vegetariano">Vegetariano</option>
+                                <option value="allergie">Allergie</option>
+                                <option value="intolleranze">Intolleranze</option>
+                                <option value="patologie">Patologie</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Descrizione</label>
-                            <input type="text" name="health[${healthIndex}][description]" class="form-control" placeholder="Es: Celiachia, Vegana, Lattosio">
-                        </div>
-                        <div class="col-md-10">
-                            <label class="form-label">Note</label>
-                            <input type="text" name="health[${healthIndex}][notes]" class="form-control">
+                            <input type="text" name="health[${healthIndex}][description]" class="form-control" placeholder="Es: Celiachia, Lattosio, ecc.">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <button type="button" class="btn btn-remove w-100" onclick="removeItem(this)">
