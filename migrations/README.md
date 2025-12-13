@@ -93,6 +93,9 @@ Make maintenance description optional.
 ### add_operations_center_user_flag.sql
 Add `is_operations_center_user` flag to users table for EasyCO (Centrale Operativa) access system. This migration enables a parallel login system for operations center users with limited functionality.
 
+### add_event_participants_and_vehicles_tables.sql
+Add `event_participants` and `event_vehicles` tables to track member participation and vehicle usage in events. These tables are essential for the events management system to function properly.
+
 ## Important Notes
 
 - Always backup your database before applying migrations
