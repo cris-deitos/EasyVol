@@ -645,9 +645,13 @@ class PrintTemplateController {
                             $value = date('d/m/Y', strtotime($value));
                         }
                         
-                        // Handle datetime fields
-                        if (strpos($key, '_time') !== false && !empty($value)) {
-                            if (strtotime($value)) {
+                        // Handle datetime fields - only for fields ending with '_datetime' or starting with 'start_' or 'end_' containing 'time'
+                        if ((strpos($key, '_datetime') !== false || 
+                            (strpos($key, 'start_') === 0 && strpos($key, 'time') !== false) ||
+                            (strpos($key, 'end_') === 0 && strpos($key, 'time') !== false)) 
+                            && !empty($value)) {
+                            // Check if value contains both date and time
+                            if (preg_match('/\d{4}-\d{2}-\d{2}/', $value) && strtotime($value)) {
                                 $value = date('d/m/Y H:i', strtotime($value));
                             }
                         }
@@ -656,20 +660,7 @@ class PrintTemplateController {
                     }
                     
                     // Handle {{#if field}} conditional blocks within loops
-                    $itemOutput = preg_replace_callback(
-                        '/\{\{#if\s+([a-zA-Z_]+)\}\}(.*?)\{\{\/if\}\}/s',
-                        function($ifMatches) use ($item) {
-                            $fieldName = $ifMatches[1];
-                            $ifContent = $ifMatches[2];
-                            
-                            // Show content only if field exists and is not empty
-                            if (isset($item[$fieldName]) && !empty($item[$fieldName])) {
-                                return $ifContent;
-                            }
-                            return '';
-                        },
-                        $itemOutput
-                    );
+                    $itemOutput = $this->processConditionals($itemOutput, $item);
                     
                     $output .= $itemOutput;
                     $index++;
@@ -680,25 +671,37 @@ class PrintTemplateController {
         }, $content);
         
         // Handle top-level {{#if field}} conditional blocks
-        $content = preg_replace_callback(
+        $content = $this->processConditionals($content, $data);
+        
+        // Replace remaining simple variables
+        $content = $this->replaceVariables($content, $data);
+        
+        return $content;
+    }
+    
+    /**
+     * Process {{#if field}} conditional blocks
+     * 
+     * @param string $content Template content
+     * @param array $data Data array
+     * @return string
+     */
+    private function processConditionals($content, $data) {
+        return preg_replace_callback(
             '/\{\{#if\s+([a-zA-Z_]+)\}\}(.*?)\{\{\/if\}\}/s',
             function($matches) use ($data) {
                 $fieldName = $matches[1];
                 $ifContent = $matches[2];
                 
-                // Show content only if field exists and is not empty
-                if (isset($data[$fieldName]) && !empty($data[$fieldName])) {
+                // Show content only if field exists and is not null/empty string
+                // Allow zero values (0, '0') as valid content
+                if (isset($data[$fieldName]) && $data[$fieldName] !== null && $data[$fieldName] !== '') {
                     return $ifContent;
                 }
                 return '';
             },
             $content
         );
-        
-        // Replace remaining simple variables
-        $content = $this->replaceVariables($content, $data);
-        
-        return $content;
     }
     
     /**

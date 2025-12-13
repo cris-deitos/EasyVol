@@ -225,7 +225,7 @@ INSERT INTO `print_templates` (
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">{{last_name}} {{first_name}}</td>
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">
                         {{#each member_health}}
-                        {{allergies}}, {{food_intolerances}}
+                        {{#if allergies}}Allergie: {{allergies}}{{/if}}{{#if food_intolerances}}{{#if allergies}} | {{/if}}Intolleranze: {{food_intolerances}}{{/if}}
                         {{/each}}
                     </td>
                     <td style="padding: 0.2cm; border: 1px solid #ccc; font-size: 8pt;">
