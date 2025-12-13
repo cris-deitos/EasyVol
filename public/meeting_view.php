@@ -286,10 +286,19 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                         <td>
                                                             <?php 
                                                             // Construct member name based on member type
+                                                            $memberName = '';
                                                             if ($participant['member_type'] === 'junior') {
-                                                                $memberName = trim(($participant['junior_first_name'] ?? '') . ' ' . ($participant['junior_last_name'] ?? ''));
+                                                                $firstName = $participant['junior_first_name'] ?? '';
+                                                                $lastName = $participant['junior_last_name'] ?? '';
+                                                                if ($firstName || $lastName) {
+                                                                    $memberName = trim($firstName . ' ' . $lastName);
+                                                                }
                                                             } else {
-                                                                $memberName = trim(($participant['first_name'] ?? '') . ' ' . ($participant['last_name'] ?? ''));
+                                                                $firstName = $participant['first_name'] ?? '';
+                                                                $lastName = $participant['last_name'] ?? '';
+                                                                if ($firstName || $lastName) {
+                                                                    $memberName = trim($firstName . ' ' . $lastName);
+                                                                }
                                                             }
                                                             // Fallback to participant_name if available
                                                             if (empty($memberName)) {
@@ -315,7 +324,7 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                                                 'invited' => 'Invitato'
                                                             ];
                                                             $class = $attendanceClass[$attendance] ?? 'secondary';
-                                                            $label = $attendanceLabels[$attendance] ?? ucfirst($attendance);
+                                                            $label = $attendanceLabels[$attendance] ?? 'Non definito';
                                                             ?>
                                                             <span class="badge bg-<?php echo $class; ?>">
                                                                 <?php echo htmlspecialchars($label); ?>
