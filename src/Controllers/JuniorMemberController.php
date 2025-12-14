@@ -104,6 +104,8 @@ class JuniorMemberController {
         $member['guardians'] = $this->getGuardians($id);
         
         // Populate guardian fields from first guardian for form editing
+        // Note: The edit form only shows one guardian at a time. Additional guardians
+        // can be managed through the "Genitori/Tutori" tab in the member view page.
         if (!empty($member['guardians'])) {
             $guardian = $member['guardians'][0];
             $member['guardian_last_name'] = $guardian['last_name'];
@@ -617,10 +619,15 @@ class JuniorMemberController {
     /**
      * Map guardian relationship form value to database enum value
      * 
-     * The form uses simplified values while the database has more specific enum values.
-     * 'genitore' (generic parent) maps to 'padre' as default, following Italian convention
-     * where the father is typically listed first in official documents.
-     * To track both parents, add separate guardian entries via the guardians tab.
+     * The form uses simplified values while the database has more specific enum values:
+     * - 'genitore' (generic parent) maps to 'padre' as default, following Italian convention
+     *   where the father is typically listed first in official documents
+     * - 'tutore' (legal guardian) maps directly to 'tutore'
+     * - 'altro' (other) maps to 'tutore' as the closest match, since the database
+     *   only supports padre/madre/tutore
+     * 
+     * To track multiple guardians (e.g., both father and mother), add separate 
+     * guardian entries via the "Genitori/Tutori" tab in the member view page.
      * 
      * @param string $relationship The relationship from form (genitore, tutore, altro)
      * @return string The guardian_type enum value (padre, madre, tutore)
@@ -630,7 +637,7 @@ class JuniorMemberController {
         $mapping = [
             'genitore' => 'padre',  // Generic parent defaults to father
             'tutore' => 'tutore',
-            'altro' => 'tutore'
+            'altro' => 'tutore'     // Other relationships default to legal guardian
         ];
         
         return $mapping[$relationship] ?? 'padre';

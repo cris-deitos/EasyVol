@@ -105,14 +105,10 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                             <div class="card-body text-center">
                                 <?php 
                                 // Check if photo exists by converting relative path to absolute
+                                use EasyVol\Utils\PathHelper;
                                 $hasPhoto = false;
                                 if (!empty($member['photo_path'])) {
-                                    // Remove leading '../' if present and construct absolute path
-                                    $relativePath = $member['photo_path'];
-                                    if (strpos($relativePath, '../') === 0) {
-                                        $relativePath = substr($relativePath, 3);
-                                    }
-                                    $absolutePath = __DIR__ . '/../' . $relativePath;
+                                    $absolutePath = PathHelper::relativeToAbsolute($member['photo_path']);
                                     $hasPhoto = file_exists($absolutePath);
                                 }
                                 ?>
