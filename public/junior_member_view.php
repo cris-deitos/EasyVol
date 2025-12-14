@@ -103,7 +103,17 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                     <div class="col-md-3">
                         <div class="card mb-4">
                             <div class="card-body text-center">
-                                <?php if (!empty($member['photo_path']) && file_exists($member['photo_path'])): ?>
+                                <?php 
+                                // Check if photo exists by converting relative path to absolute
+                                $hasPhoto = false;
+                                if (!empty($member['photo_path'])) {
+                                    // Remove leading '../' and construct absolute path
+                                    $relativePath = ltrim($member['photo_path'], '../');
+                                    $absolutePath = __DIR__ . '/../' . $relativePath;
+                                    $hasPhoto = file_exists($absolutePath);
+                                }
+                                ?>
+                                <?php if ($hasPhoto): ?>
                                     <img src="download.php?type=junior_member_photo&id=<?php echo $member['id']; ?>" 
                                          alt="Foto socio" class="img-fluid rounded mb-3" style="max-width: 200px;">
                                 <?php else: ?>

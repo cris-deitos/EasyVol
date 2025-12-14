@@ -380,6 +380,7 @@ CREATE TABLE IF NOT EXISTS `member_verification_codes` (
 CREATE TABLE IF NOT EXISTS `junior_members` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `registration_number` varchar(50) UNIQUE,
+  `member_type` enum('ordinario') DEFAULT 'ordinario',
   `member_status` enum('attivo', 'decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo') DEFAULT 'attivo',
   `last_name` varchar(100) NOT NULL,
   `first_name` varchar(100) NOT NULL,

@@ -166,6 +166,9 @@ class JuniorMemberController {
             
             // Inserisci tutore se fornito
             if (!empty($data['guardian_last_name']) && !empty($data['guardian_first_name'])) {
+                // Map guardian_relationship to guardian_type enum values
+                $guardianType = $this->mapGuardianRelationship($data['guardian_relationship'] ?? 'genitore');
+                
                 $guardianSql = "INSERT INTO junior_member_guardians (
                     junior_member_id, guardian_type,
                     last_name, first_name, tax_code, phone, email
@@ -173,7 +176,7 @@ class JuniorMemberController {
                 
                 $guardianParams = [
                     $memberId,
-                    $data['guardian_relationship'] ?? 'padre',
+                    $guardianType,
                     $data['guardian_last_name'],
                     $data['guardian_first_name'],
                     $data['guardian_tax_code'] ?? null,
@@ -243,6 +246,9 @@ class JuniorMemberController {
             
             // Aggiorna tutore se fornito
             if (!empty($data['guardian_last_name']) && !empty($data['guardian_first_name'])) {
+                // Map guardian_relationship to guardian_type enum values
+                $guardianType = $this->mapGuardianRelationship($data['guardian_relationship'] ?? 'genitore');
+                
                 // Cerca tutore esistente
                 $guardianSql = "SELECT id FROM junior_member_guardians WHERE junior_member_id = ? LIMIT 1";
                 $guardian = $this->db->fetchOne($guardianSql, [$id]);
@@ -255,7 +261,7 @@ class JuniorMemberController {
                         WHERE id = ?";
                     
                     $guardianParams = [
-                        $data['guardian_relationship'] ?? 'padre',
+                        $guardianType,
                         $data['guardian_last_name'],
                         $data['guardian_first_name'],
                         $data['guardian_tax_code'] ?? null,
@@ -274,7 +280,7 @@ class JuniorMemberController {
                     
                     $guardianParams = [
                         $id,
-                        $data['guardian_relationship'] ?? 'padre',
+                        $guardianType,
                         $data['guardian_last_name'],
                         $data['guardian_first_name'],
                         $data['guardian_tax_code'] ?? null,
@@ -594,5 +600,22 @@ class JuniorMemberController {
         }
         
         return $data;
+    }
+    
+    /**
+     * Map guardian relationship form value to database enum value
+     * 
+     * @param string $relationship The relationship from form (genitore, tutore, altro)
+     * @return string The guardian_type enum value (padre, madre, tutore)
+     */
+    private function mapGuardianRelationship($relationship) {
+        // Map form values to database enum
+        $mapping = [
+            'genitore' => 'padre',  // Default parent to father
+            'tutore' => 'tutore',
+            'altro' => 'tutore'
+        ];
+        
+        return $mapping[$relationship] ?? 'padre';
     }
 }
