@@ -103,6 +103,20 @@ class JuniorMemberController {
         // Carica tutori/guardians
         $member['guardians'] = $this->getGuardians($id);
         
+        // Populate guardian fields from first guardian for form editing
+        // Note: The edit form only shows one guardian at a time. Additional guardians
+        // can be managed through the "Genitori/Tutori" tab in the member view page.
+        if (!empty($member['guardians'])) {
+            $guardian = $member['guardians'][0];
+            $member['guardian_last_name'] = $guardian['last_name'];
+            $member['guardian_first_name'] = $guardian['first_name'];
+            $member['guardian_tax_code'] = $guardian['tax_code'];
+            $member['guardian_phone'] = $guardian['phone'];
+            $member['guardian_email'] = $guardian['email'];
+            // Map guardian_type back to guardian_relationship for form
+            $member['guardian_relationship'] = $this->reverseMapGuardianType($guardian['guardian_type']);
+        }
+        
         // Carica contatti
         $member['contacts'] = $this->getContacts($id);
         
@@ -166,6 +180,9 @@ class JuniorMemberController {
             
             // Inserisci tutore se fornito
             if (!empty($data['guardian_last_name']) && !empty($data['guardian_first_name'])) {
+                // Map guardian_relationship to guardian_type enum values
+                $guardianType = $this->mapGuardianRelationship($data['guardian_relationship'] ?? 'genitore');
+                
                 $guardianSql = "INSERT INTO junior_member_guardians (
                     junior_member_id, guardian_type,
                     last_name, first_name, tax_code, phone, email
@@ -173,7 +190,7 @@ class JuniorMemberController {
                 
                 $guardianParams = [
                     $memberId,
-                    $data['guardian_relationship'] ?? 'padre',
+                    $guardianType,
                     $data['guardian_last_name'],
                     $data['guardian_first_name'],
                     $data['guardian_tax_code'] ?? null,
@@ -243,6 +260,9 @@ class JuniorMemberController {
             
             // Aggiorna tutore se fornito
             if (!empty($data['guardian_last_name']) && !empty($data['guardian_first_name'])) {
+                // Map guardian_relationship to guardian_type enum values
+                $guardianType = $this->mapGuardianRelationship($data['guardian_relationship'] ?? 'genitore');
+                
                 // Cerca tutore esistente
                 $guardianSql = "SELECT id FROM junior_member_guardians WHERE junior_member_id = ? LIMIT 1";
                 $guardian = $this->db->fetchOne($guardianSql, [$id]);
@@ -255,7 +275,7 @@ class JuniorMemberController {
                         WHERE id = ?";
                     
                     $guardianParams = [
-                        $data['guardian_relationship'] ?? 'padre',
+                        $guardianType,
                         $data['guardian_last_name'],
                         $data['guardian_first_name'],
                         $data['guardian_tax_code'] ?? null,
@@ -274,7 +294,7 @@ class JuniorMemberController {
                     
                     $guardianParams = [
                         $id,
-                        $data['guardian_relationship'] ?? 'padre',
+                        $guardianType,
                         $data['guardian_last_name'],
                         $data['guardian_first_name'],
                         $data['guardian_tax_code'] ?? null,
@@ -594,5 +614,49 @@ class JuniorMemberController {
         }
         
         return $data;
+    }
+    
+    /**
+     * Map guardian relationship form value to database enum value
+     * 
+     * The form uses simplified values while the database has more specific enum values:
+     * - 'genitore' (generic parent) maps to 'padre' as default, following Italian convention
+     *   where the father is typically listed first in official documents
+     * - 'tutore' (legal guardian) maps directly to 'tutore'
+     * - 'altro' (other) maps to 'tutore' as the closest match, since the database
+     *   only supports padre/madre/tutore
+     * 
+     * To track multiple guardians (e.g., both father and mother), add separate 
+     * guardian entries via the "Genitori/Tutori" tab in the member view page.
+     * 
+     * @param string $relationship The relationship from form (genitore, tutore, altro)
+     * @return string The guardian_type enum value (padre, madre, tutore)
+     */
+    private function mapGuardianRelationship($relationship) {
+        // Map form values to database enum
+        $mapping = [
+            'genitore' => 'padre',  // Generic parent defaults to father
+            'tutore' => 'tutore',
+            'altro' => 'tutore'     // Other relationships default to legal guardian
+        ];
+        
+        return $mapping[$relationship] ?? 'padre';
+    }
+    
+    /**
+     * Reverse map guardian_type enum value to form relationship value
+     * 
+     * @param string $guardianType The guardian_type from database (padre, madre, tutore)
+     * @return string The relationship for form (genitore, tutore)
+     */
+    private function reverseMapGuardianType($guardianType) {
+        // Map database enum back to form values
+        $mapping = [
+            'padre' => 'genitore',
+            'madre' => 'genitore',
+            'tutore' => 'tutore'
+        ];
+        
+        return $mapping[$guardianType] ?? 'genitore';
     }
 }

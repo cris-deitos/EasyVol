@@ -10,6 +10,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\PathHelper;
 use EasyVol\Controllers\MemberController;
 
 $app = App::getInstance();
@@ -106,7 +107,15 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                     <div class="col-md-3">
                         <div class="card mb-4">
                             <div class="card-body text-center">
-                                <?php if (!empty($member['photo_path']) && file_exists($member['photo_path'])): ?>
+                                <?php 
+                                // Check if photo exists by converting relative path to absolute
+                                $hasPhoto = false;
+                                if (!empty($member['photo_path'])) {
+                                    $absolutePath = PathHelper::relativeToAbsolute($member['photo_path']);
+                                    $hasPhoto = file_exists($absolutePath);
+                                }
+                                ?>
+                                <?php if ($hasPhoto): ?>
                                     <img src="download.php?type=member_photo&id=<?php echo $member['id']; ?>" 
                                          alt="Foto socio" class="img-fluid rounded mb-3" style="max-width: 200px;">
                                 <?php else: ?>

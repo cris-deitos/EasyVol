@@ -10,6 +10,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\PathHelper;
 use EasyVol\Controllers\JuniorMemberController;
 
 $app = App::getInstance();
@@ -103,7 +104,15 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                     <div class="col-md-3">
                         <div class="card mb-4">
                             <div class="card-body text-center">
-                                <?php if (!empty($member['photo_path']) && file_exists($member['photo_path'])): ?>
+                                <?php 
+                                // Check if photo exists by converting relative path to absolute
+                                $hasPhoto = false;
+                                if (!empty($member['photo_path'])) {
+                                    $absolutePath = PathHelper::relativeToAbsolute($member['photo_path']);
+                                    $hasPhoto = file_exists($absolutePath);
+                                }
+                                ?>
+                                <?php if ($hasPhoto): ?>
                                     <img src="download.php?type=junior_member_photo&id=<?php echo $member['id']; ?>" 
                                          alt="Foto socio" class="img-fluid rounded mb-3" style="max-width: 200px;">
                                 <?php else: ?>
@@ -206,11 +215,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Tipo Socio</label>
-                                                <p class="mb-0"><?php echo ucfirst($member['member_type']); ?></p>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="text-muted small">Qualifica Volontario</label>
-                                                <p class="mb-0"><?php echo ucfirst($member['volunteer_status']); ?></p>
+                                                <p class="mb-0"><?php echo ucfirst($member['member_type'] ?? 'Ordinario'); ?></p>
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Data Iscrizione</label>
