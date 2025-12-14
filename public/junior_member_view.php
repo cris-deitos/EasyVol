@@ -216,11 +216,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Tipo Socio</label>
-                                                <p class="mb-0"><?php echo ucfirst($member['member_type']); ?></p>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="text-muted small">Qualifica Volontario</label>
-                                                <p class="mb-0"><?php echo ucfirst($member['volunteer_status']); ?></p>
+                                                <p class="mb-0"><?php echo ucfirst($member['member_type'] ?? 'Ordinario'); ?></p>
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Data Iscrizione</label>
