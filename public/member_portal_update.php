@@ -735,7 +735,6 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                                                 <option value="vegetariano" <?= ($health['health_type'] ?? '') == 'vegetariano' ? 'selected' : '' ?>>Vegetariano</option>
                                                 <option value="allergie" <?= ($health['health_type'] ?? '') == 'allergie' ? 'selected' : '' ?>>Allergie</option>
                                                 <option value="intolleranze" <?= ($health['health_type'] ?? '') == 'intolleranze' ? 'selected' : '' ?>>Intolleranze</option>
-                                                <option value="patologie" <?= ($health['health_type'] ?? '') == 'patologie' ? 'selected' : '' ?>>Patologie</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">
@@ -924,7 +923,6 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                                 <option value="vegetariano">Vegetariano</option>
                                 <option value="allergie">Allergie</option>
                                 <option value="intolleranze">Intolleranze</option>
-                                <option value="patologie">Patologie</option>
                             </select>
                         </div>
                         <div class="col-md-6">
