@@ -103,6 +103,18 @@ class JuniorMemberController {
         // Carica tutori/guardians
         $member['guardians'] = $this->getGuardians($id);
         
+        // Populate guardian fields from first guardian for form editing
+        if (!empty($member['guardians'])) {
+            $guardian = $member['guardians'][0];
+            $member['guardian_last_name'] = $guardian['last_name'];
+            $member['guardian_first_name'] = $guardian['first_name'];
+            $member['guardian_tax_code'] = $guardian['tax_code'];
+            $member['guardian_phone'] = $guardian['phone'];
+            $member['guardian_email'] = $guardian['email'];
+            // Map guardian_type back to guardian_relationship for form
+            $member['guardian_relationship'] = $this->reverseMapGuardianType($guardian['guardian_type']);
+        }
+        
         // Carica contatti
         $member['contacts'] = $this->getContacts($id);
         
@@ -617,5 +629,22 @@ class JuniorMemberController {
         ];
         
         return $mapping[$relationship] ?? 'padre';
+    }
+    
+    /**
+     * Reverse map guardian_type enum value to form relationship value
+     * 
+     * @param string $guardianType The guardian_type from database (padre, madre, tutore)
+     * @return string The relationship for form (genitore, tutore)
+     */
+    private function reverseMapGuardianType($guardianType) {
+        // Map database enum back to form values
+        $mapping = [
+            'padre' => 'genitore',
+            'madre' => 'genitore',
+            'tutore' => 'tutore'
+        ];
+        
+        return $mapping[$guardianType] ?? 'genitore';
     }
 }
