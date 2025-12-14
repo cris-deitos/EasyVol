@@ -110,8 +110,11 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                 // Check if photo exists by converting relative path to absolute
                                 $hasPhoto = false;
                                 if (!empty($member['photo_path'])) {
-                                    // Remove leading '../' and construct absolute path
-                                    $relativePath = ltrim($member['photo_path'], '../');
+                                    // Remove leading '../' if present and construct absolute path
+                                    $relativePath = $member['photo_path'];
+                                    if (strpos($relativePath, '../') === 0) {
+                                        $relativePath = substr($relativePath, 3);
+                                    }
                                     $absolutePath = __DIR__ . '/../' . $relativePath;
                                     $hasPhoto = file_exists($absolutePath);
                                 }

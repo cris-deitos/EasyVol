@@ -617,13 +617,18 @@ class JuniorMemberController {
     /**
      * Map guardian relationship form value to database enum value
      * 
+     * The form uses simplified values while the database has more specific enum values.
+     * 'genitore' (generic parent) maps to 'padre' as default, following Italian convention
+     * where the father is typically listed first in official documents.
+     * To track both parents, add separate guardian entries via the guardians tab.
+     * 
      * @param string $relationship The relationship from form (genitore, tutore, altro)
      * @return string The guardian_type enum value (padre, madre, tutore)
      */
     private function mapGuardianRelationship($relationship) {
         // Map form values to database enum
         $mapping = [
-            'genitore' => 'padre',  // Default parent to father
+            'genitore' => 'padre',  // Generic parent defaults to father
             'tutore' => 'tutore',
             'altro' => 'tutore'
         ];
