@@ -252,7 +252,16 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Qualifica Volontario</label>
-                                                <p class="mb-0"><?php echo ucfirst($member['volunteer_status']); ?></p>
+                                                <p class="mb-0">
+                                                    <?php
+                                                    $volunteerStatusLabels = [
+                                                        'operativo' => 'Operativo',
+                                                        'in_formazione' => 'In Formazione',
+                                                        'non_operativo' => 'Non Operativo'
+                                                    ];
+                                                    echo $volunteerStatusLabels[$member['volunteer_status']] ?? ucfirst($member['volunteer_status']);
+                                                    ?>
+                                                </p>
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Data Iscrizione</label>
@@ -700,7 +709,20 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                         <?php foreach ($member['sanctions'] as $sanction): ?>
                                                             <tr>
                                                                 <td><?php echo date('d/m/Y', strtotime($sanction['sanction_date'])); ?></td>
-                                                                <td><span class="badge bg-warning"><?php echo ucfirst(str_replace('_', ' ', $sanction['sanction_type'])); ?></span></td>
+                                                                <td>
+                                                                    <?php
+                                                                    $sanctionLabels = [
+                                                                        'approvazione_consiglio_direttivo' => 'Approvazione del Consiglio Direttivo',
+                                                                        'decaduto' => 'Decaduto',
+                                                                        'dimesso' => 'Dimesso',
+                                                                        'in_aspettativa' => 'In Aspettativa',
+                                                                        'sospeso' => 'Sospeso',
+                                                                        'in_congedo' => 'In Congedo',
+                                                                        'attivo' => 'Attivo'
+                                                                    ];
+                                                                    echo '<span class="badge bg-warning">' . ($sanctionLabels[$sanction['sanction_type']] ?? ucfirst($sanction['sanction_type'])) . '</span>';
+                                                                    ?>
+                                                                </td>
                                                                 <td><?php echo htmlspecialchars($sanction['reason'] ?? 'N/D'); ?></td>
                                                                 <td>
                                                                     <?php if ($app->checkPermission('members', 'edit')): ?>

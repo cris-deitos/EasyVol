@@ -275,7 +275,16 @@ $pageTitle = 'Gestione Soci';
                                                         <?php echo ucfirst($member['member_status']); ?>
                                                     </span>
                                                 </td>
-                                                <td><?php echo ucfirst($member['volunteer_status']); ?></td>
+                                                <td>
+                                                    <?php
+                                                    $volunteerStatusLabels = [
+                                                        'operativo' => 'Operativo',
+                                                        'in_formazione' => 'In Formazione',
+                                                        'non_operativo' => 'Non Operativo'
+                                                    ];
+                                                    echo $volunteerStatusLabels[$member['volunteer_status']] ?? ucfirst($member['volunteer_status']);
+                                                    ?>
+                                                </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <a href="member_view.php?id=<?php echo $member['id']; ?>" 
