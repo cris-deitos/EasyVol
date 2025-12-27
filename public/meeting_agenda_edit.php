@@ -10,6 +10,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Controllers\MeetingController;
 use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
@@ -140,14 +141,7 @@ $pageTitle = 'Modifica Ordine del Giorno';
                                 <h5 class="mb-0">
                                     <i class="bi bi-calendar3"></i> Riunione: 
                                     <?php 
-                                    $typeNames = [
-                                        'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
-                                        'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
-                                        'consiglio_direttivo' => 'Consiglio Direttivo',
-                                        'riunione_capisquadra' => 'Riunione dei Capisquadra',
-                                        'riunione_nucleo' => 'Riunione di Nucleo'
-                                    ];
-                                    echo htmlspecialchars($typeNames[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type'])));
+                                    echo htmlspecialchars(MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type'])));
                                     echo ' - ' . date('d/m/Y', strtotime($meeting['meeting_date']));
                                     ?>
                                 </h5>

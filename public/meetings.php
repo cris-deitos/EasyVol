@@ -144,14 +144,7 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                                 <td>
                                                     <i class="bi bi-people"></i>
                                                     <?php 
-                                                    $typeNames = [
-                                                        'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
-                                                        'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
-                                                        'consiglio_direttivo' => 'Consiglio Direttivo',
-                                                        'riunione_capisquadra' => 'Riunione dei Capisquadra',
-                                                        'riunione_nucleo' => 'Riunione di Nucleo'
-                                                    ];
-                                                    echo $typeNames[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
+                                                    echo MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
                                                     ?>
                                                 </td>
                                                 <td>

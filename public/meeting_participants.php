@@ -124,14 +124,7 @@ $activeMembers = $memberController->index(['member_status' => 'attivo'], 1, 500)
 $activeJuniors = $juniorMemberController->index(['member_status' => 'attivo'], 1, 500);
 
 // Generate page title from meeting type and date
-$typeNames = [
-    'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
-    'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
-    'consiglio_direttivo' => 'Consiglio Direttivo',
-    'riunione_capisquadra' => 'Riunione dei Capisquadra',
-    'riunione_nucleo' => 'Riunione di Nucleo'
-];
-$meetingTypeName = $typeNames[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
+$meetingTypeName = MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
 $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y', strtotime($meeting['meeting_date']));
 ?>
 <!DOCTYPE html>

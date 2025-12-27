@@ -23,6 +23,18 @@ class MeetingController {
     const ROLE_PRESIDENTE = 'Presidente';
     const ROLE_SEGRETARIO = 'Segretario';
     
+    // Meeting type display names
+    const MEETING_TYPE_NAMES = [
+        'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
+        'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
+        'consiglio_direttivo' => 'Consiglio Direttivo',
+        'riunione_capisquadra' => 'Riunione dei Capisquadra',
+        'riunione_nucleo' => 'Riunione di Nucleo'
+    ];
+    
+    // Date search regex pattern
+    const DATE_SEARCH_PATTERN = '/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/';
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -45,7 +57,7 @@ class MeetingController {
             
             // Try to parse as date in various formats (DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY)
             $dateSearched = false;
-            if (preg_match('/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/', $searchTerm, $matches)) {
+            if (preg_match(self::DATE_SEARCH_PATTERN, $searchTerm, $matches)) {
                 $day = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
                 $month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
                 $year = $matches[3];
@@ -181,14 +193,7 @@ class MeetingController {
             $meetingId = $this->db->lastInsertId();
             
             // Generate meeting type name for log
-            $typeNames = [
-                'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
-                'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
-                'consiglio_direttivo' => 'Consiglio Direttivo',
-                'riunione_capisquadra' => 'Riunione dei Capisquadra',
-                'riunione_nucleo' => 'Riunione di Nucleo'
-            ];
-            $meetingName = $typeNames[$data['meeting_type']] ?? $data['meeting_type'];
+            $meetingName = self::MEETING_TYPE_NAMES[$data['meeting_type']] ?? $data['meeting_type'];
             
             $this->logActivity($userId, 'meeting', 'create', $meetingId, 'Creata nuova riunione: ' . $meetingName);
             
@@ -312,14 +317,7 @@ class MeetingController {
             $this->db->commit();
             
             // Log activity
-            $typeNames = [
-                'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
-                'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
-                'consiglio_direttivo' => 'Consiglio Direttivo',
-                'riunione_capisquadra' => 'Riunione dei Capisquadra',
-                'riunione_nucleo' => 'Riunione di Nucleo'
-            ];
-            $meetingName = $typeNames[$meeting['meeting_type']] ?? $meeting['meeting_type'];
+            $meetingName = self::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? $meeting['meeting_type'];
             $this->logActivity($userId, 'meetings', 'delete', $id, "Eliminata riunione: {$meetingName}");
             
             return ['success' => true];
@@ -462,14 +460,7 @@ class MeetingController {
                     : $participant['junior_first_name'] . ' ' . $participant['junior_last_name'];
                 
                 // Build email subject with meeting type and date
-                $typeNames = [
-                    'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
-                    'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
-                    'consiglio_direttivo' => 'Consiglio Direttivo',
-                    'riunione_capisquadra' => 'Riunione dei Capisquadra',
-                    'riunione_nucleo' => 'Riunione di Nucleo'
-                ];
-                $meetingTypeName = $typeNames[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
+                $meetingTypeName = self::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
                 $subject = "Convocazione: " . $meetingTypeName . " - " . date('d/m/Y', strtotime($meeting['meeting_date']));
                 $body = $this->buildInvitationEmail($meeting, $name);
                 
@@ -510,15 +501,8 @@ class MeetingController {
      * Costruisci email di convocazione
      */
     private function buildInvitationEmail($meeting, $recipientName) {
-        // Format meeting type for display (convert underscores to spaces and capitalize)
-        $typeNames = [
-            'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
-            'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
-            'consiglio_direttivo' => 'Consiglio Direttivo',
-            'riunione_capisquadra' => 'Riunione dei Capisquadra',
-            'riunione_nucleo' => 'Riunione di Nucleo'
-        ];
-        $meetingTypeFormatted = $typeNames[$meeting['meeting_type']] ?? ucwords(str_replace('_', ' ', $meeting['meeting_type']));
+        // Format meeting type for display
+        $meetingTypeFormatted = self::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucwords(str_replace('_', ' ', $meeting['meeting_type']));
         
         $body = "<html><body>";
         $body .= "<h2>Convocazione Riunione</h2>";
