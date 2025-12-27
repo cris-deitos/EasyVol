@@ -29,7 +29,8 @@ class MeetingController {
         'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
         'consiglio_direttivo' => 'Consiglio Direttivo',
         'riunione_capisquadra' => 'Riunione dei Capisquadra',
-        'riunione_nucleo' => 'Riunione di Nucleo'
+        'riunione_nucleo' => 'Riunione di Nucleo',
+        'altra_riunione' => 'Altra Riunione' // Backward compatibility
     ];
     
     // Date search regex pattern
@@ -63,8 +64,8 @@ class MeetingController {
                 $year = $matches[3];
                 $dateFormatted = "$year-$month-$day"; // Convert to MySQL format YYYY-MM-DD
                 
-                // Validate the date
-                if (checkdate($month, $day, $year)) {
+                // Validate the date (cast to int for checkdate)
+                if (checkdate((int)$month, (int)$day, (int)$year)) {
                     $where[] = "meeting_date = ?";
                     $params[] = $dateFormatted;
                     $dateSearched = true;
