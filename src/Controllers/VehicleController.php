@@ -20,6 +20,48 @@ class VehicleController {
     }
     
     /**
+     * Build a human-readable vehicle identifier from available fields
+     * Priority: license_plate > serial_number > brand+model
+     * 
+     * @param array $data Vehicle data array
+     * @return string Vehicle identifier for display/logging
+     */
+    private function buildVehicleIdentifier($data) {
+        if (!empty($data['license_plate'])) {
+            return $data['license_plate'];
+        }
+        if (!empty($data['serial_number'])) {
+            return $data['serial_number'];
+        }
+        $brandModel = trim(($data['brand'] ?? '') . ' ' . ($data['model'] ?? ''));
+        if (!empty($brandModel)) {
+            return $brandModel;
+        }
+        return isset($data['id']) ? "Mezzo ID {$data['id']}" : 'Nuovo mezzo';
+    }
+    
+    /**
+     * Generate internal name for database storage from available fields
+     * Priority: license_plate > serial_number > brand+model > timestamp
+     * 
+     * @param array $data Vehicle data array
+     * @return string Generated name for database
+     */
+    private function generateInternalName($data) {
+        if (!empty($data['license_plate'])) {
+            return $data['license_plate'];
+        }
+        if (!empty($data['serial_number'])) {
+            return $data['serial_number'];
+        }
+        $brandModel = trim(($data['brand'] ?? '') . ' ' . ($data['model'] ?? ''));
+        if (!empty($brandModel)) {
+            return $brandModel;
+        }
+        return 'Mezzo ' . date('YmdHis');
+    }
+    
+    /**
      * Lista mezzi con filtri e paginazione
      */
     public function index($filters = [], $page = 1, $perPage = 20) {
@@ -90,6 +132,9 @@ class VehicleController {
             
             $this->validateVehicleData($data);
             
+            // Generate internal name for database storage
+            $data['name'] = $this->generateInternalName($data);
+            
             $sql = "INSERT INTO vehicles (
                 vehicle_type, name, license_plate, brand, model, year,
                 serial_number, status, insurance_expiry, inspection_expiry, notes,
@@ -122,7 +167,8 @@ class VehicleController {
                 $syncController->syncInspectionExpiry($vehicleId);
             }
             
-            $this->logActivity($userId, 'vehicle', 'create', $vehicleId, 'Creato nuovo mezzo: ' . $data['name']);
+            $vehicleIdent = $this->buildVehicleIdentifier($data);
+            $this->logActivity($userId, 'vehicle', 'create', $vehicleId, "Creato nuovo mezzo: $vehicleIdent");
             
             $this->db->commit();
             return $vehicleId;
@@ -142,6 +188,9 @@ class VehicleController {
             $this->db->beginTransaction();
             
             $this->validateVehicleData($data, $id);
+            
+            // Generate internal name for database storage
+            $data['name'] = $this->generateInternalName($data);
             
             $sql = "UPDATE vehicles SET
                 vehicle_type = ?, name = ?, license_plate = ?, brand = ?, 
