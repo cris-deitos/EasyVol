@@ -271,7 +271,14 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                     <div class="tab-pane fade" id="dpi" role="tabpanel">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-person-badge"></i> DPI Assegnati ai Volontari</h5>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-person-badge"></i> DPI Assegnati ai Volontari</h5>
+                                    <?php if ($app->checkPermission('warehouse', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#assignDpiModal">
+                                            <i class="bi bi-plus-circle"></i> Assegna DPI
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <?php if (!empty($item['dpi_assignments'])): ?>
@@ -289,9 +296,12 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                             <tbody>
                                                 <?php foreach ($item['dpi_assignments'] as $assignment): ?>
                                                     <tr>
-                                                        <td><?php echo htmlspecialchars($assignment['member_name']); ?></td>
-                                                        <td><?php echo htmlspecialchars($assignment['quantity']); ?></td>
-                                                        <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($assignment['assigned_date']))); ?></td>
+                                                        <td><?php 
+                                                            $memberName = trim(($assignment['first_name'] ?? '') . ' ' . ($assignment['last_name'] ?? ''));
+                                                            echo htmlspecialchars($memberName ?: 'N/A'); 
+                                                        ?></td>
+                                                        <td><?php echo htmlspecialchars($assignment['quantity'] ?? 1); ?></td>
+                                                        <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($assignment['assignment_date'] ?? $assignment['assigned_date']))); ?></td>
                                                         <td>
                                                             <?php 
                                                             if (!empty($assignment['expiry_date'])) {
@@ -322,20 +332,231 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                         </div>
                     </div>
                 </div>
+                
+                <!-- Modal: Nuovo Movimento -->
+                <div class="modal fade" id="addMovementModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Nuovo Movimento</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form id="movementForm">
+                                <div class="modal-body">
+                                    <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                    <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Tipo Movimento <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="movement_type" required>
+                                            <option value="">Seleziona...</option>
+                                            <option value="carico">Carico (in entrata)</option>
+                                            <option value="scarico">Scarico (in uscita)</option>
+                                            <option value="assegnazione">Assegnazione</option>
+                                            <option value="restituzione">Restituzione</option>
+                                            <option value="trasferimento">Trasferimento</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Quantità <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" name="quantity" min="1" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Socio/Volontario</label>
+                                        <select class="form-select" name="member_id" id="memberSelect">
+                                            <option value="">Nessuno</option>
+                                            <?php
+                                            $members = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE status = 'attivo' ORDER BY last_name, first_name");
+                                            foreach ($members as $member) {
+                                                echo '<option value="' . $member['id'] . '">' . 
+                                                     htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
+                                                     ' (' . htmlspecialchars($member['registration_number']) . ')' .
+                                                     '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Destinazione</label>
+                                        <input type="text" class="form-control" name="destination" placeholder="es. Magazzino B, Sede operativa">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Note</label>
+                                        <textarea class="form-control" name="notes" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                    <button type="submit" class="btn btn-primary">Salva Movimento</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal: Assegna DPI -->
+                <div class="modal fade" id="assignDpiModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Assegna DPI a Volontario</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form id="dpiAssignmentForm">
+                                <div class="modal-body">
+                                    <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                    <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Socio/Volontario <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="member_id" required>
+                                            <option value="">Seleziona un volontario...</option>
+                                            <?php
+                                            foreach ($members as $member) {
+                                                echo '<option value="' . $member['id'] . '">' . 
+                                                     htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
+                                                     ' (' . htmlspecialchars($member['registration_number']) . ')' .
+                                                     '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Quantità <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" name="quantity" min="1" value="1" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Data Assegnazione <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" name="assignment_date" value="<?php echo date('Y-m-d'); ?>" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Data Scadenza</label>
+                                        <input type="date" class="form-control" name="expiry_date">
+                                        <small class="text-muted">Opzionale - per DPI con scadenza</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Note</label>
+                                        <textarea class="form-control" name="notes" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                    <button type="submit" class="btn btn-primary">Assegna DPI</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function printQrCode() {
-            // Implementare generazione e stampa QR code
-            alert('Funzionalità in sviluppo');
+        const itemId = <?php echo $item['id']; ?>;
+        
+        // Handle movement form submission
+        document.getElementById('movementForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            formData.append('action', 'add_movement');
+            
+            try {
+                const response = await fetch('warehouse_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        });
+        
+        // Handle DPI assignment form submission
+        document.getElementById('dpiAssignmentForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            formData.append('action', 'assign_dpi');
+            
+            try {
+                const response = await fetch('warehouse_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante l\'assegnazione: ' + error.message);
+            }
+        });
+        
+        async function printQrCode() {
+            try {
+                const response = await fetch(`warehouse_api.php?action=generate_qr&id=${itemId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    // Open print dialog for QR code
+                    if (result.path) {
+                        const printWindow = window.open(result.path, '_blank');
+                        printWindow.addEventListener('load', function() {
+                            printWindow.print();
+                        });
+                    }
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante la generazione del QR Code: ' + error.message);
+            }
         }
         
-        function printBarcode() {
-            // Implementare generazione e stampa Barcode
-            alert('Funzionalità in sviluppo');
+        async function printBarcode() {
+            try {
+                const response = await fetch(`warehouse_api.php?action=generate_barcode&id=${itemId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    // Open print dialog for barcode
+                    if (result.path) {
+                        const printWindow = window.open(result.path, '_blank');
+                        printWindow.addEventListener('load', function() {
+                            printWindow.print();
+                        });
+                    }
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante la generazione del Barcode: ' + error.message);
+            }
         }
     </script>
 </body>
