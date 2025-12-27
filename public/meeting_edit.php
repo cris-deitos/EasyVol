@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $convocatorRole = trim($_POST['convocator_role'] ?? '');
         $convocatorValue = '';
         if (!empty($convocatorMemberId) && !empty($convocatorRole)) {
-            $convocatorValue = $convocatorMemberId . '|' . $convocatorRole;
+            $convocatorValue = $convocatorMemberId . MeetingController::CONVOCATOR_SEPARATOR . $convocatorRole;
         }
         
         $data = [
@@ -119,8 +119,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $segretarioCount = 0;
                 foreach ($_POST['participants'] as $participant) {
                     $role = $participant['role'] ?? null;
-                    if ($role && strcasecmp($role, 'Presidente') === 0) $presidenteCount++;
-                    if ($role && strcasecmp($role, 'Segretario') === 0) $segretarioCount++;
+                    if ($role && strcasecmp($role, MeetingController::ROLE_PRESIDENTE) === 0) $presidenteCount++;
+                    if ($role && strcasecmp($role, MeetingController::ROLE_SEGRETARIO) === 0) $segretarioCount++;
                 }
                 
                 if ($presidenteCount > 1) {
@@ -621,6 +621,10 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
     
     // Add validation on form submit to check for multiple Presidente or Segretario
     document.querySelector('form').addEventListener('submit', function(e) {
+        // Role constants from PHP (case-insensitive comparison)
+        const ROLE_PRESIDENTE = '<?= MeetingController::ROLE_PRESIDENTE ?>';
+        const ROLE_SEGRETARIO = '<?= MeetingController::ROLE_SEGRETARIO ?>';
+        
         const roles = [];
         document.querySelectorAll('select[name*="[role]"]').forEach(select => {
             if (select.value) {
@@ -628,8 +632,8 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
             }
         });
         
-        const presidenteCount = roles.filter(r => r === 'presidente').length;
-        const segretarioCount = roles.filter(r => r === 'segretario').length;
+        const presidenteCount = roles.filter(r => r === ROLE_PRESIDENTE.toLowerCase()).length;
+        const segretarioCount = roles.filter(r => r === ROLE_SEGRETARIO.toLowerCase()).length;
         
         if (presidenteCount > 1) {
             e.preventDefault();

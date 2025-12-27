@@ -19,6 +19,10 @@ class MeetingController {
     // Convocator field separator
     const CONVOCATOR_SEPARATOR = '|';
     
+    // Role constants
+    const ROLE_PRESIDENTE = 'Presidente';
+    const ROLE_SEGRETARIO = 'Segretario';
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -91,10 +95,10 @@ class MeetingController {
         foreach ($meeting['participants'] as $participant) {
             $role = $participant['role'] ?? '';
             // Use case-insensitive comparison for consistency
-            if (strcasecmp($role, 'Presidente') === 0) {
+            if (strcasecmp($role, self::ROLE_PRESIDENTE) === 0) {
                 $meeting['president'] = $this->extractMemberName($participant);
             }
-            if (strcasecmp($role, 'Segretario') === 0) {
+            if (strcasecmp($role, self::ROLE_SEGRETARIO) === 0) {
                 $meeting['secretary'] = $this->extractMemberName($participant);
             }
         }
