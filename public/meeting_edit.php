@@ -64,14 +64,9 @@ $activeMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_n
 $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM junior_members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
 
 // Parse convocator field to extract member_id and role if it exists
-$convocatorMemberId = null;
-$convocatorRole = '';
-if ($isEdit && !empty($meeting['convocator'])) {
-    // Try to parse format: "member_id|role" (we'll store it in this format)
-    if (strpos($meeting['convocator'], '|') !== false) {
-        list($convocatorMemberId, $convocatorRole) = explode('|', $meeting['convocator'], 2);
-    }
-}
+$convocatorData = $controller->parseConvocator($meeting['convocator'] ?? '');
+$convocatorMemberId = $convocatorData['member_id'];
+$convocatorRole = $convocatorData['role'];
 
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

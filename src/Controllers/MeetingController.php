@@ -16,6 +16,9 @@ class MeetingController {
     const MEMBER_TYPE_ADULT = 'adult';
     const MEMBER_TYPE_JUNIOR = 'junior';
     
+    // Convocator field separator
+    const CONVOCATOR_SEPARATOR = '|';
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -74,13 +77,13 @@ class MeetingController {
         $meeting['secretary'] = '-';
         
         // Parse convocator field (format: member_id|role)
-        if (!empty($meeting['convocator']) && strpos($meeting['convocator'], '|') !== false) {
-            list($convocatorMemberId, $convocatorRole) = explode('|', $meeting['convocator'], 2);
+        $convocatorData = $this->parseConvocator($meeting['convocator']);
+        if ($convocatorData['member_id']) {
             // Find the member name
             $memberSql = "SELECT first_name, last_name FROM members WHERE id = ?";
-            $convocatorMember = $this->db->fetchOne($memberSql, [$convocatorMemberId]);
+            $convocatorMember = $this->db->fetchOne($memberSql, [$convocatorData['member_id']]);
             if ($convocatorMember) {
-                $meeting['convened_by'] = trim($convocatorMember['first_name'] . ' ' . $convocatorMember['last_name']) . ' (' . $convocatorRole . ')';
+                $meeting['convened_by'] = trim($convocatorMember['first_name'] . ' ' . $convocatorMember['last_name']) . ' (' . $convocatorData['role'] . ')';
             }
         }
         
@@ -117,6 +120,19 @@ class MeetingController {
         }
         
         return '-';
+    }
+    
+    /**
+     * Parse convocator field into member ID and role
+     * @param string $convocator The convocator field value
+     * @return array Array with keys 'member_id' and 'role', or empty array if invalid
+     */
+    public function parseConvocator($convocator) {
+        if (!empty($convocator) && strpos($convocator, self::CONVOCATOR_SEPARATOR) !== false) {
+            [$memberId, $role] = explode(self::CONVOCATOR_SEPARATOR, $convocator, 2);
+            return ['member_id' => $memberId, 'role' => $role];
+        }
+        return ['member_id' => null, 'role' => ''];
     }
     
     /**
