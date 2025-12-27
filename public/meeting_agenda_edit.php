@@ -138,7 +138,18 @@ $pageTitle = 'Modifica Ordine del Giorno';
                         <div class="card mb-3">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">
-                                    <i class="bi bi-calendar3"></i> Riunione: <?php echo htmlspecialchars($meeting['title']); ?>
+                                    <i class="bi bi-calendar3"></i> Riunione: 
+                                    <?php 
+                                    $typeNames = [
+                                        'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
+                                        'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
+                                        'consiglio_direttivo' => 'Consiglio Direttivo',
+                                        'riunione_capisquadra' => 'Riunione dei Capisquadra',
+                                        'riunione_nucleo' => 'Riunione di Nucleo'
+                                    ];
+                                    echo htmlspecialchars($typeNames[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type'])));
+                                    echo ' - ' . date('d/m/Y', strtotime($meeting['meeting_date']));
+                                    ?>
                                 </h5>
                             </div>
                             <div class="card-body">
