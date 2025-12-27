@@ -425,12 +425,13 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                                                 <td>
                                                                     <?php
                                                                     $sanctionLabels = [
+                                                                        'approvazione_consiglio_direttivo' => 'Approvazione del Consiglio Direttivo',
                                                                         'decaduto' => 'Decaduto',
                                                                         'dimesso' => 'Dimesso',
                                                                         'in_aspettativa' => 'In Aspettativa',
                                                                         'sospeso' => 'Sospeso',
                                                                         'in_congedo' => 'In Congedo',
-                                                                        'operativo' => 'Operativo'
+                                                                        'attivo' => 'Attivo'
                                                                     ];
                                                                     echo $sanctionLabels[$sanction['sanction_type']] ?? ucfirst($sanction['sanction_type']);
                                                                     ?>

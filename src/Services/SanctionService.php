@@ -11,7 +11,7 @@ class SanctionService {
     /**
      * Valid sanction types
      */
-    const VALID_TYPES = ['decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'attivo'];
+    const VALID_TYPES = ['decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'attivo', 'approvazione_consiglio_direttivo'];
     
     /**
      * Suspension sanction types that can be reversed by 'attivo'
@@ -50,6 +50,12 @@ class SanctionService {
         if ($sanctionType === 'attivo') {
             // Always return 'attivo' for 'attivo' sanction type
             // This ensures the member is set to active status regardless of previous sanctions
+            return 'attivo';
+        }
+        
+        // Special handling for approvazione_consiglio_direttivo
+        // This represents board approval and should set the member to active status
+        if ($sanctionType === 'approvazione_consiglio_direttivo') {
             return 'attivo';
         }
         
