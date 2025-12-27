@@ -75,11 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Token di sicurezza non valido';
     } else {
         // Build convocator field from member_id and role
-        $convocatorMemberId = trim($_POST['convocator_member_id'] ?? '');
-        $convocatorRole = trim($_POST['convocator_role'] ?? '');
+        $submittedMemberId = trim($_POST['convocator_member_id'] ?? '');
+        $submittedRole = trim($_POST['convocator_role'] ?? '');
         $convocatorValue = '';
-        if (!empty($convocatorMemberId) && !empty($convocatorRole)) {
-            $convocatorValue = $convocatorMemberId . MeetingController::CONVOCATOR_SEPARATOR . $convocatorRole;
+        if (!empty($submittedMemberId) && !empty($submittedRole)) {
+            $convocatorValue = $submittedMemberId . MeetingController::CONVOCATOR_SEPARATOR . $submittedRole;
         }
         
         $data = [
