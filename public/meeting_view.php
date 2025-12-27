@@ -158,7 +158,14 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                             </tr>
                                             <tr>
                                                 <th>Data e Ora:</th>
-                                                <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($meeting['meeting_date']))); ?></td>
+                                                <td>
+                                                    <?php 
+                                                    echo date('d/m/Y', strtotime($meeting['meeting_date']));
+                                                    if (!empty($meeting['start_time'])) {
+                                                        echo ' ' . date('H:i', strtotime($meeting['start_time']));
+                                                    }
+                                                    ?>
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <th>Località:</th>

@@ -146,7 +146,14 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                                     <?php echo ucfirst(str_replace('_', ' ', $meeting['meeting_type'])); ?>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($meeting['title']); ?></td>
-                                                <td><?php echo date('d/m/Y H:i', strtotime($meeting['meeting_date'])); ?></td>
+                                                <td>
+                                                    <?php 
+                                                    echo date('d/m/Y', strtotime($meeting['meeting_date']));
+                                                    if (!empty($meeting['start_time'])) {
+                                                        echo ' ' . date('H:i', strtotime($meeting['start_time']));
+                                                    }
+                                                    ?>
+                                                </td>
                                                 <td><?php echo htmlspecialchars($meeting['location'] ?? '-'); ?></td>
                                                 <td><?php echo htmlspecialchars($meeting['convocator'] ?? '-'); ?></td>
                                                 <td>
