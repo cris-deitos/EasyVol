@@ -2,6 +2,7 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use EasyVol\Utils\VehicleIdentifier;
 
 /**
  * Scheduler Sync Controller
@@ -175,7 +176,7 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questa assicurazione
             $existing = $this->findSchedulerItem('insurance', $vehicleId);
             
-            $vehicleIdent = $this->buildVehicleIdentifier($vehicle);
+            $vehicleIdent = VehicleIdentifier::build($vehicle);
             
             $title = "Scadenza Assicurazione: {$vehicleIdent}";
             $description = "L'assicurazione del mezzo {$vehicleIdent} ";
@@ -230,7 +231,7 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questa revisione
             $existing = $this->findSchedulerItem('inspection', $vehicleId);
             
-            $vehicleIdent = $this->buildVehicleIdentifier($vehicle);
+            $vehicleIdent = VehicleIdentifier::build($vehicle);
             
             $title = "Scadenza Revisione: {$vehicleIdent}";
             $description = "La revisione del mezzo {$vehicleIdent} ";
@@ -275,8 +276,8 @@ class SchedulerSyncController {
      */
     public function syncVehicleDocumentExpiry($documentId, $vehicleId) {
         try {
-            // Ottieni dettagli del documento
-            $sql = "SELECT vd.*, v.name as vehicle_name, v.license_plate 
+            // Ottieni dettagli del documento con dati veicolo
+            $sql = "SELECT vd.*, v.license_plate, v.serial_number, v.brand, v.model, v.id as vehicle_id
                     FROM vehicle_documents vd
                     JOIN vehicles v ON vd.vehicle_id = v.id
                     WHERE vd.id = ?";
@@ -289,8 +290,8 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questo documento
             $existing = $this->findSchedulerItem('vehicle_document', $documentId);
             
-            // Build vehicle identifier - use license_plate from document or vehicle_name as fallback
-            $vehicleIdent = $document['license_plate'] ?: ($document['vehicle_name'] ?? "Mezzo ID {$vehicleId}");
+            // Build vehicle identifier using the utility
+            $vehicleIdent = VehicleIdentifier::build($document);
             
             $title = "Scadenza Documento {$document['document_type']}: {$vehicleIdent}";
             $description = "Il documento '{$document['document_type']}' del mezzo {$vehicleIdent} ";

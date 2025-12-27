@@ -3,6 +3,7 @@ namespace EasyVol\Controllers;
 
 use EasyVol\Database;
 use EasyVol\Utils\QrCodeGenerator;
+use EasyVol\Utils\VehicleIdentifier;
 use EasyVol\Controllers\SchedulerSyncController;
 
 /**
@@ -17,48 +18,6 @@ class VehicleController {
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
-    }
-    
-    /**
-     * Build a human-readable vehicle identifier from available fields
-     * Priority: license_plate > serial_number > brand+model
-     * 
-     * @param array $data Vehicle data array
-     * @return string Vehicle identifier for display/logging
-     */
-    private function buildVehicleIdentifier($data) {
-        if (!empty($data['license_plate'])) {
-            return $data['license_plate'];
-        }
-        if (!empty($data['serial_number'])) {
-            return $data['serial_number'];
-        }
-        $brandModel = trim(($data['brand'] ?? '') . ' ' . ($data['model'] ?? ''));
-        if (!empty($brandModel)) {
-            return $brandModel;
-        }
-        return isset($data['id']) ? "Mezzo ID {$data['id']}" : 'Nuovo mezzo';
-    }
-    
-    /**
-     * Generate internal name for database storage from available fields
-     * Priority: license_plate > serial_number > brand+model > timestamp
-     * 
-     * @param array $data Vehicle data array
-     * @return string Generated name for database
-     */
-    private function generateInternalName($data) {
-        if (!empty($data['license_plate'])) {
-            return $data['license_plate'];
-        }
-        if (!empty($data['serial_number'])) {
-            return $data['serial_number'];
-        }
-        $brandModel = trim(($data['brand'] ?? '') . ' ' . ($data['model'] ?? ''));
-        if (!empty($brandModel)) {
-            return $brandModel;
-        }
-        return 'Mezzo ' . date('YmdHis');
     }
     
     /**
@@ -133,7 +92,7 @@ class VehicleController {
             $this->validateVehicleData($data);
             
             // Generate internal name for database storage
-            $data['name'] = $this->generateInternalName($data);
+            $data['name'] = VehicleIdentifier::generateInternalName($data);
             
             $sql = "INSERT INTO vehicles (
                 vehicle_type, name, license_plate, brand, model, year,
@@ -167,7 +126,7 @@ class VehicleController {
                 $syncController->syncInspectionExpiry($vehicleId);
             }
             
-            $vehicleIdent = $this->buildVehicleIdentifier($data);
+            $vehicleIdent = VehicleIdentifier::build($data);
             $this->logActivity($userId, 'vehicle', 'create', $vehicleId, "Creato nuovo mezzo: $vehicleIdent");
             
             $this->db->commit();
@@ -190,7 +149,7 @@ class VehicleController {
             $this->validateVehicleData($data, $id);
             
             // Generate internal name for database storage
-            $data['name'] = $this->generateInternalName($data);
+            $data['name'] = VehicleIdentifier::generateInternalName($data);
             
             $sql = "UPDATE vehicles SET
                 vehicle_type = ?, name = ?, license_plate = ?, brand = ?, 
