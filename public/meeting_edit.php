@@ -63,12 +63,25 @@ if ($isEdit) {
 $activeMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
 $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM junior_members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
 
+// Parse convocator field to extract member_id and role if it exists
+$convocatorData = $controller->parseConvocator($meeting['convocator'] ?? '');
+$convocatorMemberId = $convocatorData['member_id'];
+$convocatorRole = $convocatorData['role'];
+
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verifica CSRF
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token di sicurezza non valido';
     } else {
+        // Build convocator field from member_id and role
+        $submittedMemberId = trim($_POST['convocator_member_id'] ?? '');
+        $submittedRole = trim($_POST['convocator_role'] ?? '');
+        $convocatorValue = '';
+        if (!empty($submittedMemberId) && !empty($submittedRole)) {
+            $convocatorValue = $submittedMemberId . MeetingController::CONVOCATOR_SEPARATOR . $submittedRole;
+        }
+        
         $data = [
             'meeting_type' => $_POST['meeting_type'] ?? 'consiglio_direttivo',
             'title' => trim($_POST['title'] ?? ''),
@@ -76,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'start_time' => $_POST['start_time'] ?? '',
             'end_time' => $_POST['end_time'] ?? '',
             'location' => trim($_POST['location'] ?? ''),
-            'convocator' => trim($_POST['convocator'] ?? ''),
+            'convocator' => $convocatorValue,
             'description' => trim($_POST['description'] ?? ''),
             'notes' => trim($_POST['notes'] ?? '')
         ];
@@ -100,6 +113,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($_POST['participants'])) {
                 // Delete existing participants
                 $db->query("DELETE FROM meeting_participants WHERE meeting_id = ?", [$meetingId]);
+                
+                // Validate that there's only one Presidente and one Segretario (case-insensitive)
+                $presidenteCount = 0;
+                $segretarioCount = 0;
+                foreach ($_POST['participants'] as $participant) {
+                    $role = $participant['role'] ?? null;
+                    if ($role && strcasecmp($role, MeetingController::ROLE_PRESIDENTE) === 0) $presidenteCount++;
+                    if ($role && strcasecmp($role, MeetingController::ROLE_SEGRETARIO) === 0) $segretarioCount++;
+                }
+                
+                if ($presidenteCount > 1) {
+                    throw new \Exception('È possibile assegnare solo un Presidente per riunione');
+                }
+                if ($segretarioCount > 1) {
+                    throw new \Exception('È possibile assegnare solo un Segretario per riunione');
+                }
                 
                 foreach ($_POST['participants'] as $participant) {
                     $memberType = $participant['type'] ?? 'adult';
@@ -235,18 +264,37 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             </div>
                             
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-12 mb-3">
                                     <label for="location" class="form-label">Luogo</label>
                                     <input type="text" class="form-control" id="location" name="location" 
                                            value="<?php echo htmlspecialchars($meeting['location'] ?? ''); ?>"
                                            placeholder="es. Sede Associazione">
                                 </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="convocator_member" class="form-label">Convocata da - Socio</label>
+                                    <select class="form-select" id="convocator_member" name="convocator_member_id">
+                                        <option value="">Seleziona socio...</option>
+                                        <?php foreach ($activeMembers as $member): ?>
+                                            <option value="<?= $member['id'] ?>" <?= ($convocatorMemberId == $member['id']) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <label for="convocator" class="form-label">Convocata da</label>
-                                    <input type="text" class="form-control" id="convocator" name="convocator" 
-                                           value="<?php echo htmlspecialchars($meeting['convocator'] ?? ''); ?>"
-                                           placeholder="es. Il Presidente">
+                                    <label for="convocator_role" class="form-label">Convocata da - Ruolo</label>
+                                    <select class="form-select" id="convocator_role" name="convocator_role">
+                                        <option value="">Seleziona ruolo...</option>
+                                        <option value="Presidente" <?= ($convocatorRole === 'Presidente') ? 'selected' : '' ?>>Presidente</option>
+                                        <option value="Vice Presidente" <?= ($convocatorRole === 'Vice Presidente') ? 'selected' : '' ?>>Vice Presidente</option>
+                                        <option value="Segretario" <?= ($convocatorRole === 'Segretario') ? 'selected' : '' ?>>Segretario</option>
+                                        <option value="Tesoriere" <?= ($convocatorRole === 'Tesoriere') ? 'selected' : '' ?>>Tesoriere</option>
+                                        <option value="Consigliere" <?= ($convocatorRole === 'Consigliere') ? 'selected' : '' ?>>Consigliere</option>
+                                    </select>
                                 </div>
                             </div>
                             
@@ -570,6 +618,35 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         const votingFields = card.querySelector('.voting-fields');
         votingFields.style.display = checkbox.checked ? 'block' : 'none';
     }
+    
+    // Add validation on form submit to check for multiple Presidente or Segretario
+    document.querySelector('form').addEventListener('submit', function(e) {
+        // Role constants from PHP (case-insensitive comparison)
+        const ROLE_PRESIDENTE = '<?= MeetingController::ROLE_PRESIDENTE ?>';
+        const ROLE_SEGRETARIO = '<?= MeetingController::ROLE_SEGRETARIO ?>';
+        
+        const roles = [];
+        document.querySelectorAll('select[name*="[role]"]').forEach(select => {
+            if (select.value) {
+                roles.push(select.value.toLowerCase()); // Normalize to lowercase for comparison
+            }
+        });
+        
+        const presidenteCount = roles.filter(r => r === ROLE_PRESIDENTE.toLowerCase()).length;
+        const segretarioCount = roles.filter(r => r === ROLE_SEGRETARIO.toLowerCase()).length;
+        
+        if (presidenteCount > 1) {
+            e.preventDefault();
+            alert('Errore: È possibile assegnare solo un Presidente per riunione.');
+            return false;
+        }
+        
+        if (segretarioCount > 1) {
+            e.preventDefault();
+            alert('Errore: È possibile assegnare solo un Segretario per riunione.');
+            return false;
+        }
+    });
     </script>
 </body>
 </html>

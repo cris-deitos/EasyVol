@@ -16,6 +16,13 @@ class MeetingController {
     const MEMBER_TYPE_ADULT = 'adult';
     const MEMBER_TYPE_JUNIOR = 'junior';
     
+    // Convocator field separator
+    const CONVOCATOR_SEPARATOR = '|';
+    
+    // Role constants
+    const ROLE_PRESIDENTE = 'Presidente';
+    const ROLE_SEGRETARIO = 'Segretario';
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -68,7 +75,68 @@ class MeetingController {
         // Carica ordine del giorno
         $meeting['agenda'] = $this->getAgenda($id);
         
+        // Compute convened_by, president, and secretary from participants and convocator field
+        $meeting['convened_by'] = '-';
+        $meeting['president'] = '-';
+        $meeting['secretary'] = '-';
+        
+        // Parse convocator field (format: member_id|role)
+        $convocatorData = $this->parseConvocator($meeting['convocator']);
+        if ($convocatorData['member_id']) {
+            // Find the member name
+            $memberSql = "SELECT first_name, last_name FROM members WHERE id = ?";
+            $convocatorMember = $this->db->fetchOne($memberSql, [$convocatorData['member_id']]);
+            if ($convocatorMember) {
+                $meeting['convened_by'] = trim($convocatorMember['first_name'] . ' ' . $convocatorMember['last_name']) . ' (' . $convocatorData['role'] . ')';
+            }
+        }
+        
+        // Find Presidente and Segretario from participants
+        foreach ($meeting['participants'] as $participant) {
+            $role = $participant['role'] ?? '';
+            // Use case-insensitive comparison for consistency
+            if (strcasecmp($role, self::ROLE_PRESIDENTE) === 0) {
+                $meeting['president'] = $this->extractMemberName($participant);
+            }
+            if (strcasecmp($role, self::ROLE_SEGRETARIO) === 0) {
+                $meeting['secretary'] = $this->extractMemberName($participant);
+            }
+        }
+        
         return $meeting;
+    }
+    
+    /**
+     * Helper method to extract member name from participant data
+     */
+    private function extractMemberName($participant) {
+        // Get member name based on member type
+        if ($participant['member_type'] === 'junior') {
+            $firstName = $participant['junior_first_name'] ?? '';
+            $lastName = $participant['junior_last_name'] ?? '';
+        } else {
+            $firstName = $participant['first_name'] ?? '';
+            $lastName = $participant['last_name'] ?? '';
+        }
+        
+        if ($firstName || $lastName) {
+            return trim($firstName . ' ' . $lastName);
+        }
+        
+        return '-';
+    }
+    
+    /**
+     * Parse convocator field into member ID and role
+     * @param string $convocator The convocator field value
+     * @return array Array with keys 'member_id' and 'role', or empty array if invalid
+     */
+    public function parseConvocator($convocator) {
+        if (!empty($convocator) && strpos($convocator, self::CONVOCATOR_SEPARATOR) !== false) {
+            [$memberId, $role] = explode(self::CONVOCATOR_SEPARATOR, $convocator, 2);
+            return ['member_id' => $memberId, 'role' => $role];
+        }
+        return ['member_id' => null, 'role' => ''];
     }
     
     /**
