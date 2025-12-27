@@ -112,6 +112,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="OPERATORE CINOFILO" <?php echo $role['role_name'] === 'OPERATORE CINOFILO' ? 'selected' : ''; ?>>OPERATORE CINOFILO</option>
                                     <option value="OPERATORE A CAVALLO" <?php echo $role['role_name'] === 'OPERATORE A CAVALLO' ? 'selected' : ''; ?>>OPERATORE A CAVALLO</option>
                                     <option value="OPERATORE FOTO REPORTER" <?php echo $role['role_name'] === 'OPERATORE FOTO REPORTER' ? 'selected' : ''; ?>>OPERATORE FOTO REPORTER</option>
+                                    <option value="AUTISTA A" <?php echo $role['role_name'] === 'AUTISTA A' ? 'selected' : ''; ?>>AUTISTA A</option>
+                                    <option value="AUTISTA B" <?php echo $role['role_name'] === 'AUTISTA B' ? 'selected' : ''; ?>>AUTISTA B</option>
+                                    <option value="AUTISTA C" <?php echo $role['role_name'] === 'AUTISTA C' ? 'selected' : ''; ?>>AUTISTA C</option>
+                                    <option value="AUTISTA D" <?php echo $role['role_name'] === 'AUTISTA D' ? 'selected' : ''; ?>>AUTISTA D</option>
+                                    <option value="AUTISTA E" <?php echo $role['role_name'] === 'AUTISTA E' ? 'selected' : ''; ?>>AUTISTA E</option>
+                                    <option value="PILOTA NATANTE" <?php echo $role['role_name'] === 'PILOTA NATANTE' ? 'selected' : ''; ?>>PILOTA NATANTE</option>
                                     <option value="NON OPERATIVO" <?php echo $role['role_name'] === 'NON OPERATIVO' ? 'selected' : ''; ?>>NON OPERATIVO</option>
                                 </select>
                             </div>
