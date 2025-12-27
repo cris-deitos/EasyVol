@@ -185,7 +185,7 @@ $pageTitle = 'Gestione Movimentazione Mezzi';
                                     </thead>
                                     <tbody>
                                         <?php foreach ($movements as $movement): ?>
-                                            <tr>
+                                             <tr>
                                                 <td><?php echo $movement['id']; ?></td>
                                                 <td>
                                                     <strong><?php echo htmlspecialchars($movement['license_plate']); ?></strong>
@@ -193,6 +193,13 @@ $pageTitle = 'Gestione Movimentazione Mezzi';
                                                     <small class="text-muted">
                                                         <?php echo htmlspecialchars($movement['brand'] . ' ' . $movement['model']); ?>
                                                     </small>
+                                                    <?php if (!empty($movement['trailer_name'])): ?>
+                                                        <br>
+                                                        <span class="badge bg-secondary">
+                                                            <i class="bi bi-link-45deg"></i> Rimorchio: 
+                                                            <?php echo htmlspecialchars($movement['trailer_name']); ?>
+                                                        </span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <?php echo date('d/m/Y H:i', strtotime($movement['departure_datetime'])); ?>

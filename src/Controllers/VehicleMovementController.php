@@ -129,9 +129,11 @@ class VehicleMovementController {
      */
     public function getActiveMovement($vehicleId) {
         $sql = "SELECT vm.*,
+                t.name as trailer_name, t.license_plate as trailer_license_plate,
                 GROUP_CONCAT(DISTINCT CONCAT(md.first_name, ' ', md.last_name) 
                     ORDER BY md.last_name SEPARATOR ', ') as departure_drivers
                 FROM vehicle_movements vm
+                LEFT JOIN vehicles t ON vm.trailer_id = t.id
                 LEFT JOIN vehicle_movement_drivers vmd ON vm.id = vmd.movement_id AND vmd.driver_type = 'departure'
                 LEFT JOIN members md ON vmd.member_id = md.id
                 WHERE vm.vehicle_id = ? AND vm.status = 'in_mission'
