@@ -84,10 +84,10 @@ try {
             
             // Insert DPI assignment
             $sql = "INSERT INTO dpi_assignments 
-                    (item_id, member_id, quantity, assigned_date, expiry_date, assignment_date, status, notes, created_at) 
+                    (item_id, member_id, quantity, assignment_date, assigned_date, expiry_date, status, notes, created_at) 
                     VALUES (?, ?, ?, ?, ?, ?, 'assegnato', ?, NOW())";
             
-            $db->execute($sql, [$itemId, $memberId, $quantity, $assignmentDate, $expiryDate, $assignmentDate, $notes]);
+            $db->execute($sql, [$itemId, $memberId, $quantity, $assignmentDate, $assignmentDate, $expiryDate, $notes]);
             $assignmentId = $db->lastInsertId();
             
             // Register movement for DPI assignment

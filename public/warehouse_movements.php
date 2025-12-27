@@ -74,7 +74,7 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 50;
 $offset = ($page - 1) * $perPage;
 
-// Query movimenti
+// Query movimenti with safe pagination
 $sql = "SELECT wm.*, 
         wi.name as item_name, wi.code as item_code,
         CONCAT(m.first_name, ' ', m.last_name) as member_name,
@@ -85,9 +85,11 @@ $sql = "SELECT wm.*,
         LEFT JOIN users u ON wm.created_by = u.id
         WHERE $whereClause
         ORDER BY wm.created_at DESC
-        LIMIT $perPage OFFSET $offset";
+        LIMIT ? OFFSET ?";
 
-$movements = $db->fetchAll($sql, $params);
+// Add pagination parameters
+$queryParams = array_merge($params, [$perPage, $offset]);
+$movements = $db->fetchAll($sql, $queryParams);
 
 // Conta totale per paginazione
 $countSql = "SELECT COUNT(*) as total FROM warehouse_movements wm WHERE $whereClause";

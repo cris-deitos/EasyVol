@@ -161,11 +161,12 @@ UPDATE `dpi_assignments` SET `assigned_date` = `assignment_date` WHERE `assigned
 - Percorso: `uploads/qrcodes/item_{id}.png`
 
 ### Barcode
-- Tipo: Code 128 (semplificato)
+- Tipo: Barcode semplificato (visual identification)
 - Generazione: PHP GD Library
 - Formato: PNG
 - Dimensione: 300x80px
 - Percorso: `uploads/barcodes/item_{id}.png`
+- **Nota**: L'implementazione attuale è semplificata per etichette visive. Per l'uso con scanner barcode professionali, si consiglia di integrare una libreria completa Code 128 come 'picqer/php-barcode-generator'
 
 ### Movimenti
 - I movimenti di tipo "carico" e "restituzione" aumentano la quantità

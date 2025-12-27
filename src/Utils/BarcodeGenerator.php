@@ -4,12 +4,20 @@ namespace EasyVol\Utils;
 /**
  * Barcode Generator Utility
  * 
- * Generates Code 128 barcodes using PHP GD library
+ * Generates barcodes using PHP GD library.
+ * 
+ * Note: This is a simplified barcode implementation for visual identification.
+ * For production use with barcode scanners, consider using a proper Code 128 library
+ * such as 'picqer/php-barcode-generator' for full specification compliance.
  */
 class BarcodeGenerator {
     
     /**
-     * Generate Code 128 barcode
+     * Generate barcode image
+     * 
+     * Note: This generates a simplified visual barcode for human-readable labels.
+     * It is not a compliant Code 128 implementation and may not work with all scanners.
+     * For scanner-compatible barcodes, integrate a proper barcode library.
      * 
      * @param string $data Data to encode
      * @param string $outputPath Output file path (optional)
@@ -19,7 +27,7 @@ class BarcodeGenerator {
      * @return string Path of the file or data URI
      */
     public static function generate($data, $outputPath = null, $width = 300, $height = 80, $showText = true) {
-        // Simplified Code 128 implementation using bars
+        // Simplified barcode implementation using bars (not full Code 128 spec)
         $barWidth = max(1, $width / (strlen($data) * 12));
         $imageWidth = (int)(strlen($data) * 12 * $barWidth);
         $textHeight = $showText ? 20 : 0;
