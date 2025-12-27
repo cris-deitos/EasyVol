@@ -143,7 +143,13 @@ $pageTitle = 'Modifica Ordine del Giorno';
                             </div>
                             <div class="card-body">
                                 <p class="mb-0">
-                                    <strong>Data:</strong> <?php echo date('d/m/Y', strtotime($meeting['meeting_date'])); ?> | 
+                                    <strong>Data:</strong> 
+                                    <?php 
+                                    echo date('d/m/Y', strtotime($meeting['meeting_date']));
+                                    if (!empty($meeting['start_time'])) {
+                                        echo ' ' . date('H:i', strtotime($meeting['start_time']));
+                                    }
+                                    ?> | 
                                     <strong>Tipo:</strong> <?php echo ucfirst(str_replace('_', ' ', $meeting['meeting_type'])); ?>
                                 </p>
                             </div>
