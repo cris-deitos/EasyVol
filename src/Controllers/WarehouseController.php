@@ -3,6 +3,7 @@ namespace EasyVol\Controllers;
 
 use EasyVol\Database;
 use EasyVol\Utils\QrCodeGenerator;
+use EasyVol\Utils\BarcodeGenerator;
 
 /**
  * Warehouse Controller
@@ -124,6 +125,12 @@ class WarehouseController {
                 $this->generateQrCode($itemId);
             }
             
+            // Genera Barcode se richiesto
+            if (!empty($data['generate_barcode'])) {
+                error_log("Generating Barcode");
+                $this->generateBarcode($itemId);
+            }
+            
             $this->logActivity($userId, 'warehouse_item', 'create', $itemId, 'Creato nuovo articolo: ' . $data['name']);
             error_log("Activity logged");
             
@@ -234,7 +241,9 @@ class WarehouseController {
      * Ottieni movimenti articolo
      */
     public function getMovements($itemId, $limit = null) {
-        $sql = "SELECT wm.*, m.first_name, m.last_name, u.username as created_by_name
+        $sql = "SELECT wm.*, 
+                CONCAT(m.first_name, ' ', m.last_name) as member_name,
+                u.username as created_by_name
                 FROM warehouse_movements wm
                 LEFT JOIN members m ON wm.member_id = m.id
                 LEFT JOIN users u ON wm.created_by = u.id
@@ -294,6 +303,43 @@ class WarehouseController {
             
         } catch (\Exception $e) {
             error_log("Errore generazione QR: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Genera barcode per articolo
+     */
+    private function generateBarcode($itemId) {
+        try {
+            $item = $this->db->fetchOne("SELECT * FROM warehouse_items WHERE id = ?", [$itemId]);
+            if (!$item) {
+                return false;
+            }
+            
+            // Build full path for barcode file
+            $uploadsPath = $this->config['uploads']['path'] ?? (__DIR__ . '/../../uploads');
+            $barcodeDirectory = $uploadsPath . '/barcodes';
+            
+            // Create directory if it doesn't exist
+            if (!is_dir($barcodeDirectory)) {
+                mkdir($barcodeDirectory, 0755, true);
+            }
+            
+            $filename = $barcodeDirectory . '/item_' . $itemId . '.png';
+            $itemCode = $item['code'] ?? ('ITEM' . str_pad($itemId, 6, '0', STR_PAD_LEFT));
+            
+            // Generate barcode
+            $barcodePath = BarcodeGenerator::generateForWarehouseItem($itemId, $itemCode, $filename);
+            
+            // Update database path
+            $sql = "UPDATE warehouse_items SET barcode = ? WHERE id = ?";
+            $this->db->execute($sql, [$barcodePath, $itemId]);
+            
+            return $barcodePath;
+            
+        } catch (\Exception $e) {
+            error_log("Errore generazione Barcode: " . $e->getMessage());
             return false;
         }
     }

@@ -24,21 +24,29 @@ class QrCodeGenerator {
      * @return string Path del file o data URI
      */
     public static function generate($data, $outputPath = null, $size = 300, $label = null) {
-        $qrCode = QrCode::create($data)
-            ->setSize($size)
-            ->setMargin(10)
-            ->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
+        $qrCode = new QrCode(
+            data: $data,
+            encoding: new \Endroid\QrCode\Encoding\Encoding('UTF-8'),
+            errorCorrectionLevel: ErrorCorrectionLevel::High,
+            size: $size,
+            margin: 10,
+            roundBlockSizeMode: \Endroid\QrCode\RoundBlockSizeMode::Margin,
+            foregroundColor: new \Endroid\QrCode\Color\Color(0, 0, 0),
+            backgroundColor: new \Endroid\QrCode\Color\Color(255, 255, 255)
+        );
         
         $writer = new PngWriter();
         
         // Add label if provided
         $labelObj = null;
         if ($label) {
-            $labelObj = Label::create($label)
-                ->setTextColor([0, 0, 0]);
+            $labelObj = new Label(
+                text: $label,
+                textColor: new \Endroid\QrCode\Color\Color(0, 0, 0)
+            );
         }
         
-        $result = $writer->write($qrCode, null, null, $labelObj);
+        $result = $writer->write($qrCode, null, $labelObj);
         
         // Save to file or return data URI
         if ($outputPath) {
