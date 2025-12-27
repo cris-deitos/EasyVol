@@ -12,6 +12,9 @@ use EasyVol\App;
 use EasyVol\Controllers\EventController;
 use EasyVol\Middleware\CsrfProtection;
 
+// Maximum AJAX payload size (1MB)
+const MAX_AJAX_PAYLOAD_SIZE = 1048576;
+
 header('Content-Type: application/json');
 
 $app = App::getInstance();
@@ -30,9 +33,9 @@ $csrf = new CsrfProtection();
 // Parse JSON input for POST requests
 $jsonInput = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Check content length to prevent memory issues (max 1MB for AJAX requests)
+    // Check content length to prevent memory issues
     $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
-    if ($contentLength > 1048576) { // 1MB limit
+    if ($contentLength > MAX_AJAX_PAYLOAD_SIZE) {
         http_response_code(413);
         echo json_encode(['error' => 'Payload troppo grande']);
         exit;

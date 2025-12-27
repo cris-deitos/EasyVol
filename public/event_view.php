@@ -500,8 +500,8 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const eventId = <?php echo $eventId; ?>;
-        const csrfToken = '<?php echo $csrfToken; ?>';
+        const eventId = <?php echo json_encode($eventId); ?>;
+        const csrfToken = <?php echo json_encode($csrfToken); ?>;
         let memberSearchTimeout = null;
         let vehicleSearchTimeout = null;
         
@@ -651,7 +651,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                         }
                         
                         resultsDiv.innerHTML = data.vehicles.map(function(vehicle) {
-                            let displayName = vehicle.license_plate || vehicle.name || vehicle.serial_number || 'Mezzo ID ' + vehicle.id;
+                            let displayName = vehicle.license_plate || vehicle.name || vehicle.serial_number || 'Mezzo ID ' + String(vehicle.id);
                             let vehicleType = vehicle.vehicle_type ? ' <span class="text-muted">(' + escapeHtml(vehicle.vehicle_type) + ')</span>' : '';
                             return '<button type="button" class="list-group-item list-group-item-action" onclick="addVehicle(' + vehicle.id + ')">' +
                                 '<strong>' + escapeHtml(displayName) + '</strong>' + vehicleType +
