@@ -104,14 +104,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($_POST['participants'] as $participant) {
                     $memberType = $participant['type'] ?? 'adult';
                     $memberId = $participant['id'] ?? null;
+                    $role = $participant['role'] ?? null;
                     
                     if ($memberId) {
                         if ($memberType === 'adult') {
-                            $db->query("INSERT INTO meeting_participants (meeting_id, member_id, member_type, present) VALUES (?, ?, 'adult', 0)",
-                                [$meetingId, $memberId]);
+                            $db->query("INSERT INTO meeting_participants (meeting_id, member_id, member_type, role, present) VALUES (?, ?, 'adult', ?, 0)",
+                                [$meetingId, $memberId, $role]);
                         } else {
-                            $db->query("INSERT INTO meeting_participants (meeting_id, junior_member_id, member_type, present) VALUES (?, ?, 'junior', 0)",
-                                [$meetingId, $memberId]);
+                            $db->query("INSERT INTO meeting_participants (meeting_id, junior_member_id, member_type, role, present) VALUES (?, ?, 'junior', ?, 0)",
+                                [$meetingId, $memberId, $role]);
                         }
                     }
                 }
@@ -265,13 +266,13 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                                 <?php if (!empty($participants)): ?>
                                     <?php foreach ($participants as $index => $participant): ?>
                                         <div class="row mb-2 participant-row">
-                                            <div class="col-md-5">
+                                            <div class="col-md-4">
                                                 <select class="form-select" name="participants[<?= $index ?>][type]" onchange="updateParticipantOptions(this)">
                                                     <option value="adult" <?= ($participant['member_type'] ?? 'adult') === 'adult' ? 'selected' : '' ?>>Socio Maggiorenne</option>
                                                     <option value="junior" <?= ($participant['member_type'] ?? '') === 'junior' ? 'selected' : '' ?>>Socio Minorenne (Cadetto)</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <select class="form-select participant-select" name="participants[<?= $index ?>][id]">
                                                     <option value="">Seleziona...</option>
                                                     <?php if (($participant['member_type'] ?? 'adult') === 'adult'): ?>
@@ -287,6 +288,16 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                                                             </option>
                                                         <?php endforeach; ?>
                                                     <?php endif; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <select class="form-select" name="participants[<?= $index ?>][role]">
+                                                    <option value="">Nessun ruolo</option>
+                                                    <option value="Presidente" <?= ($participant['role'] ?? '') === 'Presidente' ? 'selected' : '' ?>>Presidente</option>
+                                                    <option value="Segretario" <?= ($participant['role'] ?? '') === 'Segretario' ? 'selected' : '' ?>>Segretario</option>
+                                                    <option value="Uditore" <?= ($participant['role'] ?? '') === 'Uditore' ? 'selected' : '' ?>>Uditore</option>
+                                                    <option value="Scrutatore" <?= ($participant['role'] ?? '') === 'Scrutatore' ? 'selected' : '' ?>>Scrutatore</option>
+                                                    <option value="Presidente del Seggio Elettorale" <?= ($participant['role'] ?? '') === 'Presidente del Seggio Elettorale' ? 'selected' : '' ?>>Presidente del Seggio Elettorale</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-1">
@@ -424,16 +435,26 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         
         const html = `
             <div class="row mb-2 participant-row">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <select class="form-select" name="participants[${index}][type]" onchange="updateParticipantOptions(this)">
                         <option value="adult">Socio Maggiorenne</option>
                         <option value="junior">Socio Minorenne (Cadetto)</option>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <select class="form-select participant-select" name="participants[${index}][id]">
                         <option value="">Seleziona...</option>
                         ${activeMembersData.map(m => `<option value="${m.id}">${m.last_name} ${m.first_name} (${m.registration_number})</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="participants[${index}][role]">
+                        <option value="">Nessun ruolo</option>
+                        <option value="Presidente">Presidente</option>
+                        <option value="Segretario">Segretario</option>
+                        <option value="Uditore">Uditore</option>
+                        <option value="Scrutatore">Scrutatore</option>
+                        <option value="Presidente del Seggio Elettorale">Presidente del Seggio Elettorale</option>
                     </select>
                 </div>
                 <div class="col-md-1">

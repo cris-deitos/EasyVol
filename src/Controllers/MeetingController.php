@@ -399,12 +399,15 @@ class MeetingController {
      * Costruisci email di convocazione
      */
     private function buildInvitationEmail($meeting, $recipientName) {
+        // Format meeting type for display (convert underscores to spaces and capitalize)
+        $meetingTypeFormatted = ucwords(str_replace('_', ' ', $meeting['meeting_type']));
+        
         $body = "<html><body>";
         $body .= "<h2>Convocazione Riunione</h2>";
         $body .= "<p>Gentile " . htmlspecialchars($recipientName) . ",</p>";
         $body .= "<p>Sei convocato/a alla seguente riunione:</p>";
         $body .= "<div style='border: 1px solid #ccc; padding: 15px; margin: 15px 0;'>";
-        $body .= "<p><strong>Tipo:</strong> " . htmlspecialchars($meeting['meeting_type']) . "</p>";
+        $body .= "<p><strong>Tipo:</strong> " . htmlspecialchars($meetingTypeFormatted) . "</p>";
         $body .= "<p><strong>Titolo:</strong> " . htmlspecialchars($meeting['title']) . "</p>";
         $body .= "<p><strong>Data:</strong> " . date('d/m/Y', strtotime($meeting['meeting_date']));
         if ($meeting['start_time']) {
