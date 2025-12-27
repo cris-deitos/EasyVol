@@ -45,7 +45,7 @@ Per ogni veicolo:
 
 ### Pagina Pubblica (per soci)
 
-URL: `https://tuosito.it/EasyVol/public/vehicle_movement_login.php`
+URL: `https://yourdomain.com/EasyVol/public/vehicle_movement_login.php`
 
 1. **Accesso**:
    - Numero Matricola
@@ -84,7 +84,7 @@ URL: `https://tuosito.it/EasyVol/public/vehicle_movement_login.php`
 
 ### Gestione Interna
 
-URL: `https://tuosito.it/EasyVol/public/vehicle_movements.php`
+URL: `https://yourdomain.com/EasyVol/public/vehicle_movements.php`
 
 1. **Visualizzazione Storico**:
    - Elenco completo movimenti

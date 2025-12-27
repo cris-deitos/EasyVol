@@ -25,6 +25,13 @@ if (!isset($_SESSION['vehicle_movement_member'])) {
 $member = $_SESSION['vehicle_movement_member'];
 $vehicleId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
+// Handle logout
+if (isset($_GET['logout'])) {
+    unset($_SESSION['vehicle_movement_member']);
+    header('Location: vehicle_movement_login.php');
+    exit;
+}
+
 if ($vehicleId <= 0) {
     header('Location: vehicle_movement.php');
     exit;
@@ -62,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'add_maintenance') {
             // Handle maintenance addition (reuse existing VehicleController logic)
             $maintenanceData = [
-                'vehicle_id' => $vehicleId,
                 'maintenance_type' => $_POST['maintenance_type'],
                 'date' => $_POST['date'],
                 'description' => $_POST['description'] ?? '',
@@ -71,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'notes' => $_POST['notes'] ?? ''
             ];
             
-            $vehicleController->addMaintenance($maintenanceData, $app->getUserId());
+            $vehicleController->addMaintenance($vehicleId, $maintenanceData, $member['id']);
             $success = 'Manutenzione aggiunta con successo';
             // Reload vehicle data
             $vehicle = $vehicleController->get($vehicleId);

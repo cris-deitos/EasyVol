@@ -319,7 +319,7 @@ $pageTitle = 'Gestione Movimenti Veicoli';
                 return;
             }
             
-            fetch('vehicle_movement_internal_api.php?action=complete_without_return&movement_id=' + movementId, {
+            fetch('vehicle_movement_internal_api.php?action=complete_without_return&movement_id=' + encodeURIComponent(movementId), {
                 method: 'POST'
             })
             .then(response => response.json())
