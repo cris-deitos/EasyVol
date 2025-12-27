@@ -108,11 +108,6 @@ class VehicleController {
             $this->db->execute($sql, $params);
             $vehicleId = $this->db->lastInsertId();
             
-            // Genera QR code se richiesto
-            if (!empty($data['generate_qr'])) {
-                $this->generateQrCode($vehicleId);
-            }
-            
             // Sincronizza scadenze con lo scadenziario
             $syncController = new SchedulerSyncController($this->db, $this->config);
             if (!empty($data['insurance_expiry'])) {
@@ -169,11 +164,24 @@ class VehicleController {
             
             // Sincronizza scadenze con lo scadenziario
             $syncController = new SchedulerSyncController($this->db, $this->config);
+            
+            // Get old values to check if expiry dates changed
+            $oldVehicle = $this->db->fetchOne("SELECT insurance_expiry, inspection_expiry FROM vehicles WHERE id = ?", [$id]);
+            
+            // Sync or remove insurance expiry
             if (!empty($data['insurance_expiry'])) {
                 $syncController->syncInsuranceExpiry($id);
+            } elseif ($oldVehicle && !empty($oldVehicle['insurance_expiry'])) {
+                // Insurance expiry was removed, delete scheduler item
+                $syncController->removeSchedulerItem('insurance', $id);
             }
+            
+            // Sync or remove inspection expiry
             if (!empty($data['inspection_expiry'])) {
                 $syncController->syncInspectionExpiry($id);
+            } elseif ($oldVehicle && !empty($oldVehicle['inspection_expiry'])) {
+                // Inspection expiry was removed, delete scheduler item
+                $syncController->removeSchedulerItem('inspection', $id);
             }
             
             $this->logActivity($userId, 'vehicle', 'update', $id, 'Aggiornato mezzo');
@@ -218,8 +226,8 @@ class VehicleController {
             $this->db->beginTransaction();
             
             $sql = "INSERT INTO vehicle_maintenance (
-                vehicle_id, maintenance_type, date, description, cost, performed_by, notes, status, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                vehicle_id, maintenance_type, date, description, cost, performed_by, notes, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             
             $params = [
                 $vehicleId,
@@ -229,7 +237,6 @@ class VehicleController {
                 $data['cost'] ?? null,
                 $data['performed_by'] ?? null,
                 $data['notes'] ?? null,
-                $data['status'] ?? null,
                 $userId
             ];
             
@@ -250,9 +257,9 @@ class VehicleController {
             }
             
             // Aggiorna stato veicolo se specificato
-            if (!empty($data['status'])) {
+            if (!empty($data['vehicle_status'])) {
                 $updateStatusSql = "UPDATE vehicles SET status = ?, updated_at = NOW() WHERE id = ?";
-                $this->db->execute($updateStatusSql, [$data['status'], $vehicleId]);
+                $this->db->execute($updateStatusSql, [$data['vehicle_status'], $vehicleId]);
             }
             
             $this->logActivity($userId, 'vehicle_maintenance', 'create', $maintenanceId, 

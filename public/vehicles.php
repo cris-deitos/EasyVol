@@ -127,7 +127,7 @@ $pageTitle = 'Gestione Mezzi';
                                 <label for="search" class="form-label">Cerca</label>
                                 <input type="text" class="form-control" id="search" name="search" 
                                        value="<?php echo htmlspecialchars($filters['search']); ?>" 
-                                       placeholder="Nome, targa, marca...">
+                                       placeholder="Targa, marca, modello...">
                             </div>
                             <div class="col-md-3">
                                 <label for="type" class="form-label">Tipo</label>
@@ -171,7 +171,6 @@ $pageTitle = 'Gestione Mezzi';
                                 <thead>
                                     <tr>
                                         <th>Tipo</th>
-                                        <th>Nome</th>
                                         <th>Targa/Matricola</th>
                                         <th>Marca/Modello</th>
                                         <th>Anno</th>
@@ -184,7 +183,7 @@ $pageTitle = 'Gestione Mezzi';
                                 <tbody>
                                     <?php if (empty($vehicles)): ?>
                                         <tr>
-                                            <td colspan="9" class="text-center text-muted">
+                                            <td colspan="8" class="text-center text-muted">
                                                 Nessun mezzo trovato
                                             </td>
                                         </tr>
@@ -198,7 +197,6 @@ $pageTitle = 'Gestione Mezzi';
                                                     ?>"></i>
                                                     <?php echo ucfirst($vehicle['vehicle_type']); ?>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($vehicle['name']); ?></td>
                                                 <td><?php echo htmlspecialchars($vehicle['license_plate'] ?? $vehicle['serial_number'] ?? '-'); ?></td>
                                                 <td>
                                                     <?php 

@@ -75,9 +75,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
+        // Generate a name from available fields (for database compatibility)
+        // Priority: license_plate > serial_number > brand+model
+        $generatedName = '';
+        if (!empty(trim($_POST['license_plate'] ?? ''))) {
+            $generatedName = trim($_POST['license_plate']);
+        } elseif (!empty(trim($_POST['serial_number'] ?? ''))) {
+            $generatedName = trim($_POST['serial_number']);
+        } else {
+            $brandModel = trim(($_POST['brand'] ?? '') . ' ' . ($_POST['model'] ?? ''));
+            $generatedName = $brandModel ?: 'Mezzo ' . date('YmdHis');
+        }
+        
         $data = [
             'vehicle_type' => $_POST['vehicle_type'] ?? 'veicolo',
-            'name' => trim($_POST['name'] ?? ''),
+            'name' => $generatedName,
             'license_plate' => trim($_POST['license_plate'] ?? ''),
             'brand' => trim($_POST['brand'] ?? ''),
             'model' => trim($_POST['model'] ?? ''),
@@ -86,8 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'status' => $_POST['status'] ?? 'operativo',
             'insurance_expiry' => $insuranceExpiry !== '' ? $insuranceExpiry : null,
             'inspection_expiry' => $inspectionExpiry !== '' ? $inspectionExpiry : null,
-            'notes' => trim($_POST['notes'] ?? ''),
-            'generate_qr' => isset($_POST['generate_qr']) ? 1 : 0
+            'notes' => trim($_POST['notes'] ?? '')
         ];
         
         // Don't proceed if there are validation errors
@@ -166,12 +177,6 @@ $pageTitle = $isEdit ? 'Modifica Mezzo' : 'Nuovo Mezzo';
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="name" class="form-label">Nome Mezzo <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="name" name="name" 
-                                           value="<?php echo htmlspecialchars($vehicle['name'] ?? ''); ?>" required>
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
                                     <label for="vehicle_type" class="form-label">Tipo <span class="text-danger">*</span></label>
                                     <select class="form-select" id="vehicle_type" name="vehicle_type" required>
                                         <option value="veicolo" <?php echo ($vehicle['vehicle_type'] ?? '') === 'veicolo' ? 'selected' : ''; ?>>Veicolo</option>
@@ -179,19 +184,28 @@ $pageTitle = $isEdit ? 'Modifica Mezzo' : 'Nuovo Mezzo';
                                         <option value="rimorchio" <?php echo ($vehicle['vehicle_type'] ?? '') === 'rimorchio' ? 'selected' : ''; ?>>Rimorchio</option>
                                     </select>
                                 </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="license_plate" class="form-label">Targa/Matricola</label>
+                                    <input type="text" class="form-control" id="license_plate" name="license_plate" 
+                                           value="<?php echo htmlspecialchars($vehicle['license_plate'] ?? ''); ?>">
+                                </div>
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="license_plate" class="form-label">Targa</label>
-                                    <input type="text" class="form-control" id="license_plate" name="license_plate" 
-                                           value="<?php echo htmlspecialchars($vehicle['license_plate'] ?? ''); ?>">
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
                                     <label for="serial_number" class="form-label">Numero Telaio</label>
                                     <input type="text" class="form-control" id="serial_number" name="serial_number" 
                                            value="<?php echo htmlspecialchars($vehicle['serial_number'] ?? ''); ?>">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="status" class="form-label">Stato <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="operativo" <?php echo ($vehicle['status'] ?? 'operativo') === 'operativo' ? 'selected' : ''; ?>>Operativo</option>
+                                        <option value="in_manutenzione" <?php echo ($vehicle['status'] ?? '') === 'in_manutenzione' ? 'selected' : ''; ?>>In Manutenzione</option>
+                                        <option value="fuori_servizio" <?php echo ($vehicle['status'] ?? '') === 'fuori_servizio' ? 'selected' : ''; ?>>Fuori Servizio</option>
+                                    </select>
                                 </div>
                             </div>
                             
@@ -216,16 +230,7 @@ $pageTitle = $isEdit ? 'Modifica Mezzo' : 'Nuovo Mezzo';
                                 </div>
                             </div>
                             
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="status" class="form-label">Stato <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="status" name="status" required>
-                                        <option value="operativo" <?php echo ($vehicle['status'] ?? 'operativo') === 'operativo' ? 'selected' : ''; ?>>Operativo</option>
-                                        <option value="in_manutenzione" <?php echo ($vehicle['status'] ?? '') === 'in_manutenzione' ? 'selected' : ''; ?>>In Manutenzione</option>
-                                        <option value="fuori_servizio" <?php echo ($vehicle['status'] ?? '') === 'fuori_servizio' ? 'selected' : ''; ?>>Fuori Servizio</option>
-                                    </select>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                     
@@ -258,15 +263,6 @@ $pageTitle = $isEdit ? 'Modifica Mezzo' : 'Nuovo Mezzo';
                             <div class="mb-3">
                                 <textarea class="form-control" id="notes" name="notes" rows="4"><?php echo htmlspecialchars($vehicle['notes'] ?? ''); ?></textarea>
                             </div>
-                            
-                            <?php if (!$isEdit): ?>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="generate_qr" name="generate_qr" checked>
-                                <label class="form-check-label" for="generate_qr">
-                                    Genera QR Code automaticamente
-                                </label>
-                            </div>
-                            <?php endif; ?>
                         </div>
                     </div>
                     
