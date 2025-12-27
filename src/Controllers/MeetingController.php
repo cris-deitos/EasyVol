@@ -68,6 +68,53 @@ class MeetingController {
         // Carica ordine del giorno
         $meeting['agenda'] = $this->getAgenda($id);
         
+        // Compute convened_by, president, and secretary from participants and convocator field
+        $meeting['convened_by'] = '-';
+        $meeting['president'] = '-';
+        $meeting['secretary'] = '-';
+        
+        // Parse convocator field (format: member_id|role)
+        if (!empty($meeting['convocator']) && strpos($meeting['convocator'], '|') !== false) {
+            list($convocatorMemberId, $convocatorRole) = explode('|', $meeting['convocator'], 2);
+            // Find the member name
+            $memberSql = "SELECT first_name, last_name FROM members WHERE id = ?";
+            $convocatorMember = $this->db->fetchOne($memberSql, [$convocatorMemberId]);
+            if ($convocatorMember) {
+                $meeting['convened_by'] = trim($convocatorMember['first_name'] . ' ' . $convocatorMember['last_name']) . ' (' . $convocatorRole . ')';
+            }
+        }
+        
+        // Find Presidente and Segretario from participants
+        foreach ($meeting['participants'] as $participant) {
+            $role = $participant['role'] ?? '';
+            if ($role === 'Presidente' || $role === 'presidente') {
+                // Get member name
+                if ($participant['member_type'] === 'junior') {
+                    $firstName = $participant['junior_first_name'] ?? '';
+                    $lastName = $participant['junior_last_name'] ?? '';
+                } else {
+                    $firstName = $participant['first_name'] ?? '';
+                    $lastName = $participant['last_name'] ?? '';
+                }
+                if ($firstName || $lastName) {
+                    $meeting['president'] = trim($firstName . ' ' . $lastName);
+                }
+            }
+            if ($role === 'Segretario' || $role === 'segretario') {
+                // Get member name
+                if ($participant['member_type'] === 'junior') {
+                    $firstName = $participant['junior_first_name'] ?? '';
+                    $lastName = $participant['junior_last_name'] ?? '';
+                } else {
+                    $firstName = $participant['first_name'] ?? '';
+                    $lastName = $participant['last_name'] ?? '';
+                }
+                if ($firstName || $lastName) {
+                    $meeting['secretary'] = trim($firstName . ' ' . $lastName);
+                }
+            }
+        }
+        
         return $meeting;
     }
     
