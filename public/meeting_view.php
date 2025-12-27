@@ -277,10 +277,26 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                             </div>
                             <div class="card-body">
                                 <?php if (!empty($meeting['participants'])): ?>
+                                    <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                        <div class="mb-3 d-flex align-items-center gap-2">
+                                            <button type="button" class="btn btn-success btn-sm" onclick="bulkUpdateAttendance('present')" id="bulk-present-btn" disabled>
+                                                <i class="bi bi-check-circle"></i> Segna Selezionati come Presenti
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="bulkUpdateAttendance('absent')" id="bulk-absent-btn" disabled>
+                                                <i class="bi bi-x-circle"></i> Segna Selezionati come Assenti
+                                            </button>
+                                            <span class="text-muted ms-2" id="selected-count">0 selezionati</span>
+                                        </div>
+                                    <?php endif; ?>
                                     <div class="table-responsive">
                                         <table class="table table-hover">
                                             <thead>
                                                 <tr>
+                                                    <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                        <th style="width: 40px;">
+                                                            <input type="checkbox" class="form-check-input" id="select-all-participants" title="Seleziona tutti">
+                                                        </th>
+                                                    <?php endif; ?>
                                                     <th>Nome</th>
                                                     <th>Qualifica</th>
                                                     <th>Presenza</th>
@@ -293,6 +309,13 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                             <tbody>
                                                 <?php foreach ($meeting['participants'] as $participant): ?>
                                                     <tr>
+                                                        <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                            <td>
+                                                                <input type="checkbox" class="form-check-input participant-checkbox" 
+                                                                       data-participant-id="<?php echo $participant['id']; ?>" 
+                                                                       value="<?php echo $participant['id']; ?>">
+                                                            </td>
+                                                        <?php endif; ?>
                                                         <td>
                                                             <?php 
                                                             // Construct member name based on member type
@@ -500,7 +523,8 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
             .then(data => {
                 if (data.success) {
                     alert('Stato aggiornato con successo');
-                    window.location.reload();
+                    // Stay on the participants tab after reload
+                    window.location.href = window.location.pathname + '?id=<?php echo $meetingId; ?>#participants';
                 } else {
                     alert('Errore: ' + (data.message || 'Impossibile aggiornare lo stato'));
                 }
@@ -509,6 +533,100 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                 console.error('Error:', error);
                 alert('Errore durante l\'aggiornamento dello stato');
             });
+        }
+        
+        // Bulk update attendance status
+        function bulkUpdateAttendance(status) {
+            const checkboxes = document.querySelectorAll('.participant-checkbox:checked');
+            const participantIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (participantIds.length === 0) {
+                alert('Seleziona almeno un partecipante');
+                return;
+            }
+            
+            const statusLabel = status === 'present' ? 'Presenti' : 'Assenti';
+            if (!confirm(`Confermi di voler segnare ${participantIds.length} partecipante(i) come ${statusLabel}?`)) {
+                return;
+            }
+            
+            // Send bulk update request
+            const formData = new FormData();
+            formData.append('participant_ids', JSON.stringify(participantIds));
+            formData.append('status', status);
+            
+            fetch('meeting_update_attendance_bulk.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`${data.updated} partecipante(i) aggiornato(i) con successo`);
+                    // Stay on the participants tab after reload
+                    window.location.href = window.location.pathname + '?id=<?php echo $meetingId; ?>#participants';
+                } else {
+                    alert('Errore: ' + (data.message || 'Impossibile aggiornare lo stato'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante l\'aggiornamento dello stato');
+            });
+        }
+        
+        // Restore active tab from URL hash on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const hash = window.location.hash;
+            if (hash === '#participants') {
+                const participantsTab = new bootstrap.Tab(document.getElementById('participants-tab'));
+                participantsTab.show();
+            } else if (hash === '#agenda') {
+                const agendaTab = new bootstrap.Tab(document.getElementById('agenda-tab'));
+                agendaTab.show();
+            }
+            
+            // Handle checkbox selection
+            const selectAllCheckbox = document.getElementById('select-all-participants');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.participant-checkbox');
+                    checkboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                    });
+                    updateBulkActionButtons();
+                });
+            }
+            
+            // Add event listeners to participant checkboxes
+            const participantCheckboxes = document.querySelectorAll('.participant-checkbox');
+            participantCheckboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    updateBulkActionButtons();
+                    
+                    // Update select all checkbox state
+                    const allChecked = Array.from(participantCheckboxes).every(checkbox => checkbox.checked);
+                    const someChecked = Array.from(participantCheckboxes).some(checkbox => checkbox.checked);
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = allChecked;
+                        selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                    }
+                });
+            });
+        });
+        
+        // Update bulk action buttons state
+        function updateBulkActionButtons() {
+            const checkedCount = document.querySelectorAll('.participant-checkbox:checked').length;
+            const bulkPresentBtn = document.getElementById('bulk-present-btn');
+            const bulkAbsentBtn = document.getElementById('bulk-absent-btn');
+            const selectedCount = document.getElementById('selected-count');
+            
+            if (bulkPresentBtn && bulkAbsentBtn && selectedCount) {
+                bulkPresentBtn.disabled = checkedCount === 0;
+                bulkAbsentBtn.disabled = checkedCount === 0;
+                selectedCount.textContent = `${checkedCount} selezionati`;
+            }
         }
     </script>
 
