@@ -37,7 +37,7 @@ class VehicleController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(name LIKE ? OR license_plate LIKE ? OR brand LIKE ? OR model LIKE ?)";
+            $where[] = "(license_plate LIKE ? OR serial_number LIKE ? OR brand LIKE ? OR model LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -50,7 +50,12 @@ class VehicleController {
         
         $sql = "SELECT * FROM vehicles 
                 WHERE $whereClause 
-                ORDER BY name 
+                ORDER BY 
+                    CASE 
+                        WHEN license_plate IS NOT NULL AND license_plate != '' THEN license_plate
+                        WHEN serial_number IS NOT NULL AND serial_number != '' THEN serial_number
+                        ELSE CONCAT(COALESCE(brand, ''), ' ', COALESCE(model, ''))
+                    END
                 LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
