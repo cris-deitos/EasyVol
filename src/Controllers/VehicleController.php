@@ -96,9 +96,9 @@ class VehicleController {
             
             $sql = "INSERT INTO vehicles (
                 vehicle_type, name, license_plate, brand, model, year,
-                serial_number, status, insurance_expiry, inspection_expiry, notes,
+                serial_number, status, license_type, insurance_expiry, inspection_expiry, notes,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
             
             $params = [
                 $data['vehicle_type'],
@@ -109,6 +109,7 @@ class VehicleController {
                 $data['year'] ?? null,
                 $data['serial_number'] ?? null,
                 $data['status'] ?? 'operativo',
+                $data['license_type'] ?? null,
                 $data['insurance_expiry'] ?? null,
                 $data['inspection_expiry'] ?? null,
                 $data['notes'] ?? null
@@ -153,7 +154,7 @@ class VehicleController {
             
             $sql = "UPDATE vehicles SET
                 vehicle_type = ?, name = ?, license_plate = ?, brand = ?, 
-                model = ?, year = ?, serial_number = ?, status = ?,
+                model = ?, year = ?, serial_number = ?, status = ?, license_type = ?,
                 insurance_expiry = ?, inspection_expiry = ?, notes = ?,
                 updated_at = NOW()
                 WHERE id = ?";
@@ -167,6 +168,7 @@ class VehicleController {
                 $data['year'] ?? null,
                 $data['serial_number'] ?? null,
                 $data['status'] ?? 'operativo',
+                $data['license_type'] ?? null,
                 $data['insurance_expiry'] ?? null,
                 $data['inspection_expiry'] ?? null,
                 $data['notes'] ?? null,
