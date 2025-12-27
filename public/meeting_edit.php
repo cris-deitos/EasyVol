@@ -269,13 +269,15 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             </div>
                             
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-12 mb-3">
                                     <label for="location" class="form-label">Luogo</label>
                                     <input type="text" class="form-control" id="location" name="location" 
                                            value="<?php echo htmlspecialchars($meeting['location'] ?? ''); ?>"
                                            placeholder="es. Sede Associazione">
                                 </div>
-                                
+                            </div>
+                            
+                            <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="convocator_member" class="form-label">Convocata da - Socio</label>
                                     <select class="form-select" id="convocator_member" name="convocator_member_id">
@@ -621,6 +623,31 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         const votingFields = card.querySelector('.voting-fields');
         votingFields.style.display = checkbox.checked ? 'block' : 'none';
     }
+    
+    // Add validation on form submit to check for multiple Presidente or Segretario
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const roles = [];
+        document.querySelectorAll('select[name*="[role]"]').forEach(select => {
+            if (select.value) {
+                roles.push(select.value);
+            }
+        });
+        
+        const presidenteCount = roles.filter(r => r === 'Presidente').length;
+        const segretarioCount = roles.filter(r => r === 'Segretario').length;
+        
+        if (presidenteCount > 1) {
+            e.preventDefault();
+            alert('Errore: È possibile assegnare solo un Presidente per riunione.');
+            return false;
+        }
+        
+        if (segretarioCount > 1) {
+            e.preventDefault();
+            alert('Errore: È possibile assegnare solo un Segretario per riunione.');
+            return false;
+        }
+    });
     </script>
 </body>
 </html>
