@@ -540,8 +540,8 @@ CREATE TABLE IF NOT EXISTS `fee_payment_requests` (
 
 CREATE TABLE IF NOT EXISTS `meetings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `meeting_type` enum('assemblea_ordinaria', 'assemblea_straordinaria', 'consiglio_direttivo', 'altra_riunione') NOT NULL,
-  `title` varchar(255) NOT NULL,
+  `meeting_type` enum('assemblea_ordinaria', 'assemblea_straordinaria', 'consiglio_direttivo', 'riunione_capisquadra', 'riunione_nucleo', 'altra_riunione') NOT NULL,
+  `title` varchar(255) DEFAULT NULL,
   `meeting_date` date NOT NULL,
   `start_time` time,
   `end_time` time,

@@ -123,7 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $activeMembers = $memberController->index(['member_status' => 'attivo'], 1, 500);
 $activeJuniors = $juniorMemberController->index(['member_status' => 'attivo'], 1, 500);
 
-$pageTitle = 'Gestione Partecipanti - ' . htmlspecialchars($meeting['title']);
+// Generate page title from meeting type and date
+$meetingTypeName = MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
+$pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y', strtotime($meeting['meeting_date']));
 ?>
 <!DOCTYPE html>
 <html lang="it">

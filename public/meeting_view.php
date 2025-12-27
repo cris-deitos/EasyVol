@@ -43,7 +43,10 @@ if (!$meeting) {
     exit;
 }
 
-$pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
+// Generate page title from meeting type and date
+$meetingTypeName = MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
+$meetingDateFormatted = date('d/m/Y', strtotime($meeting['meeting_date']));
+$pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -129,25 +132,16 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                     <div class="card-body">
                                         <table class="table table-sm">
                                             <tr>
-                                                <th width="40%">Titolo:</th>
-                                                <td><?php echo htmlspecialchars($meeting['title']); ?></td>
-                                            </tr>
-                                            <tr>
                                                 <th>Tipo:</th>
                                                 <td>
                                                     <?php 
-                                                    $types = [
-                                                        'assemblea_ordinaria' => 'Assemblea Ordinaria',
-                                                        'assemblea_straordinaria' => 'Assemblea Straordinaria',
-                                                        'consiglio_direttivo' => 'Consiglio Direttivo',
-                                                        'altro' => 'Altro'
-                                                    ];
-                                                    $type = $types[$meeting['meeting_type']] ?? $meeting['meeting_type'];
+                                                    $type = MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? $meeting['meeting_type'];
                                                     $typeClass = [
                                                         'assemblea_ordinaria' => 'primary',
                                                         'assemblea_straordinaria' => 'danger',
                                                         'consiglio_direttivo' => 'warning',
-                                                        'altro' => 'secondary'
+                                                        'riunione_capisquadra' => 'info',
+                                                        'riunione_nucleo' => 'success'
                                                     ];
                                                     $class = $typeClass[$meeting['meeting_type']] ?? 'secondary';
                                                     ?>

@@ -91,16 +91,17 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                 <label for="search" class="form-label">Cerca</label>
                                 <input type="text" class="form-control" id="search" name="search" 
                                        value="<?php echo htmlspecialchars($filters['search']); ?>" 
-                                       placeholder="Titolo, luogo...">
+                                       placeholder="Luogo, data (01/12/2025, 01.12.2025, 01-12-2025)...">
                             </div>
                             <div class="col-md-5">
                                 <label for="type" class="form-label">Tipo</label>
                                 <select class="form-select" id="type" name="type">
                                     <option value="">Tutti</option>
-                                    <option value="assemblea_ordinaria" <?php echo $filters['type'] === 'assemblea_ordinaria' ? 'selected' : ''; ?>>Assemblea Ordinaria</option>
-                                    <option value="assemblea_straordinaria" <?php echo $filters['type'] === 'assemblea_straordinaria' ? 'selected' : ''; ?>>Assemblea Straordinaria</option>
+                                    <option value="assemblea_ordinaria" <?php echo $filters['type'] === 'assemblea_ordinaria' ? 'selected' : ''; ?>>Assemblea dei Soci Ordinaria</option>
+                                    <option value="assemblea_straordinaria" <?php echo $filters['type'] === 'assemblea_straordinaria' ? 'selected' : ''; ?>>Assemblea dei Soci Straordinaria</option>
                                     <option value="consiglio_direttivo" <?php echo $filters['type'] === 'consiglio_direttivo' ? 'selected' : ''; ?>>Consiglio Direttivo</option>
-                                    <option value="riunione_operativa" <?php echo $filters['type'] === 'riunione_operativa' ? 'selected' : ''; ?>>Riunione Operativa</option>
+                                    <option value="riunione_capisquadra" <?php echo $filters['type'] === 'riunione_capisquadra' ? 'selected' : ''; ?>>Riunione dei Capisquadra</option>
+                                    <option value="riunione_nucleo" <?php echo $filters['type'] === 'riunione_nucleo' ? 'selected' : ''; ?>>Riunione di Nucleo</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -124,7 +125,6 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                 <thead>
                                     <tr>
                                         <th>Tipo</th>
-                                        <th>Titolo</th>
                                         <th>Data</th>
                                         <th>Luogo</th>
                                         <th>Convocatore</th>
@@ -134,7 +134,7 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                 <tbody>
                                     <?php if (empty($meetings)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted">
+                                            <td colspan="5" class="text-center text-muted">
                                                 Nessuna riunione trovata
                                             </td>
                                         </tr>
@@ -143,9 +143,10 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                             <tr>
                                                 <td>
                                                     <i class="bi bi-people"></i>
-                                                    <?php echo ucfirst(str_replace('_', ' ', $meeting['meeting_type'])); ?>
+                                                    <?php 
+                                                    echo MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
+                                                    ?>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($meeting['title']); ?></td>
                                                 <td>
                                                     <?php 
                                                     echo date('d/m/Y', strtotime($meeting['meeting_date']));

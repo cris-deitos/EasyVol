@@ -23,6 +23,19 @@ class MeetingController {
     const ROLE_PRESIDENTE = 'Presidente';
     const ROLE_SEGRETARIO = 'Segretario';
     
+    // Meeting type display names
+    const MEETING_TYPE_NAMES = [
+        'assemblea_ordinaria' => 'Assemblea dei Soci Ordinaria',
+        'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
+        'consiglio_direttivo' => 'Consiglio Direttivo',
+        'riunione_capisquadra' => 'Riunione dei Capisquadra',
+        'riunione_nucleo' => 'Riunione di Nucleo',
+        'altra_riunione' => 'Altra Riunione' // Backward compatibility
+    ];
+    
+    // Date search regex pattern
+    const DATE_SEARCH_PATTERN = '/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/';
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -41,10 +54,29 @@ class MeetingController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(title LIKE ? OR location LIKE ?)";
-            $searchTerm = '%' . $filters['search'] . '%';
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
+            $searchTerm = trim($filters['search']);
+            
+            // Try to parse as date in various formats (DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY)
+            $dateSearched = false;
+            if (preg_match(self::DATE_SEARCH_PATTERN, $searchTerm, $matches)) {
+                $day = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                $month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
+                $year = $matches[3];
+                $dateFormatted = "$year-$month-$day"; // Convert to MySQL format YYYY-MM-DD
+                
+                // Validate the date (cast to int for checkdate)
+                if (checkdate((int)$month, (int)$day, (int)$year)) {
+                    $where[] = "meeting_date = ?";
+                    $params[] = $dateFormatted;
+                    $dateSearched = true;
+                }
+            }
+            
+            // If not a valid date, search in location
+            if (!$dateSearched) {
+                $where[] = "location LIKE ?";
+                $params[] = '%' . $searchTerm . '%';
+            }
         }
         
         $whereClause = implode(' AND ', $where);
@@ -147,12 +179,11 @@ class MeetingController {
             $this->db->beginTransaction();
             
             $sql = "INSERT INTO meetings (
-                meeting_type, title, meeting_date, location, convocator, description, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                meeting_type, meeting_date, location, convocator, description, created_at
+            ) VALUES (?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['meeting_type'],
-                $data['title'],
                 $data['meeting_date'],
                 $data['location'] ?? null,
                 $data['convocator'] ?? null,
@@ -162,7 +193,10 @@ class MeetingController {
             $this->db->execute($sql, $params);
             $meetingId = $this->db->lastInsertId();
             
-            $this->logActivity($userId, 'meeting', 'create', $meetingId, 'Creata nuova riunione: ' . $data['title']);
+            // Generate meeting type name for log
+            $meetingName = self::MEETING_TYPE_NAMES[$data['meeting_type']] ?? $data['meeting_type'];
+            
+            $this->logActivity($userId, 'meeting', 'create', $meetingId, 'Creata nuova riunione: ' . $meetingName);
             
             $this->db->commit();
             return $meetingId;
@@ -180,13 +214,12 @@ class MeetingController {
     public function update($id, $data, $userId) {
         try {
             $sql = "UPDATE meetings SET
-                meeting_type = ?, title = ?, meeting_date = ?, location = ?,
+                meeting_type = ?, meeting_date = ?, location = ?,
                 convocator = ?, description = ?, updated_at = NOW()
                 WHERE id = ?";
             
             $params = [
                 $data['meeting_type'],
-                $data['title'],
                 $data['meeting_date'],
                 $data['location'] ?? null,
                 $data['convocator'] ?? null,
@@ -285,7 +318,8 @@ class MeetingController {
             $this->db->commit();
             
             // Log activity
-            $this->logActivity($userId, 'meetings', 'delete', $id, "Eliminata riunione: {$meeting['title']}");
+            $meetingName = self::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? $meeting['meeting_type'];
+            $this->logActivity($userId, 'meetings', 'delete', $id, "Eliminata riunione: {$meetingName}");
             
             return ['success' => true];
         } catch (\Exception $e) {
@@ -426,8 +460,9 @@ class MeetingController {
                     ? $participant['first_name'] . ' ' . $participant['last_name']
                     : $participant['junior_first_name'] . ' ' . $participant['junior_last_name'];
                 
-                // Build email body
-                $subject = "Convocazione: " . $meeting['title'];
+                // Build email subject with meeting type and date
+                $meetingTypeName = self::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
+                $subject = "Convocazione: " . $meetingTypeName . " - " . date('d/m/Y', strtotime($meeting['meeting_date']));
                 $body = $this->buildInvitationEmail($meeting, $name);
                 
                 if ($emailSender->send($email, $subject, $body)) {
@@ -467,8 +502,8 @@ class MeetingController {
      * Costruisci email di convocazione
      */
     private function buildInvitationEmail($meeting, $recipientName) {
-        // Format meeting type for display (convert underscores to spaces and capitalize)
-        $meetingTypeFormatted = ucwords(str_replace('_', ' ', $meeting['meeting_type']));
+        // Format meeting type for display
+        $meetingTypeFormatted = self::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucwords(str_replace('_', ' ', $meeting['meeting_type']));
         
         $body = "<html><body>";
         $body .= "<h2>Convocazione Riunione</h2>";
@@ -476,7 +511,6 @@ class MeetingController {
         $body .= "<p>Sei convocato/a alla seguente riunione:</p>";
         $body .= "<div style='border: 1px solid #ccc; padding: 15px; margin: 15px 0;'>";
         $body .= "<p><strong>Tipo:</strong> " . htmlspecialchars($meetingTypeFormatted) . "</p>";
-        $body .= "<p><strong>Titolo:</strong> " . htmlspecialchars($meeting['title']) . "</p>";
         $body .= "<p><strong>Data:</strong> " . date('d/m/Y', strtotime($meeting['meeting_date']));
         if ($meeting['start_time']) {
             $body .= " ore " . date('H:i', strtotime($meeting['start_time']));

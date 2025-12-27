@@ -84,7 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $data = [
             'meeting_type' => $_POST['meeting_type'] ?? 'consiglio_direttivo',
-            'title' => trim($_POST['title'] ?? ''),
             'meeting_date' => $_POST['meeting_date'] ?? '',
             'start_time' => $_POST['start_time'] ?? '',
             'end_time' => $_POST['end_time'] ?? '',
@@ -99,13 +98,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($isEdit) {
                 // Update meeting
-                $db->query("UPDATE meetings SET meeting_type = ?, title = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
-                    [$data['meeting_type'], $data['title'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $meetingId]);
+                $db->query("UPDATE meetings SET meeting_type = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
+                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $meetingId]);
             } else {
                 // Create new meeting (location_type defaults to 'fisico' for physical meetings)
                 $locationType = 'fisico'; // Physical meeting default
-                $db->query("INSERT INTO meetings (meeting_type, title, meeting_date, start_time, end_time, location, convocator, description, location_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                    [$data['meeting_type'], $data['title'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $locationType]);
+                $db->query("INSERT INTO meetings (meeting_type, meeting_date, start_time, end_time, location, convocator, description, location_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $locationType]);
                 $meetingId = $db->lastInsertId();
             }
             
@@ -226,19 +225,14 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-8 mb-3">
-                                    <label for="title" class="form-label">Titolo Riunione <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="title" name="title" 
-                                           value="<?php echo htmlspecialchars($meeting['title'] ?? ''); ?>" required>
-                                </div>
-                                
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-12 mb-3">
                                     <label for="meeting_type" class="form-label">Tipo <span class="text-danger">*</span></label>
                                     <select class="form-select" id="meeting_type" name="meeting_type" required>
-                                        <option value="assemblea_ordinaria" <?php echo ($meeting['meeting_type'] ?? '') === 'assemblea_ordinaria' ? 'selected' : ''; ?>>Assemblea Ordinaria</option>
-                                        <option value="assemblea_straordinaria" <?php echo ($meeting['meeting_type'] ?? '') === 'assemblea_straordinaria' ? 'selected' : ''; ?>>Assemblea Straordinaria</option>
+                                        <option value="assemblea_ordinaria" <?php echo ($meeting['meeting_type'] ?? '') === 'assemblea_ordinaria' ? 'selected' : ''; ?>>Assemblea dei Soci Ordinaria</option>
+                                        <option value="assemblea_straordinaria" <?php echo ($meeting['meeting_type'] ?? '') === 'assemblea_straordinaria' ? 'selected' : ''; ?>>Assemblea dei Soci Straordinaria</option>
                                         <option value="consiglio_direttivo" <?php echo ($meeting['meeting_type'] ?? 'consiglio_direttivo') === 'consiglio_direttivo' ? 'selected' : ''; ?>>Consiglio Direttivo</option>
-                                        <option value="altro" <?php echo ($meeting['meeting_type'] ?? '') === 'altro' ? 'selected' : ''; ?>>Altro</option>
+                                        <option value="riunione_capisquadra" <?php echo ($meeting['meeting_type'] ?? '') === 'riunione_capisquadra' ? 'selected' : ''; ?>>Riunione dei Capisquadra</option>
+                                        <option value="riunione_nucleo" <?php echo ($meeting['meeting_type'] ?? '') === 'riunione_nucleo' ? 'selected' : ''; ?>>Riunione di Nucleo</option>
                                     </select>
                                 </div>
                             </div>
