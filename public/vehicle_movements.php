@@ -49,7 +49,7 @@ $vehiclesSql = "SELECT id, license_plate, serial_number, brand, model
                 ORDER BY license_plate, serial_number";
 $vehicles = $db->fetchAll($vehiclesSql);
 
-$pageTitle = 'Gestione Movimenti Veicoli';
+$pageTitle = 'Gestione Movimentazione Mezzi';
 ?>
 <!DOCTYPE html>
 <html lang="it">

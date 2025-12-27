@@ -51,7 +51,10 @@ if ($controller->isVehicleInMission($vehicleId)) {
     exit;
 }
 
-// Get vehicle checklists
+// Get available trailers
+$availableTrailers = $controller->getAvailableTrailers();
+
+// Get vehicle checklists - will be updated based on trailer selection via JavaScript
 $checklists = $controller->getVehicleChecklists($vehicleId, 'departure');
 
 $error = '';
@@ -89,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $departureData = [
             'vehicle_id' => $vehicleId,
+            'trailer_id' => !empty($_POST['trailer_id']) ? intval($_POST['trailer_id']) : null,
             'departure_datetime' => $_POST['departure_datetime'],
             'drivers' => array_map('intval', $_POST['drivers']),
             'departure_km' => !empty($_POST['departure_km']) ? floatval($_POST['departure_km']) : null,
@@ -304,6 +308,36 @@ $pageTitle = 'Registra Uscita Veicolo';
                            class="form-control" 
                            placeholder="Nome di chi ha autorizzato l'uscita">
                 </div>
+
+                <!-- Trailer Selection -->
+                <?php if (!empty($availableTrailers)): ?>
+                <div class="mb-3">
+                    <label class="form-label">Rimorchio (opzionale)</label>
+                    <select name="trailer_id" id="trailerSelect" class="form-select">
+                        <option value="">Nessun rimorchio</option>
+                        <?php foreach ($availableTrailers as $trailer): ?>
+                            <option value="<?php echo $trailer['id']; ?>"
+                                    data-license="<?php echo htmlspecialchars($trailer['license_type'] ?? ''); ?>">
+                                <?php 
+                                echo htmlspecialchars($trailer['name']);
+                                if ($trailer['license_plate']) {
+                                    echo ' - ' . htmlspecialchars($trailer['license_plate']);
+                                } elseif ($trailer['serial_number']) {
+                                    echo ' - ' . htmlspecialchars($trailer['serial_number']);
+                                }
+                                if ($trailer['license_type']) {
+                                    echo ' (Patente: ' . htmlspecialchars($trailer['license_type']) . ')';
+                                }
+                                ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Se si aggancia un rimorchio, gli autisti devono possedere anche le patenti richieste dal rimorchio
+                    </small>
+                </div>
+                <?php endif; ?>
 
                 <!-- Checklist Section -->
                 <?php if (!empty($checklists)): ?>

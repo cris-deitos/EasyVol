@@ -74,7 +74,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'vehicle_movements.php' ? 'active' : '' ?>" href="vehicle_movements.php">
-                    <i class="bi bi-shuffle"></i> Movimenti Veicoli
+                    <i class="bi bi-shuffle"></i> Movimentazione Mezzi
                 </a>
             </li>
             <?php endif; ?>
