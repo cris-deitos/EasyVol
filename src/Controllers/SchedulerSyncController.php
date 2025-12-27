@@ -2,6 +2,7 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use EasyVol\Utils\VehicleIdentifier;
 
 /**
  * Scheduler Sync Controller
@@ -158,8 +159,10 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questa assicurazione
             $existing = $this->findSchedulerItem('insurance', $vehicleId);
             
-            $title = "Scadenza Assicurazione: {$vehicle['name']}";
-            $description = "L'assicurazione del mezzo {$vehicle['name']} ";
+            $vehicleIdent = VehicleIdentifier::build($vehicle);
+            
+            $title = "Scadenza Assicurazione: {$vehicleIdent}";
+            $description = "L'assicurazione del mezzo {$vehicleIdent} ";
             if (!empty($vehicle['license_plate'])) {
                 $description .= "(targa: {$vehicle['license_plate']}) ";
             }
@@ -211,8 +214,10 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questa revisione
             $existing = $this->findSchedulerItem('inspection', $vehicleId);
             
-            $title = "Scadenza Revisione: {$vehicle['name']}";
-            $description = "La revisione del mezzo {$vehicle['name']} ";
+            $vehicleIdent = VehicleIdentifier::build($vehicle);
+            
+            $title = "Scadenza Revisione: {$vehicleIdent}";
+            $description = "La revisione del mezzo {$vehicleIdent} ";
             if (!empty($vehicle['license_plate'])) {
                 $description .= "(targa: {$vehicle['license_plate']}) ";
             }
@@ -254,8 +259,8 @@ class SchedulerSyncController {
      */
     public function syncVehicleDocumentExpiry($documentId, $vehicleId) {
         try {
-            // Ottieni dettagli del documento
-            $sql = "SELECT vd.*, v.name as vehicle_name, v.license_plate 
+            // Ottieni dettagli del documento con dati veicolo
+            $sql = "SELECT vd.*, v.license_plate, v.serial_number, v.brand, v.model, v.id as vehicle_id
                     FROM vehicle_documents vd
                     JOIN vehicles v ON vd.vehicle_id = v.id
                     WHERE vd.id = ?";
@@ -268,8 +273,11 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questo documento
             $existing = $this->findSchedulerItem('vehicle_document', $documentId);
             
-            $title = "Scadenza Documento {$document['document_type']}: {$document['vehicle_name']}";
-            $description = "Il documento '{$document['document_type']}' del mezzo {$document['vehicle_name']} ";
+            // Build vehicle identifier using the utility
+            $vehicleIdent = VehicleIdentifier::build($document);
+            
+            $title = "Scadenza Documento {$document['document_type']}: {$vehicleIdent}";
+            $description = "Il documento '{$document['document_type']}' del mezzo {$vehicleIdent} ";
             if (!empty($document['license_plate'])) {
                 $description .= "(targa: {$document['license_plate']}) ";
             }

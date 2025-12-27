@@ -235,7 +235,19 @@ $pageTitle = 'Centrale Operativa';
                                         <div class="resource-item">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
-                                                    <strong><?php echo htmlspecialchars($vehicle['name']); ?></strong>
+                                                    <strong>
+                                                        <?php 
+                                                        if (!empty($vehicle['license_plate'])) {
+                                                            echo htmlspecialchars($vehicle['license_plate']);
+                                                        } elseif (!empty($vehicle['brand']) || !empty($vehicle['model'])) {
+                                                            echo htmlspecialchars(trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? '')));
+                                                        } elseif (!empty($vehicle['serial_number'])) {
+                                                            echo htmlspecialchars($vehicle['serial_number']);
+                                                        } else {
+                                                            echo 'Mezzo ID ' . $vehicle['id'];
+                                                        }
+                                                        ?>
+                                                    </strong>
                                                     <br><small class="text-muted"><?php echo htmlspecialchars($vehicle['vehicle_type']); ?></small>
                                                 </div>
                                                 <span class="badge bg-success">Operativo</span>

@@ -3,6 +3,7 @@ namespace EasyVol\Controllers;
 
 use EasyVol\Database;
 use EasyVol\Utils\QrCodeGenerator;
+use EasyVol\Utils\VehicleIdentifier;
 use EasyVol\Controllers\SchedulerSyncController;
 
 /**
@@ -37,7 +38,7 @@ class VehicleController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(name LIKE ? OR license_plate LIKE ? OR brand LIKE ? OR model LIKE ?)";
+            $where[] = "(license_plate LIKE ? OR serial_number LIKE ? OR brand LIKE ? OR model LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -50,7 +51,12 @@ class VehicleController {
         
         $sql = "SELECT * FROM vehicles 
                 WHERE $whereClause 
-                ORDER BY name 
+                ORDER BY 
+                    CASE 
+                        WHEN license_plate IS NOT NULL AND license_plate != '' THEN license_plate
+                        WHEN serial_number IS NOT NULL AND serial_number != '' THEN serial_number
+                        ELSE CONCAT(COALESCE(brand, ''), ' ', COALESCE(model, ''))
+                    END
                 LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
@@ -85,6 +91,9 @@ class VehicleController {
             
             $this->validateVehicleData($data);
             
+            // Generate internal name for database storage
+            $data['name'] = VehicleIdentifier::generateInternalName($data);
+            
             $sql = "INSERT INTO vehicles (
                 vehicle_type, name, license_plate, brand, model, year,
                 serial_number, status, insurance_expiry, inspection_expiry, notes,
@@ -108,11 +117,6 @@ class VehicleController {
             $this->db->execute($sql, $params);
             $vehicleId = $this->db->lastInsertId();
             
-            // Genera QR code se richiesto
-            if (!empty($data['generate_qr'])) {
-                $this->generateQrCode($vehicleId);
-            }
-            
             // Sincronizza scadenze con lo scadenziario
             $syncController = new SchedulerSyncController($this->db, $this->config);
             if (!empty($data['insurance_expiry'])) {
@@ -122,7 +126,8 @@ class VehicleController {
                 $syncController->syncInspectionExpiry($vehicleId);
             }
             
-            $this->logActivity($userId, 'vehicle', 'create', $vehicleId, 'Creato nuovo mezzo: ' . $data['name']);
+            $vehicleIdent = VehicleIdentifier::build($data);
+            $this->logActivity($userId, 'vehicle', 'create', $vehicleId, "Creato nuovo mezzo: $vehicleIdent");
             
             $this->db->commit();
             return $vehicleId;
@@ -142,6 +147,9 @@ class VehicleController {
             $this->db->beginTransaction();
             
             $this->validateVehicleData($data, $id);
+            
+            // Generate internal name for database storage
+            $data['name'] = VehicleIdentifier::generateInternalName($data);
             
             $sql = "UPDATE vehicles SET
                 vehicle_type = ?, name = ?, license_plate = ?, brand = ?, 
@@ -169,11 +177,24 @@ class VehicleController {
             
             // Sincronizza scadenze con lo scadenziario
             $syncController = new SchedulerSyncController($this->db, $this->config);
+            
+            // Get old values to check if expiry dates changed
+            $oldVehicle = $this->db->fetchOne("SELECT insurance_expiry, inspection_expiry FROM vehicles WHERE id = ?", [$id]);
+            
+            // Sync or remove insurance expiry
             if (!empty($data['insurance_expiry'])) {
                 $syncController->syncInsuranceExpiry($id);
+            } elseif ($oldVehicle && !empty($oldVehicle['insurance_expiry'])) {
+                // Insurance expiry was removed, delete scheduler item
+                $syncController->removeSchedulerItem('insurance', $id);
             }
+            
+            // Sync or remove inspection expiry
             if (!empty($data['inspection_expiry'])) {
                 $syncController->syncInspectionExpiry($id);
+            } elseif ($oldVehicle && !empty($oldVehicle['inspection_expiry'])) {
+                // Inspection expiry was removed, delete scheduler item
+                $syncController->removeSchedulerItem('inspection', $id);
             }
             
             $this->logActivity($userId, 'vehicle', 'update', $id, 'Aggiornato mezzo');
@@ -229,7 +250,7 @@ class VehicleController {
                 $data['cost'] ?? null,
                 $data['performed_by'] ?? null,
                 $data['notes'] ?? null,
-                $data['status'] ?? null,
+                $data['vehicle_status'] ?? null,
                 $userId
             ];
             
@@ -250,9 +271,9 @@ class VehicleController {
             }
             
             // Aggiorna stato veicolo se specificato
-            if (!empty($data['status'])) {
+            if (!empty($data['vehicle_status'])) {
                 $updateStatusSql = "UPDATE vehicles SET status = ?, updated_at = NOW() WHERE id = ?";
-                $this->db->execute($updateStatusSql, [$data['status'], $vehicleId]);
+                $this->db->execute($updateStatusSql, [$data['vehicle_status'], $vehicleId]);
             }
             
             $this->logActivity($userId, 'vehicle_maintenance', 'create', $maintenanceId, 
@@ -477,7 +498,7 @@ class VehicleController {
      * Valida dati mezzo
      */
     private function validateVehicleData($data, $id = null) {
-        $required = ['vehicle_type', 'name'];
+        $required = ['vehicle_type'];
         
         foreach ($required as $field) {
             if (empty($data[$field])) {

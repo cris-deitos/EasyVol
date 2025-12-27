@@ -289,8 +289,20 @@ $pageTitle = 'Report e Statistiche';
                                             <div class="list-group list-group-flush">
                                                 <?php foreach ($vehicleExpirations as $vehicle): ?>
                                                     <div class="list-group-item px-0">
-                                                        <strong><?php echo htmlspecialchars($vehicle['name']); ?></strong>
-                                                        <small class="text-muted"><?php echo htmlspecialchars($vehicle['license_plate']); ?></small>
+                                                        <strong>
+                                                            <?php 
+                                                            if (!empty($vehicle['license_plate'])) {
+                                                                echo htmlspecialchars($vehicle['license_plate']);
+                                                            } elseif (!empty($vehicle['brand']) || !empty($vehicle['model'])) {
+                                                                echo htmlspecialchars(trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? '')));
+                                                            } elseif (!empty($vehicle['serial_number'])) {
+                                                                echo htmlspecialchars($vehicle['serial_number']);
+                                                            } else {
+                                                                echo 'Mezzo ID ' . $vehicle['id'];
+                                                            }
+                                                            ?>
+                                                        </strong>
+                                                        <small class="text-muted"><?php echo htmlspecialchars($vehicle['vehicle_type'] ?? ''); ?></small>
                                                         <br>
                                                         <?php if ($vehicle['insurance_days'] !== null && $vehicle['insurance_days'] <= 60): ?>
                                                             <small class="text-danger">

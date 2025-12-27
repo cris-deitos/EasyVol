@@ -64,7 +64,15 @@ if (!$vehicle) {
 // Log page access
 AutoLogger::logPageAccess();
 
-$pageTitle = 'Mezzo: ' . $vehicle['name'];
+// Build page title from vehicle identifiers
+$pageTitle = 'Mezzo';
+if (!empty($vehicle['license_plate'])) {
+    $pageTitle .= ': ' . $vehicle['license_plate'];
+} elseif (!empty($vehicle['brand']) || !empty($vehicle['model'])) {
+    $pageTitle .= ': ' . trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
+} elseif (!empty($vehicle['serial_number'])) {
+    $pageTitle .= ': ' . $vehicle['serial_number'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -107,11 +115,7 @@ $pageTitle = 'Mezzo: ' . $vehicle['name'];
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Nome/Identificativo:</label>
-                                <p><?php echo htmlspecialchars($vehicle['name']); ?></p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Targa:</label>
+                                <label class="fw-bold">Targa/Matricola:</label>
                                 <p>
                                     <?php if (!empty($vehicle['license_plate'])): ?>
                                         <span class="badge bg-secondary fs-6">

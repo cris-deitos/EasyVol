@@ -47,7 +47,14 @@ if (!$vehicle) {
     exit;
 }
 
-$pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
+$pageTitle = 'Dettaglio Mezzo';
+if (!empty($vehicle['license_plate'])) {
+    $pageTitle .= ': ' . $vehicle['license_plate'];
+} elseif (!empty($vehicle['brand']) || !empty($vehicle['model'])) {
+    $pageTitle .= ': ' . trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
+} elseif (!empty($vehicle['serial_number'])) {
+    $pageTitle .= ': ' . $vehicle['serial_number'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -149,11 +156,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                                     <div class="card-body">
                                         <table class="table table-sm">
                                             <tr>
-                                                <th width="40%">Nome:</th>
-                                                <td><?php echo htmlspecialchars($vehicle['name']); ?></td>
-                                            </tr>
-                                            <tr>
-                                                <th>Tipo:</th>
+                                                <th width="40%">Tipo:</th>
                                                 <td>
                                                     <?php 
                                                     $types = ['veicolo' => 'Veicolo', 'natante' => 'Natante', 'rimorchio' => 'Rimorchio'];
@@ -162,7 +165,7 @@ $pageTitle = 'Dettaglio Mezzo: ' . $vehicle['name'];
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <th>Targa:</th>
+                                                <th>Targa/Matricola:</th>
                                                 <td><?php echo htmlspecialchars($vehicle['license_plate'] ?? '-'); ?></td>
                                             </tr>
                                             <tr>

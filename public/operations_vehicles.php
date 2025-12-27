@@ -187,8 +187,7 @@ $pageTitle = 'Mezzi Attivi';
                                 <table class="table table-hover table-striped easyco-table">
                                     <thead>
                                         <tr>
-                                            <th>Nome</th>
-                                            <th>Targa</th>
+                                            <th>Targa/Matricola</th>
                                             <th>Tipo</th>
                                             <th>Marca/Modello</th>
                                             <th>Stato</th>
@@ -199,13 +198,10 @@ $pageTitle = 'Mezzi Attivi';
                                         <?php foreach ($vehicles as $vehicle): ?>
                                             <tr>
                                                 <td>
-                                                    <strong><?php echo htmlspecialchars($vehicle['name']); ?></strong>
-                                                </td>
-                                                <td>
                                                     <?php if (!empty($vehicle['license_plate'])): ?>
-                                                        <span class="badge bg-secondary">
-                                                            <?php echo htmlspecialchars($vehicle['license_plate']); ?>
-                                                        </span>
+                                                        <strong><?php echo htmlspecialchars($vehicle['license_plate']); ?></strong>
+                                                    <?php elseif (!empty($vehicle['serial_number'])): ?>
+                                                        <strong><?php echo htmlspecialchars($vehicle['serial_number']); ?></strong>
                                                     <?php else: ?>
                                                         <span class="text-muted">N/D</span>
                                                     <?php endif; ?>

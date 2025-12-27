@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'cost' => !empty($_POST['cost']) ? floatval($_POST['cost']) : null,
                 'performed_by' => trim($_POST['performed_by'] ?? ''),
                 'notes' => trim($_POST['notes'] ?? ''),
-                'status' => $_POST['vehicle_status'] ?? null
+                'vehicle_status' => $_POST['vehicle_status'] ?? null
             ];
             
             $maintenanceId = $controller->addMaintenance($vehicleId, $data, $app->getUserId());
