@@ -119,13 +119,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Delete existing participants
                 $db->query("DELETE FROM meeting_participants WHERE meeting_id = ?", [$meetingId]);
                 
-                // Validate that there's only one Presidente and one Segretario
+                // Validate that there's only one Presidente and one Segretario (case-insensitive)
                 $presidenteCount = 0;
                 $segretarioCount = 0;
                 foreach ($_POST['participants'] as $participant) {
                     $role = $participant['role'] ?? null;
-                    if ($role === 'Presidente') $presidenteCount++;
-                    if ($role === 'Segretario') $segretarioCount++;
+                    if ($role && strcasecmp($role, 'Presidente') === 0) $presidenteCount++;
+                    if ($role && strcasecmp($role, 'Segretario') === 0) $segretarioCount++;
                 }
                 
                 if ($presidenteCount > 1) {
@@ -629,12 +629,12 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         const roles = [];
         document.querySelectorAll('select[name*="[role]"]').forEach(select => {
             if (select.value) {
-                roles.push(select.value);
+                roles.push(select.value.toLowerCase()); // Normalize to lowercase for comparison
             }
         });
         
-        const presidenteCount = roles.filter(r => r === 'Presidente').length;
-        const segretarioCount = roles.filter(r => r === 'Segretario').length;
+        const presidenteCount = roles.filter(r => r === 'presidente').length;
+        const segretarioCount = roles.filter(r => r === 'segretario').length;
         
         if (presidenteCount > 1) {
             e.preventDefault();

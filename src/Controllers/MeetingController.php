@@ -87,35 +87,36 @@ class MeetingController {
         // Find Presidente and Segretario from participants
         foreach ($meeting['participants'] as $participant) {
             $role = $participant['role'] ?? '';
-            if ($role === 'Presidente' || $role === 'presidente') {
-                // Get member name
-                if ($participant['member_type'] === 'junior') {
-                    $firstName = $participant['junior_first_name'] ?? '';
-                    $lastName = $participant['junior_last_name'] ?? '';
-                } else {
-                    $firstName = $participant['first_name'] ?? '';
-                    $lastName = $participant['last_name'] ?? '';
-                }
-                if ($firstName || $lastName) {
-                    $meeting['president'] = trim($firstName . ' ' . $lastName);
-                }
+            // Use case-insensitive comparison for consistency
+            if (strcasecmp($role, 'Presidente') === 0) {
+                $meeting['president'] = $this->extractMemberName($participant);
             }
-            if ($role === 'Segretario' || $role === 'segretario') {
-                // Get member name
-                if ($participant['member_type'] === 'junior') {
-                    $firstName = $participant['junior_first_name'] ?? '';
-                    $lastName = $participant['junior_last_name'] ?? '';
-                } else {
-                    $firstName = $participant['first_name'] ?? '';
-                    $lastName = $participant['last_name'] ?? '';
-                }
-                if ($firstName || $lastName) {
-                    $meeting['secretary'] = trim($firstName . ' ' . $lastName);
-                }
+            if (strcasecmp($role, 'Segretario') === 0) {
+                $meeting['secretary'] = $this->extractMemberName($participant);
             }
         }
         
         return $meeting;
+    }
+    
+    /**
+     * Helper method to extract member name from participant data
+     */
+    private function extractMemberName($participant) {
+        // Get member name based on member type
+        if ($participant['member_type'] === 'junior') {
+            $firstName = $participant['junior_first_name'] ?? '';
+            $lastName = $participant['junior_last_name'] ?? '';
+        } else {
+            $firstName = $participant['first_name'] ?? '';
+            $lastName = $participant['last_name'] ?? '';
+        }
+        
+        if ($firstName || $lastName) {
+            return trim($firstName . ' ' . $lastName);
+        }
+        
+        return '-';
     }
     
     /**
