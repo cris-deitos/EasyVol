@@ -359,8 +359,8 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                         <table class="table table-hover">
                                             <thead>
                                                 <tr>
-                                                    <th>Mezzo</th>
-                                                    <th>Targa</th>
+                                                    <th>Targa/Matricola</th>
+                                                    <th>Marca/Modello</th>
                                                     <th>Conducente</th>
                                                     <th>Ore di Utilizzo</th>
                                                     <th>Km Percorsi</th>
@@ -369,8 +369,13 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                             <tbody>
                                                 <?php foreach ($event['vehicles'] as $vehicle): ?>
                                                     <tr>
-                                                        <td><?php echo htmlspecialchars($vehicle['name']); ?></td>
-                                                        <td><?php echo htmlspecialchars($vehicle['license_plate'] ?? '-'); ?></td>
+                                                        <td><?php echo htmlspecialchars($vehicle['license_plate'] ?? $vehicle['serial_number'] ?? '-'); ?></td>
+                                                        <td>
+                                                            <?php 
+                                                            $brandModel = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
+                                                            echo htmlspecialchars($brandModel ?: '-'); 
+                                                            ?>
+                                                        </td>
                                                         <td><?php echo htmlspecialchars($vehicle['driver_name'] ?? '-'); ?></td>
                                                         <td><?php echo htmlspecialchars($vehicle['hours'] ?? 0); ?></td>
                                                         <td><?php echo htmlspecialchars($vehicle['km_traveled'] ?? 0); ?></td>
