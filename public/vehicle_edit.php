@@ -229,8 +229,6 @@ $pageTitle = $isEdit ? 'Modifica Mezzo' : 'Nuovo Mezzo';
                                            value="<?php echo htmlspecialchars($vehicle['year'] ?? ''); ?>">
                                 </div>
                             </div>
-                            
-
                         </div>
                     </div>
                     

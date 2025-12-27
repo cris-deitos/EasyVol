@@ -140,6 +140,23 @@ class SchedulerSyncController {
     }
     
     /**
+     * Build vehicle identifier from license plate, brand/model, or serial number
+     * 
+     * @param array $vehicle Vehicle data array
+     * @return string Vehicle identifier
+     */
+    private function buildVehicleIdentifier($vehicle) {
+        $vehicleIdent = $vehicle['license_plate'] ?? '';
+        if (empty($vehicleIdent)) {
+            $vehicleIdent = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
+        }
+        if (empty($vehicleIdent)) {
+            $vehicleIdent = $vehicle['serial_number'] ?? "Mezzo ID {$vehicle['id']}";
+        }
+        return $vehicleIdent;
+    }
+    
+    /**
      * Sincronizza scadenza assicurazione veicolo
      * 
      * @param int $vehicleId ID del veicolo
@@ -158,14 +175,7 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questa assicurazione
             $existing = $this->findSchedulerItem('insurance', $vehicleId);
             
-            // Build title from license plate, brand/model, or serial number
-            $vehicleIdent = $vehicle['license_plate'] ?? '';
-            if (empty($vehicleIdent)) {
-                $vehicleIdent = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
-            }
-            if (empty($vehicleIdent)) {
-                $vehicleIdent = $vehicle['serial_number'] ?? "Mezzo ID $vehicleId";
-            }
+            $vehicleIdent = $this->buildVehicleIdentifier($vehicle);
             
             $title = "Scadenza Assicurazione: {$vehicleIdent}";
             $description = "L'assicurazione del mezzo {$vehicleIdent} ";
@@ -220,14 +230,7 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questa revisione
             $existing = $this->findSchedulerItem('inspection', $vehicleId);
             
-            // Build title from license plate, brand/model, or serial number
-            $vehicleIdent = $vehicle['license_plate'] ?? '';
-            if (empty($vehicleIdent)) {
-                $vehicleIdent = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
-            }
-            if (empty($vehicleIdent)) {
-                $vehicleIdent = $vehicle['serial_number'] ?? "Mezzo ID $vehicleId";
-            }
+            $vehicleIdent = $this->buildVehicleIdentifier($vehicle);
             
             $title = "Scadenza Revisione: {$vehicleIdent}";
             $description = "La revisione del mezzo {$vehicleIdent} ";
@@ -286,11 +289,8 @@ class SchedulerSyncController {
             // Verifica se esiste già un item per questo documento
             $existing = $this->findSchedulerItem('vehicle_document', $documentId);
             
-            // Build vehicle identifier from license plate, brand/model, or serial number
-            $vehicleIdent = $document['license_plate'] ?? '';
-            if (empty($vehicleIdent)) {
-                $vehicleIdent = $document['vehicle_name'] ?? "Mezzo ID {$vehicleId}";
-            }
+            // Build vehicle identifier - use license_plate from document or vehicle_name as fallback
+            $vehicleIdent = $document['license_plate'] ?: ($document['vehicle_name'] ?? "Mezzo ID {$vehicleId}");
             
             $title = "Scadenza Documento {$document['document_type']}: {$vehicleIdent}";
             $description = "Il documento '{$document['document_type']}' del mezzo {$vehicleIdent} ";
