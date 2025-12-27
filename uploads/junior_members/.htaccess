@@ -1,0 +1,9 @@
+# Block direct access to all files
+Order Deny,Allow
+Deny from all
+
+# Block PHP execution for security
+<FilesMatch "\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>

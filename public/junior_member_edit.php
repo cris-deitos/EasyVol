@@ -91,11 +91,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = true;
                 // Gestione upload foto
                 if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-                    $controller->uploadPhoto($memberId, $_FILES['photo'], $app->getUserId());
+                    $uploadResult = $controller->uploadPhoto($memberId, $_FILES['photo'], $app->getUserId());
+                    if (!$uploadResult['success']) {
+                        $errors[] = 'Errore durante il caricamento della foto: ' . $uploadResult['error'];
+                        $success = false;
+                    }
                 }
                 
-                header('Location: junior_member_view.php?id=' . $memberId . '&success=1');
-                exit;
+                // Redirect only if no errors occurred
+                if ($success && empty($errors)) {
+                    header('Location: junior_member_view.php?id=' . $memberId . '&success=1');
+                    exit;
+                }
             } else {
                 $errors[] = 'Errore durante il salvataggio';
             }
