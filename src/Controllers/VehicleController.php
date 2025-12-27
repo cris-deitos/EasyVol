@@ -118,6 +118,10 @@ class VehicleController {
             $this->db->execute($sql, $params);
             $vehicleId = $this->db->lastInsertId();
             
+            if (!$vehicleId) {
+                throw new \Exception("Impossibile ottenere l'ID del veicolo creato");
+            }
+            
             // Sincronizza scadenze con lo scadenziario
             $syncController = new SchedulerSyncController($this->db, $this->config);
             if (!empty($data['insurance_expiry'])) {
@@ -136,7 +140,7 @@ class VehicleController {
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("Errore creazione mezzo: " . $e->getMessage());
-            return false;
+            throw new \Exception("Errore durante la creazione del mezzo: " . $e->getMessage());
         }
     }
     
@@ -207,7 +211,7 @@ class VehicleController {
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("Errore aggiornamento mezzo: " . $e->getMessage());
-            return false;
+            throw new \Exception("Errore durante l'aggiornamento del mezzo: " . $e->getMessage());
         }
     }
     
