@@ -244,7 +244,14 @@ $pageTitle = 'Gestione Partecipanti - ' . htmlspecialchars($meeting['title']);
                                     
                                     <div class="mb-3">
                                         <label class="form-label">Ruolo (opzionale)</label>
-                                        <input type="text" class="form-control" name="role" placeholder="es. Presidente, Segretario">
+                                        <select class="form-select" name="role">
+                                            <option value="">Nessun ruolo</option>
+                                            <option value="Presidente">Presidente</option>
+                                            <option value="Segretario">Segretario</option>
+                                            <option value="Uditore">Uditore</option>
+                                            <option value="Scrutatore">Scrutatore</option>
+                                            <option value="Presidente del Seggio Elettorale">Presidente del Seggio Elettorale</option>
+                                        </select>
                                     </div>
                                     
                                     <button type="submit" class="btn btn-success">

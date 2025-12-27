@@ -380,24 +380,41 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                                     <div class="list-group">
                                         <?php foreach ($meeting['agenda'] as $item): ?>
                                             <div class="list-group-item">
-                                                <div class="d-flex w-100 justify-content-between">
+                                                <div class="d-flex w-100 justify-content-between align-items-start">
                                                     <h5 class="mb-1">
                                                         <?php echo htmlspecialchars($item['order_number']); ?>. 
                                                         <?php echo htmlspecialchars($item['subject'] ?? ''); ?>
                                                     </h5>
-                                                    <?php if (!empty($item['vote_result'])): ?>
-                                                        <span class="badge bg-<?php echo $item['vote_result'] == 'approvato' ? 'success' : 'danger'; ?>">
-                                                            <?php echo htmlspecialchars(ucfirst($item['vote_result'])); ?>
-                                                        </span>
-                                                    <?php endif; ?>
+                                                    <div>
+                                                        <?php if (!empty($item['voting_result']) && $item['voting_result'] !== 'non_votato'): ?>
+                                                            <span class="badge bg-<?php echo $item['voting_result'] == 'approvato' ? 'success' : 'danger'; ?>">
+                                                                <?php echo htmlspecialchars(ucfirst($item['voting_result'])); ?>
+                                                            </span>
+                                                        <?php endif; ?>
+                                                        <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                            <a href="meeting_agenda_edit.php?meeting_id=<?php echo $meeting['id']; ?>&agenda_id=<?php echo $item['id']; ?>" 
+                                                               class="btn btn-sm btn-outline-primary ms-2" title="Modifica">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    </div>
                                                 </div>
                                                 <?php if (!empty($item['description'])): ?>
-                                                    <p class="mb-1"><?php echo nl2br(htmlspecialchars($item['description'])); ?></p>
+                                                    <p class="mb-2"><strong>Descrizione:</strong><br><?php echo nl2br(htmlspecialchars($item['description'])); ?></p>
                                                 <?php endif; ?>
-                                                <?php if (!empty($item['vote_details'])): ?>
-                                                    <small class="text-muted">
-                                                        Votazione: <?php echo htmlspecialchars($item['vote_details']); ?>
-                                                    </small>
+                                                <?php if (!empty($item['discussion'])): ?>
+                                                    <p class="mb-2"><strong>Discussione:</strong><br><?php echo nl2br(htmlspecialchars($item['discussion'])); ?></p>
+                                                <?php endif; ?>
+                                                <?php if (!empty($item['has_voting']) && $item['has_voting']): ?>
+                                                    <div class="mt-2 p-2 bg-light rounded">
+                                                        <strong><i class="bi bi-pie-chart"></i> Votazione:</strong><br>
+                                                        <small class="text-muted">
+                                                            Votanti: <?php echo htmlspecialchars($item['voting_total'] ?? 0); ?> | 
+                                                            Favorevoli: <?php echo htmlspecialchars($item['voting_in_favor'] ?? 0); ?> | 
+                                                            Contrari: <?php echo htmlspecialchars($item['voting_against'] ?? 0); ?> | 
+                                                            Astenuti: <?php echo htmlspecialchars($item['voting_abstentions'] ?? 0); ?>
+                                                        </small>
+                                                    </div>
                                                 <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
