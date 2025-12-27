@@ -141,23 +141,6 @@ class SchedulerSyncController {
     }
     
     /**
-     * Build vehicle identifier from license plate, brand/model, or serial number
-     * 
-     * @param array $vehicle Vehicle data array
-     * @return string Vehicle identifier
-     */
-    private function buildVehicleIdentifier($vehicle) {
-        $vehicleIdent = $vehicle['license_plate'] ?? '';
-        if (empty($vehicleIdent)) {
-            $vehicleIdent = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
-        }
-        if (empty($vehicleIdent)) {
-            $vehicleIdent = $vehicle['serial_number'] ?? "Mezzo ID {$vehicle['id']}";
-        }
-        return $vehicleIdent;
-    }
-    
-    /**
      * Sincronizza scadenza assicurazione veicolo
      * 
      * @param int $vehicleId ID del veicolo
