@@ -233,6 +233,15 @@ $pageTitle = 'Gestione Mezzo';
                         <strong>Autisti:</strong> <?php echo htmlspecialchars($activeMovement['departure_drivers']); ?>
                     </p>
                 <?php endif; ?>
+                <?php if (!empty($activeMovement['trailer_name'])): ?>
+                    <p class="mb-1">
+                        <strong>Rimorchio:</strong> 
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-link-45deg"></i> 
+                            <?php echo htmlspecialchars($activeMovement['trailer_name']); ?>
+                        </span>
+                    </p>
+                <?php endif; ?>
                 <?php if ($activeMovement['destination']): ?>
                     <p class="mb-0">
                         <strong>Destinazione:</strong> <?php echo htmlspecialchars($activeMovement['destination']); ?>

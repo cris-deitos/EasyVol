@@ -836,10 +836,10 @@ $pageTitle = 'Impostazioni Sistema';
                                     </div>
                                     
                                     <hr class="my-4">
-                                    <h6><i class="bi bi-truck me-2"></i>Notifiche Movimentazione Veicoli</h6>
+                                    <h6><i class="bi bi-truck me-2"></i>Notifiche Movimentazione Mezzi</h6>
                                     
                                     <div class="mb-3">
-                                        <label for="vehicle_movement_alert_emails" class="form-label">Email per Alert Movimentazione Veicoli</label>
+                                        <label for="vehicle_movement_alert_emails" class="form-label">Email per Alert Movimentazione Mezzi</label>
                                         <input type="text" class="form-control" id="vehicle_movement_alert_emails" name="vehicle_movement_alert_emails" 
                                                value="<?php 
                                                $vehicleEmails = $db->fetchOne("SELECT config_value FROM config WHERE config_key = 'vehicle_movement_alert_emails'");
@@ -847,7 +847,7 @@ $pageTitle = 'Impostazioni Sistema';
                                                ?>"
                                                placeholder="email1@example.com, email2@example.com"
                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
-                                        <small class="text-muted">Indirizzi email separati da virgola che riceveranno le notifiche di anomalie durante la movimentazione dei veicoli</small>
+                                        <small class="text-muted">Indirizzi email separati da virgola che riceveranno le notifiche di anomalie durante la movimentazione dei mezzi</small>
                                     </div>
                                     
                                     <hr class="my-4">

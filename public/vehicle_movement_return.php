@@ -38,8 +38,12 @@ if (!$movement || $movement['status'] !== 'in_mission') {
     exit;
 }
 
-// Get vehicle checklists for return
-$checklists = $controller->getVehicleChecklists($movement['vehicle_id'], 'return');
+// Get vehicle checklists for return (including trailer checklists if present)
+$checklists = $controller->getVehicleChecklists(
+    $movement['vehicle_id'], 
+    'return', 
+    $movement['trailer_id'] ?? null
+);
 
 $error = '';
 
@@ -201,6 +205,15 @@ $pageTitle = 'Registra Rientro Veicolo';
                     <strong>Veicolo:</strong> <?php echo htmlspecialchars($movement['vehicle_name']); ?>
                     (<?php echo htmlspecialchars($movement['license_plate']); ?>)
                 </p>
+                <?php if (!empty($movement['trailer_name'])): ?>
+                    <p class="mb-1">
+                        <strong>Rimorchio:</strong> 
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-link-45deg"></i> 
+                            <?php echo htmlspecialchars($movement['trailer_name']); ?>
+                        </span>
+                    </p>
+                <?php endif; ?>
                 <p class="mb-1">
                     <strong>Data/Ora Partenza:</strong> 
                     <?php echo date('d/m/Y H:i', strtotime($movement['departure_datetime'])); ?>

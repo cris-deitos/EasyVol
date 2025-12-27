@@ -129,9 +129,11 @@ class VehicleMovementController {
      */
     public function getActiveMovement($vehicleId) {
         $sql = "SELECT vm.*,
+                t.name as trailer_name, t.license_plate as trailer_license_plate,
                 GROUP_CONCAT(DISTINCT CONCAT(md.first_name, ' ', md.last_name) 
                     ORDER BY md.last_name SEPARATOR ', ') as departure_drivers
                 FROM vehicle_movements vm
+                LEFT JOIN vehicles t ON vm.trailer_id = t.id
                 LEFT JOIN vehicle_movement_drivers vmd ON vm.id = vmd.movement_id AND vmd.driver_type = 'departure'
                 LEFT JOIN members md ON vmd.member_id = md.id
                 WHERE vm.vehicle_id = ? AND vm.status = 'in_mission'
@@ -141,18 +143,43 @@ class VehicleMovementController {
     }
     
     /**
-     * Validate drivers have required license for vehicle
+     * Validate drivers have required license for vehicle and trailer
      */
-    public function validateDriversForVehicle($vehicleId, $driverIds) {
+    public function validateDriversForVehicle($vehicleId, $driverIds, $trailerId = null) {
         // Get vehicle license requirements
         $vehicle = $this->db->fetchOne("SELECT license_type FROM vehicles WHERE id = ?", [$vehicleId]);
         
-        if (!$vehicle || empty($vehicle['license_type'])) {
-            // No license requirement
-            return ['valid' => true];
+        if (!$vehicle) {
+            return ['valid' => false, 'message' => 'Veicolo non trovato'];
         }
         
-        $requiredLicenses = array_map('trim', explode(',', $vehicle['license_type']));
+        $requiredLicenses = [];
+        
+        // Add vehicle license requirements
+        if (!empty($vehicle['license_type'])) {
+            $requiredLicenses = array_merge($requiredLicenses, array_map('trim', explode(',', $vehicle['license_type'])));
+        }
+        
+        // Add trailer license requirements if trailer is attached
+        if ($trailerId) {
+            $trailer = $this->db->fetchOne("SELECT license_type, name FROM vehicles WHERE id = ? AND vehicle_type = 'rimorchio'", [$trailerId]);
+            
+            if (!$trailer) {
+                return ['valid' => false, 'message' => 'Rimorchio non trovato'];
+            }
+            
+            if (!empty($trailer['license_type'])) {
+                $requiredLicenses = array_merge($requiredLicenses, array_map('trim', explode(',', $trailer['license_type'])));
+            }
+        }
+        
+        // Remove duplicates
+        $requiredLicenses = array_unique($requiredLicenses);
+        
+        // If no license requirement
+        if (empty($requiredLicenses)) {
+            return ['valid' => true];
+        }
         
         // Get all drivers and their qualifications
         $driverIdsStr = implode(',', array_map('intval', $driverIds));
@@ -186,13 +213,18 @@ class VehicleMovementController {
         $availableLicenses = array_unique($availableLicenses);
         
         // Check if all required licenses are covered
+        $missingLicenses = [];
         foreach ($requiredLicenses as $required) {
             if (!in_array($required, $availableLicenses)) {
-                return [
-                    'valid' => false,
-                    'message' => "Nessun autista ha la patente richiesta: $required"
-                ];
+                $missingLicenses[] = $required;
             }
+        }
+        
+        if (!empty($missingLicenses)) {
+            return [
+                'valid' => false,
+                'message' => "Nessun autista ha le patenti richieste: " . implode(', ', $missingLicenses)
+            ];
         }
         
         return ['valid' => true];
@@ -220,21 +252,44 @@ class VehicleMovementController {
                 throw new \Exception('Il veicolo è già in missione');
             }
             
-            // Validate drivers
-            $driverValidation = $this->validateDriversForVehicle($data['vehicle_id'], $data['drivers']);
+            // If trailer is specified, validate it
+            $trailerId = !empty($data['trailer_id']) ? intval($data['trailer_id']) : null;
+            if ($trailerId) {
+                // Check trailer exists and is a rimorchio
+                $trailer = $this->db->fetchOne(
+                    "SELECT * FROM vehicles WHERE id = ? AND vehicle_type = 'rimorchio'", 
+                    [$trailerId]
+                );
+                if (!$trailer) {
+                    throw new \Exception('Rimorchio non trovato o non valido');
+                }
+                
+                // Check trailer is not in mission
+                if ($this->isVehicleInMission($trailerId)) {
+                    throw new \Exception('Il rimorchio è già in missione');
+                }
+                
+                if ($trailer['status'] === 'fuori_servizio') {
+                    throw new \Exception('Il rimorchio è fuori servizio e non può essere utilizzato');
+                }
+            }
+            
+            // Validate drivers (including trailer license if present)
+            $driverValidation = $this->validateDriversForVehicle($data['vehicle_id'], $data['drivers'], $trailerId);
             if (!$driverValidation['valid']) {
                 throw new \Exception($driverValidation['message']);
             }
             
             // Insert movement record
             $sql = "INSERT INTO vehicle_movements (
-                vehicle_id, departure_datetime, departure_km, departure_fuel_level,
+                vehicle_id, trailer_id, departure_datetime, departure_km, departure_fuel_level,
                 service_type, destination, authorized_by, departure_notes,
                 departure_anomaly_flag, status, created_by_member_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'in_mission', ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'in_mission', ?)";
             
             $this->db->execute($sql, [
                 $data['vehicle_id'],
+                $trailerId,
                 $data['departure_datetime'],
                 $data['departure_km'] ?? null,
                 $data['departure_fuel_level'] ?? null,
@@ -453,6 +508,8 @@ class VehicleMovementController {
         
         $sql = "SELECT vm.*,
                 v.license_plate, v.brand, v.model, v.vehicle_type,
+                t.id as trailer_id, t.name as trailer_name, t.license_plate as trailer_license_plate, 
+                t.serial_number as trailer_serial_number,
                 m.first_name as creator_first_name, m.last_name as creator_last_name,
                 GROUP_CONCAT(DISTINCT CONCAT(md.first_name, ' ', md.last_name) 
                     ORDER BY md.last_name SEPARATOR ', ') as departure_drivers,
@@ -460,6 +517,7 @@ class VehicleMovementController {
                     ORDER BY mr.last_name SEPARATOR ', ') as return_drivers
                 FROM vehicle_movements vm
                 JOIN vehicles v ON vm.vehicle_id = v.id
+                LEFT JOIN vehicles t ON vm.trailer_id = t.id
                 JOIN members m ON vm.created_by_member_id = m.id
                 LEFT JOIN vehicle_movement_drivers vmd ON vm.id = vmd.movement_id AND vmd.driver_type = 'departure'
                 LEFT JOIN members md ON vmd.member_id = md.id
@@ -479,10 +537,13 @@ class VehicleMovementController {
     public function getMovement($id) {
         $sql = "SELECT vm.*,
                 v.license_plate, v.brand, v.model, v.vehicle_type, v.name as vehicle_name,
+                t.id as trailer_id, t.name as trailer_name, t.license_plate as trailer_license_plate, 
+                t.serial_number as trailer_serial_number,
                 m.first_name as creator_first_name, m.last_name as creator_last_name,
                 m.registration_number as creator_reg_number
                 FROM vehicle_movements vm
                 JOIN vehicles v ON vm.vehicle_id = v.id
+                LEFT JOIN vehicles t ON vm.trailer_id = t.id
                 JOIN members m ON vm.created_by_member_id = m.id
                 WHERE vm.id = ?";
         
@@ -522,9 +583,12 @@ class VehicleMovementController {
     }
     
     /**
-     * Get vehicle checklists
+     * Get vehicle checklists (including trailer checklists if trailer is specified)
      */
-    public function getVehicleChecklists($vehicleId, $timing = null) {
+    public function getVehicleChecklists($vehicleId, $timing = null, $trailerId = null) {
+        $checklists = [];
+        
+        // Get vehicle checklists
         $where = ["vehicle_id = ?"];
         $params = [$vehicleId];
         
@@ -539,7 +603,58 @@ class VehicleMovementController {
                 WHERE $whereClause 
                 ORDER BY display_order, id";
         
-        return $this->db->fetchAll($sql, $params);
+        $checklists = $this->db->fetchAll($sql, $params);
+        
+        // Add trailer checklists if trailer is specified
+        if ($trailerId) {
+            $trailerWhere = ["vehicle_id = ?"];
+            $trailerParams = [$trailerId];
+            
+            if ($timing) {
+                $trailerWhere[] = "(check_timing = ? OR check_timing = 'both')";
+                $trailerParams[] = $timing;
+            }
+            
+            $trailerWhereClause = implode(' AND ', $trailerWhere);
+            
+            $trailerSql = "SELECT vc.*, v.name as vehicle_name 
+                          FROM vehicle_checklists vc
+                          JOIN vehicles v ON vc.vehicle_id = v.id
+                          WHERE $trailerWhereClause 
+                          ORDER BY vc.display_order, vc.id";
+            
+            $trailerChecklists = $this->db->fetchAll($trailerSql, $trailerParams);
+            
+            // Mark trailer checklists and add them
+            foreach ($trailerChecklists as &$item) {
+                $item['is_trailer_item'] = true;
+                $item['item_name'] = '[RIMORCHIO] ' . $item['item_name'];
+            }
+            
+            $checklists = array_merge($checklists, $trailerChecklists);
+        }
+        
+        return $checklists;
+    }
+    
+    /**
+     * Get available trailers (rimorchi not in mission and not fuori_servizio)
+     */
+    public function getAvailableTrailers() {
+        $sql = "SELECT v.id, v.name, v.license_plate, v.serial_number, v.status, v.license_type
+                FROM vehicles v
+                WHERE v.vehicle_type = 'rimorchio' 
+                AND v.status != 'fuori_servizio'
+                AND v.status != 'dismesso'
+                AND v.id NOT IN (
+                    SELECT trailer_id 
+                    FROM vehicle_movements 
+                    WHERE trailer_id IS NOT NULL 
+                    AND status = 'in_mission'
+                )
+                ORDER BY v.name, v.serial_number";
+        
+        return $this->db->fetchAll($sql);
     }
     
     /**
