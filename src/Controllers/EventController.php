@@ -150,7 +150,7 @@ class EventController {
      * Ottieni interventi di un evento
      */
     private function getInterventions($eventId) {
-        $sql = "SELECT * FROM interventions WHERE event_id = ? ORDER BY start_time";
+        $sql = "SELECT * FROM interventions WHERE event_id = ? ORDER BY start_time DESC";
         return $this->db->fetchAll($sql, [$eventId]);
     }
     
@@ -170,7 +170,7 @@ class EventController {
      * Ottieni mezzi di un evento
      */
     private function getVehicles($eventId) {
-        $sql = "SELECT ev.*, v.name, v.license_plate
+        $sql = "SELECT ev.*, v.name, v.license_plate, v.serial_number, v.brand, v.model, v.vehicle_type
                 FROM event_vehicles ev
                 JOIN vehicles v ON ev.vehicle_id = v.id
                 WHERE ev.event_id = ?";
@@ -224,6 +224,148 @@ class EventController {
         } catch (\Exception $e) {
             error_log("Errore eliminazione evento: " . $e->getMessage());
             return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
+    
+    /**
+     * Aggiungi intervento a un evento
+     */
+    public function addIntervention($eventId, $data, $userId) {
+        try {
+            $sql = "INSERT INTO interventions (event_id, title, description, start_time, end_time, location, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)";
+            
+            $params = [
+                $eventId,
+                $data['title'],
+                $data['description'] ?? null,
+                $data['start_time'],
+                $data['end_time'] ?? null,
+                $data['location'] ?? null,
+                $data['status'] ?? 'in_corso'
+            ];
+            
+            $this->db->execute($sql, $params);
+            $interventionId = $this->db->lastInsertId();
+            
+            $this->logActivity($userId, 'interventions', 'create', $interventionId, 'Aggiunto intervento a evento');
+            
+            return $interventionId;
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta intervento: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Cerca membri disponibili per un evento
+     */
+    public function getAvailableMembers($eventId, $search = '') {
+        try {
+            $sql = "SELECT m.id, m.first_name, m.last_name, m.registration_number
+                    FROM members m
+                    WHERE m.status = 'attivo'
+                    AND m.id NOT IN (SELECT member_id FROM event_participants WHERE event_id = ?)";
+            
+            $params = [$eventId];
+            
+            if (!empty($search)) {
+                $sql .= " AND (m.first_name LIKE ? OR m.last_name LIKE ? OR m.registration_number LIKE ?)";
+                $searchTerm = '%' . $search . '%';
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            $sql .= " ORDER BY m.last_name, m.first_name LIMIT 20";
+            
+            return $this->db->fetchAll($sql, $params);
+        } catch (\Exception $e) {
+            error_log("Errore ricerca membri: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Aggiungi partecipante a un evento
+     */
+    public function addParticipant($eventId, $memberId, $userId) {
+        try {
+            // Check if already exists
+            $sql = "SELECT id FROM event_participants WHERE event_id = ? AND member_id = ?";
+            $existing = $this->db->fetchOne($sql, [$eventId, $memberId]);
+            
+            if ($existing) {
+                return ['error' => 'Il partecipante è già presente nell\'evento'];
+            }
+            
+            $sql = "INSERT INTO event_participants (event_id, member_id, role, hours, notes, created_at)
+                    VALUES (?, ?, NULL, 0, NULL, NOW())";
+            
+            $this->db->execute($sql, [$eventId, $memberId]);
+            
+            $this->logActivity($userId, 'event_participants', 'create', $eventId, 'Aggiunto partecipante a evento');
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta partecipante: " . $e->getMessage());
+            return ['error' => 'Errore durante l\'aggiunta del partecipante'];
+        }
+    }
+    
+    /**
+     * Cerca veicoli disponibili per un evento
+     */
+    public function getAvailableVehicles($eventId, $search = '') {
+        try {
+            $sql = "SELECT v.id, v.name, v.license_plate, v.serial_number, v.brand, v.model, v.vehicle_type
+                    FROM vehicles v
+                    WHERE v.status = 'operativo'
+                    AND v.id NOT IN (SELECT vehicle_id FROM event_vehicles WHERE event_id = ?)";
+            
+            $params = [$eventId];
+            
+            if (!empty($search)) {
+                $sql .= " AND (v.name LIKE ? OR v.license_plate LIKE ? OR v.serial_number LIKE ?)";
+                $searchTerm = '%' . $search . '%';
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            $sql .= " ORDER BY v.name LIMIT 20";
+            
+            return $this->db->fetchAll($sql, $params);
+        } catch (\Exception $e) {
+            error_log("Errore ricerca veicoli: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Aggiungi veicolo a un evento
+     */
+    public function addVehicle($eventId, $vehicleId, $userId) {
+        try {
+            // Check if already exists
+            $sql = "SELECT id FROM event_vehicles WHERE event_id = ? AND vehicle_id = ?";
+            $existing = $this->db->fetchOne($sql, [$eventId, $vehicleId]);
+            
+            if ($existing) {
+                return ['error' => 'Il veicolo è già presente nell\'evento'];
+            }
+            
+            $sql = "INSERT INTO event_vehicles (event_id, vehicle_id, driver_name, hours, km_traveled, notes, created_at)
+                    VALUES (?, ?, NULL, 0, 0, NULL, NOW())";
+            
+            $this->db->execute($sql, [$eventId, $vehicleId]);
+            
+            $this->logActivity($userId, 'event_vehicles', 'create', $eventId, 'Aggiunto veicolo a evento');
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta veicolo: " . $e->getMessage());
+            return ['error' => 'Errore durante l\'aggiunta del veicolo'];
         }
     }
 }
