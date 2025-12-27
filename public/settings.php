@@ -262,6 +262,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                 $smtpAuth = isset($_POST['smtp_auth']) ? '1' : '0';
                 $smtpDebug = isset($_POST['smtp_debug']) ? '1' : '0';
                 
+                // Vehicle movement alert emails
+                $vehicleMovementAlertEmails = trim($_POST['vehicle_movement_alert_emails'] ?? '');
+                
                 // Validate required fields
                 if (empty($fromAddress) || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
                     $errors[] = 'Indirizzo email mittente non valido';
@@ -298,6 +301,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $errors[] = 'URL di base non valido';
                 }
                 
+                // Validate vehicle movement alert emails
+                if (!empty($vehicleMovementAlertEmails)) {
+                    $emails = array_map('trim', explode(',', $vehicleMovementAlertEmails));
+                    foreach ($emails as $email) {
+                        if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            $errors[] = 'Indirizzo email non valido per alert movimentazione: ' . $email;
+                        }
+                    }
+                }
+                
                 if (empty($errors)) {
                     // Save email configuration to database in a transaction
                     $emailSettings = [
@@ -316,6 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                         'email_smtp_encryption' => $smtpEncryption,
                         'email_smtp_auth' => $smtpAuth,
                         'email_smtp_debug' => $smtpDebug,
+                        'vehicle_movement_alert_emails' => $vehicleMovementAlertEmails,
                     ];
                     
                     // Use transaction for atomicity and better performance
@@ -819,6 +833,21 @@ $pageTitle = 'Impostazioni Sistema';
                                             </div>
                                             <small class="text-muted">Abilita log dettagliati per risolvere problemi</small>
                                         </div>
+                                    </div>
+                                    
+                                    <hr class="my-4">
+                                    <h6><i class="bi bi-truck me-2"></i>Notifiche Movimentazione Veicoli</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="vehicle_movement_alert_emails" class="form-label">Email per Alert Movimentazione Veicoli</label>
+                                        <input type="text" class="form-control" id="vehicle_movement_alert_emails" name="vehicle_movement_alert_emails" 
+                                               value="<?php 
+                                               $vehicleEmails = $db->fetchOne("SELECT config_value FROM config WHERE config_key = 'vehicle_movement_alert_emails'");
+                                               echo htmlspecialchars($vehicleEmails['config_value'] ?? ''); 
+                                               ?>"
+                                               placeholder="email1@example.com, email2@example.com"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        <small class="text-muted">Indirizzi email separati da virgola che riceveranno le notifiche di anomalie durante la movimentazione dei veicoli</small>
                                     </div>
                                     
                                     <hr class="my-4">

@@ -72,6 +72,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <i class="bi bi-truck"></i> Mezzi
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'vehicle_movements.php' ? 'active' : '' ?>" href="vehicle_movements.php">
+                    <i class="bi bi-shuffle"></i> Movimenti Veicoli
+                </a>
+            </li>
             <?php endif; ?>
             
             <?php if ($app->checkPermission('warehouse', 'view')): ?>
