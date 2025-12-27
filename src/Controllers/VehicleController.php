@@ -226,8 +226,8 @@ class VehicleController {
             $this->db->beginTransaction();
             
             $sql = "INSERT INTO vehicle_maintenance (
-                vehicle_id, maintenance_type, date, description, cost, performed_by, notes, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                vehicle_id, maintenance_type, date, description, cost, performed_by, notes, status, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $params = [
                 $vehicleId,
@@ -237,6 +237,7 @@ class VehicleController {
                 $data['cost'] ?? null,
                 $data['performed_by'] ?? null,
                 $data['notes'] ?? null,
+                $data['vehicle_status'] ?? null,
                 $userId
             ];
             
