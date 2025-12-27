@@ -239,7 +239,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                     <th>Data</th>
                                                     <th>Tipo</th>
                                                     <th>Quantità</th>
-                                                    <th>Causale</th>
+                                                    <th>Note</th>
                                                     <th>Utente</th>
                                                 </tr>
                                             </thead>
@@ -253,8 +253,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                             </span>
                                                         </td>
                                                         <td><?php echo htmlspecialchars($movement['quantity']); ?></td>
-                                                        <td><?php echo htmlspecialchars($movement['reason'] ?? '-'); ?></td>
-                                                        <td><?php echo htmlspecialchars($movement['user_name'] ?? '-'); ?></td>
+                                                        <td><?php echo htmlspecialchars($movement['notes'] ?? '-'); ?></td>
+                                                        <td><?php echo htmlspecialchars($movement['created_by_name'] ?? '-'); ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>

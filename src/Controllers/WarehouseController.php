@@ -241,7 +241,9 @@ class WarehouseController {
      * Ottieni movimenti articolo
      */
     public function getMovements($itemId, $limit = null) {
-        $sql = "SELECT wm.*, m.first_name, m.last_name, u.username as created_by_name
+        $sql = "SELECT wm.*, 
+                CONCAT(m.first_name, ' ', m.last_name) as member_name,
+                u.username as created_by_name
                 FROM warehouse_movements wm
                 LEFT JOIN members m ON wm.member_id = m.id
                 LEFT JOIN users u ON wm.created_by = u.id
