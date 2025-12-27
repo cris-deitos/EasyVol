@@ -525,7 +525,6 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                     alert('Stato aggiornato con successo');
                     // Stay on the participants tab after reload
                     window.location.href = window.location.pathname + '?id=<?php echo $meetingId; ?>#participants';
-                    window.location.reload();
                 } else {
                     alert('Errore: ' + (data.message || 'Impossibile aggiornare lo stato'));
                 }
@@ -566,7 +565,6 @@ $pageTitle = 'Dettaglio Riunione: ' . $meeting['title'];
                     alert(`${data.updated} partecipante(i) aggiornato(i) con successo`);
                     // Stay on the participants tab after reload
                     window.location.href = window.location.pathname + '?id=<?php echo $meetingId; ?>#participants';
-                    window.location.reload();
                 } else {
                     alert('Errore: ' + (data.message || 'Impossibile aggiornare lo stato'));
                 }
