@@ -118,7 +118,7 @@ class VehicleController {
             $this->db->execute($sql, $params);
             $vehicleId = $this->db->lastInsertId();
             
-            if (!$vehicleId) {
+            if ($vehicleId === false || $vehicleId === null || $vehicleId < 1) {
                 throw new \Exception("Impossibile ottenere l'ID del veicolo creato");
             }
             

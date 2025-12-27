@@ -97,19 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 if ($isEdit) {
-                    $result = $controller->update($vehicleId, $data, $app->getUserId());
+                    $controller->update($vehicleId, $data, $app->getUserId());
                 } else {
                     $vehicleId = $controller->create($data, $app->getUserId());
-                    $result = $vehicleId;
                 }
                 
-                if ($result) {
-                    $success = true;
-                    header('Location: vehicle_view.php?id=' . $vehicleId . '&success=1');
-                    exit;
-                } else {
-                    $errors[] = 'Errore durante il salvataggio del mezzo';
-                }
+                // Success - redirect to vehicle view
+                $success = true;
+                header('Location: vehicle_view.php?id=' . $vehicleId . '&success=1');
+                exit;
+                
             } catch (\Exception $e) {
                 $errors[] = $e->getMessage();
             }
