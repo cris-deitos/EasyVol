@@ -10,6 +10,24 @@ namespace EasyVol\Utils;
 class VehicleIdentifier {
     
     /**
+     * Build brand + model string with proper trimming
+     * 
+     * @param array $vehicle Vehicle data array
+     * @return string Brand and model combined, or empty string
+     */
+    private static function buildBrandModel(array $vehicle): string {
+        $brand = trim($vehicle['brand'] ?? '');
+        $model = trim($vehicle['model'] ?? '');
+        
+        // Only combine if at least one is non-empty
+        if ($brand !== '' || $model !== '') {
+            return trim("$brand $model");
+        }
+        
+        return '';
+    }
+    
+    /**
      * Build a human-readable vehicle identifier from available fields
      * Priority: license_plate > serial_number > brand+model > fallback
      * 
@@ -18,18 +36,20 @@ class VehicleIdentifier {
      */
     public static function build(array $vehicle): string {
         // Priority 1: License plate
-        if (!empty($vehicle['license_plate'])) {
-            return $vehicle['license_plate'];
+        $licensePlate = trim($vehicle['license_plate'] ?? '');
+        if ($licensePlate !== '') {
+            return $licensePlate;
         }
         
         // Priority 2: Serial number / Chassis number
-        if (!empty($vehicle['serial_number'])) {
-            return $vehicle['serial_number'];
+        $serialNumber = trim($vehicle['serial_number'] ?? '');
+        if ($serialNumber !== '') {
+            return $serialNumber;
         }
         
         // Priority 3: Brand + Model
-        $brandModel = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
-        if (!empty($brandModel)) {
+        $brandModel = self::buildBrandModel($vehicle);
+        if ($brandModel !== '') {
             return $brandModel;
         }
         
@@ -51,18 +71,20 @@ class VehicleIdentifier {
      */
     public static function generateInternalName(array $vehicle): string {
         // Priority 1: License plate
-        if (!empty($vehicle['license_plate'])) {
-            return $vehicle['license_plate'];
+        $licensePlate = trim($vehicle['license_plate'] ?? '');
+        if ($licensePlate !== '') {
+            return $licensePlate;
         }
         
         // Priority 2: Serial number / Chassis number
-        if (!empty($vehicle['serial_number'])) {
-            return $vehicle['serial_number'];
+        $serialNumber = trim($vehicle['serial_number'] ?? '');
+        if ($serialNumber !== '') {
+            return $serialNumber;
         }
         
         // Priority 3: Brand + Model
-        $brandModel = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
-        if (!empty($brandModel)) {
+        $brandModel = self::buildBrandModel($vehicle);
+        if ($brandModel !== '') {
             return $brandModel;
         }
         

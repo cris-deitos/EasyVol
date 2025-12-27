@@ -498,7 +498,7 @@ class VehicleController {
      * Valida dati mezzo
      */
     private function validateVehicleData($data, $id = null) {
-        $required = ['vehicle_type', 'name'];
+        $required = ['vehicle_type'];
         
         foreach ($required as $field) {
             if (empty($data[$field])) {
