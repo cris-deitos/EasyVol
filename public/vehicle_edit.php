@@ -85,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'year' => $yearValue,
             'serial_number' => trim($_POST['serial_number'] ?? ''),
             'status' => $_POST['status'] ?? 'operativo',
+            'license_type' => trim($_POST['license_type'] ?? ''),
             'insurance_expiry' => $insuranceExpiry !== '' ? $insuranceExpiry : null,
             'inspection_expiry' => $inspectionExpiry !== '' ? $inspectionExpiry : null,
             'notes' => trim($_POST['notes'] ?? '')
@@ -195,6 +196,21 @@ $pageTitle = $isEdit ? 'Modifica Mezzo' : 'Nuovo Mezzo';
                                         <option value="in_manutenzione" <?php echo ($vehicle['status'] ?? '') === 'in_manutenzione' ? 'selected' : ''; ?>>In Manutenzione</option>
                                         <option value="fuori_servizio" <?php echo ($vehicle['status'] ?? '') === 'fuori_servizio' ? 'selected' : ''; ?>>Fuori Servizio</option>
                                     </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="license_type" class="form-label">
+                                        <i class="bi bi-card-heading"></i> Patente Richiesta
+                                    </label>
+                                    <input type="text" class="form-control" id="license_type" name="license_type" 
+                                           value="<?php echo htmlspecialchars($vehicle['license_type'] ?? ''); ?>"
+                                           placeholder="es: B, C, B,E, Nautica">
+                                    <small class="text-muted">
+                                        Patenti richieste per guidare questo mezzo. Inserire le lettere separate da virgola (es: B,E o C,E o Nautica). 
+                                        Valori possibili: A, B, C, D, E, Nautica
+                                    </small>
                                 </div>
                             </div>
                             
