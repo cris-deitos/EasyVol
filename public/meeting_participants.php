@@ -146,7 +146,7 @@ $pageTitle = 'Gestione Partecipanti - ' . htmlspecialchars($meeting['title']);
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><i class="bi bi-people"></i> <?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <a href="meeting_view.php?id=<?php echo $meetingId; ?>" class="btn btn-sm btn-outline-secondary">
+                        <a href="meeting_view.php?id=<?php echo $meetingId; ?>#participants" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-arrow-left"></i> Torna alla riunione
                         </a>
                     </div>
