@@ -11,6 +11,18 @@
 !/uploads/qrcodes/
 /uploads/qrcodes/*
 !/uploads/qrcodes/.gitkeep
+!/uploads/members/
+/uploads/members/*
+!/uploads/members/.htaccess
+!/uploads/members/photos/
+/uploads/members/photos/*
+!/uploads/members/photos/.gitkeep
+!/uploads/junior_members/
+/uploads/junior_members/*
+!/uploads/junior_members/.htaccess
+!/uploads/junior_members/photos/
+/uploads/junior_members/photos/*
+!/uploads/junior_members/photos/.gitkeep
 
 # Vendor (if using Composer)
 /vendor/
