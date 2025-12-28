@@ -51,6 +51,7 @@ Thumbs.db
 *.backup
 *.sql
 !database_schema.sql
+!seed_print_templates.sql
 !database/migrations/*.sql
 !migrations/*.sql
 
