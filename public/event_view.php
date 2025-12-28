@@ -639,7 +639,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             const description = document.getElementById('intervention_description').value.trim();
             const startTime = document.getElementById('intervention_start_time').value;
             const endTime = document.getElementById('intervention_end_time').value;
-            const location = document.getElementById('intervention_location').value.trim();
+            const interventionLocation = document.getElementById('intervention_location').value.trim();
             const status = document.getElementById('intervention_status').value;
             
             if (!title || !startTime) {
@@ -659,7 +659,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     description: description,
                     start_time: startTime,
                     end_time: endTime,
-                    location: location,
+                    location: interventionLocation,
                     status: status,
                     csrf_token: csrfToken
                 })
@@ -675,7 +675,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else if (data.success) {
                     alert(data.message || 'Intervento aggiunto con successo');
-                    location.reload();
+                    window.location.reload();
                 } else {
                     alert('Risposta non valida dal server');
                 }
@@ -744,7 +744,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else {
                     alert(data.message);
-                    location.reload();
+                    window.location.reload();
                 }
             })
             .catch(error => {
@@ -812,7 +812,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else {
                     alert(data.message);
-                    location.reload();
+                    window.location.reload();
                 }
             })
             .catch(error => {
@@ -876,7 +876,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             const description = document.getElementById('edit_intervention_description').value.trim();
             const startTime = document.getElementById('edit_intervention_start_time').value;
             const endTime = document.getElementById('edit_intervention_end_time').value;
-            const location = document.getElementById('edit_intervention_location').value.trim();
+            const interventionLocation = document.getElementById('edit_intervention_location').value.trim();
             const status = document.getElementById('edit_intervention_status').value;
             
             if (!title || !startTime) {
@@ -896,7 +896,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     description: description,
                     start_time: startTime,
                     end_time: endTime || null,
-                    location: location,
+                    location: interventionLocation,
                     status: status,
                     csrf_token: csrfToken
                 })
@@ -912,7 +912,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else if (data.success) {
                     alert(data.message || 'Intervento aggiornato con successo');
-                    location.reload();
+                    window.location.reload();
                 } else {
                     alert('Risposta non valida dal server');
                 }
@@ -972,7 +972,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else if (data.success) {
                     alert(data.message || 'Intervento chiuso con successo');
-                    location.reload();
+                    window.location.reload();
                 } else {
                     alert('Risposta non valida dal server');
                 }
@@ -1011,7 +1011,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else if (data.success) {
                     alert(data.message || 'Intervento riaperto con successo');
-                    location.reload();
+                    window.location.reload();
                 } else {
                     alert('Risposta non valida dal server');
                 }

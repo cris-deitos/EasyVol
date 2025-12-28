@@ -419,6 +419,41 @@ class MeetingController {
     }
     
     /**
+     * Elimina partecipante dalla riunione
+     */
+    public function deleteParticipant($participantId, $userId) {
+        try {
+            // Get participant details for logging
+            $sql = "SELECT mp.*, m.first_name, m.last_name, jm.first_name as junior_first_name, jm.last_name as junior_last_name
+                    FROM meeting_participants mp
+                    LEFT JOIN members m ON mp.member_id = m.id AND mp.member_type = 'adult'
+                    LEFT JOIN junior_members jm ON mp.junior_member_id = jm.id AND mp.member_type = 'junior'
+                    WHERE mp.id = ?";
+            $participant = $this->db->fetchOne($sql, [$participantId]);
+            
+            if (!$participant) {
+                return false;
+            }
+            
+            // Delete participant
+            $sql = "DELETE FROM meeting_participants WHERE id = ?";
+            $this->db->execute($sql, [$participantId]);
+            
+            // Log activity
+            $name = $participant['member_type'] === 'adult' 
+                ? ($participant['first_name'] . ' ' . $participant['last_name'])
+                : ($participant['junior_first_name'] . ' ' . $participant['junior_last_name']);
+            $this->logActivity($userId, 'meeting', 'delete_participant', $participant['meeting_id'], 
+                "Rimosso partecipante: {$name}");
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore eliminazione partecipante: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Invia convocazione via email a tutti i partecipanti
      */
     public function sendInvitations($meetingId, $userId) {

@@ -115,6 +115,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $errors[] = $result['message'] ?? 'Errore durante l\'invio delle convocazioni';
                 }
                 break;
+                
+            case 'delete_participant':
+                $participantId = intval($_POST['participant_id'] ?? 0);
+                
+                if ($participantId && $meetingController->deleteParticipant($participantId, $app->getUserId())) {
+                    $success = true;
+                    $message = 'Partecipante eliminato con successo';
+                    // Reload meeting data
+                    $meeting = $meetingController->get($meetingId);
+                } else {
+                    $errors[] = 'Errore durante l\'eliminazione del partecipante';
+                }
+                break;
         }
     }
 }
@@ -400,8 +413,18 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                                                                     echo ' ';
                                                                     echo htmlspecialchars($participant['last_name'] ?? $participant['junior_last_name']); 
                                                                 ?>"
-                                                                data-current-status="<?php echo $participant['attendance_status'] ?? 'invited'; ?>">
+                                                                data-current-status="<?php echo $participant['attendance_status'] ?? 'invited'; ?>"
+                                                                title="Modifica presenza">
                                                             <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-danger" 
+                                                                onclick="deleteParticipant(<?php echo $participant['id']; ?>, '<?php 
+                                                                    echo htmlspecialchars($participant['first_name'] ?? $participant['junior_first_name']); 
+                                                                    echo ' ';
+                                                                    echo htmlspecialchars($participant['last_name'] ?? $participant['junior_last_name']); 
+                                                                ?>')"
+                                                                title="Elimina partecipante">
+                                                            <i class="bi bi-trash"></i>
                                                         </button>
                                                     </div>
                                                 </td>
@@ -508,6 +531,39 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                 delegatedField.style.display = 'none';
             }
         });
+        
+        // Delete participant function
+        function deleteParticipant(participantId, participantName) {
+            if (!confirm('Sei sicuro di voler eliminare ' + participantName + ' dalla lista dei partecipanti?')) {
+                return;
+            }
+            
+            // Create and submit form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '';
+            
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'delete_participant';
+            form.appendChild(actionInput);
+            
+            const participantIdInput = document.createElement('input');
+            participantIdInput.type = 'hidden';
+            participantIdInput.name = 'participant_id';
+            participantIdInput.value = participantId;
+            form.appendChild(participantIdInput);
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = '<?php echo CsrfProtection::generateToken(); ?>';
+            form.appendChild(csrfInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 </body>
 </html>
