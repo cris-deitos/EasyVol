@@ -4,7 +4,6 @@ namespace EasyVol\Controllers;
 use EasyVol\Database;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 /**
  * Report Controller

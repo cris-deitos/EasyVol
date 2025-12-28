@@ -33,7 +33,9 @@ $reportType = $_GET['type'] ?? '';
 $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
 
 // Validazione anno
-if ($year < 2000 || $year > date('Y') + 1) {
+$minYear = $config['reports']['min_year'] ?? 2020;
+$maxYear = date('Y') + 1;
+if ($year < $minYear || $year > $maxYear) {
     http_response_code(400);
     die('Anno non valido');
 }

@@ -51,4 +51,8 @@ return [
         'margin_left' => 10,
         'margin_right' => 10,
     ],
+    
+    'reports' => [
+        'min_year' => 2020, // Minimum year for report generation
+    ],
 ];

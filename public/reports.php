@@ -175,7 +175,8 @@ $pageTitle = 'Report e Statistiche';
                                             <select id="reportYear" class="form-select" style="max-width: 200px;">
                                                 <?php 
                                                 $currentYear = date('Y');
-                                                for ($y = $currentYear; $y >= 2020; $y--): 
+                                                $minYear = $config['reports']['min_year'] ?? 2020;
+                                                for ($y = $currentYear; $y >= $minYear; $y--): 
                                                 ?>
                                                     <option value="<?php echo $y; ?>" <?php echo $y == $currentYear ? 'selected' : ''; ?>>
                                                         <?php echo $y; ?>
