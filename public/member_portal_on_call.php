@@ -271,7 +271,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                         Inserisci la tua <strong>matricola</strong> e <strong>cognome</strong> per accedere alla gestione delle tue reperibilità.
                     </div>
                     
-                    <form method="POST" action="">
+                    <form method="POST" action="member_portal_on_call.php">
                         <input type="hidden" name="csrf_token" value="<?= CsrfProtection::generateToken() ?>">
                         <input type="hidden" name="action" value="login">
                         
@@ -333,7 +333,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                         <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Aggiungi Nuova Reperibilità</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="">
+                        <form method="POST" action="member_portal_on_call.php">
                             <input type="hidden" name="csrf_token" value="<?= CsrfProtection::generateToken() ?>">
                             <input type="hidden" name="action" value="add">
                             
@@ -483,7 +483,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                     <h5 class="modal-title">Modifica Reperibilità</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="">
+                <form method="POST" action="member_portal_on_call.php">
                     <input type="hidden" name="csrf_token" value="<?= CsrfProtection::generateToken() ?>">
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="schedule_id" id="edit_schedule_id">
@@ -514,7 +514,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
     </div>
     
     <!-- Delete Form (hidden) -->
-    <form method="POST" action="" id="deleteForm" style="display: none;">
+    <form method="POST" action="member_portal_on_call.php" id="deleteForm" style="display: none;">
         <input type="hidden" name="csrf_token" value="<?= CsrfProtection::generateToken() ?>">
         <input type="hidden" name="action" value="delete">
         <input type="hidden" name="schedule_id" id="delete_schedule_id">

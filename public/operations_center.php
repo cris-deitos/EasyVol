@@ -579,7 +579,7 @@ $pageTitle = 'Centrale Operativa';
             if (!scheduleElement) return;
             
             // Get all available members data to find the current one
-            <?php echo "const availableMembers = " . json_encode($dashboard['available_members']) . ";"; ?>
+            <?php echo "const availableMembers = " . json_encode($dashboard['available_members'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ";"; ?>
             const scheduleData = availableMembers.find(m => m.schedule_id == scheduleId);
             
             if (!scheduleData) {
