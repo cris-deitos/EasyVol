@@ -110,7 +110,6 @@ try {
             } else {
                 http_response_code(500);
                 echo json_encode([
-                    'success' => false,
                     'error' => 'Errore durante l\'aggiunta dell\'intervento. Verificare i log del server.'
                 ]);
             }
