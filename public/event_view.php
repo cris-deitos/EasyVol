@@ -44,6 +44,36 @@ if (!$event) {
     exit;
 }
 
+// Carica i mezzi disponibili per il dropdown
+$availableVehicles = $controller->getAvailableVehicles($eventId);
+
+// Helper function per creare l'etichetta del veicolo
+function getVehicleLabel($vehicle) {
+    // Identificatore principale (targa, nome o matricola)
+    if (!empty($vehicle['license_plate'])) {
+        $label = $vehicle['license_plate'];
+    } elseif (!empty($vehicle['name'])) {
+        $label = $vehicle['name'];
+    } elseif (!empty($vehicle['serial_number'])) {
+        $label = $vehicle['serial_number'];
+    } else {
+        $label = 'Mezzo ID ' . $vehicle['id'];
+    }
+    
+    // Aggiungi marca/modello se disponibili
+    $brandModel = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
+    if (!empty($brandModel)) {
+        $label .= ' - ' . $brandModel;
+    }
+    
+    // Aggiungi tipo veicolo
+    if (!empty($vehicle['vehicle_type'])) {
+        $label .= ' (' . ucfirst($vehicle['vehicle_type']) . ')';
+    }
+    
+    return $label;
+}
+
 $csrfToken = CsrfProtection::generateToken();
 
 $pageTitle = 'Dettaglio Evento: ' . $event['title'];
@@ -513,16 +543,30 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="vehicleSearch" class="form-label">Cerca Mezzo</label>
-                        <input type="text" class="form-control" id="vehicleSearch" 
-                               placeholder="Digita targa, nome o matricola..." autocomplete="off">
-                        <small class="form-text text-muted">Digita almeno 2 caratteri per cercare</small>
-                    </div>
-                    <div id="vehicleSearchResults" class="list-group" style="max-height: 300px; overflow-y: auto;"></div>
+                    <form id="addVehicleForm">
+                        <div class="mb-3">
+                            <label for="vehicleSelect" class="form-label">Seleziona Mezzo <span class="text-danger">*</span></label>
+                            <select class="form-select" id="vehicleSelect" required>
+                                <option value="">-- Seleziona un mezzo --</option>
+                                <?php if (!empty($availableVehicles)): ?>
+                                    <?php foreach ($availableVehicles as $vehicle): ?>
+                                        <option value="<?php echo htmlspecialchars($vehicle['id']); ?>">
+                                            <?php echo htmlspecialchars(getVehicleLabel($vehicle)); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="" disabled>Nessun mezzo disponibile</option>
+                                <?php endif; ?>
+                            </select>
+                            <small class="form-text text-muted">Seleziona il mezzo da assegnare all'evento</small>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-success" onclick="addVehicleFromDropdown()" <?php echo empty($availableVehicles) ? 'disabled' : ''; ?>>
+                        <i class="bi bi-plus-circle"></i> Aggiungi Mezzo
+                    </button>
                 </div>
             </div>
         </div>
@@ -624,7 +668,6 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         const eventId = <?php echo json_encode($eventId); ?>;
         const csrfToken = <?php echo json_encode($csrfToken); ?>;
         let memberSearchTimeout = null;
-        let vehicleSearchTimeout = null;
         
         // Helper function to escape HTML
         function escapeHtml(text) {
@@ -753,44 +796,19 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             });
         }
         
-        // Search vehicles for adding
-        document.getElementById('vehicleSearch').addEventListener('input', function() {
-            clearTimeout(vehicleSearchTimeout);
-            const search = this.value.trim();
+        // Add vehicle from dropdown
+        function addVehicleFromDropdown() {
+            const vehicleSelect = document.getElementById('vehicleSelect');
+            const vehicleId = parseInt(vehicleSelect.value, 10);
             
-            if (search.length < 2) {
-                document.getElementById('vehicleSearchResults').innerHTML = '';
+            if (isNaN(vehicleId) || vehicleId <= 0) {
+                alert('Seleziona un mezzo dalla lista');
                 return;
             }
             
-            vehicleSearchTimeout = setTimeout(function() {
-                fetch('event_ajax.php?action=search_vehicles&event_id=' + eventId + '&search=' + encodeURIComponent(search))
-                    .then(response => response.json())
-                    .then(data => {
-                        const resultsDiv = document.getElementById('vehicleSearchResults');
-                        if (data.error) {
-                            resultsDiv.innerHTML = '<div class="list-group-item text-danger">' + data.error + '</div>';
-                            return;
-                        }
-                        
-                        if (data.vehicles.length === 0) {
-                            resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun mezzo trovato</div>';
-                            return;
-                        }
-                        
-                        resultsDiv.innerHTML = data.vehicles.map(function(vehicle) {
-                            let displayName = vehicle.license_plate || vehicle.name || vehicle.serial_number || 'Mezzo ID ' + String(vehicle.id);
-                            let vehicleType = vehicle.vehicle_type ? ' <span class="text-muted">(' + escapeHtml(vehicle.vehicle_type) + ')</span>' : '';
-                            return '<button type="button" class="list-group-item list-group-item-action" onclick="addVehicle(' + vehicle.id + ')">' +
-                                '<strong>' + escapeHtml(displayName) + '</strong>' + vehicleType +
-                                '</button>';
-                        }).join('');
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-            }, 300);
-        });
+            // Usa la funzione esistente addVehicle
+            addVehicle(vehicleId);
+        }
         
         // Add vehicle to event
         function addVehicle(vehicleId) {
