@@ -368,4 +368,96 @@ class EventController {
             return ['error' => 'Errore durante l\'aggiunta del veicolo'];
         }
     }
+    
+    /**
+     * Aggiungi partecipante a un intervento
+     */
+    public function addInterventionParticipant($interventionId, $memberId, $role = null, $userId = null) {
+        try {
+            // Check if already exists
+            $sql = "SELECT id FROM intervention_members WHERE intervention_id = ? AND member_id = ?";
+            $existing = $this->db->fetchOne($sql, [$interventionId, $memberId]);
+            
+            if ($existing) {
+                return ['error' => 'Il partecipante è già presente nell\'intervento'];
+            }
+            
+            $sql = "INSERT INTO intervention_members (intervention_id, member_id, role, hours_worked)
+                    VALUES (?, ?, ?, 0)";
+            
+            $this->db->execute($sql, [$interventionId, $memberId, $role]);
+            
+            if ($userId) {
+                $this->logActivity($userId, 'intervention_members', 'create', $interventionId, 'Aggiunto partecipante a intervento');
+            }
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta partecipante a intervento: " . $e->getMessage());
+            return ['error' => 'Errore durante l\'aggiunta del partecipante'];
+        }
+    }
+    
+    /**
+     * Aggiungi veicolo a un intervento
+     */
+    public function addInterventionVehicle($interventionId, $vehicleId, $userId = null) {
+        try {
+            // Check if already exists
+            $sql = "SELECT id FROM intervention_vehicles WHERE intervention_id = ? AND vehicle_id = ?";
+            $existing = $this->db->fetchOne($sql, [$interventionId, $vehicleId]);
+            
+            if ($existing) {
+                return ['error' => 'Il veicolo è già presente nell\'intervento'];
+            }
+            
+            $sql = "INSERT INTO intervention_vehicles (intervention_id, vehicle_id, km_start, km_end)
+                    VALUES (?, ?, NULL, NULL)";
+            
+            $this->db->execute($sql, [$interventionId, $vehicleId]);
+            
+            if ($userId) {
+                $this->logActivity($userId, 'intervention_vehicles', 'create', $interventionId, 'Aggiunto veicolo a intervento');
+            }
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta veicolo a intervento: " . $e->getMessage());
+            return ['error' => 'Errore durante l\'aggiunta del veicolo'];
+        }
+    }
+    
+    /**
+     * Ottieni dettaglio completo di un intervento
+     */
+    public function getIntervention($interventionId) {
+        try {
+            $sql = "SELECT * FROM interventions WHERE id = ?";
+            $intervention = $this->db->fetchOne($sql, [$interventionId]);
+            
+            if (!$intervention) {
+                return false;
+            }
+            
+            // Carica partecipanti dell'intervento
+            $sql = "SELECT im.*, m.first_name, m.last_name, m.registration_number
+                    FROM intervention_members im
+                    JOIN members m ON im.member_id = m.id
+                    WHERE im.intervention_id = ?
+                    ORDER BY m.last_name, m.first_name";
+            $intervention['participants'] = $this->db->fetchAll($sql, [$interventionId]);
+            
+            // Carica veicoli dell'intervento
+            $sql = "SELECT iv.*, v.name, v.license_plate, v.serial_number, v.brand, v.model, v.vehicle_type
+                    FROM intervention_vehicles iv
+                    JOIN vehicles v ON iv.vehicle_id = v.id
+                    WHERE iv.intervention_id = ?";
+            $intervention['vehicles'] = $this->db->fetchAll($sql, [$interventionId]);
+            
+            return $intervention;
+        } catch (\Exception $e) {
+            error_log("Errore recupero intervento: " . $e->getMessage());
+            return false;
+        }
+    }
 }
