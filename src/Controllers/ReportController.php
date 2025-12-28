@@ -2,6 +2,8 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * Report Controller
@@ -460,7 +462,7 @@ class ReportController {
         }
         
         // Usa PhpSpreadsheet per generare Excel
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle($sheetName);
         
@@ -494,7 +496,7 @@ class ReportController {
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
         
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
     }
