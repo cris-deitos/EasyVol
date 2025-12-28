@@ -168,78 +168,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
             } catch (\Exception $e) {
                 $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
             }
-        } elseif ($formType === 'database_fix') {
-            // Handle database fix
-            try {
-                // Run the migration file
-                $migrationFile = __DIR__ . '/../migrations/fix_critical_issues.sql';
-                
-                if (!file_exists($migrationFile)) {
-                    $errors[] = 'File di migrazione non trovato';
-                } else {
-                    $sql = file_get_contents($migrationFile);
-                    
-                    // Split into individual statements by semicolon
-                    // Simple split is sufficient for this specific migration file
-                    $statements = explode(';', $sql);
-                    $statements = array_map('trim', $statements);
-                    $statements = array_filter($statements, function($statement) {
-                        $statement = trim($statement);
-                        // Filter out comments and empty statements
-                        if (empty($statement) || preg_match('/^--/', $statement)) {
-                            return false;
-                        }
-                        // Only allow specific safe DDL operations
-                        // More restrictive patterns to prevent dangerous operations
-                        $safePatterns = [
-                            '/^ALTER TABLE\s+`?\w+`?\s+ADD COLUMN/i',
-                            '/^CREATE TABLE IF NOT EXISTS\s+`?\w+`?/i'
-                        ];
-                        
-                        foreach ($safePatterns as $pattern) {
-                            if (preg_match($pattern, $statement)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
-                    
-                    $executed = 0;
-                    $skipped = 0;
-                    $executionLog = [];
-                    
-                    foreach ($statements as $statement) {
-                        try {
-                            $db->execute($statement);
-                            $executed++;
-                            $executionLog[] = "Executed successfully";
-                        } catch (\Exception $e) {
-                            // Only catch expected errors (column/table already exists)
-                            $errorMsg = $e->getMessage();
-                            if (stripos($errorMsg, 'Duplicate column') !== false || 
-                                stripos($errorMsg, 'already exists') !== false ||
-                                stripos($errorMsg, 'duplicate key') !== false) {
-                                $skipped++;
-                                error_log("Database fix (expected): " . $errorMsg);
-                            } else {
-                                // Unexpected error - report to user
-                                $errors[] = "Errore SQL: " . $errorMsg;
-                                error_log("Database fix error: " . $errorMsg);
-                            }
-                        }
-                    }
-                    
-                    if (empty($errors)) {
-                        $success = true;
-                        $successMessage = "Correzioni database applicate! (Eseguiti: $executed, Già presenti: $skipped)";
-                        header('Location: settings.php?success=database_fix&executed=' . $executed . '&skipped=' . $skipped);
-                        exit;
-                    }
-                }
-            } catch (\Exception $e) {
-                $errors[] = 'Errore durante l\'applicazione delle correzioni: ' . $e->getMessage();
-                error_log("Database fix fatal error: " . $e->getMessage());
-            }
         } elseif ($formType === 'email') {
             // Handle email settings update - save to database instead of config file
             try {
@@ -369,10 +297,6 @@ if (isset($_GET['success'])) {
         $successMessage = 'Dati associazione salvati con successo!';
     } elseif ($_GET['success'] === 'email') {
         $successMessage = 'Impostazioni email aggiornate con successo!';
-    } elseif ($_GET['success'] === 'database_fix') {
-        $executed = intval($_GET['executed'] ?? 0);
-        $skipped = intval($_GET['skipped'] ?? 0);
-        $successMessage = "Correzioni database applicate! (Eseguiti: $executed, Già presenti: $skipped)";
     }
 }
 
@@ -974,23 +898,6 @@ $pageTitle = 'Impostazioni Sistema';
                                     <h6>Cron Jobs</h6>
                                     <p>Per configurare i cron jobs automatici, consulta <code>cron/README.md</code></p>
                                 </div>
-                                
-                                <?php if ($app->checkPermission('settings', 'edit')): ?>
-                                <div class="mt-4">
-                                    <h6>Correzioni Database</h6>
-                                    <p class="text-muted">Applica correzioni critiche al database (colonne mancanti, tabelle mancanti, ecc.)</p>
-                                    <form method="POST" onsubmit="return confirm('Applicare le correzioni al database? Questa operazione è sicura e può essere eseguita più volte.');">
-                                        <?php echo CsrfProtection::getHiddenField(); ?>
-                                        <input type="hidden" name="form_type" value="database_fix">
-                                        <button type="submit" class="btn btn-warning">
-                                            <i class="bi bi-tools"></i> Applica Correzioni Database
-                                        </button>
-                                    </form>
-                                    <small class="text-muted mt-2 d-block">
-                                        <i class="bi bi-info-circle"></i> Applica le correzioni del file <code>migrations/fix_critical_issues.sql</code>
-                                    </small>
-                                </div>
-                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -1523,8 +1430,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Note: 'email' key maps to 'mail' tab for backward compatibility with existing URLs
     const successMap = {
         'email': 'mail',
-        'association': 'association',
-        'database_fix': 'backup'
+        'association': 'association'
     };
     const successParam = urlParams.get('success');
     if (successParam && successMap[successParam]) {
