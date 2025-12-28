@@ -108,16 +108,17 @@ switch ($type) {
         break;
         
     case 'member_photo':
-        $sql = "SELECT photo_path FROM members WHERE id = ?";
-        $file = $db->fetchOne($sql, [$id]);
+    $sql = "SELECT photo_path FROM members WHERE id = ?";
+    $file = $db->fetchOne($sql, [$id]);
+    
+    if ($file && ! empty($file['photo_path'])) {
+        // Normalize the path - remove leading slashes and ". ."
+        $filePath = ltrim($file['photo_path'], './');
         
-        if ($file && !empty($file['photo_path'])) {
-            $filePath = $file['photo_path'];
-            
-            // Photos can be viewed by anyone with member access
-            $canAccess = $app->checkPermission('members', 'view');
-        }
-        break;
+        // Photos can be viewed by anyone with member access
+        $canAccess = $app->checkPermission('members', 'view');
+    }
+    break;
         
     case 'vehicle_photo':
         $sql = "SELECT photo FROM vehicles WHERE id = ?";
@@ -129,17 +130,18 @@ switch ($type) {
         }
         break;
         
-    case 'junior_member_photo':
-        $sql = "SELECT photo_path FROM junior_members WHERE id = ?";
-        $file = $db->fetchOne($sql, [$id]);
+    case 'junior_member_photo': 
+    $sql = "SELECT photo_path FROM junior_members WHERE id = ?";
+    $file = $db->fetchOne($sql, [$id]);
+    
+    if ($file && !empty($file['photo_path'])) {
+        // Normalize the path - remove leading slashes and ".."
+        $filePath = ltrim($file['photo_path'], './');
         
-        if ($file && !empty($file['photo_path'])) {
-            $filePath = $file['photo_path'];
-            
-            // Photos can be viewed by anyone with junior member access
-            $canAccess = $app->checkPermission('junior_members', 'view');
-        }
-        break;
+        // Photos can be viewed by anyone with junior member access
+        $canAccess = $app->checkPermission('junior_members', 'view');
+    }
+    break;
         
     case 'junior_member_attachment':
         $sql = "SELECT jma.* 
