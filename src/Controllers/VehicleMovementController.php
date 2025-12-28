@@ -352,6 +352,84 @@ class VehicleMovementController {
                 );
             }
             
+            // Send Telegram notification for vehicle departure
+            try {
+                require_once __DIR__ . '/../Services/TelegramService.php';
+                $telegramService = new \EasyVol\Services\TelegramService($this->db, $this->config);
+                
+                if ($telegramService->isEnabled()) {
+                    // Get complete movement details
+                    $movement = $this->db->fetchOne(
+                        "SELECT vm.*, v.name as vehicle_name, v.license_plate, 
+                                tr.name as trailer_name, tr.license_plate as trailer_plate,
+                                m.first_name, m.last_name
+                         FROM vehicle_movements vm
+                         JOIN vehicles v ON vm.vehicle_id = v.id
+                         LEFT JOIN vehicles tr ON vm.trailer_id = tr.id
+                         JOIN members m ON vm.created_by_member_id = m.id
+                         WHERE vm.id = ?",
+                        [$movementId]
+                    );
+                    
+                    // Get drivers
+                    $drivers = $this->db->fetchAll(
+                        "SELECT m.first_name, m.last_name 
+                         FROM vehicle_movement_drivers vmd
+                         JOIN members m ON vmd.member_id = m.id
+                         WHERE vmd.movement_id = ? AND vmd.driver_type = 'departure'",
+                        [$movementId]
+                    );
+                    
+                    $message = "🚗 <b>USCITA MEZZO</b>\n\n";
+                    $message .= "🚙 <b>Veicolo:</b> " . htmlspecialchars($movement['vehicle_name']) . " (" . htmlspecialchars($movement['license_plate']) . ")\n";
+                    
+                    if ($movement['trailer_id']) {
+                        $message .= "🚛 <b>Rimorchio:</b> " . htmlspecialchars($movement['trailer_name']) . " (" . htmlspecialchars($movement['trailer_plate']) . ")\n";
+                    }
+                    
+                    $message .= "📅 <b>Data/Ora uscita:</b> " . date('d/m/Y H:i', strtotime($movement['departure_datetime'])) . "\n";
+                    
+                    if (!empty($drivers)) {
+                        $driverNames = array_map(function($d) {
+                            return $d['first_name'] . ' ' . $d['last_name'];
+                        }, $drivers);
+                        $message .= "👤 <b>Autista/i:</b> " . htmlspecialchars(implode(', ', $driverNames)) . "\n";
+                    }
+                    
+                    if ($movement['departure_km']) {
+                        $message .= "🛣️ <b>Km iniziali:</b> " . number_format($movement['departure_km'], 0, ',', '.') . "\n";
+                    }
+                    
+                    if ($movement['departure_fuel_level']) {
+                        $fuelLevels = ['empty' => '🔴 Vuoto', '1/4' => '🟡 1/4', '1/2' => '🟠 1/2', '3/4' => '🟢 3/4', 'full' => '🟢 Pieno'];
+                        $message .= "⛽ <b>Carburante:</b> " . ($fuelLevels[$movement['departure_fuel_level']] ?? $movement['departure_fuel_level']) . "\n";
+                    }
+                    
+                    if ($movement['service_type']) {
+                        $message .= "📋 <b>Tipo servizio:</b> " . htmlspecialchars($movement['service_type']) . "\n";
+                    }
+                    
+                    if ($movement['destination']) {
+                        $message .= "📍 <b>Destinazione:</b> " . htmlspecialchars($movement['destination']) . "\n";
+                    }
+                    
+                    if ($movement['authorized_by']) {
+                        $message .= "✅ <b>Autorizzato da:</b> " . htmlspecialchars($movement['authorized_by']) . "\n";
+                    }
+                    
+                    if ($movement['departure_anomaly_flag']) {
+                        $message .= "\n⚠️ <b>ANOMALIA SEGNALATA</b>\n";
+                        if ($movement['departure_notes']) {
+                            $message .= "📝 " . htmlspecialchars($movement['departure_notes']) . "\n";
+                        }
+                    }
+                    
+                    $telegramService->sendNotification('vehicle_departure', $message);
+                }
+            } catch (\Exception $e) {
+                error_log("Errore invio notifica Telegram per uscita mezzo: " . $e->getMessage());
+            }
+            
             $this->db->commit();
             return ['success' => true, 'movement_id' => $movementId];
             
@@ -483,6 +561,96 @@ class VehicleMovementController {
                         [$trailerNote, $movementId]
                     );
                 }
+            }
+            
+            // Send Telegram notification for vehicle return
+            try {
+                require_once __DIR__ . '/../Services/TelegramService.php';
+                $telegramService = new \EasyVol\Services\TelegramService($this->db, $this->config);
+                
+                if ($telegramService->isEnabled()) {
+                    // Get complete movement details with return data
+                    $completeMovement = $this->db->fetchOne(
+                        "SELECT vm.*, v.name as vehicle_name, v.license_plate, 
+                                tr.name as trailer_name, tr.license_plate as trailer_plate
+                         FROM vehicle_movements vm
+                         JOIN vehicles v ON vm.vehicle_id = v.id
+                         LEFT JOIN vehicles tr ON vm.trailer_id = tr.id
+                         WHERE vm.id = ?",
+                        [$movementId]
+                    );
+                    
+                    // Get return drivers
+                    $returnDrivers = $this->db->fetchAll(
+                        "SELECT m.first_name, m.last_name 
+                         FROM vehicle_movement_drivers vmd
+                         JOIN members m ON vmd.member_id = m.id
+                         WHERE vmd.movement_id = ? AND vmd.driver_type = 'return'",
+                        [$movementId]
+                    );
+                    
+                    // If no return drivers, get departure drivers
+                    if (empty($returnDrivers)) {
+                        $returnDrivers = $this->db->fetchAll(
+                            "SELECT m.first_name, m.last_name 
+                             FROM vehicle_movement_drivers vmd
+                             JOIN members m ON vmd.member_id = m.id
+                             WHERE vmd.movement_id = ? AND vmd.driver_type = 'departure'",
+                            [$movementId]
+                        );
+                    }
+                    
+                    $message = "🏁 <b>RIENTRO MEZZO</b>\n\n";
+                    $message .= "🚙 <b>Veicolo:</b> " . htmlspecialchars($completeMovement['vehicle_name']) . " (" . htmlspecialchars($completeMovement['license_plate']) . ")\n";
+                    
+                    if ($completeMovement['trailer_id']) {
+                        $message .= "🚛 <b>Rimorchio:</b> " . htmlspecialchars($completeMovement['trailer_name']) . " (" . htmlspecialchars($completeMovement['trailer_plate']) . ")\n";
+                    }
+                    
+                    $message .= "📅 <b>Data/Ora rientro:</b> " . date('d/m/Y H:i', strtotime($completeMovement['return_datetime'])) . "\n";
+                    
+                    if ($completeMovement['trip_duration_minutes']) {
+                        $hours = floor($completeMovement['trip_duration_minutes'] / 60);
+                        $minutes = $completeMovement['trip_duration_minutes'] % 60;
+                        $message .= "⏱️ <b>Durata viaggio:</b> {$hours}h {$minutes}m\n";
+                    }
+                    
+                    if (!empty($returnDrivers)) {
+                        $driverNames = array_map(function($d) {
+                            return $d['first_name'] . ' ' . $d['last_name'];
+                        }, $returnDrivers);
+                        $message .= "👤 <b>Autista/i:</b> " . htmlspecialchars(implode(', ', $driverNames)) . "\n";
+                    }
+                    
+                    if ($completeMovement['return_km']) {
+                        $message .= "🛣️ <b>Km finali:</b> " . number_format($completeMovement['return_km'], 0, ',', '.') . "\n";
+                    }
+                    
+                    if ($completeMovement['trip_km']) {
+                        $message .= "📏 <b>Km percorsi:</b> " . number_format($completeMovement['trip_km'], 0, ',', '.') . "\n";
+                    }
+                    
+                    if ($completeMovement['return_fuel_level']) {
+                        $fuelLevels = ['empty' => '🔴 Vuoto', '1/4' => '🟡 1/4', '1/2' => '🟠 1/2', '3/4' => '🟢 3/4', 'full' => '🟢 Pieno'];
+                        $message .= "⛽ <b>Carburante rientro:</b> " . ($fuelLevels[$completeMovement['return_fuel_level']] ?? $completeMovement['return_fuel_level']) . "\n";
+                    }
+                    
+                    if ($completeMovement['return_anomaly_flag']) {
+                        $message .= "\n⚠️ <b>ANOMALIA SEGNALATA</b>\n";
+                    }
+                    
+                    if ($completeMovement['traffic_violation_flag']) {
+                        $message .= "\n🚨 <b>POSSIBILE VIOLAZIONE CODICE DELLA STRADA</b>\n";
+                    }
+                    
+                    if ($completeMovement['return_notes']) {
+                        $message .= "\n📝 <b>Note:</b> " . htmlspecialchars($completeMovement['return_notes']) . "\n";
+                    }
+                    
+                    $telegramService->sendNotification('vehicle_return', $message);
+                }
+            } catch (\Exception $e) {
+                error_log("Errore invio notifica Telegram per rientro mezzo: " . $e->getMessage());
             }
             
             $this->db->commit();

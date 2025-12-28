@@ -79,7 +79,7 @@ class ApplicationController {
             );
             
             // Invia email
-            $this->sendApplicationEmails($applicationId, $data, $pdfPath);
+            $this->sendApplicationEmails($applicationId, $data, $pdfPath, $isJunior);
             
             $this->db->commit();
             
@@ -895,8 +895,9 @@ class ApplicationController {
      * @param int $id ID domanda
      * @param array $data Dati
      * @param string $pdfPath Path PDF
+     * @param bool $isJunior Se è un minorenne
      */
-    private function sendApplicationEmails($id, $data, $pdfPath) {
+    private function sendApplicationEmails($id, $data, $pdfPath, $isJunior = false) {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
@@ -918,6 +919,30 @@ class ApplicationController {
             $body .= '<p><strong>Nome:</strong> ' . htmlspecialchars($data['first_name'] . ' ' . $data['last_name']) . '</p>';
             
             $emailSender->queue($this->config['association']['email'], $subject, $body, [$pdfPath]);
+        }
+        
+        // Telegram notification
+        try {
+            require_once __DIR__ . '/../Services/TelegramService.php';
+            $telegramService = new \EasyVol\Services\TelegramService($this->db, $this->config);
+            
+            if ($telegramService->isEnabled()) {
+                $actionType = $isJunior ? 'junior_application' : 'member_application';
+                $message = "🆕 <b>Nuova domanda di iscrizione " . ($isJunior ? "cadetto" : "socio") . "</b>\n\n";
+                $message .= "👤 <b>Nome:</b> " . htmlspecialchars($data['first_name'] . ' ' . $data['last_name']) . "\n";
+                $message .= "📅 <b>Data di nascita:</b> " . date('d/m/Y', strtotime($data['birth_date'])) . "\n";
+                if (!empty($data['email'])) {
+                    $message .= "📧 <b>Email:</b> " . htmlspecialchars($data['email']) . "\n";
+                }
+                if (!empty($data['phone'])) {
+                    $message .= "📞 <b>Telefono:</b> " . htmlspecialchars($data['phone']) . "\n";
+                }
+                $message .= "\n📄 Controlla il sistema per approvare o rifiutare la domanda.";
+                
+                $telegramService->sendNotification($actionType, $message);
+            }
+        } catch (\Exception $e) {
+            error_log("Errore invio notifica Telegram per domanda: " . $e->getMessage());
         }
     }
     
