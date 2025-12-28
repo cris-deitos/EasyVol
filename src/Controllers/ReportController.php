@@ -2,6 +2,8 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * Report Controller
@@ -330,5 +332,173 @@ class ReportController {
         } catch (\Exception $e) {
             error_log("Errore log attività: " . $e->getMessage());
         }
+    }
+    
+    /**
+     * Report ore volontariato per tipo di evento (annuale)
+     * 
+     * @param int $year Anno da analizzare
+     * @return array Dati del report
+     */
+    public function volunteerHoursByEventType($year) {
+        $sql = "SELECT 
+                    e.event_type,
+                    COUNT(DISTINCT e.id) as num_eventi,
+                    COUNT(DISTINCT ep.member_id) as num_volontari,
+                    SUM(ep.hours) as ore_totali,
+                    AVG(ep.hours) as ore_medie
+                FROM events e
+                LEFT JOIN event_participants ep ON e.id = ep.event_id
+                WHERE YEAR(e.start_date) = ?
+                GROUP BY e.event_type
+                ORDER BY ore_totali DESC";
+        
+        return $this->db->fetchAll($sql, [$year]);
+    }
+    
+    /**
+     * Report numero e tipologie di eventi (annuale)
+     * 
+     * @param int $year Anno da analizzare
+     * @return array Dati del report
+     */
+    public function eventsByTypeAndCount($year) {
+        $sql = "SELECT 
+                    e.event_type,
+                    e.status,
+                    COUNT(*) as numero_eventi,
+                    COUNT(DISTINCT ep.member_id) as volontari_coinvolti,
+                    SUM(ep.hours) as ore_totali,
+                    MIN(e.start_date) as primo_evento,
+                    MAX(e.start_date) as ultimo_evento
+                FROM events e
+                LEFT JOIN event_participants ep ON e.id = ep.event_id
+                WHERE YEAR(e.start_date) = ?
+                GROUP BY e.event_type, e.status
+                ORDER BY e.event_type, numero_eventi DESC";
+        
+        return $this->db->fetchAll($sql, [$year]);
+    }
+    
+    /**
+     * Report ore di presenza e attività per singolo volontario (annuale)
+     * 
+     * @param int $year Anno da analizzare
+     * @return array Dati del report
+     */
+    public function volunteerActivityReport($year) {
+        $sql = "SELECT 
+                    m.id,
+                    m.registration_number,
+                    m.first_name,
+                    m.last_name,
+                    m.member_status,
+                    COUNT(DISTINCT ep.event_id) as num_eventi,
+                    SUM(ep.hours) as ore_totali,
+                    AVG(ep.hours) as ore_medie_per_evento,
+                    GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as tipi_eventi,
+                    MIN(e.start_date) as primo_evento,
+                    MAX(e.start_date) as ultimo_evento
+                FROM members m
+                LEFT JOIN event_participants ep ON m.id = ep.member_id
+                LEFT JOIN events e ON ep.event_id = e.id AND YEAR(e.start_date) = ?
+                WHERE ep.id IS NOT NULL
+                GROUP BY m.id
+                ORDER BY ore_totali DESC, m.last_name, m.first_name";
+        
+        return $this->db->fetchAll($sql, [$year]);
+    }
+    
+    /**
+     * Report chilometri mezzi su base annua
+     * 
+     * @param int $year Anno da analizzare
+     * @return array Dati del report
+     */
+    public function vehicleKilometersReport($year) {
+        $sql = "SELECT 
+                    v.id,
+                    v.name,
+                    v.license_plate,
+                    v.vehicle_type,
+                    v.brand,
+                    v.model,
+                    COUNT(DISTINCT vm.id) as num_movimenti,
+                    SUM(CASE 
+                        WHEN vm.return_km IS NOT NULL AND vm.departure_km IS NOT NULL 
+                        THEN (vm.return_km - vm.departure_km)
+                        ELSE 0 
+                    END) as km_totali,
+                    AVG(CASE 
+                        WHEN vm.return_km IS NOT NULL AND vm.departure_km IS NOT NULL 
+                        THEN (vm.return_km - vm.departure_km)
+                        ELSE NULL 
+                    END) as km_medi_per_movimento,
+                    MIN(vm.departure_datetime) as primo_movimento,
+                    MAX(vm.return_datetime) as ultimo_movimento
+                FROM vehicles v
+                LEFT JOIN vehicle_movements vm ON v.id = vm.vehicle_id 
+                    AND YEAR(vm.departure_datetime) = ?
+                    AND vm.return_km IS NOT NULL 
+                    AND vm.departure_km IS NOT NULL
+                WHERE vm.id IS NOT NULL
+                GROUP BY v.id
+                ORDER BY km_totali DESC";
+        
+        return $this->db->fetchAll($sql, [$year]);
+    }
+    
+    /**
+     * Genera file Excel da dati report
+     * 
+     * @param array $data Dati del report
+     * @param string $sheetName Nome del foglio
+     * @param string $filename Nome del file
+     * @return void (genera download)
+     */
+    public function exportToExcel($data, $sheetName = 'Report', $filename = 'report.xlsx') {
+        if (empty($data)) {
+            throw new \Exception('Nessun dato da esportare');
+        }
+        
+        // Usa PhpSpreadsheet per generare Excel
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle($sheetName);
+        
+        // Header
+        $headers = array_keys($data[0]);
+        $colIndex = 1;
+        foreach ($headers as $header) {
+            $sheet->setCellValueByColumnAndRow($colIndex, 1, ucfirst(str_replace('_', ' ', $header)));
+            $sheet->getStyleByColumnAndRow($colIndex, 1)->getFont()->setBold(true);
+            $colIndex++;
+        }
+        
+        // Dati
+        $row = 2;
+        foreach ($data as $record) {
+            $colIndex = 1;
+            foreach ($record as $value) {
+                $sheet->setCellValueByColumnAndRow($colIndex, $row, $value);
+                $colIndex++;
+            }
+            $row++;
+        }
+        
+        // Auto-size columns
+        $numColumns = count($headers);
+        for ($i = 1; $i <= $numColumns; $i++) {
+            $sheet->getColumnDimensionByColumn($i)->setAutoSize(true);
+        }
+        
+        // Output
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

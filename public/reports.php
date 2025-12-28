@@ -122,7 +122,12 @@ $pageTitle = 'Report e Statistiche';
                 <!-- Tabs per Report -->
                 <ul class="nav nav-tabs mb-3" id="reportTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button">
+                        <button class="nav-link active" id="downloadable-tab" data-bs-toggle="tab" data-bs-target="#downloadable" type="button">
+                            <i class="bi bi-download"></i> Report Scaricabili
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button">
                             <i class="bi bi-people"></i> Soci
                         </button>
                     </li>
@@ -149,8 +154,124 @@ $pageTitle = 'Report e Statistiche';
                 </ul>
                 
                 <div class="tab-content" id="reportTabsContent">
+                    <!-- Tab Report Scaricabili -->
+                    <div class="tab-pane fade show active" id="downloadable" role="tabpanel">
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-download"></i> Report Annuali Scaricabili
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted">
+                                            Seleziona l'anno e scarica i report in formato Excel.
+                                        </p>
+                                        
+                                        <!-- Anno Selector -->
+                                        <div class="mb-4">
+                                            <label for="reportYear" class="form-label">Anno di riferimento:</label>
+                                            <select id="reportYear" class="form-select" style="max-width: 200px;">
+                                                <?php 
+                                                $currentYear = date('Y');
+                                                $minYear = $config['reports']['min_year'] ?? 2020;
+                                                for ($y = $currentYear; $y >= $minYear; $y--): 
+                                                ?>
+                                                    <option value="<?php echo $y; ?>" <?php echo $y == $currentYear ? 'selected' : ''; ?>>
+                                                        <?php echo $y; ?>
+                                                    </option>
+                                                <?php endfor; ?>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Report Cards -->
+                                        <div class="row g-3">
+                                            <!-- Report 1: Ore volontariato per tipo di evento -->
+                                            <div class="col-md-6">
+                                                <div class="card h-100 border-primary">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">
+                                                            <i class="bi bi-clock-history text-primary"></i>
+                                                            Statistiche Ore Volontariato
+                                                        </h5>
+                                                        <p class="card-text text-muted">
+                                                            Report delle ore di volontariato suddivise per tipo di evento 
+                                                            (emergenza, esercitazione, attività). Include il numero di eventi, 
+                                                            volontari coinvolti e totale ore.
+                                                        </p>
+                                                        <button class="btn btn-primary" onclick="downloadReport('volunteer_hours_by_event_type')">
+                                                            <i class="bi bi-file-earmark-excel"></i> Scarica Excel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Report 2: Numero e tipologie eventi -->
+                                            <div class="col-md-6">
+                                                <div class="card h-100 border-success">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">
+                                                            <i class="bi bi-calendar-event text-success"></i>
+                                                            Report Eventi
+                                                        </h5>
+                                                        <p class="card-text text-muted">
+                                                            Report completo del numero e tipologie di eventi per l'anno selezionato. 
+                                                            Include stato eventi, volontari coinvolti e ore totali.
+                                                        </p>
+                                                        <button class="btn btn-success" onclick="downloadReport('events_by_type_and_count')">
+                                                            <i class="bi bi-file-earmark-excel"></i> Scarica Excel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Report 3: Attività per volontario -->
+                                            <div class="col-md-6">
+                                                <div class="card h-100 border-info">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">
+                                                            <i class="bi bi-person-badge text-info"></i>
+                                                            Attività per Volontario
+                                                        </h5>
+                                                        <p class="card-text text-muted">
+                                                            Report dettagliato delle ore di presenza e attività per ogni singolo 
+                                                            volontario. Include numero eventi partecipati, ore totali e medie.
+                                                        </p>
+                                                        <button class="btn btn-info" onclick="downloadReport('volunteer_activity')">
+                                                            <i class="bi bi-file-earmark-excel"></i> Scarica Excel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Report 4: Km mezzi -->
+                                            <div class="col-md-6">
+                                                <div class="card h-100 border-warning">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">
+                                                            <i class="bi bi-speedometer2 text-warning"></i>
+                                                            Chilometri Mezzi
+                                                        </h5>
+                                                        <p class="card-text text-muted">
+                                                            Report chilometri percorsi dai mezzi su base annua. Include numero 
+                                                            movimenti, km totali e km medi per movimento.
+                                                        </p>
+                                                        <button class="btn btn-warning" onclick="downloadReport('vehicle_kilometers')">
+                                                            <i class="bi bi-file-earmark-excel"></i> Scarica Excel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Tab Soci -->
-                    <div class="tab-pane fade show active" id="members" role="tabpanel">
+                    <div class="tab-pane fade" id="members" role="tabpanel">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="card mb-3">
@@ -449,5 +570,21 @@ $pageTitle = 'Report e Statistiche';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function downloadReport(reportType) {
+            const year = document.getElementById('reportYear').value;
+            
+            if (!year) {
+                alert('Seleziona un anno');
+                return;
+            }
+            
+            // Costruisci URL per download
+            const url = `report_download.php?type=${reportType}&year=${year}`;
+            
+            // Apri in nuova finestra per avviare il download
+            window.location.href = url;
+        }
+    </script>
 </body>
 </html>
