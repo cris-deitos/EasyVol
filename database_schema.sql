@@ -1137,7 +1137,7 @@ COMMENT='Manages on-call rotation schedules for volunteers';
 -- 2. Member Availability Status (Real-time)
 CREATE TABLE IF NOT EXISTS `member_availability_status` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `member_id` int(11) NOT NULL UNIQUE COMMENT 'One status per member',
+  `member_id` int(11) NOT NULL COMMENT 'One status per member',
   `is_available` tinyint(1) DEFAULT 0 COMMENT 'Current availability status',
   `availability_start` datetime DEFAULT NULL COMMENT 'When availability started',
   `availability_end` datetime DEFAULT NULL COMMENT 'Expected end of availability',
