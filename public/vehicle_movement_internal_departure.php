@@ -357,7 +357,5 @@ $pageTitle = 'Registra Uscita Veicolo';
         }
         <?php endif; ?>
     </script>
-        <?php endif; ?>
-    </script>
 </body>
 </html>

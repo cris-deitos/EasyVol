@@ -56,7 +56,8 @@ $error = '';
 
 // Handle error messages from URL
 if (isset($_GET['error'])) {
-    $error = match($_GET['error']) {
+    $errorCode = filter_var($_GET['error'], FILTER_SANITIZE_STRING);
+    $error = match($errorCode) {
         'trailer_cannot_depart_alone' => 'I rimorchi non possono uscire da soli. Devono essere associati ad un veicolo trainante.',
         'already_in_mission' => 'Il veicolo è già in missione.',
         'fuori_servizio' => 'Il veicolo è fuori servizio e non può essere utilizzato.',
@@ -66,7 +67,8 @@ if (isset($_GET['error'])) {
 
 // Handle success messages from URL  
 if (isset($_GET['success'])) {
-    $success = match($_GET['success']) {
+    $successCode = filter_var($_GET['success'], FILTER_SANITIZE_STRING);
+    $success = match($successCode) {
         'departure' => 'Uscita registrata con successo.',
         'return' => 'Rientro registrato con successo.',
         default => 'Operazione completata con successo.'
