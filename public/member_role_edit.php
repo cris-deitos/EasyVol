@@ -34,8 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $data = [
             'role_name' => trim($_POST['role_name'] ?? ''),
-            'assigned_date' => $_POST['assigned_date'] ?? null,
-            'end_date' => $_POST['end_date'] ?? null
+            'assigned_date' => !empty($_POST['assigned_date']) ? $_POST['assigned_date'] : null,
+            'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null
         ];
         try {
             if ($roleId > 0) {
