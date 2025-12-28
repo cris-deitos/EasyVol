@@ -5,6 +5,11 @@ $user = $app->getCurrentUser();
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container-fluid">
+        <!-- Sidebar toggle button for mobile -->
+        <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-list"></i>
+        </button>
+        
         <a class="navbar-brand" href="dashboard.php">
             <img src="../assets/images/easyvol-logo.svg" alt="" class="navbar-logo">
             <strong>EasyVol</strong>
