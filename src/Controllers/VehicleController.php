@@ -289,9 +289,11 @@ class VehicleController {
             return $maintenanceId;
             
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Errore aggiunta manutenzione: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     

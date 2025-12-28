@@ -26,34 +26,67 @@ if (!$app->checkPermission('operations_center', 'edit')) {
 }
 
 $controller = new OperationsCenterController($app->getDb(), $app->getConfig());
-$csrf = new CsrfProtection();
 
 // Handle POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify CSRF token
-    if (!isset($_POST['csrf_token']) || !$csrf->validateToken($_POST['csrf_token'])) {
+    if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $_SESSION['error'] = 'Token di sicurezza non valido';
         header('Location: radio_directory.php');
         exit;
     }
     
     $radioId = isset($_POST['radio_id']) ? (int)$_POST['radio_id'] : 0;
-    $memberId = isset($_POST['member_id']) ? (int)$_POST['member_id'] : 0;
+    $assignmentType = $_POST['assignment_type'] ?? 'member';
     $notes = trim($_POST['notes'] ?? '');
     
-    if (!$radioId || !$memberId) {
-        $_SESSION['error'] = 'Dati non validi';
+    if (!$radioId) {
+        $_SESSION['error'] = 'Radio non valida';
         header('Location: radio_directory.php');
         exit;
     }
     
-    $result = $controller->assignRadio($radioId, $memberId, $app->getUserId(), $notes);
-    
-    if ($result['success']) {
-        $_SESSION['success'] = 'Radio assegnata con successo';
-        header('Location: radio_view.php?id=' . $radioId);
-    } else {
-        $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'assegnazione';
+    try {
+        if ($assignmentType === 'member') {
+            // Assignment to association member
+            $memberId = isset($_POST['member_id']) ? (int)$_POST['member_id'] : 0;
+            
+            if (!$memberId) {
+                $_SESSION['error'] = 'Volontario non selezionato';
+                header('Location: radio_view.php?id=' . $radioId);
+                exit;
+            }
+            
+            $result = $controller->assignRadio($radioId, $memberId, $app->getUserId(), $notes);
+        } else {
+            // Assignment to external personnel
+            $externalData = [
+                'last_name' => strtoupper(trim($_POST['external_last_name'] ?? '')),
+                'first_name' => strtoupper(trim($_POST['external_first_name'] ?? '')),
+                'organization' => trim($_POST['external_organization'] ?? ''),
+                'phone' => trim($_POST['external_phone'] ?? '')
+            ];
+            
+            // Validate external data
+            if (empty($externalData['last_name']) || empty($externalData['first_name']) || 
+                empty($externalData['organization']) || empty($externalData['phone'])) {
+                $_SESSION['error'] = 'Tutti i campi per personale esterno sono obbligatori';
+                header('Location: radio_view.php?id=' . $radioId);
+                exit;
+            }
+            
+            $result = $controller->assignRadioToExternal($radioId, $externalData, $app->getUserId(), $notes);
+        }
+        
+        if ($result['success']) {
+            $_SESSION['success'] = 'Radio assegnata con successo';
+            header('Location: radio_view.php?id=' . $radioId);
+        } else {
+            $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'assegnazione';
+            header('Location: radio_view.php?id=' . $radioId);
+        }
+    } catch (\Exception $e) {
+        $_SESSION['error'] = 'Errore durante l\'assegnazione: ' . $e->getMessage();
         header('Location: radio_view.php?id=' . $radioId);
     }
     exit;

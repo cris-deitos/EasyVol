@@ -126,9 +126,11 @@ class MemberController {
             return $memberId;
             
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Errore creazione socio: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -204,9 +206,11 @@ class MemberController {
             return true;
             
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Errore aggiornamento socio: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     

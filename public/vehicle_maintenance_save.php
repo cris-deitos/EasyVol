@@ -75,11 +75,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 header('Location: vehicle_view.php?id=' . $vehicleId . '&tab=maintenance');
+                exit;
             } else {
                 $_SESSION['error'] = 'Errore durante il salvataggio della manutenzione';
                 header('Location: vehicle_view.php?id=' . $vehicleId);
+                exit;
             }
-            exit;
             
         } catch (\Exception $e) {
             error_log("Errore salvataggio manutenzione: " . $e->getMessage());

@@ -209,9 +209,11 @@ class JuniorMemberController {
             return $memberId;
             
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Errore creazione socio minorenne: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -314,9 +316,11 @@ class JuniorMemberController {
             return true;
             
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Errore aggiornamento socio minorenne: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
