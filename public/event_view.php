@@ -543,18 +543,25 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     csrf_token: csrfToken
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.error) {
                     alert('Errore: ' + data.error);
-                } else {
-                    alert(data.message);
+                } else if (data.success) {
+                    alert(data.message || 'Intervento aggiunto con successo');
                     location.reload();
+                } else {
+                    alert('Risposta non valida dal server');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Errore durante il salvataggio');
+                alert('Errore durante il salvataggio: ' + error.message);
             });
         }
         

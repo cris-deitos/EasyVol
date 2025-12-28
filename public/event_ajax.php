@@ -102,9 +102,17 @@ try {
             $result = $controller->addIntervention($eventId, $data, $app->getUserId());
             
             if ($result) {
-                echo json_encode(['success' => true, 'message' => 'Intervento aggiunto con successo', 'id' => $result]);
+                echo json_encode([
+                    'success' => true, 
+                    'message' => 'Intervento aggiunto con successo', 
+                    'id' => $result
+                ]);
             } else {
-                echo json_encode(['error' => 'Errore durante l\'aggiunta dell\'intervento']);
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Errore durante l\'aggiunta dell\'intervento. Verificare i log del server.'
+                ]);
             }
             break;
             

@@ -252,7 +252,9 @@ class EventController {
             
             return $interventionId;
         } catch (\Exception $e) {
-            error_log("Errore aggiunta intervento: " . $e->getMessage());
+            error_log("Errore aggiunta intervento a evento ID $eventId: " . $e->getMessage());
+            error_log("Data: " . json_encode($data));
+            error_log("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }
