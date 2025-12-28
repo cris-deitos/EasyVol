@@ -1275,7 +1275,7 @@ CREATE TABLE IF NOT EXISTS `sessions` (
 -- Vehicle movement alert configuration
 INSERT INTO `config` (`config_key`, `config_value`) 
 VALUES ('vehicle_movement_alert_emails', '')
-ON DUPLICATE KEY UPDATE `config_key` = `config_key`;
+ON DUPLICATE KEY UPDATE `config_value` = VALUES(`config_value`);
 
 -- Vehicle movements permissions
 INSERT INTO `permissions` (`module`, `action`, `description`)
@@ -1305,7 +1305,7 @@ INSERT INTO `config` (`config_key`, `config_value`) VALUES
 ('email_encoding', '8bit'),
 ('email_sendmail_params', ''),
 ('email_additional_headers', '')
-ON DUPLICATE KEY UPDATE `config_key` = `config_key`;
+ON DUPLICATE KEY UPDATE `config_value` = VALUES(`config_value`);
 
 -- Default Print Templates
 -- Description: Inserts default templates for members, vehicles, and meetings
