@@ -10,8 +10,8 @@ $isInstalled = false;
 if (file_exists($configFile)) {
     $config = require $configFile;
     if (isset($config['database']['name']) && !empty($config['database']['name']) && $config['database']['name'] !== 'easyvol') {
-        // Only mark as installed if there's no active installation session
-        if (!isset($_SESSION['install'])) {
+        // Only mark as installed if there's no active installation session with valid data
+        if (!isset($_SESSION['install']) || !is_array($_SESSION['install']) || empty($_SESSION['install']['db_name'])) {
             $isInstalled = true;
         }
     }
