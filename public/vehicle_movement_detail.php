@@ -294,10 +294,24 @@ $pageTitle = 'Gestione Mezzo';
                             </a>
                         <?php endif; ?>
                     <?php else: ?>
-                        <a href="vehicle_movement_return.php?movement_id=<?php echo $activeMovement['id']; ?>" 
-                           class="btn btn-success btn-action">
-                            <i class="bi bi-box-arrow-in-left"></i> Registra Rientro Veicolo
-                        </a>
+                        <?php if ($vehicle['vehicle_type'] === 'rimorchio' && $activeMovement['vehicle_id'] != $vehicleId): ?>
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Rimorchio in Missione</strong><br>
+                                Questo rimorchio è attualmente associato al veicolo 
+                                <strong><?php echo htmlspecialchars($activeMovement['vehicle_license_plate'] ?? $activeMovement['vehicle_name']); ?></strong>
+                                in missione dal <?php echo date('d/m/Y H:i', strtotime($activeMovement['departure_datetime'])); ?>.
+                            </div>
+                            <a href="vehicle_movement_return.php?movement_id=<?php echo $activeMovement['id']; ?>" 
+                               class="btn btn-success btn-action">
+                                <i class="bi bi-box-arrow-in-left"></i> Registra Rientro
+                            </a>
+                        <?php else: ?>
+                            <a href="vehicle_movement_return.php?movement_id=<?php echo $activeMovement['id']; ?>" 
+                               class="btn btn-success btn-action">
+                                <i class="bi bi-box-arrow-in-left"></i> Registra Rientro <?php echo $vehicle['vehicle_type'] === 'natante' ? 'Natante' : 'Veicolo'; ?>
+                            </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
 
