@@ -322,6 +322,163 @@ try {
             }
             break;
             
+        case 'get_intervention':
+            // Get intervention details
+            if (!$app->checkPermission('events', 'view')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            $interventionId = intval($_GET['intervention_id'] ?? 0);
+            
+            if ($interventionId <= 0) {
+                echo json_encode(['error' => 'ID intervento non valido']);
+                exit;
+            }
+            
+            $intervention = $controller->getIntervention($interventionId);
+            
+            if (!$intervention) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Intervento non trovato']);
+                exit;
+            }
+            
+            echo json_encode(['success' => true, 'intervention' => $intervention]);
+            break;
+            
+        case 'update_intervention':
+            // Update intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $title = trim($input['title'] ?? '');
+            $startTime = trim($input['start_time'] ?? '');
+            
+            if ($interventionId <= 0 || empty($title) || empty($startTime)) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            $data = [
+                'title' => $title,
+                'description' => trim($input['description'] ?? ''),
+                'start_time' => $startTime,
+                'end_time' => !empty($input['end_time']) ? trim($input['end_time']) : null,
+                'location' => trim($input['location'] ?? ''),
+                'status' => $input['status'] ?? 'in_corso'
+            ];
+            
+            $result = $controller->updateIntervention($interventionId, $data, $app->getUserId());
+            
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Intervento aggiornato con successo']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Errore durante l\'aggiornamento dell\'intervento']);
+            }
+            break;
+            
+        case 'close_intervention':
+            // Close intervention with report
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $report = trim($input['report'] ?? '');
+            
+            if ($interventionId <= 0 || empty($report)) {
+                echo json_encode(['error' => 'ID intervento e esito sono obbligatori']);
+                exit;
+            }
+            
+            $endTime = !empty($input['end_time']) ? trim($input['end_time']) : null;
+            
+            $result = $controller->closeIntervention($interventionId, $report, $endTime, $app->getUserId());
+            
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Intervento chiuso con successo']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Errore durante la chiusura dell\'intervento']);
+            }
+            break;
+            
+        case 'reopen_intervention':
+            // Reopen a closed intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            
+            if ($interventionId <= 0) {
+                echo json_encode(['error' => 'ID intervento non valido']);
+                exit;
+            }
+            
+            $result = $controller->reopenIntervention($interventionId, $app->getUserId());
+            
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Intervento riaperto con successo']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Errore durante la riapertura dell\'intervento']);
+            }
+            break;
+            
         default:
             http_response_code(400);
             echo json_encode(['error' => 'Azione non valida']);

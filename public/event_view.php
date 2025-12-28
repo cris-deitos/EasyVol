@@ -274,6 +274,9 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                     <th>Data/Ora</th>
                                                     <th>Descrizione</th>
                                                     <th>Stato</th>
+                                                    <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                        <th width="180">Azioni</th>
+                                                    <?php endif; ?>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -281,12 +284,45 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                     <tr>
                                                         <td><?php echo htmlspecialchars($intervention['title']); ?></td>
                                                         <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($intervention['start_time']))); ?></td>
-                                                        <td><?php echo htmlspecialchars(substr($intervention['description'] ?? '', 0, 100)); ?>...</td>
+                                                        <td><?php echo htmlspecialchars(substr($intervention['description'] ?? '', 0, 100)); ?><?php echo strlen($intervention['description'] ?? '') > 100 ? '...' : ''; ?></td>
                                                         <td>
-                                                            <span class="badge bg-<?php echo $intervention['status'] == 'completato' ? 'success' : 'warning'; ?>">
-                                                                <?php echo htmlspecialchars(ucfirst($intervention['status'])); ?>
+                                                            <?php 
+                                                            $statusBadgeMap = [
+                                                                'in_corso' => 'warning',
+                                                                'concluso' => 'success',
+                                                                'sospeso' => 'secondary'
+                                                            ];
+                                                            $badgeClass = $statusBadgeMap[$intervention['status']] ?? 'secondary';
+                                                            $statusLabel = str_replace('_', ' ', ucfirst($intervention['status']));
+                                                            ?>
+                                                            <span class="badge bg-<?php echo $badgeClass; ?>">
+                                                                <?php echo htmlspecialchars($statusLabel); ?>
                                                             </span>
                                                         </td>
+                                                        <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                            <td>
+                                                                <div class="btn-group btn-group-sm" role="group">
+                                                                    <button type="button" class="btn btn-warning" 
+                                                                            onclick="editIntervention(<?php echo $intervention['id']; ?>)" 
+                                                                            title="Modifica">
+                                                                        <i class="bi bi-pencil"></i>
+                                                                    </button>
+                                                                    <?php if ($intervention['status'] !== 'concluso'): ?>
+                                                                        <button type="button" class="btn btn-success" 
+                                                                                onclick="closeIntervention(<?php echo $intervention['id']; ?>)" 
+                                                                                title="Chiudi Intervento">
+                                                                            <i class="bi bi-check-circle"></i>
+                                                                        </button>
+                                                                    <?php else: ?>
+                                                                        <button type="button" class="btn btn-info" 
+                                                                                onclick="reopenIntervention(<?php echo $intervention['id']; ?>)" 
+                                                                                title="Riapri Intervento">
+                                                                            <i class="bi bi-arrow-clockwise"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </td>
+                                                        <?php endif; ?>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
@@ -498,6 +534,97 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         </div>
     </div>
     
+    <!-- Edit Intervention Modal -->
+    <div class="modal fade" id="editInterventionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifica Intervento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editInterventionForm">
+                        <input type="hidden" id="edit_intervention_id">
+                        <div class="mb-3">
+                            <label for="edit_intervention_title" class="form-label">Titolo Intervento <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_intervention_title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_intervention_description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="edit_intervention_description" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_intervention_start_time" class="form-label">Data e Ora Inizio <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="edit_intervention_start_time" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_intervention_end_time" class="form-label">Data e Ora Fine</label>
+                                <input type="datetime-local" class="form-control" id="edit_intervention_end_time">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_intervention_location" class="form-label">Località</label>
+                            <input type="text" class="form-control" id="edit_intervention_location">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_intervention_status" class="form-label">Stato</label>
+                            <select class="form-select" id="edit_intervention_status">
+                                <option value="in_corso">In Corso</option>
+                                <option value="concluso">Concluso</option>
+                                <option value="sospeso">Sospeso</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-warning" onclick="updateIntervention()">
+                        <i class="bi bi-save"></i> Salva Modifiche
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Close Intervention Modal -->
+    <div class="modal fade" id="closeInterventionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Chiudi Intervento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="closeInterventionForm">
+                        <input type="hidden" id="close_intervention_id">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            Stai per chiudere definitivamente questo intervento. Inserisci l'esito e le note finali.
+                        </div>
+                        <div class="mb-3">
+                            <label for="intervention_report" class="form-label">Esito Intervento <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="intervention_report" rows="6" required 
+                                      placeholder="Descrivi l'esito dell'intervento, le attività svolte e gli eventuali risultati ottenuti..."></textarea>
+                            <small class="form-text text-muted">Questo campo è obbligatorio per chiudere l'intervento</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="close_intervention_end_time" class="form-label">Data e Ora Fine</label>
+                            <input type="datetime-local" class="form-control" id="close_intervention_end_time">
+                            <small class="form-text text-muted">Se lasciato vuoto, verrà usata la data/ora corrente</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-success" onclick="confirmCloseIntervention()">
+                        <i class="bi bi-check-circle"></i> Chiudi Intervento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const eventId = <?php echo json_encode($eventId); ?>;
@@ -703,6 +830,212 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         function printReport() {
             // Implementare generazione e stampa report
             alert('Funzionalità in sviluppo');
+        }
+        
+        // Edit intervention
+        function editIntervention(interventionId) {
+            // Fetch intervention data
+            fetch('event_ajax.php?action=get_intervention&intervention_id=' + interventionId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Errore: ' + data.error);
+                        return;
+                    }
+                    
+                    const intervention = data.intervention;
+                    
+                    // Populate form
+                    document.getElementById('edit_intervention_id').value = intervention.id;
+                    document.getElementById('edit_intervention_title').value = intervention.title || '';
+                    document.getElementById('edit_intervention_description').value = intervention.description || '';
+                    document.getElementById('edit_intervention_location').value = intervention.location || '';
+                    document.getElementById('edit_intervention_status').value = intervention.status || 'in_corso';
+                    
+                    // Format datetime for datetime-local input
+                    if (intervention.start_time) {
+                        const startTime = new Date(intervention.start_time);
+                        document.getElementById('edit_intervention_start_time').value = formatDateTimeLocal(startTime);
+                    }
+                    
+                    if (intervention.end_time) {
+                        const endTime = new Date(intervention.end_time);
+                        document.getElementById('edit_intervention_end_time').value = formatDateTimeLocal(endTime);
+                    } else {
+                        document.getElementById('edit_intervention_end_time').value = '';
+                    }
+                    
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('editInterventionModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Errore durante il caricamento dei dati');
+                });
+        }
+        
+        // Update intervention
+        function updateIntervention() {
+            const interventionId = document.getElementById('edit_intervention_id').value;
+            const title = document.getElementById('edit_intervention_title').value.trim();
+            const description = document.getElementById('edit_intervention_description').value.trim();
+            const startTime = document.getElementById('edit_intervention_start_time').value;
+            const endTime = document.getElementById('edit_intervention_end_time').value;
+            const location = document.getElementById('edit_intervention_location').value.trim();
+            const status = document.getElementById('edit_intervention_status').value;
+            
+            if (!title || !startTime) {
+                alert('Titolo e data/ora inizio sono obbligatori');
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'update_intervention',
+                    intervention_id: interventionId,
+                    title: title,
+                    description: description,
+                    start_time: startTime,
+                    end_time: endTime || null,
+                    location: location,
+                    status: status,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else if (data.success) {
+                    alert(data.message || 'Intervento aggiornato con successo');
+                    location.reload();
+                } else {
+                    alert('Risposta non valida dal server');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante l\'aggiornamento: ' + error.message);
+            });
+        }
+        
+        // Close intervention
+        function closeIntervention(interventionId) {
+            document.getElementById('close_intervention_id').value = interventionId;
+            document.getElementById('intervention_report').value = '';
+            
+            // Set current datetime as default end time
+            const now = new Date();
+            document.getElementById('close_intervention_end_time').value = formatDateTimeLocal(now);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('closeInterventionModal'));
+            modal.show();
+        }
+        
+        // Confirm close intervention
+        function confirmCloseIntervention() {
+            const interventionId = document.getElementById('close_intervention_id').value;
+            const report = document.getElementById('intervention_report').value.trim();
+            const endTime = document.getElementById('close_intervention_end_time').value;
+            
+            if (!report) {
+                alert('L\'esito dell\'intervento è obbligatorio');
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'close_intervention',
+                    intervention_id: interventionId,
+                    report: report,
+                    end_time: endTime,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else if (data.success) {
+                    alert(data.message || 'Intervento chiuso con successo');
+                    location.reload();
+                } else {
+                    alert('Risposta non valida dal server');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante la chiusura: ' + error.message);
+            });
+        }
+        
+        // Reopen intervention
+        function reopenIntervention(interventionId) {
+            if (!confirm('Sei sicuro di voler riaprire questo intervento?')) {
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'reopen_intervention',
+                    intervention_id: interventionId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else if (data.success) {
+                    alert(data.message || 'Intervento riaperto con successo');
+                    location.reload();
+                } else {
+                    alert('Risposta non valida dal server');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante la riapertura: ' + error.message);
+            });
+        }
+        
+        // Helper function to format date for datetime-local input
+        function formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
         }
     </script>
 </body>
