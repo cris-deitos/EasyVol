@@ -284,6 +284,7 @@ $pageTitle = 'Registra Rientro Veicolo';
                 </div>
 
                 <div class="row mb-3">
+                    <?php if ($movement['vehicle_type'] !== 'natante'): ?>
                     <div class="col-md-6">
                         <label class="form-label">Km Rientro</label>
                         <input type="number" 
@@ -298,6 +299,14 @@ $pageTitle = 'Registra Rientro Veicolo';
                             </small>
                         <?php endif; ?>
                     </div>
+                    <?php else: ?>
+                    <div class="col-md-6">
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            I natanti non richiedono la registrazione dei chilometri.
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     <div class="col-md-6">
                         <label class="form-label">Stato Carburante</label>
                         <select name="return_fuel_level" class="form-select">
