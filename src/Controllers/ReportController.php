@@ -4,6 +4,7 @@ namespace EasyVol\Controllers;
 use EasyVol\Database;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 /**
  * Report Controller
@@ -468,28 +469,28 @@ class ReportController {
         
         // Header
         $headers = array_keys($data[0]);
-        $col = 'A';
+        $colIndex = 1;
         foreach ($headers as $header) {
-            $sheet->setCellValue($col . '1', ucfirst(str_replace('_', ' ', $header)));
-            $sheet->getStyle($col . '1')->getFont()->setBold(true);
-            $col++;
+            $sheet->setCellValueByColumnAndRow($colIndex, 1, ucfirst(str_replace('_', ' ', $header)));
+            $sheet->getStyleByColumnAndRow($colIndex, 1)->getFont()->setBold(true);
+            $colIndex++;
         }
         
         // Dati
         $row = 2;
         foreach ($data as $record) {
-            $col = 'A';
+            $colIndex = 1;
             foreach ($record as $value) {
-                $sheet->setCellValue($col . $row, $value);
-                $col++;
+                $sheet->setCellValueByColumnAndRow($colIndex, $row, $value);
+                $colIndex++;
             }
             $row++;
         }
         
-        // Auto-size columns (decrement col to get last valid column)
-        $lastCol = chr(ord($col) - 1);
-        foreach (range('A', $lastCol) as $columnID) {
-            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        // Auto-size columns
+        $numColumns = count($headers);
+        for ($i = 1; $i <= $numColumns; $i++) {
+            $sheet->getColumnDimensionByColumn($i)->setAutoSize(true);
         }
         
         // Output
