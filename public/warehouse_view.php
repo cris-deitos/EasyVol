@@ -80,12 +80,6 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     <i class="bi bi-pencil"></i> Modifica
                                 </a>
                             <?php endif; ?>
-                            <button type="button" class="btn btn-info" onclick="printQrCode()">
-                                <i class="bi bi-qr-code"></i> Stampa QR Code
-                            </button>
-                            <button type="button" class="btn btn-success" onclick="printBarcode()">
-                                <i class="bi bi-upc-scan"></i> Stampa Barcode
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -514,50 +508,6 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 alert('Errore durante l\'assegnazione: ' + error.message);
             }
         });
-        
-        async function printQrCode() {
-            try {
-                const response = await fetch(`warehouse_api.php?action=generate_qr&id=${itemId}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(result.message);
-                    // Open print dialog for QR code
-                    if (result.path) {
-                        const printWindow = window.open(result.path, '_blank');
-                        printWindow.addEventListener('load', function() {
-                            printWindow.print();
-                        });
-                    }
-                } else {
-                    alert('Errore: ' + result.message);
-                }
-            } catch (error) {
-                alert('Errore durante la generazione del QR Code: ' + error.message);
-            }
-        }
-        
-        async function printBarcode() {
-            try {
-                const response = await fetch(`warehouse_api.php?action=generate_barcode&id=${itemId}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(result.message);
-                    // Open print dialog for barcode
-                    if (result.path) {
-                        const printWindow = window.open(result.path, '_blank');
-                        printWindow.addEventListener('load', function() {
-                            printWindow.print();
-                        });
-                    }
-                } else {
-                    alert('Errore: ' + result.message);
-                }
-            } catch (error) {
-                alert('Errore durante la generazione del Barcode: ' + error.message);
-            }
-        }
     </script>
 </body>
 </html>
