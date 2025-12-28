@@ -327,6 +327,65 @@ class OperationsCenterController {
     }
     
     /**
+     * Assegna radio a personale esterno
+     * 
+     * @param int $radioId ID radio
+     * @param array $externalData Dati personale esterno (last_name, first_name, organization, phone)
+     * @param int $userId ID utente che assegna
+     * @param string|null $notes Note assegnazione
+     * @return array
+     */
+    public function assignRadioToExternal($radioId, $externalData, $userId, $notes = null) {
+        try {
+            $this->db->beginTransaction();
+            
+            // Check if radio is available
+            $sql = "SELECT status FROM radio_directory WHERE id = ?";
+            $radio = $this->db->fetchOne($sql, [$radioId]);
+            
+            if (!$radio || $radio['status'] !== 'disponibile') {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Radio non disponibile'];
+            }
+            
+            // Create assignment with external personnel data
+            // member_id is NULL for external personnel
+            $sql = "INSERT INTO radio_assignments (
+                radio_id, member_id, assignee_first_name, assignee_last_name, 
+                assignee_phone, assignee_organization, 
+                assigned_by, assignment_date, status, notes
+            ) VALUES (?, NULL, ?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+            
+            $this->db->execute($sql, [
+                $radioId,
+                $externalData['first_name'],
+                $externalData['last_name'],
+                $externalData['phone'],
+                $externalData['organization'],
+                $userId,
+                $notes
+            ]);
+            
+            // Update radio status
+            $sql = "UPDATE radio_directory SET status = 'assegnata', updated_at = NOW() 
+                    WHERE id = ?";
+            $this->db->execute($sql, [$radioId]);
+            
+            $this->db->commit();
+            
+            // Log activity
+            $this->logActivity($userId, 'operations_center', 'assign_radio_external', $radioId, 
+                "Radio assegnata a personale esterno: {$externalData['first_name']} {$externalData['last_name']} ({$externalData['organization']})");
+            
+            return ['success' => true];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Error assigning radio to external: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'assegnazione: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
      * Restituisci radio
      */
     public function returnRadio($assignmentId, $userId, $notes = null) {

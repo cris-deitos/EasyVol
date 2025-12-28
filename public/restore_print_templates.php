@@ -114,7 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
         } catch (Exception $e) {
-            if (isset($connection) && $connection->inTransaction()) {
+            $connection = null;
+            try {
+                $connection = $db->getConnection();
+            } catch (\Exception $dbException) {
+                // Database connection not available
+            }
+            
+            if ($connection && $connection->inTransaction()) {
                 $connection->rollBack();
             }
             $errors[] = "Errore durante il ripristino: " . $e->getMessage();

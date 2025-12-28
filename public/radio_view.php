@@ -287,13 +287,63 @@ $pageTitle = 'Dettaglio Radio';
                 <form method="POST" action="radio_assign.php">
                     <div class="modal-body">
                         <input type="hidden" name="radio_id" value="<?php echo $radio['id']; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
+                        
                         <div class="mb-3">
-                            <label for="member_id" class="form-label">Volontario *</label>
-                            <select class="form-select" id="member_id" name="member_id" required>
-                                <option value="">Seleziona volontario...</option>
-                                <!-- This would be populated dynamically -->
-                            </select>
+                            <label class="form-label">Tipo Assegnazione *</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="assignment_type" id="assign_member" value="member" checked onchange="toggleAssignmentFields()">
+                                <label class="form-check-label" for="assign_member">
+                                    Volontario dell'Associazione
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="assignment_type" id="assign_external" value="external" onchange="toggleAssignmentFields()">
+                                <label class="form-check-label" for="assign_external">
+                                    Personale Esterno
+                                </label>
+                            </div>
                         </div>
+                        
+                        <div id="member_fields">
+                            <div class="mb-3">
+                                <label for="member_id" class="form-label">Volontario *</label>
+                                <select class="form-select" id="member_id" name="member_id">
+                                    <option value="">Seleziona volontario...</option>
+                                    <?php
+                                    // Carica lista volontari attivi
+                                    $members = $memberController->index(['status' => 'attivo', 'volunteer_status' => 'operativo'], 1, 1000);
+                                    foreach ($members as $member) {
+                                        echo '<option value="' . $member['id'] . '">' . 
+                                             htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
+                                             '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="external_fields" style="display:none;">
+                            <div class="mb-3">
+                                <label for="external_last_name" class="form-label">Cognome *</label>
+                                <input type="text" class="form-control" id="external_last_name" name="external_last_name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="external_first_name" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="external_first_name" name="external_first_name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="external_organization" class="form-label">Ente *</label>
+                                <input type="text" class="form-control" id="external_organization" name="external_organization" 
+                                       placeholder="Es: Protezione Civile Comunale, Vigili del Fuoco, ecc.">
+                            </div>
+                            <div class="mb-3">
+                                <label for="external_phone" class="form-label">Numero di Cellulare *</label>
+                                <input type="tel" class="form-control" id="external_phone" name="external_phone" 
+                                       placeholder="Es: +39 333 1234567">
+                            </div>
+                        </div>
+                        
                         <div class="mb-3">
                             <label for="notes" class="form-label">Note</label>
                             <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
@@ -310,6 +360,35 @@ $pageTitle = 'Dettaglio Radio';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function toggleAssignmentFields() {
+            const isMember = document.getElementById('assign_member').checked;
+            const memberFields = document.getElementById('member_fields');
+            const externalFields = document.getElementById('external_fields');
+            const memberSelect = document.getElementById('member_id');
+            const externalLastName = document.getElementById('external_last_name');
+            const externalFirstName = document.getElementById('external_first_name');
+            const externalOrganization = document.getElementById('external_organization');
+            const externalPhone = document.getElementById('external_phone');
+            
+            if (isMember) {
+                memberFields.style.display = 'block';
+                externalFields.style.display = 'none';
+                memberSelect.required = true;
+                externalLastName.required = false;
+                externalFirstName.required = false;
+                externalOrganization.required = false;
+                externalPhone.required = false;
+            } else {
+                memberFields.style.display = 'none';
+                externalFields.style.display = 'block';
+                memberSelect.required = false;
+                externalLastName.required = true;
+                externalFirstName.required = true;
+                externalOrganization.required = true;
+                externalPhone.required = true;
+            }
+        }
+        
         function returnRadio(assignmentId) {
             const notes = prompt('Note sulla restituzione (opzionale):');
             if (notes !== null) {  // null means cancelled

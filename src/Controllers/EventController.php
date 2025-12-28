@@ -107,9 +107,11 @@ class EventController {
             return $eventId;
             
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Errore creazione evento: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -142,7 +144,7 @@ class EventController {
             
         } catch (\Exception $e) {
             error_log("Errore aggiornamento evento: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
