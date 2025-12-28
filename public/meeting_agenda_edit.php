@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 $success = true;
-                header('Location: meeting_view.php?id=' . $meetingId . '&success=1#agenda');
+                header('Location: meeting_view.php?id=' . $meetingId . '&success=1#agenda-tab');
                 exit;
                 
             } catch (\Exception $e) {
