@@ -80,7 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'return_notes' => $_POST['return_notes'] ?? null,
             'return_anomaly_flag' => isset($_POST['return_anomaly_flag']) ? 1 : 0,
             'traffic_violation_flag' => isset($_POST['traffic_violation_flag']) ? 1 : 0,
-            'checklist' => $checklistData
+            'checklist' => $checklistData,
+            'trailer_return_status' => $_POST['trailer_return_status'] ?? null
         ];
         
         $result = $controller->createReturn($movementId, $returnData, $member['id']);
@@ -395,6 +396,46 @@ $pageTitle = 'Registra Rientro Veicolo';
                         </small>
                     </label>
                 </div>
+
+                <!-- Trailer Return Section (if vehicle has a trailer) -->
+                <?php if (!empty($movement['trailer_id'])): ?>
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="bi bi-5-circle-fill"></i> Rientro Rimorchio</h5>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Attenzione:</strong> Il veicolo ha un rimorchio associato 
+                        (<strong><?php echo htmlspecialchars($movement['trailer_name']); ?></strong>).
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Il rimorchio è rientrato con il veicolo?</label>
+                        
+                        <div class="form-check">
+                            <input type="radio" 
+                                   class="form-check-input" 
+                                   name="trailer_return_status" 
+                                   id="trailerReturnYes" 
+                                   value="returned"
+                                   checked>
+                            <label class="form-check-label" for="trailerReturnYes">
+                                Sì, il rimorchio è rientrato con questo veicolo
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="radio" 
+                                   class="form-check-input" 
+                                   name="trailer_return_status" 
+                                   id="trailerReturnNo" 
+                                   value="still_mission">
+                            <label class="form-check-label" for="trailerReturnNo">
+                                No, il rimorchio è rimasto in missione (verrà recuperato successivamente)
+                            </label>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Submit Buttons -->
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
