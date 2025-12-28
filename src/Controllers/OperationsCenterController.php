@@ -58,17 +58,19 @@ class OperationsCenterController {
      * Get available volunteers with all necessary fields
      */
     public function getAvailableVolunteers() {
+        // Get volunteers currently on-call (reperibili)
         $sql = "SELECT m.*, 
                 mc.value as phone,
-                COALESCE(ma.availability_type, 'available') as availability_type,
-                ma.notes as availability_notes
-                FROM members m
+                ocs.start_datetime,
+                ocs.end_datetime,
+                ocs.notes as on_call_notes
+                FROM on_call_schedule ocs
+                JOIN members m ON ocs.member_id = m.id
                 LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
-                LEFT JOIN member_availability ma ON m.id = ma.member_id
-                WHERE m.member_status = 'attivo' 
-                AND m.volunteer_status = 'operativo'
-                ORDER BY m.last_name, m.first_name
-                LIMIT 50";
+                WHERE m.member_status = 'attivo'
+                AND ocs.start_datetime <= NOW()
+                AND ocs.end_datetime >= NOW()
+                ORDER BY m.last_name, m.first_name";
         
         return $this->db->fetchAll($sql);
     }

@@ -262,8 +262,18 @@ $pageTitle = 'Centrale Operativa';
                     <!-- Available Members -->
                     <div class="col-md-6 mb-4">
                         <div class="card">
-                            <div class="card-header">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-people"></i> Volontari Reperibili</h5>
+                                <div>
+                                    <?php if ($app->checkPermission('operations_center', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addOnCallModal">
+                                            <i class="bi bi-plus-circle"></i> Aggiungi
+                                        </button>
+                                        <a href="on_call_history.php" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-clock-history"></i> Storico
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                                 <?php if (empty($dashboard['available_members'])): ?>
@@ -279,25 +289,19 @@ $pageTitle = 'Centrale Operativa';
                                                     <?php if (!empty($member['badge_number'])): ?>
                                                         <br><small class="text-muted">Matricola: <?php echo htmlspecialchars($member['badge_number']); ?></small>
                                                     <?php endif; ?>
+                                                    <?php if (!empty($member['phone'])): ?>
+                                                        <br><small><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($member['phone']); ?></small>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($member['end_datetime'])): ?>
+                                                        <br><small class="text-muted">Fino a: <?php echo date('d/m/Y H:i', strtotime($member['end_datetime'])); ?></small>
+                                                    <?php endif; ?>
                                                 </div>
-                                                <?php 
-                                                $availabilityType = $member['availability_type'] ?? 'available';
-                                                $availabilityLabel = match($availabilityType) {
-                                                    'available' => 'Disponibile',
-                                                    'limited' => 'Limitato',
-                                                    'unavailable' => 'Non disponibile',
-                                                    default => 'Disponibile'
-                                                };
-                                                $badgeColor = match($availabilityType) {
-                                                    'available' => 'success',
-                                                    'limited' => 'warning',
-                                                    'unavailable' => 'secondary',
-                                                    default => 'success'
-                                                };
-                                                ?>
-                                                <span class="badge bg-<?php echo $badgeColor; ?>">
-                                                    <?php echo htmlspecialchars($availabilityLabel); ?>
-                                                </span>
+                                                <span class="badge bg-success">Reperibile</span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
@@ -352,6 +356,68 @@ $pageTitle = 'Centrale Operativa';
             </main>
         </div>
     </div>
+    
+    <!-- Add On-Call Volunteer Modal -->
+    <div class="modal fade" id="addOnCallModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Aggiungi Volontario Reperibile</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addOnCallForm" action="on_call_ajax.php" method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="add_on_call">
+                        <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Volontario <span class="text-danger">*</span></label>
+                            <select class="form-select" name="member_id" required>
+                                <option value="">Seleziona un volontario...</option>
+                                <?php
+                                $activeMembersSql = "SELECT id, first_name, last_name, registration_number, badge_number 
+                                                     FROM members 
+                                                     WHERE member_status = 'attivo' 
+                                                     ORDER BY last_name, first_name";
+                                $activeMembers = $app->getDb()->fetchAll($activeMembersSql);
+                                foreach ($activeMembers as $activeMember) {
+                                    echo '<option value="' . $activeMember['id'] . '">' . 
+                                         htmlspecialchars($activeMember['last_name'] . ' ' . $activeMember['first_name']) . 
+                                         ' (' . htmlspecialchars($activeMember['badge_number'] ?? $activeMember['registration_number']) . ')' .
+                                         '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Data e Ora Inizio Reperibilità <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" name="start_datetime" 
+                                   value="<?php echo date('Y-m-d\TH:i'); ?>" required>
+                            <small class="text-muted">Impostato automaticamente all'ora attuale</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Data e Ora Fine Reperibilità <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" name="end_datetime" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Note</label>
+                            <textarea class="form-control" name="notes" rows="2" 
+                                      placeholder="Note sulla reperibilità..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Aggiungi Reperibilità
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -363,6 +429,31 @@ $pageTitle = 'Centrale Operativa';
                 location.reload();
             }, 60000);
         }
+        
+        // Handle on-call form submission
+        document.getElementById('addOnCallForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('on_call_ajax.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        });
     </script>
 </body>
 </html>
