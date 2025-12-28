@@ -486,8 +486,9 @@ class ReportController {
             $row++;
         }
         
-        // Auto-size columns
-        foreach (range('A', $col) as $columnID) {
+        // Auto-size columns (decrement col to get last valid column)
+        $lastCol = chr(ord($col) - 1);
+        foreach (range('A', $lastCol) as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
         
