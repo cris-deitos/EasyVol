@@ -52,6 +52,7 @@ Thumbs.db
 *.sql
 !database_schema.sql
 !seed_print_templates.sql
+!seed_junior_members_print_templates.sql
 !database/migrations/*.sql
 !migrations/*.sql
 

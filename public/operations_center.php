@@ -302,11 +302,6 @@ $pageTitle = 'Centrale Operativa';
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </div>
                         </div>
                     </div>
                 </div>
