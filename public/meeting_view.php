@@ -624,6 +624,47 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
         }
     </script>
 
+    <!-- Add Agenda Item Modal -->
+    <div class="modal fade" id="addAgendaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Aggiungi Punto all'Ordine del Giorno</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addAgendaForm" method="POST" action="meeting_agenda_edit.php">
+                    <div class="modal-body">
+                        <input type="hidden" name="meeting_id" value="<?php echo $meetingId; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Numero Ordine <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="order_number" 
+                                   value="<?php echo intval(count($meeting['agenda'] ?? []) + 1); ?>" min="1" required>
+                            <small class="text-muted">Numero progressivo del punto all'ordine del giorno</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Oggetto <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="subject" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descrizione</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Aggiungi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Print Template Selection Modal -->
     <div class="modal fade" id="printModal" tabindex="-1">
         <div class="modal-dialog">

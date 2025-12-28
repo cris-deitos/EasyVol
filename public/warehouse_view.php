@@ -93,17 +93,17 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 <!-- Tabs -->
                 <ul class="nav nav-tabs mb-3" id="itemTab" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">
+                        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="true">
                             <i class="bi bi-info-circle"></i> Informazioni Generali
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="movements-tab" data-bs-toggle="tab" data-bs-target="#movements" type="button">
+                        <button class="nav-link" id="movements-tab" data-bs-toggle="tab" data-bs-target="#movements" type="button" role="tab" aria-controls="movements" aria-selected="false">
                             <i class="bi bi-arrow-left-right"></i> Movimenti
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="dpi-tab" data-bs-toggle="tab" data-bs-target="#dpi" type="button">
+                        <button class="nav-link" id="dpi-tab" data-bs-toggle="tab" data-bs-target="#dpi" type="button" role="tab" aria-controls="dpi" aria-selected="false">
                             <i class="bi bi-person-badge"></i> DPI Assegnati
                         </button>
                     </li>

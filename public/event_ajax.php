@@ -102,9 +102,16 @@ try {
             $result = $controller->addIntervention($eventId, $data, $app->getUserId());
             
             if ($result) {
-                echo json_encode(['success' => true, 'message' => 'Intervento aggiunto con successo', 'id' => $result]);
+                echo json_encode([
+                    'success' => true, 
+                    'message' => 'Intervento aggiunto con successo', 
+                    'id' => $result
+                ]);
             } else {
-                echo json_encode(['error' => 'Errore durante l\'aggiunta dell\'intervento']);
+                http_response_code(500);
+                echo json_encode([
+                    'error' => 'Errore durante l\'aggiunta dell\'intervento. Verificare i log del server.'
+                ]);
             }
             break;
             
@@ -225,6 +232,89 @@ try {
             
             if ($result === true) {
                 echo json_encode(['success' => true, 'message' => 'Veicolo aggiunto con successo']);
+            } elseif (is_array($result) && isset($result['error'])) {
+                echo json_encode(['error' => $result['error']]);
+            } else {
+                echo json_encode(['error' => 'Errore durante l\'aggiunta del veicolo']);
+            }
+            break;
+            
+        case 'add_intervention_participant':
+            // Add participant to intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $memberId = intval($input['member_id'] ?? 0);
+            $role = trim($input['role'] ?? '');
+            
+            if ($interventionId <= 0 || $memberId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            $result = $controller->addInterventionParticipant($interventionId, $memberId, $role, $app->getUserId());
+            
+            if ($result === true) {
+                echo json_encode(['success' => true, 'message' => 'Partecipante aggiunto all\'intervento']);
+            } elseif (is_array($result) && isset($result['error'])) {
+                echo json_encode(['error' => $result['error']]);
+            } else {
+                echo json_encode(['error' => 'Errore durante l\'aggiunta del partecipante']);
+            }
+            break;
+            
+        case 'add_intervention_vehicle':
+            // Add vehicle to intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $vehicleId = intval($input['vehicle_id'] ?? 0);
+            
+            if ($interventionId <= 0 || $vehicleId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            $result = $controller->addInterventionVehicle($interventionId, $vehicleId, $app->getUserId());
+            
+            if ($result === true) {
+                echo json_encode(['success' => true, 'message' => 'Veicolo aggiunto all\'intervento']);
             } elseif (is_array($result) && isset($result['error'])) {
                 echo json_encode(['error' => $result['error']]);
             } else {
