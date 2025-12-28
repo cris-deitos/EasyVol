@@ -340,13 +340,14 @@ $pageTitle = 'Dettaglio Movimento Mezzo';
                         <div class="card-body">
                             <p>Il veicolo è ancora in missione. È possibile completare il movimento:</p>
                             <div class="btn-group">
-                                <a href="vehicle_movement_internal_return.php?movement_id=<?php echo $movement['id']; ?>" 
+                                <a href="vehicle_movement_internal_return.php?movement_id=<?php echo htmlspecialchars($movement['id'], ENT_QUOTES, 'UTF-8'); ?>" 
                                    class="btn btn-success">
                                     <i class="bi bi-box-arrow-in-left"></i> Registra Rientro
                                 </a>
                                 <button type="button" 
                                         class="btn btn-secondary" 
-                                        onclick="completeWithoutReturn(<?php echo $movement['id']; ?>)">
+                                        data-movement-id="<?php echo intval($movement['id']); ?>"
+                                        onclick="completeWithoutReturn(this)">
                                     <i class="bi bi-check-circle"></i> Completa Senza Rientro
                                 </button>
                             </div>
@@ -359,7 +360,9 @@ $pageTitle = 'Dettaglio Movimento Mezzo';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function completeWithoutReturn(movementId) {
+        function completeWithoutReturn(button) {
+            const movementId = button.getAttribute('data-movement-id');
+            
             if (!confirm('Sei sicuro di voler completare questo viaggio senza registrare i dati di rientro?')) {
                 return;
             }

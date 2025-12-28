@@ -418,11 +418,11 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-outline-danger" 
-                                                                onclick="deleteParticipant(<?php echo $participant['id']; ?>, '<?php 
-                                                                    echo htmlspecialchars($participant['first_name'] ?? $participant['junior_first_name']); 
-                                                                    echo ' ';
-                                                                    echo htmlspecialchars($participant['last_name'] ?? $participant['junior_last_name']); 
-                                                                ?>')"
+                                                                data-participant-id="<?php echo intval($participant['id']); ?>"
+                                                                data-participant-name="<?php 
+                                                                    echo htmlspecialchars(($participant['first_name'] ?? $participant['junior_first_name']) . ' ' . ($participant['last_name'] ?? $participant['junior_last_name']));
+                                                                ?>"
+                                                                onclick="deleteParticipant(this)"
                                                                 title="Elimina partecipante">
                                                             <i class="bi bi-trash"></i>
                                                         </button>
@@ -533,7 +533,10 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
         });
         
         // Delete participant function
-        function deleteParticipant(participantId, participantName) {
+        function deleteParticipant(button) {
+            const participantId = button.getAttribute('data-participant-id');
+            const participantName = button.getAttribute('data-participant-name');
+            
             if (!confirm('Sei sicuro di voler eliminare ' + participantName + ' dalla lista dei partecipanti?')) {
                 return;
             }
