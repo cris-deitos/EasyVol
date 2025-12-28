@@ -1219,7 +1219,14 @@ $pageTitle = 'Impostazioni Sistema';
                                         <i class="bi bi-exclamation-triangle"></i>
                                         Nessun modello di stampa trovato. 
                                         <?php if ($app->checkPermission('settings', 'edit')): ?>
-                                        <a href="print_template_editor.php" class="alert-link">Crea il tuo primo template!</a>
+                                        <div class="mt-3">
+                                            <a href="restore_print_templates.php" class="btn btn-primary btn-sm me-2">
+                                                <i class="bi bi-arrow-clockwise"></i> Ripristina Template Predefiniti
+                                            </a>
+                                            <a href="print_template_editor.php" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-plus-circle"></i> Crea Template Personalizzato
+                                            </a>
+                                        </div>
                                         <?php endif; ?>
                                     </div>
                                 <?php else: ?>
