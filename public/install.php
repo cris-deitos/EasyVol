@@ -225,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validation
         if ($emailEnabled === '1') {
             if (empty($fromAddress) || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
-                $errors[] = "Indirizzo email mittente non valido";
+                $errors[] = "Indirizzo email del mittente non valido";
             }
             if (!in_array($emailMethod, ['smtp', 'sendmail'])) {
                 $errors[] = "Metodo di invio email non valido";
@@ -274,7 +274,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: install.php?step=4");
                 exit;
             } catch (Exception $e) {
-                $errors[] = "Errore durante il salvataggio: " . $e->getMessage();
+                error_log("Email configuration error: " . $e->getMessage());
+                $errors[] = "Errore durante il salvataggio delle impostazioni email";
             }
         }
     }
