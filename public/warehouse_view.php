@@ -111,7 +111,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 
                 <div class="tab-content" id="itemTabContent">
                     <!-- Tab Informazioni Generali -->
-                    <div class="tab-pane fade show active" id="info" role="tabpanel">
+                    <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="card mb-3">
@@ -218,7 +218,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                     </div>
                     
                     <!-- Tab Movimenti -->
-                    <div class="tab-pane fade" id="movements" role="tabpanel">
+                    <div class="tab-pane fade" id="movements" role="tabpanel" aria-labelledby="movements-tab">
                         <div class="card">
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -268,7 +268,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                     </div>
                     
                     <!-- Tab DPI Assegnati -->
-                    <div class="tab-pane fade" id="dpi" role="tabpanel">
+                    <div class="tab-pane fade" id="dpi" role="tabpanel" aria-labelledby="dpi-tab">
                         <div class="card">
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">

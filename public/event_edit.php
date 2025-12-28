@@ -65,8 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'location' => trim($_POST['location'] ?? ''),
             'start_date' => $_POST['start_date'] ?? '',
             'end_date' => $_POST['end_date'] ?? null,
-            'status' => $_POST['status'] ?? 'aperto',
-            'notes' => trim($_POST['notes'] ?? '')
+            'status' => $_POST['status'] ?? 'aperto'
         ];
         
         try {
@@ -151,7 +150,6 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                         <option value="emergenza" <?php echo ($event['event_type'] ?? '') === 'emergenza' ? 'selected' : ''; ?>>Emergenza</option>
                                         <option value="esercitazione" <?php echo ($event['event_type'] ?? '') === 'esercitazione' ? 'selected' : ''; ?>>Esercitazione</option>
                                         <option value="attivita" <?php echo ($event['event_type'] ?? 'attivita') === 'attivita' ? 'selected' : ''; ?>>Attività</option>
-                                        <option value="altro" <?php echo ($event['event_type'] ?? '') === 'altro' ? 'selected' : ''; ?>>Altro</option>
                                     </select>
                                 </div>
                             </div>
@@ -210,17 +208,6 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                         <option value="concluso" <?php echo ($event['status'] ?? '') === 'concluso' ? 'selected' : ''; ?>>Concluso</option>
                                     </select>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card mb-3">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Note</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <textarea class="form-control" id="notes" name="notes" rows="4"><?php echo htmlspecialchars($event['notes'] ?? ''); ?></textarea>
                             </div>
                         </div>
                     </div>
