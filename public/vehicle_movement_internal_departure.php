@@ -318,36 +318,45 @@ $pageTitle = 'Registra Uscita Veicolo';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Handle vehicle type change to hide/show km field for natanti
-        document.getElementById('vehicle_id')?.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const vehicleType = selectedOption.getAttribute('data-vehicle-type');
-            const kmInput = document.getElementById('departure_km');
-            const kmLabel = document.querySelector('label[for="departure_km"]');
-            const natanteInfo = document.getElementById('natante_info');
-            
-            if (vehicleType === 'natante') {
-                kmInput.style.display = 'none';
-                kmLabel.style.display = 'none';
-                natanteInfo.style.display = 'block';
-                kmInput.value = ''; // Clear value
-                kmInput.removeAttribute('required');
-            } else {
-                kmInput.style.display = 'block';
-                kmLabel.style.display = 'block';
-                natanteInfo.style.display = 'none';
-            }
-        });
+        const vehicleSelect = document.getElementById('vehicle_id');
+        if (vehicleSelect) {
+            vehicleSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const vehicleType = selectedOption.getAttribute('data-vehicle-type');
+                const kmInput = document.getElementById('departure_km');
+                const kmLabel = document.querySelector('label[for="departure_km"]');
+                const natanteInfo = document.getElementById('natante_info');
+                
+                if (kmInput && kmLabel && natanteInfo) {
+                    if (vehicleType === 'natante') {
+                        kmInput.style.display = 'none';
+                        kmLabel.style.display = 'none';
+                        natanteInfo.style.display = 'block';
+                        kmInput.value = ''; // Clear value
+                        kmInput.removeAttribute('required');
+                    } else {
+                        kmInput.style.display = 'block';
+                        kmLabel.style.display = 'block';
+                        natanteInfo.style.display = 'none';
+                    }
+                }
+            });
+        }
         
-        // If vehicle is pre-selected, trigger the change event
+        // If vehicle is pre-selected, apply natante styling
         <?php if ($vehicle && $vehicle['vehicle_type'] === 'natante'): ?>
         const kmInput = document.getElementById('departure_km');
         const kmLabel = document.querySelector('label[for="departure_km"]');
         const natanteInfo = document.getElementById('natante_info');
-        kmInput.style.display = 'none';
-        kmLabel.style.display = 'none';
-        natanteInfo.style.display = 'block';
-        kmInput.value = '';
-        kmInput.removeAttribute('required');
+        if (kmInput && kmLabel && natanteInfo) {
+            kmInput.style.display = 'none';
+            kmLabel.style.display = 'none';
+            natanteInfo.style.display = 'block';
+            kmInput.value = '';
+            kmInput.removeAttribute('required');
+        }
+        <?php endif; ?>
+    </script>
         <?php endif; ?>
     </script>
 </body>

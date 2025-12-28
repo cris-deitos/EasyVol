@@ -472,14 +472,14 @@ class VehicleMovementController {
             if (!empty($movement['trailer_id']) && isset($data['trailer_return_status'])) {
                 if ($data['trailer_return_status'] === 'still_mission') {
                     // Add note that trailer was left on mission
-                    $currentNotes = $data['return_notes'] ?? '';
-                    $trailerName = $this->db->fetchOne(
+                    $trailerResult = $this->db->fetchOne(
                         "SELECT name FROM vehicles WHERE id = ?", 
                         [$movement['trailer_id']]
-                    )['name'] ?? 'N/D';
+                    );
+                    $trailerName = $trailerResult ? ($trailerResult['name'] ?? 'N/D') : 'N/D';
                     $trailerNote = "\n\n[NOTA SISTEMA] Il rimorchio '" . $trailerName . "' è stato lasciato in missione e dovrà essere recuperato successivamente.";
                     $this->db->execute(
-                        "UPDATE vehicle_movements SET return_notes = CONCAT(COALESCE(return_notes, ''), ?) WHERE id = ?",
+                        "UPDATE vehicle_movements SET return_notes = CONCAT(COALESCE(TRIM(return_notes), ''), ?) WHERE id = ?",
                         [$trailerNote, $movementId]
                     );
                 }
