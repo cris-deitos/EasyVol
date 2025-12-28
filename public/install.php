@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($statements as $statement) {
                 try {
                     $pdo->exec($statement);
-                } catch (Exception $e) {
+                } catch (PDOException $e) {
                     // Log but continue - some statements might fail if tables exist
                     error_log("Schema execution warning: " . $e->getMessage());
                 }
