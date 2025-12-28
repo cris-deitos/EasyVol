@@ -1287,7 +1287,7 @@ class ApplicationController {
             'nationality' => $application['nationality'],
             'member_type' => 'ordinario',
             'member_status' => 'attivo',
-            'volunteer_status' => 'aspirante',
+            'volunteer_status' => 'in_formazione',
             'registration_date' => date('Y-m-d')
         ];
         

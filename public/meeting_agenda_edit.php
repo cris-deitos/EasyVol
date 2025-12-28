@@ -96,8 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Create new agenda item
                     $db->query("INSERT INTO meeting_agenda 
                         (meeting_id, order_number, subject, description, discussion, has_voting, 
-                         voting_total, voting_in_favor, voting_against, voting_abstentions, voting_result, created_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                         voting_total, voting_in_favor, voting_against, voting_abstentions, voting_result) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         [$meetingId, $data['order_number'], $data['subject'], $data['description'], 
                          $data['discussion'], $data['has_voting'], $data['voting_total'], 
                          $data['voting_in_favor'], $data['voting_against'], $data['voting_abstentions'], 
