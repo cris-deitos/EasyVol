@@ -126,13 +126,18 @@ class OperationsCenterController {
         
         try {
             // Carica assegnazione corrente - use LEFT JOIN to handle assignments without member_id
-            // Also select assignee_* columns for backward compatibility
+            // Also select assignee_* columns for backward compatibility and phone from members
             $sql = "SELECT ra.*, 
                     COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
                     COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
-                    m.badge_number 
+                    m.badge_number,
+                    COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                    ra.assignee_organization as organization,
+                    ra.member_id IS NULL as is_external,
+                    ra.notes as assignment_notes
                     FROM radio_assignments ra
                     LEFT JOIN members m ON ra.member_id = m.id
+                    LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
                     WHERE ra.radio_id = ? 
                     AND ra.return_date IS NULL
                     AND ra.status = 'assegnata'
@@ -144,9 +149,14 @@ class OperationsCenterController {
             $sql = "SELECT ra.*, 
                     COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
                     COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
-                    m.badge_number 
+                    m.badge_number,
+                    COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                    ra.assignee_organization as organization,
+                    ra.member_id IS NULL as is_external,
+                    ra.notes as assignment_notes
                     FROM radio_assignments ra
                     LEFT JOIN members m ON ra.member_id = m.id
+                    LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
                     WHERE ra.radio_id = ? 
                     ORDER BY ra.assignment_date DESC
                     LIMIT 10";

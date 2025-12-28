@@ -173,15 +173,29 @@ $pageTitle = 'Dettaglio Radio';
                                                 <br>Matricola: <?php echo htmlspecialchars($radio['current_assignment']['badge_number']); ?>
                                             <?php endif; ?>
                                         </p>
+                                        <?php if (!empty($radio['current_assignment']['phone_number'])): ?>
+                                            <p class="mb-2">
+                                                <i class="bi bi-telephone"></i> Telefono: 
+                                                <strong><?php echo htmlspecialchars($radio['current_assignment']['phone_number']); ?></strong>
+                                            </p>
+                                        <?php endif; ?>
+                                        <?php if (!empty($radio['current_assignment']['is_external']) && $radio['current_assignment']['is_external']): ?>
+                                            <?php if (!empty($radio['current_assignment']['organization'])): ?>
+                                                <p class="mb-2">
+                                                    <i class="bi bi-building"></i> Ente: 
+                                                    <span class="badge bg-info"><?php echo htmlspecialchars($radio['current_assignment']['organization']); ?></span>
+                                                </p>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                         <p class="mb-2">
                                             <small class="text-muted">
                                                 <i class="bi bi-calendar"></i> 
                                                 Assegnata il: <?php echo date('d/m/Y H:i', strtotime($radio['current_assignment']['assignment_date'])); ?>
                                             </small>
                                         </p>
-                                        <?php if (!empty($radio['current_assignment']['notes'])): ?>
+                                        <?php if (!empty($radio['current_assignment']['assignment_notes'])): ?>
                                             <p class="mb-2">
-                                                <small>Note: <?php echo htmlspecialchars($radio['current_assignment']['notes']); ?></small>
+                                                <small><strong>Note Consegna:</strong> <?php echo nl2br(htmlspecialchars($radio['current_assignment']['assignment_notes'])); ?></small>
                                             </p>
                                         <?php endif; ?>
                                         <?php if ($app->checkPermission('operations_center', 'edit')): ?>
