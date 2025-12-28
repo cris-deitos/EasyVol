@@ -100,7 +100,7 @@ class MemberController {
                 $data['registration_number'],
                 $data['member_type'] ?? 'ordinario',
                 $data['member_status'] ?? 'attivo',
-                $data['volunteer_status'] ?? 'aspirante',
+                $data['volunteer_status'] ?? 'in_formazione',
                 $data['last_name'],
                 $data['first_name'],
                 $data['birth_date'],
@@ -166,7 +166,7 @@ class MemberController {
             $params = [
                 $data['member_type'] ?? 'ordinario',
                 $newStatus,
-                $data['volunteer_status'] ?? 'aspirante',
+                $data['volunteer_status'] ?? 'in_formazione',
                 $data['last_name'],
                 $data['first_name'],
                 $data['birth_date'],

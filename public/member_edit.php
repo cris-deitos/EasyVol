@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'registration_number' => $_POST['registration_number'] ?? '',
             'member_type' => $_POST['member_type'] ?? 'ordinario',
             'member_status' => $_POST['member_status'] ?? 'attivo',
-            'volunteer_status' => $_POST['volunteer_status'] ?? 'aspirante',
+            'volunteer_status' => $_POST['volunteer_status'] ?? 'in_formazione',
             'last_name' => trim($_POST['last_name'] ?? ''),
             'first_name' => trim($_POST['first_name'] ?? ''),
             'birth_date' => $_POST['birth_date'] ?? '',
