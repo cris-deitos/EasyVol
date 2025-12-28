@@ -384,10 +384,10 @@ class EventController {
                 return ['error' => 'Il partecipante è già presente nell\'intervento'];
             }
             
+            // Note: hours_worked is initialized to 0 and will be updated later as work progresses
             $sql = "INSERT INTO intervention_members (intervention_id, member_id, role, hours_worked)
                     VALUES (?, ?, ?, 0)";
             
-            // Note: hours_worked is initialized to 0 and will be updated later as work progresses
             $this->db->execute($sql, [$interventionId, $memberId, $role]);
             
             if ($userId) {
@@ -414,10 +414,10 @@ class EventController {
                 return ['error' => 'Il veicolo è già presente nell\'intervento'];
             }
             
+            // Note: km_start and km_end are initialized to NULL and will be recorded when the vehicle departs/returns
             $sql = "INSERT INTO intervention_vehicles (intervention_id, vehicle_id, km_start, km_end)
                     VALUES (?, ?, NULL, NULL)";
             
-            // Note: km_start and km_end are initialized to NULL and will be recorded when the vehicle departs/returns
             $this->db->execute($sql, [$interventionId, $vehicleId]);
             
             if ($userId) {

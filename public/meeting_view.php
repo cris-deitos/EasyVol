@@ -640,7 +640,7 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                         <div class="mb-3">
                             <label class="form-label">Numero Ordine <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="order_number" 
-                                   value="<?php echo count($meeting['agenda'] ?? []) + 1; ?>" min="1" required>
+                                   value="<?php echo intval(count($meeting['agenda'] ?? []) + 1); ?>" min="1" required>
                             <small class="text-muted">Numero progressivo del punto all'ordine del giorno</small>
                         </div>
                         
