@@ -165,7 +165,10 @@ $pageTitle = 'Movimentazione Mezzi';
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <h5 class="card-title mb-0">
-                                        <i class="bi bi-truck"></i>
+                                        <i class="bi bi-<?php 
+                                            echo $vehicle['vehicle_type'] === 'veicolo' ? 'truck' : 
+                                                ($vehicle['vehicle_type'] === 'natante' ? 'water' : 'box-seam'); 
+                                        ?>"></i>
                                         <?php 
                                         $identifier = $vehicle['license_plate'] ?: $vehicle['serial_number'];
                                         echo htmlspecialchars($identifier);
