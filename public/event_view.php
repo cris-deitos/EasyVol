@@ -47,6 +47,33 @@ if (!$event) {
 // Carica i mezzi disponibili per il dropdown
 $availableVehicles = $controller->getAvailableVehicles($eventId);
 
+// Helper function per creare l'etichetta del veicolo
+function getVehicleLabel($vehicle) {
+    // Identificatore principale (targa, nome o matricola)
+    if (!empty($vehicle['license_plate'])) {
+        $label = $vehicle['license_plate'];
+    } elseif (!empty($vehicle['name'])) {
+        $label = $vehicle['name'];
+    } elseif (!empty($vehicle['serial_number'])) {
+        $label = $vehicle['serial_number'];
+    } else {
+        $label = 'Mezzo ID ' . $vehicle['id'];
+    }
+    
+    // Aggiungi marca/modello se disponibili
+    $brandModel = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
+    if (!empty($brandModel)) {
+        $label .= ' - ' . $brandModel;
+    }
+    
+    // Aggiungi tipo veicolo
+    if (!empty($vehicle['vehicle_type'])) {
+        $label .= ' (' . ucfirst($vehicle['vehicle_type']) . ')';
+    }
+    
+    return $label;
+}
+
 $csrfToken = CsrfProtection::generateToken();
 
 $pageTitle = 'Dettaglio Evento: ' . $event['title'];
@@ -523,32 +550,8 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                 <option value="">-- Seleziona un mezzo --</option>
                                 <?php if (!empty($availableVehicles)): ?>
                                     <?php foreach ($availableVehicles as $vehicle): ?>
-                                        <?php
-                                        // Crea una descrizione comprensiva per il mezzo
-                                        $vehicleLabel = '';
-                                        if (!empty($vehicle['license_plate'])) {
-                                            $vehicleLabel = $vehicle['license_plate'];
-                                        } elseif (!empty($vehicle['name'])) {
-                                            $vehicleLabel = $vehicle['name'];
-                                        } elseif (!empty($vehicle['serial_number'])) {
-                                            $vehicleLabel = $vehicle['serial_number'];
-                                        } else {
-                                            $vehicleLabel = 'Mezzo ID ' . $vehicle['id'];
-                                        }
-                                        
-                                        // Aggiungi marca/modello se disponibili
-                                        $brandModel = trim(($vehicle['brand'] ?? '') . ' ' . ($vehicle['model'] ?? ''));
-                                        if (!empty($brandModel)) {
-                                            $vehicleLabel .= ' - ' . $brandModel;
-                                        }
-                                        
-                                        // Aggiungi tipo veicolo
-                                        if (!empty($vehicle['vehicle_type'])) {
-                                            $vehicleLabel .= ' (' . ucfirst($vehicle['vehicle_type']) . ')';
-                                        }
-                                        ?>
                                         <option value="<?php echo htmlspecialchars($vehicle['id']); ?>">
-                                            <?php echo htmlspecialchars($vehicleLabel); ?>
+                                            <?php echo htmlspecialchars(getVehicleLabel($vehicle)); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 <?php else: ?>
@@ -796,9 +799,9 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         // Add vehicle from dropdown
         function addVehicleFromDropdown() {
             const vehicleSelect = document.getElementById('vehicleSelect');
-            const vehicleId = parseInt(vehicleSelect.value);
+            const vehicleId = parseInt(vehicleSelect.value, 10);
             
-            if (!vehicleId || vehicleId <= 0) {
+            if (isNaN(vehicleId) || vehicleId <= 0) {
                 alert('Seleziona un mezzo dalla lista');
                 return;
             }
