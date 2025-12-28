@@ -247,7 +247,7 @@ $pageTitle = 'Gestione Soci';
                                         <?php foreach ($members as $member): ?>
                                             <tr>
                                                 <td>
-                                                    <?php if (!empty($member['photo_path']) && file_exists(PathHelper::relativeToAbsolute($member['photo_path']))): ?>
+                                                    <?php if (!empty($member['photo_path']) && file_exists($member['photo_path'])): ?>
                                                         <img src="download.php?type=member_photo&id=<?php echo $member['id']; ?>" 
                                                              alt="Foto" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                                                     <?php else: ?>
