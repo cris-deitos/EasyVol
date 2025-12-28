@@ -457,7 +457,7 @@ $csrfToken = $csrf->generateToken();
                         <label for="memberSearch" class="form-label">Cerca Socio</label>
                         <input type="text" class="form-control" id="memberSearch" 
                                placeholder="Digita nome, cognome o matricola..." autocomplete="off">
-                        <small class="form-text text-muted">Digita almeno 2 caratteri per cercare</small>
+                        <small class="form-text text-muted">Inizia a digitare per cercare</small>
                     </div>
                     <div id="searchResults" class="list-group" style="max-height: 300px; overflow-y: auto;"></div>
                 </div>
@@ -551,7 +551,7 @@ $csrfToken = $csrf->generateToken();
             clearTimeout(searchTimeout);
             const search = this.value.trim();
             
-            if (search.length < 2) {
+            if (search.length < 1) {
                 document.getElementById('searchResults').innerHTML = '';
                 return;
             }
