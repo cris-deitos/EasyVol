@@ -40,7 +40,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Import schema
             $schema = file_get_contents(__DIR__ . '/../database_schema.sql');
-            $pdo->exec($schema);
+            
+            // Remove SQL comments before processing
+            // Remove single-line comments (-- comment)
+            $schema = preg_replace('/--[^\n\r]*/', '', $schema);
+            // Remove multi-line comments (/* comment */)
+            $schema = preg_replace('/\/\*.*?\*\//s', '', $schema);
+            
+            // Split by semicolons and execute each statement
+            $statements = array_filter(
+                array_map('trim', explode(';', $schema)),
+                function($stmt) {
+                    return !empty($stmt);
+                }
+            );
+            
+            foreach ($statements as $statement) {
+                try {
+                    $pdo->exec($statement);
+                } catch (PDOException $e) {
+                    // Log but continue - some statements might fail if tables exist
+                    error_log("Schema execution warning: " . $e->getMessage());
+                }
+            }
             
             // Save database config
             $_SESSION['install'] = [
