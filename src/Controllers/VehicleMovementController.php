@@ -243,6 +243,11 @@ class VehicleMovementController {
                 throw new \Exception('Veicolo non trovato');
             }
             
+            // Check if vehicle is a trailer - trailers cannot depart alone
+            if ($vehicle['vehicle_type'] === 'rimorchio') {
+                throw new \Exception('I rimorchi non possono uscire da soli. Devono essere associati ad un veicolo trainante.');
+            }
+            
             if ($vehicle['status'] === 'fuori_servizio') {
                 throw new \Exception('Il veicolo è fuori servizio e non può essere utilizzato');
             }

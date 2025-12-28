@@ -40,6 +40,12 @@ if (!$vehicle) {
     exit;
 }
 
+// Check if vehicle is a trailer - trailers cannot depart alone
+if ($vehicle['vehicle_type'] === 'rimorchio') {
+    header('Location: vehicle_movement_detail.php?id=' . $vehicleId . '&error=trailer_cannot_depart_alone');
+    exit;
+}
+
 // Check vehicle can depart
 if ($vehicle['status'] === 'fuori_servizio') {
     header('Location: vehicle_movement_detail.php?id=' . $vehicleId . '&error=fuori_servizio');
