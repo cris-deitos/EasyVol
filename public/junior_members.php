@@ -77,6 +77,26 @@ $pageTitle = 'Gestione Soci Minorenni';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-printer"></i> Stampa
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="printList('libro_soci'); return false;">
+                                    <i class="bi bi-book"></i> Libro Soci Cadetti
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="printList('elenco_contatti'); return false;">
+                                    <i class="bi bi-telephone"></i> Elenco Contatti
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="printList('foglio_firma'); return false;">
+                                    <i class="bi bi-clipboard-check"></i> Foglio Firma
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="showPrintListModal(); return false;">
+                                    <i class="bi bi-gear"></i> Scegli Template...
+                                </a></li>
+                            </ul>
+                        </div>
                         <?php if ($app->checkPermission('junior_members', 'create')): ?>
                             <a href="junior_member_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Socio Minorenne
@@ -268,6 +288,104 @@ $pageTitle = 'Gestione Soci Minorenni';
                 window.location.href = 'junior_member_delete.php?id=' + memberId;
             }
         }
+        
+        // Print list functionality
+        function printList(type) {
+            let templateId = null;
+            let filters = getCurrentFilters();
+            
+            switch(type) {
+                case 'libro_soci':
+                    // Template IDs will be 11, 12, 13 after running the seed file
+                    // For now, we'll use dynamic lookup via modal
+                    templateId = 11; // Libro Soci Cadetti
+                    break;
+                case 'elenco_contatti':
+                    templateId = 12; // Elenco Contatti Cadetti
+                    break;
+                case 'foglio_firma':
+                    templateId = 13; // Foglio Firma Cadetti
+                    break;
+            }
+            
+            if (templateId) {
+                const params = new URLSearchParams({
+                    template_id: templateId,
+                    entity: 'junior_members',
+                    ...filters
+                });
+                window.open('print_preview.php?' + params.toString(), '_blank');
+            }
+        }
+        
+        function getCurrentFilters() {
+            const filters = {};
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('status')) filters.member_status = urlParams.get('status');
+            if (urlParams.has('search')) filters.search = urlParams.get('search');
+            
+            return filters;
+        }
+        
+        function showPrintListModal() {
+            const modal = new bootstrap.Modal(document.getElementById('printListModal'));
+            modal.show();
+        }
+        
+        function generateListFromModal() {
+            const templateId = document.getElementById('listTemplateSelect').value;
+            if (templateId) {
+                const filters = getCurrentFilters();
+                const params = new URLSearchParams({
+                    template_id: templateId,
+                    entity: 'junior_members',
+                    ...filters
+                });
+                window.open('print_preview.php?' + params.toString(), '_blank');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printListModal'));
+                modal.hide();
+            }
+        }
     </script>
+
+    <!-- Print List Template Selection Modal -->
+    <div class="modal fade" id="printListModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template Lista</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="listTemplateSelect" class="form-label">Template Disponibili</label>
+                        <select class="form-select" id="listTemplateSelect">
+                            <option value="">Seleziona un template...</option>
+                            <?php
+                            // Fetch available list templates for junior_members
+                            $templateSql = "SELECT id, name FROM print_templates 
+                                           WHERE entity_type = 'junior_members' 
+                                           AND is_active = 1 
+                                           ORDER BY name";
+                            $templates = $db->fetchAll($templateSql);
+                            foreach ($templates as $template) {
+                                echo '<option value="' . $template['id'] . '">' . 
+                                     htmlspecialchars($template['name']) . '</option>';
+                            }
+                            ?>
+                        </select>
+                        <small><i class="bi bi-info-circle"></i> Verranno stampati i record secondo i filtri attualmente applicati</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateListFromModal()">
+                        <i class="bi bi-printer"></i> Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

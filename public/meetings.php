@@ -63,6 +63,23 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-printer"></i> Stampa
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="printList('verbale'); return false;">
+                                    <i class="bi bi-file-text"></i> Verbale Riunione
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="printList('foglio_presenze'); return false;">
+                                    <i class="bi bi-clipboard-check"></i> Foglio Presenze
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="showPrintListModal(); return false;">
+                                    <i class="bi bi-gear"></i> Scegli Template...
+                                </a></li>
+                            </ul>
+                        </div>
                         <?php if ($app->checkPermission('meetings', 'create')): ?>
                             <a href="meeting_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuova Riunione
@@ -188,5 +205,99 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Print list functionality
+        function printList(type) {
+            let templateId = null;
+            let filters = getCurrentFilters();
+            
+            switch(type) {
+                case 'verbale':
+                    templateId = 8; // Verbale di Riunione
+                    break;
+                case 'foglio_presenze':
+                    templateId = 9; // Foglio Presenze Riunione
+                    break;
+            }
+            
+            if (templateId) {
+                const params = new URLSearchParams({
+                    template_id: templateId,
+                    entity: 'meetings',
+                    ...filters
+                });
+                window.open('print_preview.php?' + params.toString(), '_blank');
+            }
+        }
+        
+        function getCurrentFilters() {
+            const filters = {};
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('type')) filters.meeting_type = urlParams.get('type');
+            if (urlParams.has('search')) filters.search = urlParams.get('search');
+            
+            return filters;
+        }
+        
+        function showPrintListModal() {
+            const modal = new bootstrap.Modal(document.getElementById('printListModal'));
+            modal.show();
+        }
+        
+        function generateListFromModal() {
+            const templateId = document.getElementById('listTemplateSelect').value;
+            if (templateId) {
+                const filters = getCurrentFilters();
+                const params = new URLSearchParams({
+                    template_id: templateId,
+                    entity: 'meetings',
+                    ...filters
+                });
+                window.open('print_preview.php?' + params.toString(), '_blank');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printListModal'));
+                modal.hide();
+            }
+        }
+    </script>
+
+    <!-- Print List Template Selection Modal -->
+    <div class="modal fade" id="printListModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template Lista</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="listTemplateSelect" class="form-label">Template Disponibili</label>
+                        <select class="form-select" id="listTemplateSelect">
+                            <option value="">Seleziona un template...</option>
+                            <?php
+                            // Fetch available list templates for meetings
+                            $templateSql = "SELECT id, name FROM print_templates 
+                                           WHERE entity_type = 'meetings' 
+                                           AND is_active = 1 
+                                           ORDER BY name";
+                            $templates = $db->fetchAll($templateSql);
+                            foreach ($templates as $template) {
+                                echo '<option value="' . $template['id'] . '">' . 
+                                     htmlspecialchars($template['name']) . '</option>';
+                            }
+                            ?>
+                        </select>
+                        <small><i class="bi bi-info-circle"></i> Verranno stampati i record secondo i filtri attualmente applicati</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateListFromModal()">
+                        <i class="bi bi-printer"></i> Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
