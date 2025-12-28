@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         
         // Validate
-        $validTypes = ['telefono_fisso', 'cellulare', 'email'];
+        $validTypes = ['telefono_fisso', 'cellulare', 'email', 'telegram_id'];
         if (!in_array($data['contact_type'], $validTypes)) {
             $errors[] = 'Tipo di contatto non valido';
         }
@@ -78,6 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validate email format
         if ($data['contact_type'] === 'email' && !filter_var($data['value'], FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Formato email non valido';
+        }
+        
+        // Validate Telegram ID (should be numeric or start with @)
+        if ($data['contact_type'] === 'telegram_id' && empty($data['value'])) {
+            $errors[] = 'ID Telegram obbligatorio';
         }
         
         if (empty($errors)) {
@@ -150,6 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <option value="telefono_fisso" <?php echo $contact['contact_type'] === 'telefono_fisso' ? 'selected' : ''; ?>>Telefono Fisso</option>
                                             <option value="cellulare" <?php echo $contact['contact_type'] === 'cellulare' ? 'selected' : ''; ?>>Cellulare</option>
                                             <option value="email" <?php echo $contact['contact_type'] === 'email' ? 'selected' : ''; ?>>Email</option>
+                                            <option value="telegram_id" <?php echo $contact['contact_type'] === 'telegram_id' ? 'selected' : ''; ?>>ID Telegram</option>
                                         </select>
                                     </div>
                                     
@@ -157,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <label for="value" class="form-label">Valore *</label>
                                         <input type="text" class="form-control" id="value" name="value" 
                                                value="<?php echo htmlspecialchars($contact['value']); ?>" required>
-                                        <div class="form-text">Inserire numero di telefono o email</div>
+                                        <div class="form-text">Inserire numero di telefono, email o ID Telegram (numerico o @username)</div>
                                     </div>
                                     
                                     <div class="d-flex gap-2">

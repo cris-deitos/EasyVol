@@ -373,6 +373,11 @@ $pageTitle = 'Impostazioni Sistema';
                             <i class="bi bi-printer"></i> Modelli di Stampa
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="telegram-tab" data-bs-toggle="tab" data-bs-target="#telegram" type="button" role="tab">
+                            <i class="bi bi-telegram"></i> Telegram
+                        </button>
+                    </li>
                 </ul>
                 
                 <div class="tab-content" id="settingsTabsContent">
@@ -1419,6 +1424,127 @@ $pageTitle = 'Impostazioni Sistema';
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Telegram Bot Configuration -->
+                    <div class="tab-pane fade" id="telegram" role="tabpanel">
+                        <?php
+                        // Handle Telegram settings save
+                        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type']) && $_POST['form_type'] === 'telegram') {
+                            if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+                                $errors[] = 'Token di sicurezza non valido';
+                            } elseif ($app->checkPermission('settings', 'edit')) {
+                                try {
+                                    $botToken = trim($_POST['telegram_bot_token'] ?? '');
+                                    $botEnabled = isset($_POST['telegram_bot_enabled']) ? '1' : '0';
+                                    
+                                    // Save to config
+                                    $db->getConnection()->beginTransaction();
+                                    
+                                    $sql = "INSERT INTO config (config_key, config_value) 
+                                            VALUES (?, ?) 
+                                            ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)";
+                                    $db->execute($sql, ['telegram_bot_token', $botToken]);
+                                    $db->execute($sql, ['telegram_bot_enabled', $botEnabled]);
+                                    
+                                    $db->getConnection()->commit();
+                                    
+                                    header('Location: settings.php?success=telegram&tab=telegram');
+                                    exit;
+                                } catch (\Exception $e) {
+                                    $db->getConnection()->rollBack();
+                                    $errors[] = 'Errore durante il salvataggio: ' . $e->getMessage();
+                                }
+                            }
+                        }
+                        
+                        // Load current Telegram configuration
+                        $telegramConfig = [
+                            'telegram_bot_token' => '',
+                            'telegram_bot_enabled' => '0'
+                        ];
+                        
+                        $sql = "SELECT config_key, config_value FROM config WHERE config_key IN ('telegram_bot_token', 'telegram_bot_enabled')";
+                        $configs = $db->fetchAll($sql);
+                        foreach ($configs as $cfg) {
+                            $telegramConfig[$cfg['config_key']] = $cfg['config_value'];
+                        }
+                        ?>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Configurazione Bot Telegram</h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (isset($_GET['success']) && $_GET['success'] === 'telegram'): ?>
+                                    <div class="alert alert-success alert-dismissible fade show">
+                                        Configurazione Telegram salvata con successo!
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> <strong>Come configurare il bot Telegram:</strong>
+                                    <ol class="mb-0 mt-2">
+                                        <li>Apri Telegram e cerca <strong>@BotFather</strong></li>
+                                        <li>Invia il comando <code>/newbot</code> e segui le istruzioni</li>
+                                        <li>Copia il token API fornito e incollalo qui sotto</li>
+                                        <li>Per ottenere l'ID di un gruppo, aggiungi il bot al gruppo e usa <strong>@userinfobot</strong></li>
+                                    </ol>
+                                </div>
+                                
+                                <form method="POST">
+                                    <?php echo CsrfProtection::getHiddenField(); ?>
+                                    <input type="hidden" name="form_type" value="telegram">
+                                    
+                                    <div class="mb-3">
+                                        <label for="telegram_bot_token" class="form-label">Token Bot Telegram</label>
+                                        <input type="text" class="form-control" id="telegram_bot_token" name="telegram_bot_token" 
+                                               value="<?php echo htmlspecialchars($telegramConfig['telegram_bot_token']); ?>"
+                                               placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        <div class="form-text">Inserisci il token fornito da BotFather</div>
+                                    </div>
+                                    
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="telegram_bot_enabled" name="telegram_bot_enabled" 
+                                               value="1" <?php echo $telegramConfig['telegram_bot_enabled'] == '1' ? 'checked' : ''; ?>
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'disabled' : ''; ?>>
+                                        <label class="form-check-label" for="telegram_bot_enabled">
+                                            Abilita notifiche Telegram
+                                        </label>
+                                    </div>
+                                    
+                                    <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Salva Configurazione
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="testTelegramBtn">
+                                            <i class="bi bi-wifi"></i> Testa Connessione
+                                        </button>
+                                    <?php endif; ?>
+                                </form>
+                                
+                                <div id="testTelegramResult" class="mt-3" style="display: none;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notification Recipients Configuration -->
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Configurazione Destinatari Notifiche</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">
+                                    Configura i destinatari per ogni tipo di notifica. Puoi selezionare soci che hanno un ID Telegram 
+                                    nei loro contatti, oppure specificare gruppi Telegram tramite ID gruppo.
+                                </p>
+                                
+                                <a href="telegram_recipients.php" class="btn btn-primary">
+                                    <i class="bi bi-person-plus"></i> Gestisci Destinatari
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -1428,7 +1554,7 @@ $pageTitle = 'Impostazioni Sistema';
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const VALID_TABS = ['general', 'association', 'mail', 'backup', 'import', 'print-templates'];
+    const VALID_TABS = ['general', 'association', 'mail', 'backup', 'import', 'print-templates', 'telegram'];
     
     // Determina quale tab aprire
     let activeTab = null;
@@ -1494,6 +1620,73 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Test Telegram connection
+    const testTelegramBtn = document.getElementById('testTelegramBtn');
+    if (testTelegramBtn) {
+        testTelegramBtn.addEventListener('click', function() {
+            const resultDiv = document.getElementById('testTelegramResult');
+            const token = document.getElementById('telegram_bot_token').value;
+            
+            if (!token) {
+                resultDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Inserisci un token prima di testare la connessione.</div>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            // Show loading
+            testTelegramBtn.disabled = true;
+            testTelegramBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Test in corso...';
+            resultDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Test della connessione in corso...</div>';
+            resultDiv.style.display = 'block';
+            
+            // Make test request
+            fetch('telegram_test.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                testTelegramBtn.disabled = false;
+                testTelegramBtn.innerHTML = '<i class="bi bi-wifi"></i> Testa Connessione';
+                
+                if (data.success) {
+                    const botInfo = data.bot_info;
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> <strong>Connessione riuscita!</strong>
+                            <div class="mt-2">
+                                <strong>Bot:</strong> @${botInfo.username}<br>
+                                <strong>Nome:</strong> ${botInfo.first_name}<br>
+                                ${botInfo.can_join_groups ? '<span class="badge bg-success">Può unirsi ai gruppi</span>' : ''}
+                                ${botInfo.can_read_all_group_messages ? '<span class="badge bg-info">Può leggere messaggi di gruppo</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-x-circle"></i> <strong>Connessione fallita</strong>
+                            <div class="mt-2">${data.message}</div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                testTelegramBtn.disabled = false;
+                testTelegramBtn.innerHTML = '<i class="bi bi-wifi"></i> Testa Connessione';
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> <strong>Errore durante il test</strong>
+                        <div class="mt-2">${error.message}</div>
+                    </div>
+                `;
+            });
+        });
+    }
 });
     </script>
 </body>
