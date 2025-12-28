@@ -25,10 +25,14 @@ if (!$app->checkPermission('meetings', 'edit')) {
     die('Accesso negato');
 }
 
-$meetingId = isset($_GET['meeting_id']) ? intval($_GET['meeting_id']) : 0;
+$meetingId = isset($_GET['meeting_id']) ? intval($_GET['meeting_id']) : (isset($_POST['meeting_id']) ? intval($_POST['meeting_id']) : 0);
 $agendaId = isset($_GET['agenda_id']) ? intval($_GET['agenda_id']) : 0;
 
-if (!$meetingId || !$agendaId) {
+// For creation, we only need meetingId
+// For editing, we need both meetingId and agendaId
+$isCreating = ($agendaId === 0);
+
+if (!$meetingId) {
     header('Location: meetings.php');
     exit;
 }
@@ -46,11 +50,18 @@ if (!$meeting) {
     exit;
 }
 
-// Get agenda item
-$agendaItem = $db->fetchOne("SELECT * FROM meeting_agenda WHERE id = ? AND meeting_id = ?", [$agendaId, $meetingId]);
-if (!$agendaItem) {
-    header('Location: meeting_view.php?id=' . $meetingId . '&error=not_found');
-    exit;
+// Get current agenda count for default order number
+$agendaCount = $db->fetchOne("SELECT COUNT(*) as count FROM meeting_agenda WHERE meeting_id = ?", [$meetingId]);
+$nextOrderNumber = ($agendaCount['count'] ?? 0) + 1;
+
+// Get agenda item if editing
+$agendaItem = null;
+if (!$isCreating) {
+    $agendaItem = $db->fetchOne("SELECT * FROM meeting_agenda WHERE id = ? AND meeting_id = ?", [$agendaId, $meetingId]);
+    if (!$agendaItem) {
+        header('Location: meeting_view.php?id=' . $meetingId . '&error=not_found');
+        exit;
+    }
 }
 
 $errors = [];
@@ -63,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Token di sicurezza non valido';
     } else {
         $data = [
+            'order_number' => intval($_POST['order_number'] ?? 1),
             'subject' => trim($_POST['subject'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
             'discussion' => trim($_POST['discussion'] ?? ''),
@@ -80,11 +92,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (empty($errors)) {
             try {
-                $db->query("UPDATE meeting_agenda SET subject = ?, description = ?, discussion = ?, has_voting = ?, voting_total = ?, voting_in_favor = ?, voting_against = ?, voting_abstentions = ?, voting_result = ? WHERE id = ? AND meeting_id = ?",
-                    [$data['subject'], $data['description'], $data['discussion'], $data['has_voting'], $data['voting_total'], $data['voting_in_favor'], $data['voting_against'], $data['voting_abstentions'], $data['voting_result'], $agendaId, $meetingId]);
+                if ($isCreating) {
+                    // Create new agenda item
+                    $db->query("INSERT INTO meeting_agenda 
+                        (meeting_id, order_number, subject, description, discussion, has_voting, 
+                         voting_total, voting_in_favor, voting_against, voting_abstentions, voting_result, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                        [$meetingId, $data['order_number'], $data['subject'], $data['description'], 
+                         $data['discussion'], $data['has_voting'], $data['voting_total'], 
+                         $data['voting_in_favor'], $data['voting_against'], $data['voting_abstentions'], 
+                         $data['voting_result']]);
+                } else {
+                    // Update existing agenda item
+                    $db->query("UPDATE meeting_agenda 
+                        SET subject = ?, description = ?, discussion = ?, has_voting = ?, 
+                            voting_total = ?, voting_in_favor = ?, voting_against = ?, 
+                            voting_abstentions = ?, voting_result = ? 
+                        WHERE id = ? AND meeting_id = ?",
+                        [$data['subject'], $data['description'], $data['discussion'], $data['has_voting'], 
+                         $data['voting_total'], $data['voting_in_favor'], $data['voting_against'], 
+                         $data['voting_abstentions'], $data['voting_result'], $agendaId, $meetingId]);
+                }
                 
                 $success = true;
-                header('Location: meeting_view.php?id=' . $meetingId . '&success=1#agenda-tab');
+                header('Location: meeting_view.php?id=' . $meetingId . '&success=1#agenda');
                 exit;
                 
             } catch (\Exception $e) {
@@ -94,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Modifica Ordine del Giorno';
+$pageTitle = $isCreating ? 'Aggiungi Punto all\'Ordine del Giorno' : 'Modifica Ordine del Giorno';
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -164,12 +195,29 @@ $pageTitle = 'Modifica Ordine del Giorno';
                 
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo CsrfProtection::generateToken(); ?>">
+                    <input type="hidden" name="meeting_id" value="<?php echo $meetingId; ?>">
                     
                     <div class="card mb-3">
                         <div class="card-header bg-warning text-dark">
-                            <h5 class="mb-0"><i class="bi bi-list-ol"></i> Punto n. <?php echo htmlspecialchars($agendaItem['order_number']); ?></h5>
+                            <h5 class="mb-0">
+                                <i class="bi bi-list-ol"></i> 
+                                <?php if ($isCreating): ?>
+                                    Nuovo Punto all'Ordine del Giorno
+                                <?php else: ?>
+                                    Punto n. <?php echo htmlspecialchars($agendaItem['order_number']); ?>
+                                <?php endif; ?>
+                            </h5>
                         </div>
                         <div class="card-body">
+                            <?php if ($isCreating): ?>
+                            <div class="mb-3">
+                                <label class="form-label">Numero Ordine <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="order_number" 
+                                       value="<?php echo $nextOrderNumber; ?>" min="1" required>
+                                <small class="text-muted">Numero progressivo del punto all'ordine del giorno</small>
+                            </div>
+                            <?php endif; ?>
+                            
                             <div class="mb-3">
                                 <label class="form-label">Oggetto <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="subject" 
