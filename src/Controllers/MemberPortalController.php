@@ -530,4 +530,182 @@ class MemberPortalController {
         </body>
         </html>';
     }
+    
+    /**
+     * Get on-call schedules for a member
+     * 
+     * @param int $memberId Member ID
+     * @param string $status Filter by status: 'all', 'past', 'active', 'future'
+     * @return array Array of on-call schedules
+     */
+    public function getOnCallSchedules($memberId, $status = 'all') {
+        $sql = "SELECT ocs.*, 
+                m.first_name, m.last_name, m.badge_number 
+                FROM on_call_schedule ocs
+                JOIN members m ON ocs.member_id = m.id
+                WHERE ocs.member_id = ?";
+        
+        $params = [$memberId];
+        
+        if ($status === 'past') {
+            $sql .= " AND ocs.end_datetime < NOW()";
+        } elseif ($status === 'active') {
+            $sql .= " AND ocs.start_datetime <= NOW() AND ocs.end_datetime >= NOW()";
+        } elseif ($status === 'future') {
+            $sql .= " AND ocs.start_datetime > NOW()";
+        }
+        
+        $sql .= " ORDER BY ocs.start_datetime DESC";
+        
+        return $this->db->fetchAll($sql, $params);
+    }
+    
+    /**
+     * Add on-call schedule for a member
+     * 
+     * @param int $memberId Member ID
+     * @param string $startDatetime Start datetime
+     * @param string $endDatetime End datetime
+     * @param string $notes Optional notes
+     * @return bool Success status
+     */
+    public function addOnCallSchedule($memberId, $startDatetime, $endDatetime, $notes = '') {
+        try {
+            // Validate dates
+            $start = new \DateTime($startDatetime);
+            $end = new \DateTime($endDatetime);
+            
+            if ($end <= $start) {
+                return false;
+            }
+            
+            // Check for overlapping schedules
+            $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
+                    WHERE member_id = ? 
+                    AND ((start_datetime <= ? AND end_datetime >= ?) 
+                         OR (start_datetime <= ? AND end_datetime >= ?)
+                         OR (start_datetime >= ? AND end_datetime <= ?))";
+            $result = $this->db->fetchOne($sql, [
+                $memberId,
+                $startDatetime, $startDatetime,
+                $endDatetime, $endDatetime,
+                $startDatetime, $endDatetime
+            ]);
+            
+            if ($result['count'] > 0) {
+                return false;
+            }
+            
+            // Insert on-call schedule (created_by is the member_id for self-service)
+            $sql = "INSERT INTO on_call_schedule (member_id, start_datetime, end_datetime, notes, created_by) 
+                    VALUES (?, ?, ?, ?, ?)";
+            $this->db->execute($sql, [$memberId, $startDatetime, $endDatetime, $notes, $memberId]);
+            
+            AutoLogger::logActivity('member_portal', 'add_on_call', $memberId, [
+                'start' => $startDatetime,
+                'end' => $endDatetime
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Error adding on-call schedule: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update on-call schedule
+     * 
+     * @param int $scheduleId Schedule ID
+     * @param int $memberId Member ID (for verification)
+     * @param string $startDatetime Start datetime
+     * @param string $endDatetime End datetime
+     * @param string $notes Optional notes
+     * @return bool Success status
+     */
+    public function updateOnCallSchedule($scheduleId, $memberId, $startDatetime, $endDatetime, $notes = '') {
+        try {
+            // Verify the schedule belongs to the member
+            $sql = "SELECT member_id FROM on_call_schedule WHERE id = ?";
+            $schedule = $this->db->fetchOne($sql, [$scheduleId]);
+            
+            if (!$schedule || $schedule['member_id'] != $memberId) {
+                return false;
+            }
+            
+            // Validate dates
+            $start = new \DateTime($startDatetime);
+            $end = new \DateTime($endDatetime);
+            
+            if ($end <= $start) {
+                return false;
+            }
+            
+            // Check for overlapping schedules (excluding current)
+            $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
+                    WHERE member_id = ? 
+                    AND id != ?
+                    AND ((start_datetime <= ? AND end_datetime >= ?) 
+                         OR (start_datetime <= ? AND end_datetime >= ?)
+                         OR (start_datetime >= ? AND end_datetime <= ?))";
+            $result = $this->db->fetchOne($sql, [
+                $memberId,
+                $scheduleId,
+                $startDatetime, $startDatetime,
+                $endDatetime, $endDatetime,
+                $startDatetime, $endDatetime
+            ]);
+            
+            if ($result['count'] > 0) {
+                return false;
+            }
+            
+            // Update schedule
+            $sql = "UPDATE on_call_schedule 
+                    SET start_datetime = ?, end_datetime = ?, notes = ?, updated_at = NOW()
+                    WHERE id = ? AND member_id = ?";
+            $this->db->execute($sql, [$startDatetime, $endDatetime, $notes, $scheduleId, $memberId]);
+            
+            AutoLogger::logActivity('member_portal', 'update_on_call', $memberId, [
+                'schedule_id' => $scheduleId
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Error updating on-call schedule: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Delete on-call schedule
+     * 
+     * @param int $scheduleId Schedule ID
+     * @param int $memberId Member ID (for verification)
+     * @return bool Success status
+     */
+    public function deleteOnCallSchedule($scheduleId, $memberId) {
+        try {
+            // Verify the schedule belongs to the member
+            $sql = "SELECT member_id FROM on_call_schedule WHERE id = ?";
+            $schedule = $this->db->fetchOne($sql, [$scheduleId]);
+            
+            if (!$schedule || $schedule['member_id'] != $memberId) {
+                return false;
+            }
+            
+            // Delete schedule
+            $sql = "DELETE FROM on_call_schedule WHERE id = ? AND member_id = ?";
+            $this->db->execute($sql, [$scheduleId, $memberId]);
+            
+            AutoLogger::logActivity('member_portal', 'delete_on_call', $memberId, [
+                'schedule_id' => $scheduleId
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Error deleting on-call schedule: " . $e->getMessage());
+            return false;
+        }
+    }
 }
