@@ -462,6 +462,20 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     <script>
         const itemId = <?php echo $item['id']; ?>;
         
+        // Debug: Log when tabs are clicked
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabButtons.forEach(button => {
+                button.addEventListener('shown.bs.tab', function (event) {
+                    console.log('Tab shown:', event.target.id);
+                });
+            });
+            
+            console.log('Warehouse view loaded - Item ID:', itemId);
+            console.log('Movements data:', <?php echo json_encode($item['movements'] ?? []); ?>);
+            console.log('DPI assignments data:', <?php echo json_encode($item['dpi_assignments'] ?? []); ?>);
+        });
+        
         // Handle movement form submission
         document.getElementById('movementForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();

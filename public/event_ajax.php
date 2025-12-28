@@ -487,6 +487,208 @@ try {
             }
             break;
             
+        case 'get_intervention_members':
+            // Get members assigned to an intervention
+            $interventionId = intval($_GET['intervention_id'] ?? 0);
+            
+            if ($interventionId <= 0) {
+                echo json_encode(['error' => 'ID intervento non valido']);
+                exit;
+            }
+            
+            $sql = "SELECT im.*, m.first_name, m.last_name, m.registration_number 
+                    FROM intervention_members im
+                    JOIN members m ON im.member_id = m.id
+                    WHERE im.intervention_id = ?
+                    ORDER BY m.last_name, m.first_name";
+            $members = $db->fetchAll($sql, [$interventionId]);
+            
+            echo json_encode(['success' => true, 'members' => $members]);
+            break;
+            
+        case 'get_intervention_vehicles':
+            // Get vehicles assigned to an intervention
+            $interventionId = intval($_GET['intervention_id'] ?? 0);
+            
+            if ($interventionId <= 0) {
+                echo json_encode(['error' => 'ID intervento non valido']);
+                exit;
+            }
+            
+            $sql = "SELECT iv.*, v.* 
+                    FROM intervention_vehicles iv
+                    JOIN vehicles v ON iv.vehicle_id = v.id
+                    WHERE iv.intervention_id = ?
+                    ORDER BY v.name, v.license_plate";
+            $vehicles = $db->fetchAll($sql, [$interventionId]);
+            
+            echo json_encode(['success' => true, 'vehicles' => $vehicles]);
+            break;
+            
+        case 'add_intervention_member':
+            // Add member to intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $memberId = intval($input['member_id'] ?? 0);
+            
+            if ($interventionId <= 0 || $memberId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            // Check if already assigned
+            $sql = "SELECT COUNT(*) as count FROM intervention_members WHERE intervention_id = ? AND member_id = ?";
+            $result = $db->fetchOne($sql, [$interventionId, $memberId]);
+            
+            if ($result['count'] > 0) {
+                echo json_encode(['error' => 'Volontario già assegnato a questo intervento']);
+                exit;
+            }
+            
+            // Insert
+            $sql = "INSERT INTO intervention_members (intervention_id, member_id) VALUES (?, ?)";
+            $db->execute($sql, [$interventionId, $memberId]);
+            
+            echo json_encode(['success' => true, 'message' => 'Volontario aggiunto all\'intervento']);
+            break;
+            
+        case 'remove_intervention_member':
+            // Remove member from intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $memberId = intval($input['member_id'] ?? 0);
+            
+            if ($interventionId <= 0 || $memberId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            $sql = "DELETE FROM intervention_members WHERE intervention_id = ? AND member_id = ?";
+            $db->execute($sql, [$interventionId, $memberId]);
+            
+            echo json_encode(['success' => true, 'message' => 'Volontario rimosso dall\'intervento']);
+            break;
+            
+        case 'add_intervention_vehicle':
+            // Add vehicle to intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $vehicleId = intval($input['vehicle_id'] ?? 0);
+            
+            if ($interventionId <= 0 || $vehicleId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            // Check if already assigned
+            $sql = "SELECT COUNT(*) as count FROM intervention_vehicles WHERE intervention_id = ? AND vehicle_id = ?";
+            $result = $db->fetchOne($sql, [$interventionId, $vehicleId]);
+            
+            if ($result['count'] > 0) {
+                echo json_encode(['error' => 'Mezzo già assegnato a questo intervento']);
+                exit;
+            }
+            
+            // Insert
+            $sql = "INSERT INTO intervention_vehicles (intervention_id, vehicle_id) VALUES (?, ?)";
+            $db->execute($sql, [$interventionId, $vehicleId]);
+            
+            echo json_encode(['success' => true, 'message' => 'Mezzo aggiunto all\'intervento']);
+            break;
+            
+        case 'remove_intervention_vehicle':
+            // Remove vehicle from intervention
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $interventionId = intval($input['intervention_id'] ?? 0);
+            $vehicleId = intval($input['vehicle_id'] ?? 0);
+            
+            if ($interventionId <= 0 || $vehicleId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            $sql = "DELETE FROM intervention_vehicles WHERE intervention_id = ? AND vehicle_id = ?";
+            $db->execute($sql, [$interventionId, $vehicleId]);
+            
+            echo json_encode(['success' => true, 'message' => 'Mezzo rimosso dall\'intervento']);
+            break;
+            
         default:
             http_response_code(400);
             echo json_encode(['error' => 'Azione non valida']);

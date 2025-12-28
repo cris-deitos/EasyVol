@@ -292,9 +292,11 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                     <th>Titolo</th>
                                                     <th>Data/Ora</th>
                                                     <th>Descrizione</th>
+                                                    <th>Volontari</th>
+                                                    <th>Mezzi</th>
                                                     <th>Stato</th>
                                                     <?php if ($app->checkPermission('events', 'edit')): ?>
-                                                        <th width="180">Azioni</th>
+                                                        <th width="220">Azioni</th>
                                                     <?php endif; ?>
                                                 </tr>
                                             </thead>
@@ -308,6 +310,16 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                             $desc = $intervention['description'] ?? '';
                                                             echo htmlspecialchars(mb_strlen($desc) > 100 ? mb_substr($desc, 0, 100) . '...' : $desc);
                                                             ?>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-info">
+                                                                <?php echo isset($intervention['members_count']) ? $intervention['members_count'] : 0; ?> volontari
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-secondary">
+                                                                <?php echo isset($intervention['vehicles_count']) ? $intervention['vehicles_count'] : 0; ?> mezzi
+                                                            </span>
                                                         </td>
                                                         <td>
                                                             <?php 
@@ -326,6 +338,11 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         <?php if ($app->checkPermission('events', 'edit')): ?>
                                                             <td>
                                                                 <div class="btn-group btn-group-sm" role="group">
+                                                                    <button type="button" class="btn btn-primary" 
+                                                                            onclick="viewInterventionDetails(<?php echo $intervention['id']; ?>)" 
+                                                                            title="Gestisci Risorse">
+                                                                        <i class="bi bi-people"></i>/<i class="bi bi-truck"></i>
+                                                                    </button>
                                                                     <button type="button" class="btn btn-warning" 
                                                                             onclick="editIntervention(<?php echo $intervention['id']; ?>)" 
                                                                             title="Modifica">
@@ -523,7 +540,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                         <label for="memberSearch" class="form-label">Cerca Volontario</label>
                         <input type="text" class="form-control" id="memberSearch" 
                                placeholder="Digita nome, cognome o matricola..." autocomplete="off">
-                        <small class="form-text text-muted">Digita almeno 2 caratteri per cercare</small>
+                        <small class="form-text text-muted">Inizia a digitare per cercare</small>
                     </div>
                     <div id="memberSearchResults" class="list-group" style="max-height: 300px; overflow-y: auto;"></div>
                 </div>
@@ -663,6 +680,78 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         </div>
     </div>
     
+    <!-- Intervention Resources Management Modal -->
+    <div class="modal fade" id="interventionResourcesModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Gestione Risorse Intervento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="resources_intervention_id">
+                    
+                    <div class="row">
+                        <!-- Volontari Section -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-people"></i> Volontari Assegnati</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="interventionMembersList" style="max-height: 300px; overflow-y: auto;">
+                                        <!-- Members will be loaded here -->
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <label class="form-label">Cerca e Aggiungi Volontario</label>
+                                        <input type="text" class="form-control" id="interventionMemberSearch" 
+                                               placeholder="Digita nome, cognome o matricola..." autocomplete="off">
+                                    </div>
+                                    <div id="interventionMemberSearchResults" class="list-group" style="max-height: 200px; overflow-y: auto;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Vehicles Section -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-secondary text-white">
+                                    <h6 class="mb-0"><i class="bi bi-truck"></i> Mezzi Assegnati</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="interventionVehiclesList" style="max-height: 300px; overflow-y: auto;">
+                                        <!-- Vehicles will be loaded here -->
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <label class="form-label">Seleziona e Aggiungi Mezzo</label>
+                                        <select class="form-select" id="interventionVehicleSelect">
+                                            <option value="">-- Seleziona un mezzo --</option>
+                                            <?php if (!empty($availableVehicles)): ?>
+                                                <?php foreach ($availableVehicles as $vehicle): ?>
+                                                    <option value="<?php echo htmlspecialchars($vehicle['id']); ?>">
+                                                        <?php echo htmlspecialchars(getVehicleLabel($vehicle)); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="addInterventionVehicle()">
+                                            <i class="bi bi-plus-circle"></i> Aggiungi Mezzo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const eventId = <?php echo json_encode($eventId); ?>;
@@ -734,7 +823,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             clearTimeout(memberSearchTimeout);
             const search = this.value.trim();
             
-            if (search.length < 2) {
+            if (search.length < 1) {
                 document.getElementById('memberSearchResults').innerHTML = '';
                 return;
             }
@@ -1048,6 +1137,211 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+        
+        // View intervention resources (members and vehicles)
+        function viewInterventionDetails(interventionId) {
+            document.getElementById('resources_intervention_id').value = interventionId;
+            loadInterventionMembers(interventionId);
+            loadInterventionVehicles(interventionId);
+            
+            const modal = new bootstrap.Modal(document.getElementById('interventionResourcesModal'));
+            modal.show();
+        }
+        
+        // Load intervention members
+        function loadInterventionMembers(interventionId) {
+            fetch(`event_ajax.php?action=get_intervention_members&intervention_id=${interventionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('interventionMembersList');
+                    if (data.error || !data.members || data.members.length === 0) {
+                        list.innerHTML = '<p class="text-muted">Nessun volontario assegnato</p>';
+                        return;
+                    }
+                    
+                    list.innerHTML = data.members.map(member => `
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                            <div>
+                                <strong>${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</strong>
+                                ${member.registration_number ? `<br><small class="text-muted">Matricola: ${escapeHtml(member.registration_number)}</small>` : ''}
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="removeInterventionMember(${interventionId}, ${member.member_id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => console.error('Error loading members:', error));
+        }
+        
+        // Load intervention vehicles
+        function loadInterventionVehicles(interventionId) {
+            fetch(`event_ajax.php?action=get_intervention_vehicles&intervention_id=${interventionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('interventionVehiclesList');
+                    if (data.error || !data.vehicles || data.vehicles.length === 0) {
+                        list.innerHTML = '<p class="text-muted">Nessun mezzo assegnato</p>';
+                        return;
+                    }
+                    
+                    list.innerHTML = data.vehicles.map(vehicle => {
+                        let label = vehicle.license_plate || vehicle.name || vehicle.serial_number || `Mezzo ID ${vehicle.vehicle_id}`;
+                        return `
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                <div>
+                                    <strong>${escapeHtml(label)}</strong>
+                                    ${vehicle.brand || vehicle.model ? `<br><small class="text-muted">${escapeHtml(vehicle.brand || '')} ${escapeHtml(vehicle.model || '')}</small>` : ''}
+                                </div>
+                                <button class="btn btn-sm btn-danger" onclick="removeInterventionVehicle(${interventionId}, ${vehicle.vehicle_id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+                })
+                .catch(error => console.error('Error loading vehicles:', error));
+        }
+        
+        // Search members for intervention
+        let interventionMemberSearchTimeout;
+        document.getElementById('interventionMemberSearch')?.addEventListener('input', function() {
+            clearTimeout(interventionMemberSearchTimeout);
+            const search = this.value.trim();
+            const interventionId = document.getElementById('resources_intervention_id').value;
+            
+            if (search.length < 1) {
+                document.getElementById('interventionMemberSearchResults').innerHTML = '';
+                return;
+            }
+            
+            interventionMemberSearchTimeout = setTimeout(function() {
+                fetch(`event_ajax.php?action=search_members&event_id=${eventId}&search=${encodeURIComponent(search)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const resultsDiv = document.getElementById('interventionMemberSearchResults');
+                        if (data.error || !data.members || data.members.length === 0) {
+                            resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun volontario trovato</div>';
+                            return;
+                        }
+                        
+                        resultsDiv.innerHTML = data.members.map(member => {
+                            return `<button type="button" class="list-group-item list-group-item-action" onclick="addInterventionMember(${interventionId}, ${member.id})">
+                                <strong>${escapeHtml(member.last_name)} ${escapeHtml(member.first_name)}</strong>
+                                <span class="text-muted">(${escapeHtml(member.registration_number || '-')})</span>
+                            </button>`;
+                        }).join('');
+                    })
+                    .catch(error => console.error('Error:', error));
+            }, 300);
+        });
+        
+        // Add member to intervention
+        function addInterventionMember(interventionId, memberId) {
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'add_intervention_member',
+                    intervention_id: interventionId,
+                    member_id: memberId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else {
+                    document.getElementById('interventionMemberSearch').value = '';
+                    document.getElementById('interventionMemberSearchResults').innerHTML = '';
+                    loadInterventionMembers(interventionId);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Remove member from intervention
+        function removeInterventionMember(interventionId, memberId) {
+            if (!confirm('Rimuovere questo volontario dall\'intervento?')) return;
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'remove_intervention_member',
+                    intervention_id: interventionId,
+                    member_id: memberId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else {
+                    loadInterventionMembers(interventionId);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Add vehicle to intervention
+        function addInterventionVehicle() {
+            const interventionId = document.getElementById('resources_intervention_id').value;
+            const vehicleId = document.getElementById('interventionVehicleSelect').value;
+            
+            if (!vehicleId) {
+                alert('Seleziona un mezzo');
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'add_intervention_vehicle',
+                    intervention_id: interventionId,
+                    vehicle_id: vehicleId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else {
+                    document.getElementById('interventionVehicleSelect').value = '';
+                    loadInterventionVehicles(interventionId);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Remove vehicle from intervention
+        function removeInterventionVehicle(interventionId, vehicleId) {
+            if (!confirm('Rimuovere questo mezzo dall\'intervento?')) return;
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'remove_intervention_vehicle',
+                    intervention_id: interventionId,
+                    vehicle_id: vehicleId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else {
+                    loadInterventionVehicles(interventionId);
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
     </script>
 </body>

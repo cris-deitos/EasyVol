@@ -58,17 +58,19 @@ class OperationsCenterController {
      * Get available volunteers with all necessary fields
      */
     public function getAvailableVolunteers() {
+        // Get volunteers currently on-call (reperibili)
         $sql = "SELECT m.*, 
                 mc.value as phone,
-                COALESCE(ma.availability_type, 'available') as availability_type,
-                ma.notes as availability_notes
-                FROM members m
+                ocs.start_datetime,
+                ocs.end_datetime,
+                ocs.notes as on_call_notes
+                FROM on_call_schedule ocs
+                JOIN members m ON ocs.member_id = m.id
                 LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
-                LEFT JOIN member_availability ma ON m.id = ma.member_id
-                WHERE m.member_status = 'attivo' 
-                AND m.volunteer_status = 'operativo'
-                ORDER BY m.last_name, m.first_name
-                LIMIT 50";
+                WHERE m.member_status = 'attivo'
+                AND ocs.start_datetime <= NOW()
+                AND ocs.end_datetime >= NOW()
+                ORDER BY m.last_name, m.first_name";
         
         return $this->db->fetchAll($sql);
     }
@@ -126,13 +128,18 @@ class OperationsCenterController {
         
         try {
             // Carica assegnazione corrente - use LEFT JOIN to handle assignments without member_id
-            // Also select assignee_* columns for backward compatibility
+            // Also select assignee_* columns for backward compatibility and phone from members
             $sql = "SELECT ra.*, 
                     COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
                     COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
-                    m.badge_number 
+                    m.badge_number,
+                    COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                    ra.assignee_organization as organization,
+                    ra.member_id IS NULL as is_external,
+                    ra.notes as assignment_notes
                     FROM radio_assignments ra
                     LEFT JOIN members m ON ra.member_id = m.id
+                    LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
                     WHERE ra.radio_id = ? 
                     AND ra.return_date IS NULL
                     AND ra.status = 'assegnata'
@@ -144,9 +151,14 @@ class OperationsCenterController {
             $sql = "SELECT ra.*, 
                     COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
                     COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
-                    m.badge_number 
+                    m.badge_number,
+                    COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                    ra.assignee_organization as organization,
+                    ra.member_id IS NULL as is_external,
+                    ra.notes as assignment_notes
                     FROM radio_assignments ra
                     LEFT JOIN members m ON ra.member_id = m.id
+                    LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
                     WHERE ra.radio_id = ? 
                     ORDER BY ra.assignment_date DESC
                     LIMIT 10";

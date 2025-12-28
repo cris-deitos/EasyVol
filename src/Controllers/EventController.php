@@ -198,7 +198,15 @@ class EventController {
      * Ottieni interventi di un evento
      */
     private function getInterventions($eventId) {
-        $sql = "SELECT * FROM interventions WHERE event_id = ? ORDER BY start_time DESC";
+        $sql = "SELECT i.*, 
+                COUNT(DISTINCT im.member_id) as members_count,
+                COUNT(DISTINCT iv.vehicle_id) as vehicles_count
+                FROM interventions i
+                LEFT JOIN intervention_members im ON i.id = im.intervention_id
+                LEFT JOIN intervention_vehicles iv ON i.id = iv.intervention_id
+                WHERE i.event_id = ? 
+                GROUP BY i.id
+                ORDER BY i.start_time DESC";
         return $this->db->fetchAll($sql, [$eventId]);
     }
     

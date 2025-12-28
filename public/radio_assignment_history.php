@@ -41,12 +41,18 @@ $perPage = 50;
 // Get all radio assignments with filters
 $sql = "SELECT ra.*, 
         rd.name as radio_name, rd.identifier as radio_identifier,
-        m.first_name, m.last_name, m.registration_number,
+        COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
+        COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
+        m.registration_number,
+        COALESCE(mc.value, ra.assignee_phone) as phone_number,
+        ra.assignee_organization as organization,
+        ra.member_id IS NULL as is_external,
         u1.username as assigned_by_username,
         u2.username as returned_by_username
         FROM radio_assignments ra
         LEFT JOIN radio_directory rd ON ra.radio_id = rd.id
         LEFT JOIN members m ON ra.member_id = m.id
+        LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
         LEFT JOIN users u1 ON ra.assigned_by = u1.id
         LEFT JOIN users u2 ON ra.return_by = u2.id
         WHERE 1=1";
@@ -246,13 +252,11 @@ $pageTitle = 'Storico Assegnazioni Radio';
                                         <tr>
                                             <th>Radio</th>
                                             <th>Assegnata a</th>
-                                            <th>Tipo</th>
+                                            <th>Telefono</th>
                                             <th>Data Assegnazione</th>
-                                            <th>Assegnata da</th>
                                             <th>Data Restituzione</th>
-                                            <th>Restituita a</th>
                                             <th>Stato</th>
-                                            <th>Note</th>
+                                            <th width="80">Azioni</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -265,53 +269,29 @@ $pageTitle = 'Storico Assegnazioni Radio';
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if ($assignment['member_id']): ?>
-                                                        <strong><?php echo htmlspecialchars($assignment['last_name'] . ' ' . $assignment['first_name']); ?></strong>
-                                                        <?php if ($assignment['registration_number']): ?>
-                                                            <br><small class="text-muted">Mat. <?php echo htmlspecialchars($assignment['registration_number']); ?></small>
-                                                        <?php endif; ?>
-                                                    <?php else: ?>
-                                                        <strong><?php echo htmlspecialchars($assignment['assignee_last_name'] . ' ' . $assignment['assignee_first_name']); ?></strong>
-                                                        <?php if ($assignment['assignee_organization']): ?>
-                                                            <br><small class="text-muted"><?php echo htmlspecialchars($assignment['assignee_organization']); ?></small>
-                                                        <?php endif; ?>
+                                                    <strong><?php echo htmlspecialchars($assignment['last_name'] . ' ' . $assignment['first_name']); ?></strong>
+                                                    <?php if (!empty($assignment['is_external']) && $assignment['organization']): ?>
+                                                        <br><span class="badge bg-info">Esterno - <?php echo htmlspecialchars($assignment['organization']); ?></span>
+                                                    <?php elseif ($assignment['registration_number']): ?>
+                                                        <br><small class="text-muted">Mat. <?php echo htmlspecialchars($assignment['registration_number']); ?></small>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if ($assignment['member_id']): ?>
-                                                        <span class="badge bg-primary">Volontario</span>
+                                                    <?php if ($assignment['phone_number']): ?>
+                                                        <i class="bi bi-telephone"></i> <?php echo htmlspecialchars($assignment['phone_number']); ?>
                                                     <?php else: ?>
-                                                        <span class="badge bg-info">Esterno</span>
+                                                        <span class="text-muted">-</span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <?php echo date('d/m/Y H:i', strtotime($assignment['assignment_date'])); ?>
                                                 </td>
                                                 <td>
-                                                    <?php echo htmlspecialchars($assignment['assigned_by_username'] ?? '-'); ?>
-                                                </td>
-                                                <td>
                                                     <?php if ($assignment['return_date']): ?>
                                                         <?php echo date('d/m/Y H:i', strtotime($assignment['return_date'])); ?>
-                                                        <?php
-                                                        $assignmentDate = new DateTime($assignment['assignment_date']);
-                                                        $returnDate = new DateTime($assignment['return_date']);
-                                                        $duration = $assignmentDate->diff($returnDate);
-                                                        ?>
-                                                        <br><small class="text-muted">
-                                                            Durata: 
-                                                            <?php if ($duration->days > 0): ?>
-                                                                <?php echo $duration->days; ?> giorni
-                                                            <?php else: ?>
-                                                                <?php echo $duration->h; ?>h <?php echo $duration->i; ?>m
-                                                            <?php endif; ?>
-                                                        </small>
                                                     <?php else: ?>
-                                                        <span class="text-muted">-</span>
+                                                        <span class="text-muted">In corso</span>
                                                     <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php echo htmlspecialchars($assignment['returned_by_username'] ?? '-'); ?>
                                                 </td>
                                                 <td>
                                                     <?php
@@ -324,6 +304,15 @@ $pageTitle = 'Storico Assegnazioni Radio';
                                                     <span class="badge bg-<?php echo $class; ?>">
                                                         <?php echo ucfirst($assignment['status']); ?>
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-info" 
+                                                            onclick="viewAssignmentDetails(<?php echo $assignment['id']; ?>)"
+                                                            title="Visualizza Dettagli">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
                                                 </td>
                                                 <td>
                                                     <?php if (!empty($assignment['notes'])): ?>
@@ -398,7 +387,104 @@ $pageTitle = 'Storico Assegnazioni Radio';
             </main>
         </div>
     </div>
+    
+    <!-- Assignment Details Modal -->
+    <div class="modal fade" id="assignmentDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dettagli Assegnazione Radio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="assignmentDetailsContent">
+                    <!-- Content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // View assignment details
+        function viewAssignmentDetails(assignmentId) {
+            const assignments = <?php echo json_encode($assignments); ?>;
+            const assignment = assignments.find(a => a.id == assignmentId);
+            
+            if (!assignment) {
+                alert('Assegnazione non trovata');
+                return;
+            }
+            
+            let html = '<dl class="row">';
+            html += '<dt class="col-sm-4">Radio:</dt>';
+            html += '<dd class="col-sm-8"><strong>' + escapeHtml(assignment.radio_name) + '</strong>';
+            if (assignment.radio_identifier) {
+                html += ' <small class="text-muted">(' + escapeHtml(assignment.radio_identifier) + ')</small>';
+            }
+            html += '</dd>';
+            
+            html += '<dt class="col-sm-4">Assegnata a:</dt>';
+            html += '<dd class="col-sm-8"><strong>' + escapeHtml(assignment.first_name + ' ' + assignment.last_name) + '</strong>';
+            if (assignment.is_external && assignment.organization) {
+                html += '<br><span class="badge bg-info">Esterno - ' + escapeHtml(assignment.organization) + '</span>';
+            } else if (assignment.registration_number) {
+                html += '<br><small class="text-muted">Matricola: ' + escapeHtml(assignment.registration_number) + '</small>';
+            }
+            html += '</dd>';
+            
+            if (assignment.phone_number) {
+                html += '<dt class="col-sm-4">Telefono:</dt>';
+                html += '<dd class="col-sm-8"><i class="bi bi-telephone"></i> ' + escapeHtml(assignment.phone_number) + '</dd>';
+            }
+            
+            html += '<dt class="col-sm-4">Data Assegnazione:</dt>';
+            html += '<dd class="col-sm-8">' + formatDateTime(assignment.assignment_date) + '</dd>';
+            
+            html += '<dt class="col-sm-4">Assegnata da:</dt>';
+            html += '<dd class="col-sm-8">' + escapeHtml(assignment.assigned_by_username || '-') + '</dd>';
+            
+            if (assignment.notes) {
+                html += '<dt class="col-sm-4">Note Consegna:</dt>';
+                html += '<dd class="col-sm-8">' + escapeHtml(assignment.notes).replace(/\n/g, '<br>') + '</dd>';
+            }
+            
+            if (assignment.return_date) {
+                html += '<dt class="col-sm-4">Data Restituzione:</dt>';
+                html += '<dd class="col-sm-8">' + formatDateTime(assignment.return_date) + '</dd>';
+                
+                html += '<dt class="col-sm-4">Restituita a:</dt>';
+                html += '<dd class="col-sm-8">' + escapeHtml(assignment.returned_by_username || '-') + '</dd>';
+            }
+            
+            html += '<dt class="col-sm-4">Stato:</dt>';
+            let statusClass = assignment.status === 'assegnata' ? 'warning' : 'success';
+            html += '<dd class="col-sm-8"><span class="badge bg-' + statusClass + '">' + escapeHtml(assignment.status) + '</span></dd>';
+            
+            html += '</dl>';
+            
+            document.getElementById('assignmentDetailsContent').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('assignmentDetailsModal'));
+            modal.show();
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatDateTime(dateStr) {
+            const date = new Date(dateStr);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+    </script>
 </body>
 </html>
