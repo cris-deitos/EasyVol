@@ -464,4 +464,82 @@ class EventController {
             return false;
         }
     }
+    
+    /**
+     * Aggiorna intervento
+     */
+    public function updateIntervention($interventionId, $data, $userId) {
+        try {
+            $sql = "UPDATE interventions SET
+                title = ?, description = ?, start_time = ?, end_time = ?,
+                location = ?, status = ?
+                WHERE id = ?";
+            
+            $params = [
+                $data['title'],
+                $data['description'] ?? null,
+                $data['start_time'],
+                $data['end_time'] ?? null,
+                $data['location'] ?? null,
+                $data['status'] ?? 'in_corso',
+                $interventionId
+            ];
+            
+            $this->db->execute($sql, $params);
+            
+            $this->logActivity($userId, 'interventions', 'update', $interventionId, 'Aggiornato intervento');
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore aggiornamento intervento: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Chiudi intervento con esito
+     */
+    public function closeIntervention($interventionId, $report, $endTime = null, $userId) {
+        try {
+            // Se non specificato, usa il timestamp corrente come end_time
+            if (empty($endTime)) {
+                $endTime = date('Y-m-d H:i:s');
+            }
+            
+            $sql = "UPDATE interventions SET
+                status = 'concluso', report = ?, end_time = ?
+                WHERE id = ?";
+            
+            $params = [$report, $endTime, $interventionId];
+            
+            $this->db->execute($sql, $params);
+            
+            $this->logActivity($userId, 'interventions', 'close', $interventionId, 'Chiuso intervento con esito');
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore chiusura intervento: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Riapri intervento concluso
+     */
+    public function reopenIntervention($interventionId, $userId) {
+        try {
+            $sql = "UPDATE interventions SET
+                status = 'in_corso', end_time = NULL
+                WHERE id = ?";
+            
+            $this->db->execute($sql, [$interventionId]);
+            
+            $this->logActivity($userId, 'interventions', 'reopen', $interventionId, 'Riaperto intervento');
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore riapertura intervento: " . $e->getMessage());
+            return false;
+        }
+    }
 }
