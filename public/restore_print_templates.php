@@ -50,16 +50,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("Il file seed_print_templates.sql è vuoto");
             }
             
-            // Remove SQL comments
+            // Remove SQL comments (simple approach - good enough for our controlled seed file)
             $sql = preg_replace('/--[^\n\r]*/', '', $sql);
             $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
             
             // Split by semicolons and execute each statement
+            // Include SET, START TRANSACTION, and COMMIT statements for completeness
             $statements = array_filter(
                 array_map('trim', explode(';', $sql)),
                 function($stmt) {
-                    return !empty($stmt) && 
-                           stripos($stmt, 'INSERT INTO') !== false;
+                    $stmt = strtoupper(trim($stmt));
+                    return !empty($stmt) && (
+                        strpos($stmt, 'INSERT INTO') !== false ||
+                        strpos($stmt, 'SET SQL_MODE') !== false ||
+                        strpos($stmt, 'START TRANSACTION') !== false ||
+                        strpos($stmt, 'COMMIT') !== false
+                    );
                 }
             );
             
@@ -69,10 +75,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($statements as $statement) {
                 try {
                     $connection->exec($statement);
-                    $templatesRestored++;
+                    // Only count INSERT statements
+                    if (stripos($statement, 'INSERT INTO') !== false) {
+                        $templatesRestored++;
+                    }
                 } catch (PDOException $e) {
-                    // Check if it's a duplicate key error (template already exists)
-                    if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                    // Check PDO error code for duplicate key (23000 = integrity constraint violation)
+                    if ($e->getCode() == '23000') {
                         // Skip duplicate, continue with others
                         continue;
                     } else {
