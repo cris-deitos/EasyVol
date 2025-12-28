@@ -38,10 +38,14 @@ $perPage = 50;
 $sql = "SELECT ocs.*, 
         m.first_name, m.last_name, m.registration_number, m.badge_number,
         mc.value as phone,
+        rd.name as radio_name,
+        rd.identifier as radio_identifier,
         u.username as created_by_username
         FROM on_call_schedule ocs
         JOIN members m ON ocs.member_id = m.id
         LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
+        LEFT JOIN radio_assignments ra ON (m.id = ra.member_id AND ra.status = 'assegnata' AND ra.return_date IS NULL)
+        LEFT JOIN radio_directory rd ON ra.radio_id = rd.id
         LEFT JOIN users u ON ocs.created_by = u.id
         WHERE 1=1";
 
@@ -216,6 +220,7 @@ $isCoUser = isset($user['is_operations_center_user']) && $user['is_operations_ce
                                         <tr>
                                             <th>Volontario</th>
                                             <th>Telefono</th>
+                                            <th>Radio</th>
                                             <th>Inizio Reperibilità</th>
                                             <th>Fine Reperibilità</th>
                                             <th>Durata</th>
@@ -241,6 +246,16 @@ $isCoUser = isset($user['is_operations_center_user']) && $user['is_operations_ce
                                                 <td>
                                                     <?php if ($schedule['phone']): ?>
                                                         <i class="bi bi-telephone"></i> <?php echo htmlspecialchars($schedule['phone']); ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($schedule['radio_name'])): ?>
+                                                        <i class="bi bi-broadcast text-success"></i> <?php echo htmlspecialchars($schedule['radio_name']); ?>
+                                                        <?php if (!empty($schedule['radio_identifier'])): ?>
+                                                            <br><small class="text-muted"><?php echo htmlspecialchars($schedule['radio_identifier']); ?></small>
+                                                        <?php endif; ?>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
