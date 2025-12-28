@@ -135,6 +135,10 @@ main {
         box-shadow: 2px 0 5px rgba(0,0,0,0.1);
     }
     
+    #sidebarMenu:not(.show) {
+        display: none;
+    }
+    
     #sidebarMenu.show {
         display: block !important;
     }

@@ -253,6 +253,10 @@ a.easyco-link:hover {
         border-bottom: none;
     }
     
+    .sidebar.easyco-sidebar:not(.show) {
+        display: none;
+    }
+    
     .sidebar.easyco-sidebar.show {
         display: block !important;
     }
