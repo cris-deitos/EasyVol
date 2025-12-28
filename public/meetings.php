@@ -28,6 +28,19 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MeetingController($db, $config);
 
+// Fetch template IDs for meetings by name
+$templateIds = [];
+try {
+    $templateSql = "SELECT id, name FROM print_templates WHERE entity_type = 'meetings' AND is_active = 1";
+    $templates = $db->fetchAll($templateSql);
+    foreach ($templates as $template) {
+        $templateIds[$template['name']] = $template['id'];
+    }
+} catch (\Exception $e) {
+    // Templates might not exist yet
+    $templateIds = [];
+}
+
 $filters = [
     'type' => $_GET['type'] ?? '',
     'search' => $_GET['search'] ?? ''
@@ -206,6 +219,9 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Template IDs loaded from database
+        const templateIds = <?php echo json_encode($templateIds); ?>;
+        
         // Print list functionality
         function printList(type) {
             let templateId = null;
@@ -213,10 +229,10 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
             
             switch(type) {
                 case 'verbale':
-                    templateId = 8; // Verbale di Riunione
+                    templateId = templateIds['Verbale di Riunione'] || null;
                     break;
                 case 'foglio_presenze':
-                    templateId = 9; // Foglio Presenze Riunione
+                    templateId = templateIds['Foglio Presenze Riunione'] || null;
                     break;
             }
             
@@ -227,6 +243,8 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                     ...filters
                 });
                 window.open('print_preview.php?' + params.toString(), '_blank');
+            } else {
+                alert('Template non trovato. Assicurati di aver importato i template di stampa.\nVedi il file seed_print_templates.sql');
             }
         }
         

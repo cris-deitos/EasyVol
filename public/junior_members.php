@@ -33,6 +33,19 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new JuniorMemberController($db, $config);
 
+// Fetch template IDs for junior_members by name
+$templateIds = [];
+try {
+    $templateSql = "SELECT id, name FROM print_templates WHERE entity_type = 'junior_members' AND is_active = 1";
+    $templates = $db->fetchAll($templateSql);
+    foreach ($templates as $template) {
+        $templateIds[$template['name']] = $template['id'];
+    }
+} catch (\Exception $e) {
+    // Templates might not exist yet
+    $templateIds = [];
+}
+
 // Gestione filtri
 $filters = [
     'status' => $_GET['status'] ?? '',
@@ -283,6 +296,9 @@ $pageTitle = 'Gestione Soci Minorenni';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Template IDs loaded from database
+        const templateIds = <?php echo json_encode($templateIds); ?>;
+        
         function confirmDelete(memberId) {
             if (confirm('Sei sicuro di voler eliminare questo socio minorenne?')) {
                 window.location.href = 'junior_member_delete.php?id=' + memberId;
@@ -296,15 +312,13 @@ $pageTitle = 'Gestione Soci Minorenni';
             
             switch(type) {
                 case 'libro_soci':
-                    // Template IDs will be 11, 12, 13 after running the seed file
-                    // For now, we'll use dynamic lookup via modal
-                    templateId = 11; // Libro Soci Cadetti
+                    templateId = templateIds['Libro Soci Cadetti'] || null;
                     break;
                 case 'elenco_contatti':
-                    templateId = 12; // Elenco Contatti Cadetti
+                    templateId = templateIds['Elenco Contatti Cadetti'] || null;
                     break;
                 case 'foglio_firma':
-                    templateId = 13; // Foglio Firma Cadetti
+                    templateId = templateIds['Foglio Firma Cadetti'] || null;
                     break;
             }
             
@@ -315,6 +329,8 @@ $pageTitle = 'Gestione Soci Minorenni';
                     ...filters
                 });
                 window.open('print_preview.php?' + params.toString(), '_blank');
+            } else {
+                alert('Template non trovato. Assicurati di aver importato i template per soci minorenni.\nVedi il file ISTRUZIONI_TEMPLATE_CADETTI.md');
             }
         }
         
