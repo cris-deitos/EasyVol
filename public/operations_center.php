@@ -280,9 +280,9 @@ $pageTitle = 'Centrale Operativa';
                                     <p class="text-muted mb-0">Nessun volontario reperibile</p>
                                 <?php else: ?>
                                     <?php foreach ($dashboard['available_members'] as $member): ?>
-                                        <div class="resource-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
+                                        <div class="resource-item" id="oncall-<?php echo $member['schedule_id']; ?>">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
                                                     <strong>
                                                         <?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>
                                                     </strong>
@@ -290,13 +290,39 @@ $pageTitle = 'Centrale Operativa';
                                                         <br><small class="text-muted">Matricola: <?php echo htmlspecialchars($member['badge_number']); ?></small>
                                                     <?php endif; ?>
                                                     <?php if (!empty($member['phone'])): ?>
-                                                        <br><small><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($member['phone']); ?></small>
+                                                        <br><small><i class="bi bi-telephone-fill text-primary"></i> <?php echo htmlspecialchars($member['phone']); ?></small>
                                                     <?php endif; ?>
-                                                    <?php if (!empty($member['end_datetime'])): ?>
-                                                        <br><small class="text-muted">Fino a: <?php echo date('d/m/Y H:i', strtotime($member['end_datetime'])); ?></small>
+                                                    <?php if (!empty($member['radio_name'])): ?>
+                                                        <br><small><i class="bi bi-broadcast text-success"></i> Radio: <?php echo htmlspecialchars($member['radio_name']); ?>
+                                                        <?php if (!empty($member['radio_identifier'])): ?>
+                                                            (<?php echo htmlspecialchars($member['radio_identifier']); ?>)
+                                                        <?php endif; ?>
+                                                        </small>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($member['on_call_notes'])): ?>
+                                                        <br><small class="text-muted"><i class="bi bi-sticky"></i> <?php echo htmlspecialchars($member['on_call_notes']); ?></small>
+                                                    <?php endif; ?>
+                                                    <br><small class="text-muted">
+                                                        <i class="bi bi-clock"></i> 
+                                                        <?php echo date('d/m/Y H:i', strtotime($member['start_datetime'])); ?> - 
+                                                        <?php echo date('d/m/Y H:i', strtotime($member['end_datetime'])); ?>
+                                                    </small>
+                                                </div>
+                                                <div class="d-flex flex-column gap-1">
+                                                    <span class="badge bg-success">Reperibile</span>
+                                                    <?php if ($app->checkPermission('operations_center', 'edit')): ?>
+                                                        <button type="button" class="btn btn-sm btn-warning" 
+                                                                onclick="editOnCall(<?php echo $member['schedule_id']; ?>)" 
+                                                                title="Modifica">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                                onclick="removeOnCall(<?php echo $member['schedule_id']; ?>)" 
+                                                                title="Rimuovi">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
                                                     <?php endif; ?>
                                                 </div>
-                                                <span class="badge bg-success">Reperibile</span>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
@@ -367,22 +393,12 @@ $pageTitle = 'Centrale Operativa';
                         
                         <div class="mb-3">
                             <label class="form-label">Volontario <span class="text-danger">*</span></label>
-                            <select class="form-select" name="member_id" required>
-                                <option value="">Seleziona un volontario...</option>
-                                <?php
-                                $activeMembersSql = "SELECT id, first_name, last_name, registration_number, badge_number 
-                                                     FROM members 
-                                                     WHERE member_status = 'attivo' 
-                                                     ORDER BY last_name, first_name";
-                                $activeMembers = $app->getDb()->fetchAll($activeMembersSql);
-                                foreach ($activeMembers as $activeMember) {
-                                    echo '<option value="' . $activeMember['id'] . '">' . 
-                                         htmlspecialchars($activeMember['last_name'] . ' ' . $activeMember['first_name']) . 
-                                         ' (' . htmlspecialchars($activeMember['badge_number'] ?? $activeMember['registration_number']) . ')' .
-                                         '</option>';
-                                }
-                                ?>
-                            </select>
+                            <input type="hidden" name="member_id" id="member_id" required>
+                            <input type="text" class="form-control" id="member_search" 
+                                   placeholder="Cerca per matricola, nome o cognome..." 
+                                   autocomplete="off" required>
+                            <div id="member_search_results" class="list-group position-absolute" style="z-index: 1050; max-height: 300px; overflow-y: auto; display: none;"></div>
+                            <small class="text-muted">Digita almeno 1 carattere per cercare</small>
                         </div>
                         
                         <div class="mb-3">
@@ -414,6 +430,52 @@ $pageTitle = 'Centrale Operativa';
         </div>
     </div>
 
+    <!-- Edit On-Call Volunteer Modal -->
+    <div class="modal fade" id="editOnCallModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">Modifica Reperibilità</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editOnCallForm" action="on_call_ajax.php" method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="update_on_call">
+                        <input type="hidden" name="schedule_id" id="edit_schedule_id">
+                        <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Volontario</label>
+                            <input type="text" class="form-control" id="edit_member_name" readonly disabled>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Data e Ora Inizio Reperibilità <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" name="start_datetime" id="edit_start_datetime" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Data e Ora Fine Reperibilità <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" name="end_datetime" id="edit_end_datetime" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Note</label>
+                            <textarea class="form-control" name="notes" id="edit_notes" rows="2" 
+                                      placeholder="Note sulla reperibilità..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save"></i> Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Auto-refresh every 60 seconds (can be disabled by user if needed)
@@ -424,6 +486,63 @@ $pageTitle = 'Centrale Operativa';
                 location.reload();
             }, 60000);
         }
+        
+        // Member search autocomplete
+        let searchTimeout;
+        const memberSearchInput = document.getElementById('member_search');
+        const memberSearchResults = document.getElementById('member_search_results');
+        const memberIdInput = document.getElementById('member_id');
+        
+        memberSearchInput?.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 1) {
+                memberSearchResults.style.display = 'none';
+                memberSearchResults.innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(async function() {
+                try {
+                    const response = await fetch('members_search_ajax.php?q=' + encodeURIComponent(query));
+                    const results = await response.json();
+                    
+                    if (results.length > 0) {
+                        memberSearchResults.innerHTML = results.map(member => 
+                            `<button type="button" class="list-group-item list-group-item-action" 
+                                     data-member-id="${member.id}" 
+                                     data-member-name="${member.value}">
+                                ${member.label}
+                            </button>`
+                        ).join('');
+                        memberSearchResults.style.display = 'block';
+                    } else {
+                        memberSearchResults.innerHTML = '<div class="list-group-item">Nessun volontario trovato</div>';
+                        memberSearchResults.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Errore nella ricerca:', error);
+                }
+            }, 300);
+        });
+        
+        // Handle member selection
+        memberSearchResults?.addEventListener('click', function(e) {
+            const button = e.target.closest('button[data-member-id]');
+            if (button) {
+                memberIdInput.value = button.dataset.memberId;
+                memberSearchInput.value = button.dataset.memberName;
+                memberSearchResults.style.display = 'none';
+            }
+        });
+        
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!memberSearchInput?.contains(e.target) && !memberSearchResults?.contains(e.target)) {
+                memberSearchResults.style.display = 'none';
+            }
+        });
         
         // Handle on-call form submission
         document.getElementById('addOnCallForm')?.addEventListener('submit', async function(e) {
@@ -449,6 +568,106 @@ $pageTitle = 'Centrale Operativa';
                 alert('Errore durante il salvataggio: ' + error.message);
             }
         });
+        
+        // Edit on-call schedule
+        const editOnCallModal = new bootstrap.Modal(document.getElementById('editOnCallModal'));
+        let currentScheduleData = {};
+        
+        window.editOnCall = async function(scheduleId) {
+            // Find the schedule data from the page
+            const scheduleElement = document.getElementById('oncall-' + scheduleId);
+            if (!scheduleElement) return;
+            
+            // Get all available members data to find the current one
+            <?php echo "const availableMembers = " . json_encode($dashboard['available_members']) . ";"; ?>
+            const scheduleData = availableMembers.find(m => m.schedule_id == scheduleId);
+            
+            if (!scheduleData) {
+                alert('Reperibilità non trovata');
+                return;
+            }
+            
+            currentScheduleData = scheduleData;
+            
+            // Populate form
+            document.getElementById('edit_schedule_id').value = scheduleId;
+            document.getElementById('edit_member_name').value = scheduleData.first_name + ' ' + scheduleData.last_name;
+            
+            // Convert datetime strings to input format
+            const startDate = new Date(scheduleData.start_datetime);
+            const endDate = new Date(scheduleData.end_datetime);
+            
+            document.getElementById('edit_start_datetime').value = formatDateTimeLocal(startDate);
+            document.getElementById('edit_end_datetime').value = formatDateTimeLocal(endDate);
+            document.getElementById('edit_notes').value = scheduleData.on_call_notes || '';
+            
+            editOnCallModal.show();
+        };
+        
+        // Format date for datetime-local input
+        function formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+        
+        // Handle edit form submission
+        document.getElementById('editOnCallForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('on_call_ajax.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        });
+        
+        // Remove on-call schedule
+        window.removeOnCall = async function(scheduleId) {
+            if (!confirm('Sei sicuro di voler rimuovere questa reperibilità?')) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'remove_on_call');
+            formData.append('schedule_id', scheduleId);
+            formData.append('csrf_token', '<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>');
+            
+            try {
+                const response = await fetch('on_call_ajax.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante la rimozione: ' + error.message);
+            }
+        };
     </script>
 </body>
 </html>

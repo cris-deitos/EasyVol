@@ -61,12 +61,17 @@ class OperationsCenterController {
         // Get volunteers currently on-call (reperibili)
         $sql = "SELECT m.*, 
                 mc.value as phone,
+                ocs.id as schedule_id,
                 ocs.start_datetime,
                 ocs.end_datetime,
-                ocs.notes as on_call_notes
+                ocs.notes as on_call_notes,
+                rd.name as radio_name,
+                rd.identifier as radio_identifier
                 FROM on_call_schedule ocs
                 JOIN members m ON ocs.member_id = m.id
                 LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
+                LEFT JOIN radio_assignments ra ON (m.id = ra.member_id AND ra.status = 'assegnata' AND ra.return_date IS NULL)
+                LEFT JOIN radio_directory rd ON ra.radio_id = rd.id
                 WHERE m.member_status = 'attivo'
                 AND ocs.start_datetime <= NOW()
                 AND ocs.end_datetime >= NOW()
