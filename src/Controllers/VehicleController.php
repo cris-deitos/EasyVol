@@ -248,6 +248,11 @@ class VehicleController {
                 vehicle_id, maintenance_type, date, description, cost, performed_by, notes, status, created_by
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
+            // Se vehicle_status è vuoto o stringa vuota, lo impostiamo a NULL
+            $vehicleStatus = (!empty($data['vehicle_status']) && trim($data['vehicle_status']) !== '') 
+                ? $data['vehicle_status'] 
+                : null;
+            
             $params = [
                 $vehicleId,
                 $data['maintenance_type'],
@@ -256,7 +261,7 @@ class VehicleController {
                 $data['cost'] ?? null,
                 $data['performed_by'] ?? null,
                 $data['notes'] ?? null,
-                $data['vehicle_status'] ?? null,
+                $vehicleStatus,
                 $userId
             ];
             
@@ -276,8 +281,9 @@ class VehicleController {
                 $syncController->syncInspectionExpiry($vehicleId);
             }
             
-            // Aggiorna stato veicolo se specificato
-            if (!empty($data['vehicle_status'])) {
+            // Aggiorna stato veicolo se specificato e diverso da vuoto
+            // Se vehicle_status è vuoto o null, significa "Non modificare" e quindi NON aggiorniamo
+            if (!empty($data['vehicle_status']) && trim($data['vehicle_status']) !== '') {
                 $updateStatusSql = "UPDATE vehicles SET status = ?, updated_at = NOW() WHERE id = ?";
                 $this->db->execute($updateStatusSql, [$data['vehicle_status'], $vehicleId]);
             }

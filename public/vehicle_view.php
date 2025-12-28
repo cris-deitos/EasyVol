@@ -453,6 +453,14 @@ if (!empty($vehicle['license_plate'])) {
                     bsTab.show();
                 }
             }
+            
+            // Imposta lo stato corrente del veicolo nel form di manutenzione
+            const currentVehicleStatus = '<?php echo $vehicle['status'] ?? ''; ?>';
+            const vehicleStatusSelect = document.getElementById('vehicle_status');
+            if (vehicleStatusSelect && currentVehicleStatus) {
+                // Imposta lo stato corrente come selezionato di default
+                vehicleStatusSelect.value = currentVehicleStatus;
+            }
         });
     </script>
 

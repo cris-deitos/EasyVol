@@ -72,7 +72,7 @@ $availableTrailers = $controller->getAvailableTrailers();
 // Get active members for drivers
 $membersSql = "SELECT id, first_name, last_name, registration_number 
                FROM members 
-               WHERE status = 'attivo' 
+               WHERE member_status = 'attivo' 
                ORDER BY last_name, first_name";
 $members = $db->fetchAll($membersSql);
 
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'departure_datetime' => $_POST['departure_datetime'],
                 'drivers' => array_map('intval', $_POST['drivers']),
                 'departure_km' => !empty($_POST['departure_km']) ? floatval($_POST['departure_km']) : null,
-                'departure_fuel_level' => $_POST['departure_fuel_level'] ?? null,
+                'departure_fuel_level' => (!empty($_POST['departure_fuel_level']) && trim($_POST['departure_fuel_level']) !== '') ? $_POST['departure_fuel_level'] : null,
                 'service_type' => $_POST['service_type'] ?? null,
                 'destination' => $_POST['destination'] ?? null,
                 'authorized_by' => $_POST['authorized_by'] ?? null,

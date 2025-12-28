@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'departure_datetime' => $_POST['departure_datetime'],
             'drivers' => array_map('intval', $_POST['drivers']),
             'departure_km' => !empty($_POST['departure_km']) ? floatval($_POST['departure_km']) : null,
-            'departure_fuel_level' => $_POST['departure_fuel_level'] ?? null,
+            'departure_fuel_level' => (!empty($_POST['departure_fuel_level']) && trim($_POST['departure_fuel_level']) !== '') ? $_POST['departure_fuel_level'] : null,
             'service_type' => $_POST['service_type'] ?? null,
             'destination' => $_POST['destination'] ?? null,
             'authorized_by' => $_POST['authorized_by'] ?? null,
@@ -258,7 +258,7 @@ $pageTitle = 'Registra Uscita Veicolo';
 
                 <!-- Optional Fields Section -->
                 <div class="section-header">
-                    <h5 class="mb-0"><i class="bi bi-2-circle-fill"></i> Dati Facoltativi</h5>
+                    <h5 class="mb-0"><i class="bi bi-2-circle-fill"></i> Dati</h5>
                 </div>
 
                 <div class="row mb-3">
