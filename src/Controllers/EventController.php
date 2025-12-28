@@ -92,7 +92,7 @@ class EventController {
                 $data['title'],
                 $data['description'] ?? null,
                 $data['start_date'],
-                $data['end_date'] ?? null,
+                !empty($data['end_date']) ? $data['end_date'] : null,
                 $data['location'] ?? null,
                 $data['status'] ?? 'aperto',
                 $userId
@@ -130,7 +130,7 @@ class EventController {
                 $data['title'],
                 $data['description'] ?? null,
                 $data['start_date'],
-                $data['end_date'] ?? null,
+                !empty($data['end_date']) ? $data['end_date'] : null,
                 $data['location'] ?? null,
                 $data['status'] ?? 'aperto',
                 $id

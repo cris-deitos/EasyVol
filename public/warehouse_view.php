@@ -39,11 +39,16 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new WarehouseController($db, $config);
 
-$item = $controller->get($itemId);
-
-if (!$item) {
-    header('Location: warehouse.php?error=not_found');
-    exit;
+try {
+    $item = $controller->get($itemId);
+    
+    if (!$item) {
+        header('Location: warehouse.php?error=not_found');
+        exit;
+    }
+} catch (\Exception $e) {
+    error_log("Errore caricamento articolo magazzino: " . $e->getMessage());
+    die('Errore durante il caricamento dei dati dell\'articolo');
 }
 
 $pageTitle = 'Dettaglio Articolo: ' . $item['name'];

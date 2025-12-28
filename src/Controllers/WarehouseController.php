@@ -61,20 +61,26 @@ class WarehouseController {
      * Ottieni singolo articolo
      */
     public function get($id) {
-        $sql = "SELECT * FROM warehouse_items WHERE id = ?";
-        $item = $this->db->fetchOne($sql, [$id]);
-        
-        if (!$item) {
-            return false;
+        try {
+            $sql = "SELECT * FROM warehouse_items WHERE id = ?";
+            $item = $this->db->fetchOne($sql, [$id]);
+            
+            if (!$item) {
+                return false;
+            }
+            
+            // Carica movimenti recenti
+            $item['movements'] = $this->getMovements($id, 20);
+            
+            // Carica DPI assegnati
+            $item['dpi_assignments'] = $this->getDpiAssignments($id);
+            
+            return $item;
+        } catch (\Exception $e) {
+            error_log("Errore nel recupero articolo magazzino ID $id: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            throw $e;
         }
-        
-        // Carica movimenti recenti
-        $item['movements'] = $this->getMovements($id, 20);
-        
-        // Carica DPI assegnati
-        $item['dpi_assignments'] = $this->getDpiAssignments($id);
-        
-        return $item;
     }
     
     /**
@@ -227,33 +233,45 @@ class WarehouseController {
      * Ottieni movimenti articolo
      */
     public function getMovements($itemId, $limit = null) {
-        $sql = "SELECT wm.*, 
-                CONCAT(m.first_name, ' ', m.last_name) as member_name,
-                u.username as created_by_name
-                FROM warehouse_movements wm
-                LEFT JOIN members m ON wm.member_id = m.id
-                LEFT JOIN users u ON wm.created_by = u.id
-                WHERE wm.item_id = ? 
-                ORDER BY wm.created_at DESC";
-        
-        if ($limit) {
-            $sql .= " LIMIT " . intval($limit);
+        try {
+            $sql = "SELECT wm.*, 
+                    CONCAT(m.first_name, ' ', m.last_name) as member_name,
+                    u.username as created_by_name
+                    FROM warehouse_movements wm
+                    LEFT JOIN members m ON wm.member_id = m.id
+                    LEFT JOIN users u ON wm.created_by = u.id
+                    WHERE wm.item_id = ? 
+                    ORDER BY wm.created_at DESC";
+            
+            if ($limit) {
+                $sql .= " LIMIT " . intval($limit);
+            }
+            
+            return $this->db->fetchAll($sql, [$itemId]);
+        } catch (\Exception $e) {
+            error_log("Errore nel recupero movimenti per articolo ID $itemId: " . $e->getMessage());
+            // Ritorna array vuoto invece di fallire
+            return [];
         }
-        
-        return $this->db->fetchAll($sql, [$itemId]);
     }
     
     /**
      * Ottieni DPI assegnati
      */
     public function getDpiAssignments($itemId) {
-        $sql = "SELECT da.*, m.first_name, m.last_name, m.registration_number
-                FROM dpi_assignments da
-                JOIN members m ON da.member_id = m.id
-                WHERE da.item_id = ? 
-                ORDER BY da.assignment_date DESC";
-        
-        return $this->db->fetchAll($sql, [$itemId]);
+        try {
+            $sql = "SELECT da.*, m.first_name, m.last_name, m.registration_number
+                    FROM dpi_assignments da
+                    JOIN members m ON da.member_id = m.id
+                    WHERE da.item_id = ? 
+                    ORDER BY da.assignment_date DESC";
+            
+            return $this->db->fetchAll($sql, [$itemId]);
+        } catch (\Exception $e) {
+            error_log("Errore nel recupero DPI assegnati per articolo ID $itemId: " . $e->getMessage());
+            // Ritorna array vuoto invece di fallire
+            return [];
+        }
     }
     
     /**

@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => trim($_POST['description'] ?? ''),
             'location' => trim($_POST['location'] ?? ''),
             'start_date' => $_POST['start_date'] ?? '',
-            'end_date' => $_POST['end_date'] ?? null,
+            'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
             'status' => $_POST['status'] ?? 'aperto'
         ];
         
