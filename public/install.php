@@ -154,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Insert default email configuration into config table
                 $emailConfigDefaults = [
-                    'email_enabled' => '1',
+                    'email_enabled' => '0',
                     'email_method' => 'smtp',
                     'email_from_address' => $assocEmail ?: 'noreply@example.com',
                     'email_from_name' => $assocName ?: 'EasyVol',
@@ -189,12 +189,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $configContent = "<?php\nreturn " . var_export($sampleConfig, true) . ";\n";
                 file_put_contents($configFile, $configContent);
                 
-                unset($_SESSION['install']);
+                // Store association email for step 3
+                $_SESSION['install']['assoc_email'] = $assocEmail;
+                $_SESSION['install']['assoc_name'] = $assocName;
                 
                 header("Location: install.php?step=3");
                 exit;
             } catch (Exception $e) {
                 $errors[] = "Setup error: " . $e->getMessage();
+            }
+        }
+    } elseif ($step === 3) {
+        // Optional email configuration
+        $configureEmail = isset($_POST['configure_email']) ? true : false;
+        
+        if (!$configureEmail) {
+            // Skip email configuration
+            unset($_SESSION['install']);
+            header("Location: install.php?step=4");
+            exit;
+        }
+        
+        // Email configuration
+        $emailEnabled = isset($_POST['email_enabled']) ? '1' : '0';
+        $emailMethod = trim($_POST['email_method'] ?? 'smtp');
+        $fromAddress = trim($_POST['from_address'] ?? '');
+        $fromName = trim($_POST['from_name'] ?? '');
+        $smtpHost = trim($_POST['smtp_host'] ?? '');
+        $smtpPort = intval($_POST['smtp_port'] ?? 587);
+        $smtpUsername = trim($_POST['smtp_username'] ?? '');
+        $smtpPassword = $_POST['smtp_password'] ?? '';
+        $smtpEncryption = trim($_POST['smtp_encryption'] ?? 'tls');
+        $smtpAuth = isset($_POST['smtp_auth']) ? '1' : '0';
+        
+        // Validation
+        if ($emailEnabled === '1') {
+            if (empty($fromAddress) || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Indirizzo email mittente non valido";
+            }
+            if (!in_array($emailMethod, ['smtp', 'sendmail'])) {
+                $errors[] = "Metodo di invio email non valido";
+            }
+            if (!in_array($smtpEncryption, ['tls', 'ssl', ''])) {
+                $errors[] = "Tipo di crittografia SMTP non valido";
+            }
+            if ($smtpPort < 1 || $smtpPort > 65535) {
+                $errors[] = "Porta SMTP non valida (1-65535)";
+            }
+        }
+        
+        if (empty($errors)) {
+            try {
+                // Connect to database
+                if (!isset($_SESSION['install'])) {
+                    throw new Exception("Session data not found. Please start from step 1.");
+                }
+                $installData = $_SESSION['install'];
+                $dsn = "mysql:host={$installData['db_host']};port={$installData['db_port']};dbname={$installData['db_name']};charset=utf8mb4";
+                $pdo = new PDO($dsn, $installData['db_user'], $installData['db_pass'], [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+                ]);
+                
+                // Update email settings in database
+                $emailSettings = [
+                    'email_enabled' => $emailEnabled,
+                    'email_method' => $emailMethod,
+                    'email_from_address' => $fromAddress,
+                    'email_from_name' => $fromName,
+                    'email_smtp_host' => $smtpHost,
+                    'email_smtp_port' => (string)$smtpPort,
+                    'email_smtp_username' => $smtpUsername,
+                    'email_smtp_password' => $smtpPassword,
+                    'email_smtp_encryption' => $smtpEncryption,
+                    'email_smtp_auth' => $smtpAuth,
+                ];
+                
+                $stmt = $pdo->prepare("INSERT INTO config (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)");
+                foreach ($emailSettings as $key => $value) {
+                    $stmt->execute([$key, $value]);
+                }
+                
+                unset($_SESSION['install']);
+                
+                header("Location: install.php?step=4");
+                exit;
+            } catch (Exception $e) {
+                $errors[] = "Errore durante il salvataggio: " . $e->getMessage();
             }
         }
     }
@@ -256,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p class="text-muted">Sistema Gestionale per Associazioni di Volontariato</p>
                 </div>
 
-                <?php if ($isInstalled && $step < 3): ?>
+                <?php if ($isInstalled && $step < 4): ?>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i> L'applicazione risulta già installata. 
                         <a href="login.php" class="alert-link">Vai al login</a>
@@ -272,7 +352,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="bi bi-building"></i><br>
                         <small>Associazione</small>
                     </div>
-                    <div class="step <?= $step >= 3 ? 'active' : '' ?>">
+                    <div class="step <?= $step >= 3 ? 'active' : '' ?> <?= $step > 3 ? 'completed' : '' ?>">
+                        <i class="bi bi-envelope"></i><br>
+                        <small>Email</small>
+                    </div>
+                    <div class="step <?= $step >= 4 ? 'active' : '' ?>">
                         <i class="bi bi-check-circle"></i><br>
                         <small>Completato</small>
                     </div>
@@ -397,12 +481,148 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="password" class="form-control" name="admin_password_confirm" required>
                         </div>
                         
-                        <button type="submit" class="btn btn-success btn-lg w-100">
-                            <i class="bi bi-check-circle"></i> Completa Installazione
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-arrow-right"></i> Avanti
                         </button>
                     </form>
                     
                 <?php elseif ($step === 3): ?>
+                    <h3 class="mb-4">Passo 3: Configurazione Email (Facoltativa)</h3>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        Puoi configurare le impostazioni email ora o saltare questo passaggio e configurarle successivamente nelle impostazioni del sistema.
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="configure_email" name="configure_email" value="1" onchange="toggleEmailConfig()">
+                                <label class="form-check-label" for="configure_email">
+                                    <strong>Configura le impostazioni email ora</strong>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="email_config_section" style="display: none;">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="email_enabled" name="email_enabled" value="1" checked>
+                                    <label class="form-check-label" for="email_enabled">
+                                        <strong>Abilita Invio Email</strong>
+                                    </label>
+                                </div>
+                                <small class="text-muted">Attiva/disattiva l'invio di email dal sistema</small>
+                            </div>
+                            
+                            <hr class="my-4">
+                            <h6><i class="bi bi-person-lines-fill me-2"></i>Informazioni Mittente</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="from_address" class="form-label">Indirizzo Email Mittente *</label>
+                                    <input type="email" class="form-control" id="from_address" name="from_address" 
+                                           value="<?php echo htmlspecialchars($_SESSION['install']['assoc_email'] ?? ''); ?>">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="from_name" class="form-label">Nome Mittente *</label>
+                                    <input type="text" class="form-control" id="from_name" name="from_name" 
+                                           value="<?php echo htmlspecialchars($_SESSION['install']['assoc_name'] ?? 'EasyVol'); ?>">
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            <h6><i class="bi bi-gear-fill me-2"></i>Metodo di Invio</h6>
+                            
+                            <div class="mb-3">
+                                <label for="email_method" class="form-label">Metodo di Invio Email</label>
+                                <select class="form-select" id="email_method" name="email_method">
+                                    <option value="smtp" selected>SMTP (Consigliato)</option>
+                                    <option value="sendmail">Sendmail (mail() PHP)</option>
+                                </select>
+                                <small class="text-muted">SMTP è raccomandato per maggiore affidabilità</small>
+                            </div>
+                            
+                            <hr class="my-4">
+                            <h6><i class="bi bi-hdd-network-fill me-2"></i>Configurazione Server SMTP</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="smtp_host" class="form-label">Host SMTP</label>
+                                    <input type="text" class="form-control" id="smtp_host" name="smtp_host" 
+                                           placeholder="es. smtp.gmail.com">
+                                    <small class="text-muted">Indirizzo del server SMTP</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="smtp_port" class="form-label">Porta SMTP</label>
+                                    <input type="number" class="form-control" id="smtp_port" name="smtp_port" 
+                                           value="587" min="1" max="65535">
+                                    <small class="text-muted">587 (TLS) o 465 (SSL)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="smtp_username" class="form-label">Username SMTP</label>
+                                    <input type="text" class="form-control" id="smtp_username" name="smtp_username" 
+                                           placeholder="es. tuoemail@gmail.com">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="smtp_password" class="form-label">Password SMTP</label>
+                                    <input type="password" class="form-control" id="smtp_password" name="smtp_password" 
+                                           placeholder="Password o App Password">
+                                    <small class="text-muted">Per Gmail usa "App Password"</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="smtp_encryption" class="form-label">Crittografia</label>
+                                    <select class="form-select" id="smtp_encryption" name="smtp_encryption">
+                                        <option value="tls" selected>TLS (Raccomandato - Porta 587)</option>
+                                        <option value="ssl">SSL (Porta 465)</option>
+                                        <option value="">Nessuna (non sicuro)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="smtp_auth" name="smtp_auth" value="1" checked>
+                                        <label class="form-check-label" for="smtp_auth">
+                                            Richiedi Autenticazione SMTP
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-warning mt-3">
+                                <i class="bi bi-lightbulb"></i>
+                                <strong>Suggerimento:</strong> Se non sei sicuro delle impostazioni, puoi saltare questo passaggio e configurare l'email successivamente nelle impostazioni del sistema.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                                <i class="bi bi-arrow-right"></i> <span id="btn_text">Salta e Completa</span>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <script>
+                    function toggleEmailConfig() {
+                        const configureCheckbox = document.getElementById('configure_email');
+                        const emailSection = document.getElementById('email_config_section');
+                        const btnText = document.getElementById('btn_text');
+                        
+                        if (configureCheckbox.checked) {
+                            emailSection.style.display = 'block';
+                            btnText.textContent = 'Salva e Completa';
+                        } else {
+                            emailSection.style.display = 'none';
+                            btnText.textContent = 'Salta e Completa';
+                        }
+                    }
+                    </script>
+                    
+                <?php elseif ($step === 4): ?>
                     <div class="text-center py-5">
                         <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
                         <h3 class="mt-4 mb-3">Installazione Completata!</h3>
