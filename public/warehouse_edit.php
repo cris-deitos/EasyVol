@@ -238,21 +238,6 @@ $pageTitle = $isEdit ? 'Modifica Articolo' : 'Nuovo Articolo';
                                 <label for="notes" class="form-label">Note</label>
                                 <textarea class="form-control" id="notes" name="notes" rows="4"><?php echo htmlspecialchars($item['notes'] ?? ''); ?></textarea>
                             </div>
-                            
-                            <?php if (!$isEdit): ?>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="generate_qr" name="generate_qr" checked>
-                                <label class="form-check-label" for="generate_qr">
-                                    Genera QR Code automaticamente
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="generate_barcode" name="generate_barcode" checked>
-                                <label class="form-check-label" for="generate_barcode">
-                                    Genera Barcode automaticamente
-                                </label>
-                            </div>
-                            <?php endif; ?>
                         </div>
                     </div>
                     

@@ -2,8 +2,6 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
-use EasyVol\Utils\QrCodeGenerator;
-use EasyVol\Utils\BarcodeGenerator;
 
 /**
  * Warehouse Controller
@@ -118,18 +116,6 @@ class WarehouseController {
             $this->db->execute($sql, $params);
             $itemId = $this->db->lastInsertId();
             error_log("Item inserted with ID: " . $itemId);
-            
-            // Genera QR code se richiesto
-            if (!empty($data['generate_qr'])) {
-                error_log("Generating QR code");
-                $this->generateQrCode($itemId);
-            }
-            
-            // Genera Barcode se richiesto
-            if (!empty($data['generate_barcode'])) {
-                error_log("Generating Barcode");
-                $this->generateBarcode($itemId);
-            }
             
             $this->logActivity($userId, 'warehouse_item', 'create', $itemId, 'Creato nuovo articolo: ' . $data['name']);
             error_log("Activity logged");
@@ -268,80 +254,6 @@ class WarehouseController {
                 ORDER BY da.assignment_date DESC";
         
         return $this->db->fetchAll($sql, [$itemId]);
-    }
-    
-    /**
-     * Genera QR code per articolo
-     */
-    private function generateQrCode($itemId) {
-        try {
-            $item = $this->db->fetchOne("SELECT * FROM warehouse_items WHERE id = ?", [$itemId]);
-            if (!$item) {
-                return false;
-            }
-            
-            // Build full path for QR code file
-            $uploadsPath = $this->config['uploads']['path'] ?? (__DIR__ . '/../../uploads');
-            $qrDirectory = $uploadsPath . '/qrcodes';
-            
-            // Create directory if it doesn't exist
-            if (!is_dir($qrDirectory)) {
-                mkdir($qrDirectory, 0755, true);
-            }
-            
-            $filename = $qrDirectory . '/item_' . $itemId . '.png';
-            $itemCode = $item['code'] ?? $item['name'];
-            
-            // Use the static method properly
-            $qrPath = QrCodeGenerator::generateForWarehouseItem($itemId, $itemCode, $filename);
-            
-            // Aggiorna path nel database
-            $sql = "UPDATE warehouse_items SET qr_code = ? WHERE id = ?";
-            $this->db->execute($sql, [$qrPath, $itemId]);
-            
-            return $qrPath;
-            
-        } catch (\Exception $e) {
-            error_log("Errore generazione QR: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Genera barcode per articolo
-     */
-    private function generateBarcode($itemId) {
-        try {
-            $item = $this->db->fetchOne("SELECT * FROM warehouse_items WHERE id = ?", [$itemId]);
-            if (!$item) {
-                return false;
-            }
-            
-            // Build full path for barcode file
-            $uploadsPath = $this->config['uploads']['path'] ?? (__DIR__ . '/../../uploads');
-            $barcodeDirectory = $uploadsPath . '/barcodes';
-            
-            // Create directory if it doesn't exist
-            if (!is_dir($barcodeDirectory)) {
-                mkdir($barcodeDirectory, 0755, true);
-            }
-            
-            $filename = $barcodeDirectory . '/item_' . $itemId . '.png';
-            $itemCode = $item['code'] ?? ('ITEM' . str_pad($itemId, 6, '0', STR_PAD_LEFT));
-            
-            // Generate barcode
-            $barcodePath = BarcodeGenerator::generateForWarehouseItem($itemId, $itemCode, $filename);
-            
-            // Update database path
-            $sql = "UPDATE warehouse_items SET barcode = ? WHERE id = ?";
-            $this->db->execute($sql, [$barcodePath, $itemId]);
-            
-            return $barcodePath;
-            
-        } catch (\Exception $e) {
-            error_log("Errore generazione Barcode: " . $e->getMessage());
-            return false;
-        }
     }
     
     /**
