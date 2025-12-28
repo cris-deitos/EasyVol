@@ -81,11 +81,14 @@ class VehicleMovementController {
         $sql = "SELECT v.*,
                 CASE 
                     WHEN vm.id IS NOT NULL AND vm.status = 'in_mission' THEN 1
+                    WHEN vmt.id IS NOT NULL AND vmt.status = 'in_mission' THEN 1
                     ELSE 0
                 END as in_mission
                 FROM vehicles v
                 LEFT JOIN vehicle_movements vm ON v.id = vm.vehicle_id 
                     AND vm.status = 'in_mission'
+                LEFT JOIN vehicle_movements vmt ON v.id = vmt.trailer_id
+                    AND vmt.status = 'in_mission'
                 WHERE $whereClause
                 ORDER BY v.license_plate, v.serial_number";
         
@@ -115,31 +118,36 @@ class VehicleMovementController {
     
     /**
      * Check if vehicle is currently in mission
+     * This includes both vehicles on mission and trailers attached to vehicles on mission
      */
     public function isVehicleInMission($vehicleId) {
         $sql = "SELECT COUNT(*) as count 
                 FROM vehicle_movements 
-                WHERE vehicle_id = ? AND status = 'in_mission'";
-        $result = $this->db->fetchOne($sql, [$vehicleId]);
+                WHERE (vehicle_id = ? OR trailer_id = ?) AND status = 'in_mission'";
+        $result = $this->db->fetchOne($sql, [$vehicleId, $vehicleId]);
         return $result['count'] > 0;
     }
     
     /**
-     * Get active movement for a vehicle
+     * Get active movement for a vehicle (or trailer)
+     * If the vehicle is a trailer, return the movement where it's attached
      */
     public function getActiveMovement($vehicleId) {
         $sql = "SELECT vm.*,
+                v.name as vehicle_name, v.license_plate as vehicle_license_plate,
+                v.vehicle_type as vehicle_type,
                 t.name as trailer_name, t.license_plate as trailer_license_plate,
                 GROUP_CONCAT(DISTINCT CONCAT(md.first_name, ' ', md.last_name) 
                     ORDER BY md.last_name SEPARATOR ', ') as departure_drivers
                 FROM vehicle_movements vm
+                LEFT JOIN vehicles v ON vm.vehicle_id = v.id
                 LEFT JOIN vehicles t ON vm.trailer_id = t.id
                 LEFT JOIN vehicle_movement_drivers vmd ON vm.id = vmd.movement_id AND vmd.driver_type = 'departure'
                 LEFT JOIN members md ON vmd.member_id = md.id
-                WHERE vm.vehicle_id = ? AND vm.status = 'in_mission'
+                WHERE (vm.vehicle_id = ? OR vm.trailer_id = ?) AND vm.status = 'in_mission'
                 GROUP BY vm.id";
         
-        return $this->db->fetchOne($sql, [$vehicleId]);
+        return $this->db->fetchOne($sql, [$vehicleId, $vehicleId]);
     }
     
     /**
@@ -241,6 +249,11 @@ class VehicleMovementController {
             $vehicle = $this->db->fetchOne("SELECT * FROM vehicles WHERE id = ?", [$data['vehicle_id']]);
             if (!$vehicle) {
                 throw new \Exception('Veicolo non trovato');
+            }
+            
+            // Check if vehicle is a trailer - trailers cannot depart alone
+            if ($vehicle['vehicle_type'] === 'rimorchio') {
+                throw new \Exception('I rimorchi non possono uscire da soli. Devono essere associati ad un veicolo trainante.');
             }
             
             if ($vehicle['status'] === 'fuori_servizio') {
@@ -453,6 +466,23 @@ class VehicleMovementController {
                     "UPDATE vehicle_movements SET traffic_violation_email_sent = 1 WHERE id = ?",
                     [$movementId]
                 );
+            }
+            
+            // Handle trailer return status
+            if (!empty($movement['trailer_id']) && isset($data['trailer_return_status'])) {
+                if ($data['trailer_return_status'] === 'still_mission') {
+                    // Add note that trailer was left on mission
+                    $trailerResult = $this->db->fetchOne(
+                        "SELECT name FROM vehicles WHERE id = ?", 
+                        [$movement['trailer_id']]
+                    );
+                    $trailerName = $trailerResult ? ($trailerResult['name'] ?? 'N/D') : 'N/D';
+                    $trailerNote = "\n\n[NOTA SISTEMA] Il rimorchio '" . $trailerName . "' è stato lasciato in missione e dovrà essere recuperato successivamente.";
+                    $this->db->execute(
+                        "UPDATE vehicle_movements SET return_notes = CONCAT(COALESCE(TRIM(return_notes), ''), ?) WHERE id = ?",
+                        [$trailerNote, $movementId]
+                    );
+                }
             }
             
             $this->db->commit();

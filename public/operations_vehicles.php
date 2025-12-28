@@ -206,7 +206,13 @@ $pageTitle = 'Mezzi Attivi';
                                                         <span class="text-muted">N/D</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($vehicle['vehicle_type'] ?? 'N/D'); ?></td>
+                                                <td>
+                                                    <i class="bi bi-<?php 
+                                                        echo $vehicle['vehicle_type'] === 'veicolo' ? 'truck' : 
+                                                            ($vehicle['vehicle_type'] === 'natante' ? 'water' : 'box-seam'); 
+                                                    ?>"></i>
+                                                    <?php echo htmlspecialchars($vehicle['vehicle_type'] ?? 'N/D'); ?>
+                                                </td>
                                                 <td>
                                                     <?php 
                                                     $brandModel = array_filter([

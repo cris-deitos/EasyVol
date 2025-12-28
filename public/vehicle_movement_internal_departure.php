@@ -60,7 +60,7 @@ if ($vehicleId > 0) {
 }
 
 // Get available vehicles
-$vehiclesSql = "SELECT id, license_plate, serial_number, brand, model, license_type 
+$vehiclesSql = "SELECT id, license_plate, serial_number, brand, model, license_type, vehicle_type 
                 FROM vehicles 
                 WHERE status != 'fuori_servizio' 
                 ORDER BY license_plate, serial_number";
@@ -193,7 +193,7 @@ $pageTitle = 'Registra Uscita Veicolo';
                                     <select class="form-select" id="vehicle_id" name="vehicle_id" required>
                                         <option value="">Seleziona veicolo...</option>
                                         <?php foreach ($vehicles as $v): ?>
-                                            <option value="<?php echo $v['id']; ?>">
+                                            <option value="<?php echo $v['id']; ?>" data-vehicle-type="<?php echo htmlspecialchars($v['vehicle_type']); ?>">
                                                 <?php echo htmlspecialchars(($v['license_plate'] ?: $v['serial_number']) . ' - ' . $v['brand'] . ' ' . $v['model']); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -243,9 +243,12 @@ $pageTitle = 'Registra Uscita Veicolo';
                             </div>
                             
                             <div class="row mb-3">
-                                <div class="col-md-4">
+                                <div class="col-md-4" id="departure_km_field">
                                     <label for="departure_km" class="form-label">Km Partenza</label>
                                     <input type="number" step="0.01" class="form-control" id="departure_km" name="departure_km">
+                                    <small class="form-text text-muted" id="natante_info" style="display: none;">
+                                        <i class="bi bi-info-circle"></i> I natanti non richiedono la registrazione dei chilometri.
+                                    </small>
                                 </div>
                                 
                                 <div class="col-md-4">
@@ -313,5 +316,46 @@ $pageTitle = 'Registra Uscita Veicolo';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle vehicle type change to hide/show km field for natanti
+        const vehicleSelect = document.getElementById('vehicle_id');
+        if (vehicleSelect) {
+            vehicleSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const vehicleType = selectedOption.getAttribute('data-vehicle-type');
+                const kmInput = document.getElementById('departure_km');
+                const kmLabel = document.querySelector('label[for="departure_km"]');
+                const natanteInfo = document.getElementById('natante_info');
+                
+                if (kmInput && kmLabel && natanteInfo) {
+                    if (vehicleType === 'natante') {
+                        kmInput.style.display = 'none';
+                        kmLabel.style.display = 'none';
+                        natanteInfo.style.display = 'block';
+                        kmInput.value = ''; // Clear value
+                        kmInput.removeAttribute('required');
+                    } else {
+                        kmInput.style.display = 'block';
+                        kmLabel.style.display = 'block';
+                        natanteInfo.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // If vehicle is pre-selected, apply natante styling
+        <?php if ($vehicle && $vehicle['vehicle_type'] === 'natante'): ?>
+        const kmInput = document.getElementById('departure_km');
+        const kmLabel = document.querySelector('label[for="departure_km"]');
+        const natanteInfo = document.getElementById('natante_info');
+        if (kmInput && kmLabel && natanteInfo) {
+            kmInput.style.display = 'none';
+            kmLabel.style.display = 'none';
+            natanteInfo.style.display = 'block';
+            kmInput.value = '';
+            kmInput.removeAttribute('required');
+        }
+        <?php endif; ?>
+    </script>
 </body>
 </html>

@@ -54,6 +54,27 @@ $inMission = !empty($activeMovement);
 $success = '';
 $error = '';
 
+// Handle error messages from URL
+if (isset($_GET['error'])) {
+    $errorCode = filter_var($_GET['error'], FILTER_SANITIZE_STRING);
+    $error = match($errorCode) {
+        'trailer_cannot_depart_alone' => 'I rimorchi non possono uscire da soli. Devono essere associati ad un veicolo trainante.',
+        'already_in_mission' => 'Il veicolo è già in missione.',
+        'fuori_servizio' => 'Il veicolo è fuori servizio e non può essere utilizzato.',
+        default => 'Si è verificato un errore.'
+    };
+}
+
+// Handle success messages from URL  
+if (isset($_GET['success'])) {
+    $successCode = filter_var($_GET['success'], FILTER_SANITIZE_STRING);
+    $success = match($successCode) {
+        'departure' => 'Uscita registrata con successo.',
+        'return' => 'Rientro registrato con successo.',
+        default => 'Operazione completata con successo.'
+    };
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -258,7 +279,12 @@ $pageTitle = 'Gestione Mezzo';
                     <h4 class="mb-4"><i class="bi bi-flag-fill"></i> Gestione Missioni</h4>
                     
                     <?php if (!$inMission): ?>
-                        <?php if ($vehicle['status'] === 'fuori_servizio'): ?>
+                        <?php if ($vehicle['vehicle_type'] === 'rimorchio'): ?>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                I rimorchi non possono uscire da soli. Devono essere associati ad un veicolo trainante durante la registrazione dell'uscita del veicolo.
+                            </div>
+                        <?php elseif ($vehicle['status'] === 'fuori_servizio'): ?>
                             <div class="alert alert-warning">
                                 <i class="bi bi-exclamation-triangle"></i>
                                 Il veicolo è fuori servizio e non può essere utilizzato per missioni.
@@ -266,14 +292,28 @@ $pageTitle = 'Gestione Mezzo';
                         <?php else: ?>
                             <a href="vehicle_movement_departure.php?vehicle_id=<?php echo $vehicleId; ?>" 
                                class="btn btn-primary btn-action">
-                                <i class="bi bi-box-arrow-right"></i> Registra Uscita Veicolo
+                                <i class="bi bi-box-arrow-right"></i> Registra Uscita <?php echo $vehicle['vehicle_type'] === 'natante' ? 'Natante' : 'Veicolo'; ?>
                             </a>
                         <?php endif; ?>
                     <?php else: ?>
-                        <a href="vehicle_movement_return.php?movement_id=<?php echo $activeMovement['id']; ?>" 
-                           class="btn btn-success btn-action">
-                            <i class="bi bi-box-arrow-in-left"></i> Registra Rientro Veicolo
-                        </a>
+                        <?php if ($vehicle['vehicle_type'] === 'rimorchio' && $activeMovement['vehicle_id'] != $vehicleId): ?>
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Rimorchio in Missione</strong><br>
+                                Questo rimorchio è attualmente associato al veicolo 
+                                <strong><?php echo htmlspecialchars($activeMovement['vehicle_license_plate'] ?? $activeMovement['vehicle_name']); ?></strong>
+                                in missione dal <?php echo date('d/m/Y H:i', strtotime($activeMovement['departure_datetime'])); ?>.
+                            </div>
+                            <a href="vehicle_movement_return.php?movement_id=<?php echo $activeMovement['id']; ?>" 
+                               class="btn btn-success btn-action">
+                                <i class="bi bi-box-arrow-in-left"></i> Registra Rientro
+                            </a>
+                        <?php else: ?>
+                            <a href="vehicle_movement_return.php?movement_id=<?php echo $activeMovement['id']; ?>" 
+                               class="btn btn-success btn-action">
+                                <i class="bi bi-box-arrow-in-left"></i> Registra Rientro <?php echo $vehicle['vehicle_type'] === 'natante' ? 'Natante' : 'Veicolo'; ?>
+                            </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
 

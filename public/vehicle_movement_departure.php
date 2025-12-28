@@ -40,6 +40,12 @@ if (!$vehicle) {
     exit;
 }
 
+// Check if vehicle is a trailer - trailers cannot depart alone
+if ($vehicle['vehicle_type'] === 'rimorchio') {
+    header('Location: vehicle_movement_detail.php?id=' . $vehicleId . '&error=trailer_cannot_depart_alone');
+    exit;
+}
+
 // Check vehicle can depart
 if ($vehicle['status'] === 'fuori_servizio') {
     header('Location: vehicle_movement_detail.php?id=' . $vehicleId . '&error=fuori_servizio');
@@ -262,6 +268,7 @@ $pageTitle = 'Registra Uscita Veicolo';
                 </div>
 
                 <div class="row mb-3">
+                    <?php if ($vehicle['vehicle_type'] !== 'natante'): ?>
                     <div class="col-md-6">
                         <label class="form-label">Km Partenza</label>
                         <input type="number" 
@@ -271,6 +278,14 @@ $pageTitle = 'Registra Uscita Veicolo';
                                min="0"
                                placeholder="Inserisci chilometraggio">
                     </div>
+                    <?php else: ?>
+                    <div class="col-md-6">
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            I natanti non richiedono la registrazione dei chilometri.
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     <div class="col-md-6">
                         <label class="form-label">Stato Carburante</label>
                         <select name="departure_fuel_level" class="form-select">

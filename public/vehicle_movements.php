@@ -188,6 +188,10 @@ $pageTitle = 'Gestione Movimentazione Mezzi';
                                              <tr>
                                                 <td><?php echo $movement['id']; ?></td>
                                                 <td>
+                                                    <i class="bi bi-<?php 
+                                                        echo $movement['vehicle_type'] === 'veicolo' ? 'truck' : 
+                                                            ($movement['vehicle_type'] === 'natante' ? 'water' : 'box-seam'); 
+                                                    ?>"></i>
                                                     <strong><?php echo htmlspecialchars($movement['license_plate']); ?></strong>
                                                     <br>
                                                     <small class="text-muted">
@@ -196,7 +200,7 @@ $pageTitle = 'Gestione Movimentazione Mezzi';
                                                     <?php if (!empty($movement['trailer_name'])): ?>
                                                         <br>
                                                         <span class="badge bg-secondary">
-                                                            <i class="bi bi-link-45deg"></i> Rimorchio: 
+                                                            <i class="bi bi-box-seam"></i> Rimorchio: 
                                                             <?php echo htmlspecialchars($movement['trailer_name']); ?>
                                                         </span>
                                                     <?php endif; ?>
