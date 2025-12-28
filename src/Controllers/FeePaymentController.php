@@ -326,6 +326,27 @@ class FeePaymentController {
                 error_log("Fee approval email failed: " . $e->getMessage());
             }
             
+            // Send Telegram notification
+            try {
+                require_once __DIR__ . '/../Services/TelegramService.php';
+                $telegramService = new \EasyVol\Services\TelegramService($this->db, $this->config);
+                
+                if ($telegramService->isEnabled()) {
+                    $message = "💰 <b>Nuovo pagamento quota associativa approvato</b>\n\n";
+                    $message .= "👤 <b>Socio:</b> " . htmlspecialchars($request['first_name'] . ' ' . $request['last_name']) . "\n";
+                    $message .= "🔢 <b>Matricola:</b> " . htmlspecialchars($request['registration_number']) . "\n";
+                    $message .= "📅 <b>Anno:</b> " . $request['payment_year'] . "\n";
+                    $message .= "💵 <b>Data pagamento:</b> " . date('d/m/Y', strtotime($request['payment_date'])) . "\n";
+                    if ($request['amount']) {
+                        $message .= "💸 <b>Importo:</b> €" . number_format($request['amount'], 2, ',', '.') . "\n";
+                    }
+                    
+                    $telegramService->sendNotification('fee_payment', $message);
+                }
+            } catch (\Exception $e) {
+                error_log("Errore invio notifica Telegram per pagamento: " . $e->getMessage());
+            }
+            
             return true;
         } catch (\Exception $e) {
             $this->db->rollBack();

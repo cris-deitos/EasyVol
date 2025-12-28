@@ -125,6 +125,85 @@ try {
         }
         
         echo "Sent $sentCount reminder emails\n";
+        
+        // Send Telegram notifications
+        echo "Sending Telegram notifications...\n";
+        try {
+            require_once __DIR__ . '/../src/Services/TelegramService.php';
+            $telegramService = new \EasyVol\Services\TelegramService($db, $config);
+            
+            if ($telegramService->isEnabled()) {
+                $telegramSentCount = 0;
+                
+                // Group items by assigned user for Telegram
+                $groupedItemsTelegram = [];
+                foreach ($items as $item) {
+                    if ($item['assigned_to']) {
+                        if (!isset($groupedItemsTelegram[$item['assigned_to']])) {
+                            $groupedItemsTelegram[$item['assigned_to']] = [
+                                'user' => [
+                                    'name' => $item['assigned_name']
+                                ],
+                                'items' => []
+                            ];
+                        }
+                        $groupedItemsTelegram[$item['assigned_to']]['items'][] = $item;
+                    }
+                }
+                
+                // Send Telegram message to each user with Telegram ID
+                foreach ($groupedItemsTelegram as $userId => $data) {
+                    // Check if user has Telegram ID
+                    $telegramContact = $db->fetchOne(
+                        "SELECT mc.value as telegram_id 
+                         FROM member_contacts mc
+                         JOIN members m ON mc.member_id = m.id
+                         JOIN users u ON m.id = u.member_id
+                         WHERE u.id = ? AND mc.contact_type = 'telegram_id'",
+                        [$userId]
+                    );
+                    
+                    if ($telegramContact && !empty($telegramContact['telegram_id'])) {
+                        $message = "⏰ <b>Promemoria Scadenze</b>\n\n";
+                        $message .= "Gentile " . htmlspecialchars($data['user']['name']) . ",\n\n";
+                        $message .= "Ti ricordiamo le seguenti <b>" . count($data['items']) . " scadenze</b> in arrivo:\n\n";
+                        
+                        foreach ($data['items'] as $item) {
+                            $priorityIcons = ['bassa' => '🟢', 'media' => '🟡', 'alta' => '🟠', 'urgente' => '🔴'];
+                            $icon = $priorityIcons[$item['priority']] ?? '📌';
+                            
+                            $message .= "{$icon} <b>" . htmlspecialchars($item['title']) . "</b>\n";
+                            $message .= "   📅 Scadenza: " . date('d/m/Y', strtotime($item['due_date'])) . "\n";
+                            if ($item['description']) {
+                                $message .= "   📝 " . htmlspecialchars(substr($item['description'], 0, 100)) . (strlen($item['description']) > 100 ? '...' : '') . "\n";
+                            }
+                            $message .= "\n";
+                        }
+                        
+                        $message .= "Accedi al sistema per gestire le tue scadenze.";
+                        
+                        if ($telegramService->sendMessage($telegramContact['telegram_id'], $message)) {
+                            $telegramSentCount++;
+                            echo "  Sent Telegram notification to user ID {$userId}\n";
+                        }
+                    }
+                }
+                
+                // Also send via notification recipients configuration
+                $results = $telegramService->sendNotification('scheduler_expiry', 
+                    "⏰ <b>Alert Scadenze Scadenzario</b>\n\n" .
+                    "Ci sono <b>" . count($items) . " scadenze</b> in arrivo nei prossimi giorni.\n\n" .
+                    "Controlla il sistema per i dettagli."
+                );
+                $telegramSentCount += count(array_filter($results, fn($r) => $r['success']));
+                
+                echo "Sent $telegramSentCount Telegram notifications\n";
+            } else {
+                echo "Telegram notifications disabled\n";
+            }
+        } catch (Exception $e) {
+            echo "  Telegram notification error: " . $e->getMessage() . "\n";
+        }
     }
     
     // 3. Check for overdue urgent items and send alert to admins

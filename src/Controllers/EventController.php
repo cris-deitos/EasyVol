@@ -103,6 +103,52 @@ class EventController {
             
             $this->logActivity($userId, 'event', 'create', $eventId, 'Creato nuovo evento: ' . $data['title']);
             
+            // Send Telegram notification for new event
+            try {
+                require_once __DIR__ . '/../Services/TelegramService.php';
+                $telegramService = new \EasyVol\Services\TelegramService($this->db, $this->config);
+                
+                if ($telegramService->isEnabled()) {
+                    // Get creator info
+                    $creator = $this->db->fetchOne(
+                        "SELECT first_name, last_name FROM members WHERE id IN (SELECT member_id FROM users WHERE id = ?)",
+                        [$userId]
+                    );
+                    
+                    $eventTypes = [
+                        'emergenza' => '🚨 Emergenza',
+                        'esercitazione' => '🎯 Esercitazione',
+                        'attivita' => '📅 Attività'
+                    ];
+                    
+                    $message = "📢 <b>NUOVO EVENTO CREATO</b>\n\n";
+                    $message .= ($eventTypes[$data['event_type']] ?? '📋 Evento') . "\n";
+                    $message .= "<b>📌 Titolo:</b> " . htmlspecialchars($data['title']) . "\n";
+                    
+                    if (!empty($data['description'])) {
+                        $message .= "\n<b>📝 Descrizione:</b>\n" . htmlspecialchars($data['description']) . "\n";
+                    }
+                    
+                    $message .= "\n<b>📅 Data inizio:</b> " . date('d/m/Y H:i', strtotime($data['start_date'])) . "\n";
+                    
+                    if (!empty($data['end_date'])) {
+                        $message .= "<b>🏁 Data fine:</b> " . date('d/m/Y H:i', strtotime($data['end_date'])) . "\n";
+                    }
+                    
+                    if (!empty($data['location'])) {
+                        $message .= "<b>📍 Luogo:</b> " . htmlspecialchars($data['location']) . "\n";
+                    }
+                    
+                    if ($creator) {
+                        $message .= "\n<b>👤 Creato da:</b> " . htmlspecialchars($creator['first_name'] . ' ' . $creator['last_name']) . "\n";
+                    }
+                    
+                    $telegramService->sendNotification('event_created', $message);
+                }
+            } catch (\Exception $e) {
+                error_log("Errore invio notifica Telegram per nuovo evento: " . $e->getMessage());
+            }
+            
             $this->db->commit();
             return $eventId;
             

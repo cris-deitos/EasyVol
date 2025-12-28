@@ -84,6 +84,45 @@ try {
         }
         
         echo "Sent alerts for " . count($expiringItems) . " expiring items\n";
+        
+        // Send Telegram notifications
+        echo "Sending Telegram notifications...\n";
+        try {
+            require_once __DIR__ . '/../src/Services/TelegramService.php';
+            $telegramService = new \EasyVol\Services\TelegramService($db, $config);
+            
+            if ($telegramService->isEnabled()) {
+                $message = "🚗 <b>Alert Scadenze Mezzi</b>\n\n";
+                $message .= "Le seguenti <b>" . count($expiringItems) . " scadenze</b> sono imminenti nei prossimi 30 giorni:\n\n";
+                
+                foreach ($grouped as $type => $items) {
+                    $typeLabels = [
+                        'maintenance' => '🔧 Manutenzioni',
+                        'insurance' => '🛡️ Assicurazioni',
+                        'inspection' => '🔍 Revisioni'
+                    ];
+                    
+                    $message .= "<b>" . ($typeLabels[$type] ?? ucfirst($type)) . "</b>\n";
+                    
+                    foreach ($items as $item) {
+                        $message .= "• " . htmlspecialchars($item['name']) . " (" . htmlspecialchars($item['license_plate']) . ")\n";
+                        $message .= "   📅 Scadenza: " . date('d/m/Y', strtotime($item['scheduled_date'])) . "\n";
+                    }
+                    
+                    $message .= "\n";
+                }
+                
+                $message .= "Controlla il sistema per maggiori dettagli.";
+                
+                $results = $telegramService->sendNotification('vehicle_expiry', $message);
+                $sentCount = count(array_filter($results, fn($r) => $r['success']));
+                echo "Sent $sentCount Telegram notifications\n";
+            } else {
+                echo "Telegram notifications disabled\n";
+            }
+        } catch (\Exception $e) {
+            echo "Telegram notification error: " . $e->getMessage() . "\n";
+        }
     } else {
         echo "No expiring items found\n";
     }
