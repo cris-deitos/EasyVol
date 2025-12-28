@@ -1286,6 +1286,27 @@ VALUES
   ('vehicle_movements', 'delete', 'Eliminare i movimenti dei veicoli')
 ON DUPLICATE KEY UPDATE `description` = VALUES(`description`);
 
+-- Email configuration defaults
+INSERT INTO `config` (`config_key`, `config_value`) VALUES
+('email_enabled', '1'),
+('email_method', 'smtp'),
+('email_smtp_host', ''),
+('email_smtp_port', '587'),
+('email_smtp_username', ''),
+('email_smtp_password', ''),
+('email_smtp_encryption', 'tls'),
+('email_smtp_auth', '1'),
+('email_smtp_debug', '0'),
+('email_from_address', 'noreply@example.com'),
+('email_from_name', 'EasyVol'),
+('email_reply_to', ''),
+('email_return_path', ''),
+('email_charset', 'UTF-8'),
+('email_encoding', '8bit'),
+('email_sendmail_params', ''),
+('email_additional_headers', '')
+ON DUPLICATE KEY UPDATE `config_key` = `config_key`;
+
 -- Default Print Templates
 -- Description: Inserts default templates for members, vehicles, and meetings
 -- Date: 2025-12-07
