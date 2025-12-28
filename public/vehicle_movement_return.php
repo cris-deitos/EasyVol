@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'return_datetime' => $_POST['return_datetime'],
             'drivers' => !empty($_POST['drivers']) ? array_map('intval', $_POST['drivers']) : [],
             'return_km' => !empty($_POST['return_km']) ? floatval($_POST['return_km']) : null,
-            'return_fuel_level' => $_POST['return_fuel_level'] ?? null,
+            'return_fuel_level' => (!empty($_POST['return_fuel_level']) && trim($_POST['return_fuel_level']) !== '') ? $_POST['return_fuel_level'] : null,
             'return_notes' => $_POST['return_notes'] ?? null,
             'return_anomaly_flag' => isset($_POST['return_anomaly_flag']) ? 1 : 0,
             'traffic_violation_flag' => isset($_POST['traffic_violation_flag']) ? 1 : 0,
