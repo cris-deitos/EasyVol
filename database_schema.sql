@@ -2138,4 +2138,158 @@ INSERT INTO `telegram_notification_config` (`action_type`, `is_enabled`, `messag
 ('qualification_expiry', 1, NULL),
 ('course_expiry', 1, NULL);
 
+-- =============================================
+-- OPERATIONS CENTER (EasyCO) TABLES
+-- =============================================
+
+-- On-call schedule management
+CREATE TABLE IF NOT EXISTS `on_call_schedule` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `start_datetime` datetime NOT NULL,
+  `end_datetime` datetime NOT NULL,
+  `role` enum('reperibile', 'backup') DEFAULT 'reperibile' COMMENT 'Role in on-call rotation',
+  `notes` text,
+  `created_by` int(11),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `member_id` (`member_id`),
+  KEY `start_datetime` (`start_datetime`),
+  KEY `end_datetime` (`end_datetime`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Member availability for Operations Center
+CREATE TABLE IF NOT EXISTS `member_availability_status` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `is_available` tinyint(1) DEFAULT 1 COMMENT '1=available, 0=not available',
+  `availability_start` datetime DEFAULT NULL COMMENT 'When availability starts (if scheduled)',
+  `availability_end` datetime DEFAULT NULL COMMENT 'When availability ends (if scheduled)',
+  `notes` text COMMENT 'Reason for unavailability or notes',
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by` int(11) COMMENT 'User who last updated this status',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `member_id` (`member_id`),
+  KEY `is_available` (`is_available`),
+  KEY `availability_start` (`availability_start`),
+  KEY `availability_end` (`availability_end`),
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Emergency missions/interventions
+CREATE TABLE IF NOT EXISTS `missions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mission_code` varchar(50) UNIQUE NOT NULL COMMENT 'Unique mission code/number',
+  `mission_type` enum('emergenza', 'esercitazione', 'attivita', 'supporto') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `location` varchar(255),
+  `start_datetime` datetime NOT NULL,
+  `end_datetime` datetime DEFAULT NULL,
+  `status` enum('aperta', 'in_corso', 'conclusa', 'annullata') DEFAULT 'aperta',
+  `priority` enum('bassa', 'media', 'alta', 'critica') DEFAULT 'media',
+  `requested_by` varchar(255) COMMENT 'Organization/person requesting the mission',
+  `coordinator_id` int(11) COMMENT 'Member coordinating the mission',
+  `notes` text,
+  `created_by` int(11),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`),
+  KEY `priority` (`priority`),
+  KEY `start_datetime` (`start_datetime`),
+  KEY `coordinator_id` (`coordinator_id`),
+  FOREIGN KEY (`coordinator_id`) REFERENCES `members`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mission participants/volunteers
+CREATE TABLE IF NOT EXISTS `mission_participants` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mission_id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
+  `role` varchar(100) DEFAULT NULL COMMENT 'Role in the mission',
+  `status` enum('convocato', 'confermato', 'in_servizio', 'completato', 'rifiutato', 'assente') DEFAULT 'convocato',
+  `response_datetime` datetime DEFAULT NULL COMMENT 'When volunteer responded to call',
+  `arrival_datetime` datetime DEFAULT NULL COMMENT 'When volunteer arrived on scene',
+  `departure_datetime` datetime DEFAULT NULL COMMENT 'When volunteer left the scene',
+  `hours_worked` decimal(5,2) DEFAULT NULL COMMENT 'Total hours worked (calculated)',
+  `notes` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `mission_id` (`mission_id`),
+  KEY `member_id` (`member_id`),
+  KEY `status` (`status`),
+  FOREIGN KEY (`mission_id`) REFERENCES `missions`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Vehicles assigned to missions
+CREATE TABLE IF NOT EXISTS `mission_vehicles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mission_id` int(11) NOT NULL,
+  `vehicle_id` int(11) NOT NULL,
+  `assigned_at` datetime NOT NULL,
+  `returned_at` datetime DEFAULT NULL,
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `mission_id` (`mission_id`),
+  KEY `vehicle_id` (`vehicle_id`),
+  FOREIGN KEY (`mission_id`) REFERENCES `missions`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Equipment assigned to missions
+CREATE TABLE IF NOT EXISTS `mission_equipment` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mission_id` int(11) NOT NULL,
+  `item_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `assigned_at` datetime NOT NULL,
+  `returned_at` datetime DEFAULT NULL,
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `mission_id` (`mission_id`),
+  KEY `item_id` (`item_id`),
+  FOREIGN KEY (`mission_id`) REFERENCES `missions`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`item_id`) REFERENCES `warehouse_items`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Communication/alert logs for missions
+CREATE TABLE IF NOT EXISTS `mission_communications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mission_id` int(11) NOT NULL,
+  `communication_type` enum('alert', 'update', 'closure', 'other') NOT NULL,
+  `message` text NOT NULL,
+  `sent_at` datetime NOT NULL,
+  `sent_by` int(11),
+  `recipients` text COMMENT 'JSON array of recipients',
+  `method` enum('sms', 'email', 'telegram', 'phone', 'radio') NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `mission_id` (`mission_id`),
+  KEY `sent_at` (`sent_at`),
+  FOREIGN KEY (`mission_id`) REFERENCES `missions`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`sent_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Dashboard quick notes for operations center
+CREATE TABLE IF NOT EXISTS `operations_notes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `note_text` text NOT NULL,
+  `priority` enum('normal', 'high', 'urgent') DEFAULT 'normal',
+  `is_active` tinyint(1) DEFAULT 1 COMMENT 'Show/hide on dashboard',
+  `created_by` int(11),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `is_active` (`is_active`),
+  KEY `created_at` (`created_at`),
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
