@@ -284,7 +284,12 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                     <tr>
                                                         <td><?php echo htmlspecialchars($intervention['title']); ?></td>
                                                         <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($intervention['start_time']))); ?></td>
-                                                        <td><?php echo htmlspecialchars(substr($intervention['description'] ?? '', 0, 100)); ?><?php echo strlen($intervention['description'] ?? '') > 100 ? '...' : ''; ?></td>
+                                                        <td>
+                                                            <?php 
+                                                            $desc = $intervention['description'] ?? '';
+                                                            echo htmlspecialchars(mb_strlen($desc) > 100 ? mb_substr($desc, 0, 100) . '...' : $desc);
+                                                            ?>
+                                                        </td>
                                                         <td>
                                                             <?php 
                                                             $statusBadgeMap = [

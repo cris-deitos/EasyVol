@@ -345,6 +345,14 @@ try {
                 exit;
             }
             
+            // Verify user has access to the event containing this intervention
+            $event = $controller->get($intervention['event_id']);
+            if (!$event) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Evento non trovato']);
+                exit;
+            }
+            
             echo json_encode(['success' => true, 'intervention' => $intervention]);
             break;
             
