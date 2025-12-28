@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Controllers\MemberController;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\PathHelper;
 
 $app = App::getInstance();
 
@@ -247,7 +248,14 @@ $pageTitle = 'Gestione Soci';
                                         <?php foreach ($members as $member): ?>
                                             <tr>
                                                 <td>
-                                                    <?php if (!empty($member['photo_path']) && file_exists($member['photo_path'])): ?>
+                                                    <?php 
+                                                    $hasPhoto = false;
+                                                    if (!empty($member['photo_path'])) {
+                                                        $absolutePath = PathHelper::relativeToAbsolute($member['photo_path']);
+                                                        $hasPhoto = file_exists($absolutePath);
+                                                    }
+                                                    ?>
+                                                    <?php if ($hasPhoto): ?>
                                                         <img src="download.php?type=member_photo&id=<?php echo $member['id']; ?>" 
                                                              alt="Foto" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                                                     <?php else: ?>
