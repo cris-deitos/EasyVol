@@ -236,17 +236,6 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                         </table>
                                     </div>
                                 </div>
-                                
-                                <?php if (!empty($event['notes'])): ?>
-                                <div class="card mb-3">
-                                    <div class="card-header bg-secondary text-white">
-                                        <h5 class="mb-0"><i class="bi bi-sticky"></i> Note</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <?php echo nl2br(htmlspecialchars($event['notes'])); ?>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
