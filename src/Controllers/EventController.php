@@ -574,7 +574,7 @@ class EventController {
     /**
      * Chiudi intervento con esito
      */
-    public function closeIntervention($interventionId, $report, $endTime = null, $userId) {
+    public function closeIntervention($interventionId, $report, $endTime = null, $userId = null) {
         try {
             // Se non specificato, usa il timestamp corrente come end_time
             if (empty($endTime)) {
