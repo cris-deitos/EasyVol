@@ -723,6 +723,52 @@ try {
             ]);
             break;
             
+        case 'quick_close_event':
+            // Quick close event with description update
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $eventId = intval($input['event_id'] ?? 0);
+            $description = trim($input['description'] ?? '');
+            $endDate = trim($input['end_date'] ?? '');
+            
+            if ($eventId <= 0 || empty($endDate)) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            try {
+                $result = $controller->quickClose($eventId, $description, $endDate, $app->getUserId());
+                
+                if ($result) {
+                    echo json_encode(['success' => true, 'message' => 'Evento chiuso con successo']);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Errore durante la chiusura dell\'evento']);
+                }
+            } catch (\Exception $e) {
+                http_response_code(400);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            break;
+            
         default:
             http_response_code(400);
             echo json_encode(['error' => 'Azione non valida']);

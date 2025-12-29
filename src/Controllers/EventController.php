@@ -667,4 +667,36 @@ class EventController {
             return [];
         }
     }
+    
+    /**
+     * Chiusura rapida evento - aggiorna solo descrizione, data fine e stato
+     */
+    public function quickClose($id, $description, $endDate, $userId) {
+        try {
+            // Verifica se ci sono interventi ancora in corso o sospesi
+            if ($this->hasActiveInterventions($id)) {
+                throw new \Exception('Non è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi.');
+            }
+            
+            $sql = "UPDATE events SET
+                description = ?, end_date = ?, status = 'concluso', updated_at = NOW()
+                WHERE id = ?";
+            
+            $params = [
+                $description,
+                $endDate,
+                $id
+            ];
+            
+            $this->db->execute($sql, $params);
+            
+            $this->logActivity($userId, 'event', 'close', $id, 'Chiusura rapida evento');
+            
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Errore chiusura rapida evento: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }
