@@ -417,7 +417,8 @@ class ReportController {
                     MAX(e.start_date) as ultimo_evento
                 FROM members m
                 INNER JOIN event_participants ep ON m.id = ep.member_id
-                INNER JOIN events e ON ep.event_id = e.id AND YEAR(e.start_date) = ?
+                INNER JOIN events e ON ep.event_id = e.id
+                WHERE YEAR(e.start_date) = ?
                 GROUP BY m.id
                 ORDER BY ore_totali DESC, m.last_name, m.first_name";
         
