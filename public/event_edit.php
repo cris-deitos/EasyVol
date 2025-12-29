@@ -282,20 +282,21 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
         
         // Auto-geocode on blur if field has content
         locationInput.addEventListener('blur', function() {
+            // Single timeout with appropriate delay
             setTimeout(() => {
                 const query = this.value.trim();
-                if (query.length >= 3 && currentResults.length > 0) {
+                // Store current results to avoid race condition
+                const resultsSnapshot = [...currentResults];
+                if (query.length >= 3 && resultsSnapshot.length > 0) {
                     // Auto-select best match if not already selected
                     const latField = document.getElementById('latitude');
                     if (!latField.value || latField.value === '') {
-                        selectAddress(currentResults[0], true);
+                        selectAddress(resultsSnapshot[0], true);
                     }
                 }
-                // Hide suggestions after a short delay
-                setTimeout(() => {
-                    resultsDiv.style.display = 'none';
-                }, 200);
-            }, 100);
+                // Hide suggestions
+                resultsDiv.style.display = 'none';
+            }, 300);
         });
         
         // Search address using geocoding API

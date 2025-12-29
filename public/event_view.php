@@ -1402,20 +1402,21 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             
             // Auto-geocode on blur if field has content
             interventionLocationInput.addEventListener('blur', function() {
+                // Single timeout with appropriate delay
                 setTimeout(() => {
                     const query = this.value.trim();
-                    if (query.length >= 3 && interventionCurrentResults.length > 0) {
+                    // Store current results to avoid race condition
+                    const resultsSnapshot = [...interventionCurrentResults];
+                    if (query.length >= 3 && resultsSnapshot.length > 0) {
                         // Auto-select best match if not already selected
                         const latField = document.getElementById('intervention_latitude');
                         if (!latField.value || latField.value === '') {
-                            selectInterventionAddress(interventionCurrentResults[0], true);
+                            selectInterventionAddress(resultsSnapshot[0], true);
                         }
                     }
-                    // Hide suggestions after a short delay
-                    setTimeout(() => {
-                        interventionResultsDiv.style.display = 'none';
-                    }, 200);
-                }, 100);
+                    // Hide suggestions
+                    interventionResultsDiv.style.display = 'none';
+                }, 300);
             });
         }
         
