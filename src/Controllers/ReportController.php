@@ -342,16 +342,20 @@ class ReportController {
      */
     public function volunteerHoursByEventType($year) {
         $sql = "SELECT 
+                    e.id as event_id,
+                    e.title as titolo_evento,
                     e.event_type,
                     e.municipality,
-                    COUNT(DISTINCT e.id) as num_eventi,
+                    e.start_date as data_evento,
+                    COUNT(DISTINCT i.id) as num_interventi,
                     COUNT(DISTINCT ep.member_id) as num_volontari,
                     SUM(ep.hours) as ore_totali,
                     AVG(ep.hours) as ore_medie
                 FROM events e
                 LEFT JOIN event_participants ep ON e.id = ep.event_id
+                LEFT JOIN interventions i ON e.id = i.event_id
                 WHERE YEAR(e.start_date) = ?
-                GROUP BY e.event_type, e.municipality
+                GROUP BY e.id, e.title, e.event_type, e.municipality, e.start_date
                 ORDER BY e.event_type, ore_totali DESC";
         
         return $this->db->fetchAll($sql, [$year]);
@@ -365,19 +369,24 @@ class ReportController {
      */
     public function eventsByTypeAndCount($year) {
         $sql = "SELECT 
+                    e.id as event_id,
                     e.event_type,
+                    e.title,
                     e.status,
                     e.municipality,
-                    COUNT(*) as numero_eventi,
+                    e.start_date as data_ora_apertura_evento,
+                    e.end_date as data_ora_chiusura_evento,
+                    COUNT(DISTINCT i.id) as numero_interventi,
                     COUNT(DISTINCT ep.member_id) as volontari_coinvolti,
                     SUM(ep.hours) as ore_totali,
-                    MIN(e.start_date) as primo_evento,
-                    MAX(e.start_date) as ultimo_evento
+                    MIN(i.start_time) as data_ora_primo_intervento,
+                    COALESCE(MAX(i.end_time), MAX(i.start_time)) as data_ora_ultimo_intervento
                 FROM events e
                 LEFT JOIN event_participants ep ON e.id = ep.event_id
+                LEFT JOIN interventions i ON e.id = i.event_id
                 WHERE YEAR(e.start_date) = ?
-                GROUP BY e.event_type, e.status, e.municipality
-                ORDER BY e.event_type, e.municipality, numero_eventi DESC";
+                GROUP BY e.id, e.event_type, e.title, e.status, e.municipality, e.start_date, e.end_date
+                ORDER BY e.start_date DESC, e.event_type";
         
         return $this->db->fetchAll($sql, [$year]);
     }
@@ -396,19 +405,24 @@ class ReportController {
                     m.last_name,
                     m.member_status,
                     COUNT(DISTINCT ep.event_id) as num_eventi,
+                    (SELECT COUNT(DISTINCT i2.id) 
+                     FROM interventions i2 
+                     INNER JOIN event_participants ep2 ON i2.event_id = ep2.event_id 
+                     WHERE ep2.member_id = m.id 
+                       AND YEAR(i2.start_time) = ?) as num_interventi,
                     SUM(ep.hours) as ore_totali,
                     AVG(ep.hours) as ore_medie_per_evento,
                     GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as tipi_eventi,
                     MIN(e.start_date) as primo_evento,
                     MAX(e.start_date) as ultimo_evento
                 FROM members m
-                LEFT JOIN event_participants ep ON m.id = ep.member_id
-                LEFT JOIN events e ON ep.event_id = e.id AND YEAR(e.start_date) = ?
-                WHERE ep.id IS NOT NULL
+                INNER JOIN event_participants ep ON m.id = ep.member_id
+                INNER JOIN events e ON ep.event_id = e.id
+                WHERE YEAR(e.start_date) = ?
                 GROUP BY m.id
                 ORDER BY ore_totali DESC, m.last_name, m.first_name";
         
-        return $this->db->fetchAll($sql, [$year]);
+        return $this->db->fetchAll($sql, [$year, $year]);
     }
     
     /**
