@@ -65,7 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'location' => trim($_POST['location'] ?? ''),
             'start_date' => $_POST['start_date'] ?? '',
             'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
-            'status' => $_POST['status'] ?? 'aperto'
+            'status' => $_POST['status'] ?? 'aperto',
+            'latitude' => !empty($_POST['latitude']) ? floatval($_POST['latitude']) : null,
+            'longitude' => !empty($_POST['longitude']) ? floatval($_POST['longitude']) : null,
+            'full_address' => trim($_POST['full_address'] ?? ''),
+            'municipality' => trim($_POST['municipality'] ?? '')
         ];
         
         try {
@@ -167,7 +171,29 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                     <input type="text" class="form-control" id="location" name="location" 
                                            value="<?php echo htmlspecialchars($event['location'] ?? ''); ?>"
                                            placeholder="es. Via Roma 123, Milano">
+                                    <small class="form-text text-muted">Inizia a digitare per cercare un indirizzo</small>
                                 </div>
+                            </div>
+                            
+                            <!-- Geocoding results -->
+                            <div id="geocoding-results" class="mb-3" style="display: none;">
+                                <label class="form-label">Seleziona indirizzo suggerito:</label>
+                                <div class="list-group" id="address-suggestions"></div>
+                            </div>
+                            
+                            <!-- Hidden fields for geocoding data -->
+                            <input type="hidden" id="latitude" name="latitude" value="<?php echo htmlspecialchars($event['latitude'] ?? ''); ?>">
+                            <input type="hidden" id="longitude" name="longitude" value="<?php echo htmlspecialchars($event['longitude'] ?? ''); ?>">
+                            <input type="hidden" id="full_address" name="full_address" value="<?php echo htmlspecialchars($event['full_address'] ?? ''); ?>">
+                            <input type="hidden" id="municipality" name="municipality" value="<?php echo htmlspecialchars($event['municipality'] ?? ''); ?>">
+                            
+                            <!-- Selected address display -->
+                            <div id="selected-address" class="alert alert-info" style="<?php echo !empty($event['full_address']) ? '' : 'display: none;'; ?>">
+                                <strong><i class="bi bi-geo-alt"></i> Indirizzo georeferenziato:</strong><br>
+                                <span id="selected-address-text"><?php echo htmlspecialchars($event['full_address'] ?? ''); ?></span>
+                                <?php if (!empty($event['municipality'])): ?>
+                                    <br><small>Comune: <?php echo htmlspecialchars($event['municipality']); ?></small>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -226,5 +252,104 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Geocoding functionality
+        let geocodingTimeout = null;
+        const locationInput = document.getElementById('location');
+        const resultsDiv = document.getElementById('geocoding-results');
+        const suggestionsDiv = document.getElementById('address-suggestions');
+        const selectedAddressDiv = document.getElementById('selected-address');
+        const selectedAddressText = document.getElementById('selected-address-text');
+        
+        // Listen to location input changes
+        locationInput.addEventListener('input', function() {
+            clearTimeout(geocodingTimeout);
+            
+            const query = this.value.trim();
+            
+            if (query.length < 3) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            // Debounce: wait 500ms after user stops typing
+            geocodingTimeout = setTimeout(() => {
+                searchAddress(query);
+            }, 500);
+        });
+        
+        // Search address using geocoding API
+        function searchAddress(query) {
+            fetch(`geocoding_api.php?action=search&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.results.length > 0) {
+                        displaySuggestions(data.results);
+                    } else {
+                        resultsDiv.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Errore geocoding:', error);
+                    resultsDiv.style.display = 'none';
+                });
+        }
+        
+        // Display address suggestions
+        function displaySuggestions(results) {
+            suggestionsDiv.innerHTML = '';
+            
+            results.forEach(result => {
+                const item = document.createElement('a');
+                item.href = '#';
+                item.className = 'list-group-item list-group-item-action';
+                item.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${escapeHtml(result.address)}</h6>
+                        <small><i class="bi bi-geo-alt"></i></small>
+                    </div>
+                    <small class="text-muted">${escapeHtml(result.display_name)}</small>
+                `;
+                
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    selectAddress(result);
+                });
+                
+                suggestionsDiv.appendChild(item);
+            });
+            
+            resultsDiv.style.display = 'block';
+        }
+        
+        // Select an address from suggestions
+        function selectAddress(result) {
+            // Update hidden fields
+            document.getElementById('latitude').value = result.latitude;
+            document.getElementById('longitude').value = result.longitude;
+            document.getElementById('full_address').value = result.display_name;
+            document.getElementById('municipality').value = result.municipality;
+            
+            // Update visible location field
+            locationInput.value = result.address;
+            
+            // Show selected address
+            selectedAddressText.textContent = result.display_name;
+            if (result.municipality) {
+                selectedAddressText.innerHTML += '<br><small>Comune: ' + escapeHtml(result.municipality) + '</small>';
+            }
+            selectedAddressDiv.style.display = 'block';
+            
+            // Hide suggestions
+            resultsDiv.style.display = 'none';
+        }
+        
+        // Utility: escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>

@@ -505,8 +505,28 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                         </div>
                         <div class="mb-3">
                             <label for="intervention_location" class="form-label">Località</label>
-                            <input type="text" class="form-control" id="intervention_location">
+                            <input type="text" class="form-control" id="intervention_location" placeholder="es. Via Roma 123, Milano">
+                            <small class="form-text text-muted">Inizia a digitare per cercare un indirizzo</small>
                         </div>
+                        
+                        <!-- Geocoding results for intervention -->
+                        <div id="intervention-geocoding-results" class="mb-3" style="display: none;">
+                            <label class="form-label">Seleziona indirizzo suggerito:</label>
+                            <div class="list-group" id="intervention-address-suggestions"></div>
+                        </div>
+                        
+                        <!-- Hidden fields for intervention geocoding -->
+                        <input type="hidden" id="intervention_latitude">
+                        <input type="hidden" id="intervention_longitude">
+                        <input type="hidden" id="intervention_full_address">
+                        <input type="hidden" id="intervention_municipality">
+                        
+                        <!-- Selected address display for intervention -->
+                        <div id="intervention-selected-address" class="alert alert-info mb-3" style="display: none;">
+                            <strong><i class="bi bi-geo-alt"></i> Indirizzo georeferenziato:</strong><br>
+                            <span id="intervention-selected-address-text"></span>
+                        </div>
+                        
                         <div class="mb-3">
                             <label for="intervention_status" class="form-label">Stato</label>
                             <select class="form-select" id="intervention_status">
@@ -773,6 +793,10 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             const endTime = document.getElementById('intervention_end_time').value;
             const interventionLocation = document.getElementById('intervention_location').value.trim();
             const status = document.getElementById('intervention_status').value;
+            const latitude = document.getElementById('intervention_latitude').value;
+            const longitude = document.getElementById('intervention_longitude').value;
+            const fullAddress = document.getElementById('intervention_full_address').value;
+            const municipality = document.getElementById('intervention_municipality').value;
             
             if (!title || !startTime) {
                 alert('Titolo e data/ora inizio sono obbligatori');
@@ -793,6 +817,10 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     end_time: endTime,
                     location: interventionLocation,
                     status: status,
+                    latitude: latitude || null,
+                    longitude: longitude || null,
+                    full_address: fullAddress || null,
+                    municipality: municipality || null,
                     csrf_token: csrfToken
                 })
             })
@@ -1342,6 +1370,99 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                 }
             })
             .catch(error => console.error('Error:', error));
+        }
+        
+        // Geocoding functionality for interventions
+        let interventionGeocodingTimeout = null;
+        const interventionLocationInput = document.getElementById('intervention_location');
+        const interventionResultsDiv = document.getElementById('intervention-geocoding-results');
+        const interventionSuggestionsDiv = document.getElementById('intervention-address-suggestions');
+        const interventionSelectedAddressDiv = document.getElementById('intervention-selected-address');
+        const interventionSelectedAddressText = document.getElementById('intervention-selected-address-text');
+        
+        // Listen to intervention location input changes
+        if (interventionLocationInput) {
+            interventionLocationInput.addEventListener('input', function() {
+                clearTimeout(interventionGeocodingTimeout);
+                
+                const query = this.value.trim();
+                
+                if (query.length < 3) {
+                    interventionResultsDiv.style.display = 'none';
+                    return;
+                }
+                
+                // Debounce: wait 500ms after user stops typing
+                interventionGeocodingTimeout = setTimeout(() => {
+                    searchInterventionAddress(query);
+                }, 500);
+            });
+        }
+        
+        // Search address for intervention
+        function searchInterventionAddress(query) {
+            fetch(`geocoding_api.php?action=search&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.results.length > 0) {
+                        displayInterventionSuggestions(data.results);
+                    } else {
+                        interventionResultsDiv.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Errore geocoding intervento:', error);
+                    interventionResultsDiv.style.display = 'none';
+                });
+        }
+        
+        // Display address suggestions for intervention
+        function displayInterventionSuggestions(results) {
+            interventionSuggestionsDiv.innerHTML = '';
+            
+            results.forEach(result => {
+                const item = document.createElement('a');
+                item.href = '#';
+                item.className = 'list-group-item list-group-item-action';
+                item.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${escapeHtml(result.address)}</h6>
+                        <small><i class="bi bi-geo-alt"></i></small>
+                    </div>
+                    <small class="text-muted">${escapeHtml(result.display_name)}</small>
+                `;
+                
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    selectInterventionAddress(result);
+                });
+                
+                interventionSuggestionsDiv.appendChild(item);
+            });
+            
+            interventionResultsDiv.style.display = 'block';
+        }
+        
+        // Select an address for intervention
+        function selectInterventionAddress(result) {
+            // Update hidden fields
+            document.getElementById('intervention_latitude').value = result.latitude;
+            document.getElementById('intervention_longitude').value = result.longitude;
+            document.getElementById('intervention_full_address').value = result.display_name;
+            document.getElementById('intervention_municipality').value = result.municipality;
+            
+            // Update visible location field
+            interventionLocationInput.value = result.address;
+            
+            // Show selected address
+            interventionSelectedAddressText.textContent = result.display_name;
+            if (result.municipality) {
+                interventionSelectedAddressText.innerHTML += '<br><small>Comune: ' + escapeHtml(result.municipality) + '</small>';
+            }
+            interventionSelectedAddressDiv.style.display = 'block';
+            
+            // Hide suggestions
+            interventionResultsDiv.style.display = 'none';
         }
     </script>
 </body>

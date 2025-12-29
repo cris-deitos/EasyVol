@@ -101,6 +101,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <i class="bi bi-calendar-event"></i> Eventi/Interventi
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'event_map.php' ? 'active' : '' ?>" href="event_map.php" target="_blank">
+                    <i class="bi bi-map"></i> Mappa Tempo Reale
+                </a>
+            </li>
             <?php endif; ?>
             
             <?php if ($app->checkPermission('scheduler', 'view')): ?>
