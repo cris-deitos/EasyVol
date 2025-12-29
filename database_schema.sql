@@ -1132,7 +1132,7 @@ CREATE TABLE IF NOT EXISTS `on_call_schedule` (
   `end_datetime` datetime NOT NULL,
   `role` enum('reperibile', 'backup') DEFAULT 'reperibile' COMMENT 'Role type: on-call or backup',
   `notes` text,
-  `created_by` int(11) NOT NULL,
+  `created_by` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
