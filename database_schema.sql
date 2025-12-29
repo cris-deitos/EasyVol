@@ -983,13 +983,19 @@ CREATE TABLE IF NOT EXISTS `events` (
   `start_date` datetime NOT NULL,
   `end_date` datetime,
   `location` varchar(255),
+  `latitude` DECIMAL(10, 8) NULL COMMENT 'Latitudine per georeferenziazione',
+  `longitude` DECIMAL(11, 8) NULL COMMENT 'Longitudine per georeferenziazione',
+  `full_address` VARCHAR(500) NULL COMMENT 'Indirizzo completo georeferenziato',
+  `municipality` VARCHAR(100) NULL COMMENT 'Comune di riferimento',
   `status` enum('aperto', 'in_corso', 'concluso', 'annullato') DEFAULT 'aperto',
   `created_by` int(11),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `event_type` (`event_type`),
-  KEY `status` (`status`)
+  KEY `status` (`status`),
+  KEY `idx_municipality` (`municipality`),
+  KEY `idx_coordinates` (`latitude`, `longitude`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `event_participants` (
@@ -1035,10 +1041,16 @@ CREATE TABLE IF NOT EXISTS `interventions` (
   `start_time` datetime NOT NULL,
   `end_time` datetime,
   `location` varchar(255),
+  `latitude` DECIMAL(10, 8) NULL COMMENT 'Latitudine per georeferenziazione',
+  `longitude` DECIMAL(11, 8) NULL COMMENT 'Longitudine per georeferenziazione',
+  `full_address` VARCHAR(500) NULL COMMENT 'Indirizzo completo georeferenziato',
+  `municipality` VARCHAR(100) NULL COMMENT 'Comune di riferimento',
   `status` enum('in_corso', 'concluso', 'sospeso') DEFAULT 'in_corso',
   `report` text,
   PRIMARY KEY (`id`),
   KEY `event_id` (`event_id`),
+  KEY `idx_municipality` (`municipality`),
+  KEY `idx_coordinates` (`latitude`, `longitude`),
   FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
