@@ -472,8 +472,8 @@ class ReportController {
         $headers = array_keys($data[0]);
         $colIndex = 1;
         foreach ($headers as $header) {
-            $sheet->setCellValueByColumnAndRow($colIndex, 1, ucfirst(str_replace('_', ' ', $header)));
-            $sheet->getStyleByColumnAndRow($colIndex, 1)->getFont()->setBold(true);
+            $sheet->setCellValue([$colIndex, 1], ucfirst(str_replace('_', ' ', $header)));
+            $sheet->getStyle([$colIndex, 1])->getFont()->setBold(true);
             $colIndex++;
         }
         
@@ -482,7 +482,7 @@ class ReportController {
         foreach ($data as $record) {
             $colIndex = 1;
             foreach ($record as $value) {
-                $sheet->setCellValueByColumnAndRow($colIndex, $row, $value);
+                $sheet->setCellValue([$colIndex, $row], $value);
                 $colIndex++;
             }
             $row++;
