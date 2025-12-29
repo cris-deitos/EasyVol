@@ -574,7 +574,7 @@ class EventController {
     /**
      * Chiudi intervento con esito
      */
-    public function closeIntervention($interventionId, $report, $endTime = null, $userId) {
+    public function closeIntervention($interventionId, $report, $endTime = null, $userId = null) {
         try {
             // Se non specificato, usa il timestamp corrente come end_time
             if (empty($endTime)) {
@@ -589,7 +589,9 @@ class EventController {
             
             $this->db->execute($sql, $params);
             
-            $this->logActivity($userId, 'interventions', 'close', $interventionId, 'Chiuso intervento con esito');
+            if ($userId) {
+                $this->logActivity($userId, 'interventions', 'close', $interventionId, 'Chiuso intervento con esito');
+            }
             
             return true;
         } catch (\Exception $e) {
