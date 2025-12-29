@@ -712,12 +712,9 @@ try {
                 exit;
             }
             
-            $hasActive = $controller->hasActiveInterventions($eventId);
-            $activeInterventions = [];
-            
-            if ($hasActive) {
-                $activeInterventions = $controller->getActiveInterventions($eventId);
-            }
+            // Optimize: fetch interventions directly instead of counting first
+            $activeInterventions = $controller->getActiveInterventions($eventId);
+            $hasActive = !empty($activeInterventions);
             
             echo json_encode([
                 'success' => true, 
