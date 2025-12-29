@@ -219,6 +219,13 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                                                class="btn btn-sm btn-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>
+                                                            <?php if ($event['status'] !== 'concluso' && $event['status'] !== 'annullato'): ?>
+                                                                <button type="button" class="btn btn-sm btn-success" 
+                                                                        onclick="openQuickCloseModal(<?php echo $event['id']; ?>, <?php echo htmlspecialchars(json_encode($event['title']), ENT_QUOTES, 'UTF-8'); ?>, <?php echo htmlspecialchars(json_encode($event['description'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)"
+                                                                        title="Chiusura Rapida">
+                                                                    <i class="bi bi-check-circle"></i>
+                                                                </button>
+                                                            <?php endif; ?>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>
@@ -234,6 +241,105 @@ $pageTitle = 'Gestione Eventi e Interventi';
         </div>
     </div>
     
+    <!-- Quick Close Event Modal -->
+    <div class="modal fade" id="quickCloseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Chiusura Rapida Evento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="quick_close_event_id">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong id="quick_close_event_title"></strong>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quick_close_description" class="form-label">Descrizione Evento</label>
+                        <textarea class="form-control" id="quick_close_description" rows="6" 
+                                  placeholder="Aggiungi o modifica la descrizione dell'evento..."></textarea>
+                        <small class="form-text text-muted">Puoi integrare la descrizione esistente con ulteriori dettagli</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quick_close_end_date" class="form-label">Data e Ora Chiusura <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" id="quick_close_end_date" required>
+                        <small class="form-text text-muted">Impostata automaticamente all'ora corrente, modificabile se necessario</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-success" onclick="confirmQuickClose()">
+                        <i class="bi bi-check-circle"></i> Chiudi Evento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const csrfToken = '<?php echo CsrfProtection::generateToken(); ?>';
+        
+        function formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+        
+        function openQuickCloseModal(eventId, eventTitle, eventDescription) {
+            document.getElementById('quick_close_event_id').value = eventId;
+            document.getElementById('quick_close_event_title').textContent = eventTitle;
+            document.getElementById('quick_close_description').value = eventDescription || '';
+            
+            // Set current date/time as default
+            const now = new Date();
+            document.getElementById('quick_close_end_date').value = formatDateTimeLocal(now);
+            
+            const modal = new bootstrap.Modal(document.getElementById('quickCloseModal'));
+            modal.show();
+        }
+        
+        function confirmQuickClose() {
+            const eventId = document.getElementById('quick_close_event_id').value;
+            const description = document.getElementById('quick_close_description').value.trim();
+            const endDate = document.getElementById('quick_close_end_date').value;
+            
+            if (!endDate) {
+                alert('La data di chiusura è obbligatoria');
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'quick_close_event',
+                    event_id: eventId,
+                    description: description,
+                    end_date: endDate,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || 'Evento chiuso con successo');
+                    window.location.reload();
+                } else {
+                    alert('Errore: ' + (data.error || 'Errore durante la chiusura dell\'evento'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante la chiusura dell\'evento');
+            });
+        }
+    </script>
 </body>
 </html>
