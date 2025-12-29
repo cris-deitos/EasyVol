@@ -589,7 +589,9 @@ class EventController {
             
             $this->db->execute($sql, $params);
             
-            $this->logActivity($userId, 'interventions', 'close', $interventionId, 'Chiuso intervento con esito');
+            if ($userId) {
+                $this->logActivity($userId, 'interventions', 'close', $interventionId, 'Chiuso intervento con esito');
+            }
             
             return true;
         } catch (\Exception $e) {
