@@ -171,13 +171,13 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                     <input type="text" class="form-control" id="location" name="location" 
                                            value="<?php echo htmlspecialchars($event['location'] ?? ''); ?>"
                                            placeholder="es. Via Roma 123, Milano">
-                                    <small class="form-text text-muted">Inizia a digitare per cercare un indirizzo</small>
+                                    <small class="form-text text-muted">La georeferenziazione avviene automaticamente durante la digitazione</small>
                                 </div>
                             </div>
                             
                             <!-- Geocoding results -->
                             <div id="geocoding-results" class="mb-3" style="display: none;">
-                                <label class="form-label">Seleziona indirizzo suggerito:</label>
+                                <label class="form-label">Altri indirizzi trovati (opzionale):</label>
                                 <div class="list-group" id="address-suggestions"></div>
                             </div>
                             
@@ -255,6 +255,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
     <script>
         // Geocoding functionality
         let geocodingTimeout = null;
+        let currentResults = [];
         const locationInput = document.getElementById('location');
         const resultsDiv = document.getElementById('geocoding-results');
         const suggestionsDiv = document.getElementById('address-suggestions');
@@ -269,13 +270,32 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
             
             if (query.length < 3) {
                 resultsDiv.style.display = 'none';
+                clearGeocodingData();
                 return;
             }
             
-            // Debounce: wait 500ms after user stops typing
+            // Debounce: wait 800ms after user stops typing, then auto-geocode
             geocodingTimeout = setTimeout(() => {
                 searchAddress(query);
-            }, 500);
+            }, 800);
+        });
+        
+        // Auto-geocode on blur if field has content
+        locationInput.addEventListener('blur', function() {
+            setTimeout(() => {
+                const query = this.value.trim();
+                if (query.length >= 3 && currentResults.length > 0) {
+                    // Auto-select best match if not already selected
+                    const latField = document.getElementById('latitude');
+                    if (!latField.value || latField.value === '') {
+                        selectAddress(currentResults[0], true);
+                    }
+                }
+                // Hide suggestions after a short delay
+                setTimeout(() => {
+                    resultsDiv.style.display = 'none';
+                }, 200);
+            }, 100);
         });
         
         // Search address using geocoding API
@@ -284,14 +304,21 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.results.length > 0) {
+                        currentResults = data.results;
                         displaySuggestions(data.results);
+                        // Auto-select the best match (first result)
+                        selectAddress(data.results[0], true);
                     } else {
+                        currentResults = [];
                         resultsDiv.style.display = 'none';
+                        clearGeocodingData();
                     }
                 })
                 .catch(error => {
                     console.error('Errore geocoding:', error);
+                    currentResults = [];
                     resultsDiv.style.display = 'none';
+                    clearGeocodingData();
                 });
         }
         
@@ -299,21 +326,22 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
         function displaySuggestions(results) {
             suggestionsDiv.innerHTML = '';
             
-            results.forEach(result => {
+            results.forEach((result, index) => {
                 const item = document.createElement('a');
                 item.href = '#';
-                item.className = 'list-group-item list-group-item-action';
+                item.className = 'list-group-item list-group-item-action' + (index === 0 ? ' active' : '');
                 item.innerHTML = `
                     <div class="d-flex w-100 justify-content-between">
                         <h6 class="mb-1">${escapeHtml(result.address)}</h6>
-                        <small><i class="bi bi-geo-alt"></i></small>
+                        <small><i class="bi bi-geo-alt"></i> ${index === 0 ? '(selezionato)' : ''}</small>
                     </div>
                     <small class="text-muted">${escapeHtml(result.display_name)}</small>
                 `;
                 
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
-                    selectAddress(result);
+                    selectAddress(result, false);
+                    resultsDiv.style.display = 'none';
                 });
                 
                 suggestionsDiv.appendChild(item);
@@ -323,15 +351,17 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
         }
         
         // Select an address from suggestions
-        function selectAddress(result) {
+        function selectAddress(result, isAutomatic) {
             // Update hidden fields
             document.getElementById('latitude').value = result.latitude;
             document.getElementById('longitude').value = result.longitude;
             document.getElementById('full_address').value = result.display_name;
             document.getElementById('municipality').value = result.municipality;
             
-            // Update visible location field
-            locationInput.value = result.address;
+            // Only update visible location field if user manually clicked
+            if (!isAutomatic) {
+                locationInput.value = result.address;
+            }
             
             // Show selected address
             selectedAddressText.innerHTML = escapeHtml(result.display_name);
@@ -339,9 +369,15 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                 selectedAddressText.innerHTML += '<br><small>Comune: ' + escapeHtml(result.municipality) + '</small>';
             }
             selectedAddressDiv.style.display = 'block';
-            
-            // Hide suggestions
-            resultsDiv.style.display = 'none';
+        }
+        
+        // Clear geocoding data
+        function clearGeocodingData() {
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('full_address').value = '';
+            document.getElementById('municipality').value = '';
+            selectedAddressDiv.style.display = 'none';
         }
         
         // Utility: escape HTML

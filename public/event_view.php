@@ -506,12 +506,12 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                         <div class="mb-3">
                             <label for="intervention_location" class="form-label">Località</label>
                             <input type="text" class="form-control" id="intervention_location" placeholder="es. Via Roma 123, Milano">
-                            <small class="form-text text-muted">Inizia a digitare per cercare un indirizzo</small>
+                            <small class="form-text text-muted">La georeferenziazione avviene automaticamente durante la digitazione</small>
                         </div>
                         
                         <!-- Geocoding results for intervention -->
                         <div id="intervention-geocoding-results" class="mb-3" style="display: none;">
-                            <label class="form-label">Seleziona indirizzo suggerito:</label>
+                            <label class="form-label">Altri indirizzi trovati (opzionale):</label>
                             <div class="list-group" id="intervention-address-suggestions"></div>
                         </div>
                         
@@ -1374,6 +1374,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         
         // Geocoding functionality for interventions
         let interventionGeocodingTimeout = null;
+        let interventionCurrentResults = [];
         const interventionLocationInput = document.getElementById('intervention_location');
         const interventionResultsDiv = document.getElementById('intervention-geocoding-results');
         const interventionSuggestionsDiv = document.getElementById('intervention-address-suggestions');
@@ -1389,13 +1390,32 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                 
                 if (query.length < 3) {
                     interventionResultsDiv.style.display = 'none';
+                    clearInterventionGeocodingData();
                     return;
                 }
                 
-                // Debounce: wait 500ms after user stops typing
+                // Debounce: wait 800ms after user stops typing, then auto-geocode
                 interventionGeocodingTimeout = setTimeout(() => {
                     searchInterventionAddress(query);
-                }, 500);
+                }, 800);
+            });
+            
+            // Auto-geocode on blur if field has content
+            interventionLocationInput.addEventListener('blur', function() {
+                setTimeout(() => {
+                    const query = this.value.trim();
+                    if (query.length >= 3 && interventionCurrentResults.length > 0) {
+                        // Auto-select best match if not already selected
+                        const latField = document.getElementById('intervention_latitude');
+                        if (!latField.value || latField.value === '') {
+                            selectInterventionAddress(interventionCurrentResults[0], true);
+                        }
+                    }
+                    // Hide suggestions after a short delay
+                    setTimeout(() => {
+                        interventionResultsDiv.style.display = 'none';
+                    }, 200);
+                }, 100);
             });
         }
         
@@ -1405,14 +1425,21 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.results.length > 0) {
+                        interventionCurrentResults = data.results;
                         displayInterventionSuggestions(data.results);
+                        // Auto-select the best match (first result)
+                        selectInterventionAddress(data.results[0], true);
                     } else {
+                        interventionCurrentResults = [];
                         interventionResultsDiv.style.display = 'none';
+                        clearInterventionGeocodingData();
                     }
                 })
                 .catch(error => {
                     console.error('Errore geocoding intervento:', error);
+                    interventionCurrentResults = [];
                     interventionResultsDiv.style.display = 'none';
+                    clearInterventionGeocodingData();
                 });
         }
         
@@ -1420,21 +1447,22 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         function displayInterventionSuggestions(results) {
             interventionSuggestionsDiv.innerHTML = '';
             
-            results.forEach(result => {
+            results.forEach((result, index) => {
                 const item = document.createElement('a');
                 item.href = '#';
-                item.className = 'list-group-item list-group-item-action';
+                item.className = 'list-group-item list-group-item-action' + (index === 0 ? ' active' : '');
                 item.innerHTML = `
                     <div class="d-flex w-100 justify-content-between">
                         <h6 class="mb-1">${escapeHtml(result.address)}</h6>
-                        <small><i class="bi bi-geo-alt"></i></small>
+                        <small><i class="bi bi-geo-alt"></i> ${index === 0 ? '(selezionato)' : ''}</small>
                     </div>
                     <small class="text-muted">${escapeHtml(result.display_name)}</small>
                 `;
                 
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
-                    selectInterventionAddress(result);
+                    selectInterventionAddress(result, false);
+                    interventionResultsDiv.style.display = 'none';
                 });
                 
                 interventionSuggestionsDiv.appendChild(item);
@@ -1444,15 +1472,17 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         }
         
         // Select an address for intervention
-        function selectInterventionAddress(result) {
+        function selectInterventionAddress(result, isAutomatic) {
             // Update hidden fields
             document.getElementById('intervention_latitude').value = result.latitude;
             document.getElementById('intervention_longitude').value = result.longitude;
             document.getElementById('intervention_full_address').value = result.display_name;
             document.getElementById('intervention_municipality').value = result.municipality;
             
-            // Update visible location field
-            interventionLocationInput.value = result.address;
+            // Only update visible location field if user manually clicked
+            if (!isAutomatic) {
+                interventionLocationInput.value = result.address;
+            }
             
             // Show selected address
             interventionSelectedAddressText.innerHTML = escapeHtml(result.display_name);
@@ -1460,9 +1490,15 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                 interventionSelectedAddressText.innerHTML += '<br><small>Comune: ' + escapeHtml(result.municipality) + '</small>';
             }
             interventionSelectedAddressDiv.style.display = 'block';
-            
-            // Hide suggestions
-            interventionResultsDiv.style.display = 'none';
+        }
+        
+        // Clear intervention geocoding data
+        function clearInterventionGeocodingData() {
+            document.getElementById('intervention_latitude').value = '';
+            document.getElementById('intervention_longitude').value = '';
+            document.getElementById('intervention_full_address').value = '';
+            document.getElementById('intervention_municipality').value = '';
+            interventionSelectedAddressDiv.style.display = 'none';
         }
     </script>
 </body>
