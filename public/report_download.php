@@ -48,7 +48,7 @@ try {
             $filename = "ore_volontariato_per_tipo_evento_{$year}.xlsx";
             
             // Log activity
-            AutoLogger::log('reports', 'export', null, "Export report ore volontariato per tipo evento - Anno {$year}");
+            AutoLogger::logActivity('reports', 'export', null, "Export report ore volontariato per tipo evento - Anno {$year}");
             break;
             
         case 'events_by_type_and_count':
@@ -57,7 +57,7 @@ try {
             $filename = "report_eventi_{$year}.xlsx";
             
             // Log activity
-            AutoLogger::log('reports', 'export', null, "Export report numero e tipologie eventi - Anno {$year}");
+            AutoLogger::logActivity('reports', 'export', null, "Export report numero e tipologie eventi - Anno {$year}");
             break;
             
         case 'volunteer_activity':
@@ -66,7 +66,7 @@ try {
             $filename = "report_attivita_volontari_{$year}.xlsx";
             
             // Log activity
-            AutoLogger::log('reports', 'export', null, "Export report attività per volontario - Anno {$year}");
+            AutoLogger::logActivity('reports', 'export', null, "Export report attività per volontario - Anno {$year}");
             break;
             
         case 'vehicle_kilometers':
@@ -75,7 +75,7 @@ try {
             $filename = "report_km_mezzi_{$year}.xlsx";
             
             // Log activity
-            AutoLogger::log('reports', 'export', null, "Export report chilometri mezzi - Anno {$year}");
+            AutoLogger::logActivity('reports', 'export', null, "Export report chilometri mezzi - Anno {$year}");
             break;
             
         default:
