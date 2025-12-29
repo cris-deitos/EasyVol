@@ -171,6 +171,15 @@ class EventController {
      */
     public function update($id, $data, $userId) {
         try {
+            // Verifica se si sta cercando di chiudere l'evento
+            $newStatus = $data['status'] ?? 'aperto';
+            if ($newStatus === 'concluso') {
+                // Controlla se ci sono interventi ancora in corso o sospesi
+                if ($this->hasActiveInterventions($id)) {
+                    throw new \Exception('Non è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi.');
+                }
+            }
+            
             $sql = "UPDATE events SET
                 event_type = ?, title = ?, description = ?, start_date = ?,
                 end_date = ?, location = ?, status = ?, updated_at = NOW(),
@@ -184,7 +193,7 @@ class EventController {
                 $data['start_date'],
                 !empty($data['end_date']) ? $data['end_date'] : null,
                 $data['location'] ?? null,
-                $data['status'] ?? 'aperto',
+                $newStatus,
                 $data['latitude'] ?? null,
                 $data['longitude'] ?? null,
                 $data['full_address'] ?? null,
@@ -617,6 +626,43 @@ class EventController {
         } catch (\Exception $e) {
             error_log("Errore riapertura intervento: " . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Verifica se ci sono interventi attivi (in_corso o sospeso) per un evento
+     */
+    public function hasActiveInterventions($eventId) {
+        try {
+            $sql = "SELECT COUNT(*) as count 
+                    FROM interventions 
+                    WHERE event_id = ? 
+                    AND status IN ('in_corso', 'sospeso')";
+            
+            $result = $this->db->fetchOne($sql, [$eventId]);
+            
+            return isset($result['count']) && $result['count'] > 0;
+        } catch (\Exception $e) {
+            error_log("Errore verifica interventi attivi: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Ottieni lista interventi attivi per un evento
+     */
+    public function getActiveInterventions($eventId) {
+        try {
+            $sql = "SELECT id, title, status 
+                    FROM interventions 
+                    WHERE event_id = ? 
+                    AND status IN ('in_corso', 'sospeso')
+                    ORDER BY start_time DESC";
+            
+            return $this->db->fetchAll($sql, [$eventId]);
+        } catch (\Exception $e) {
+            error_log("Errore recupero interventi attivi: " . $e->getMessage());
+            return [];
         }
     }
 }

@@ -253,6 +253,9 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const eventId = <?php echo json_encode($eventId); ?>;
+        const initialStatus = <?php echo json_encode($event['status'] ?? 'aperto'); ?>;
+        
         // Geocoding functionality
         let geocodingTimeout = null;
         let currentResults = [];
@@ -261,6 +264,88 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
         const suggestionsDiv = document.getElementById('address-suggestions');
         const selectedAddressDiv = document.getElementById('selected-address');
         const selectedAddressText = document.getElementById('selected-address-text');
+        
+        // Listen to status changes
+        const statusSelect = document.getElementById('status');
+        if (statusSelect) {
+            statusSelect.addEventListener('change', function() {
+                const newStatus = this.value;
+                
+                // Se l'utente sta cercando di chiudere l'evento
+                if (newStatus === 'concluso' && initialStatus !== 'concluso' && eventId > 0) {
+                    // Verifica se ci sono interventi attivi
+                    checkActiveInterventions();
+                }
+            });
+        }
+        
+        // Verifica se ci sono interventi attivi prima di chiudere l'evento
+        function checkActiveInterventions() {
+            fetch(`event_ajax.php?action=check_active_interventions&event_id=${eventId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.has_active) {
+                        // Mostra popup con lista interventi attivi
+                        let message = 'NON è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi:\n\n';
+                        
+                        data.interventions.forEach(intervention => {
+                            const statusLabel = intervention.status === 'in_corso' ? 'In Corso' : 'Sospeso';
+                            message += `• ${intervention.title} (${statusLabel})\n`;
+                        });
+                        
+                        message += '\nChiudere prima tutti gli interventi per poter chiudere l\'evento.';
+                        
+                        alert(message);
+                        
+                        // Ripristina lo stato precedente
+                        statusSelect.value = initialStatus;
+                    }
+                })
+                .catch(error => {
+                    console.error('Errore verifica interventi attivi:', error);
+                    alert('Errore durante la verifica degli interventi attivi');
+                    statusSelect.value = initialStatus;
+                });
+        }
+        
+        // Intercetta il submit del form per validare prima dell'invio
+        const eventForm = document.querySelector('form');
+        if (eventForm) {
+            eventForm.addEventListener('submit', function(e) {
+                const newStatus = statusSelect.value;
+                
+                // Se l'utente sta cercando di chiudere l'evento, verifica prima
+                if (newStatus === 'concluso' && initialStatus !== 'concluso' && eventId > 0) {
+                    e.preventDefault();
+                    
+                    fetch(`event_ajax.php?action=check_active_interventions&event_id=${eventId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.has_active) {
+                                // Mostra popup con lista interventi attivi
+                                let message = 'NON è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi:\n\n';
+                                
+                                data.interventions.forEach(intervention => {
+                                    const statusLabel = intervention.status === 'in_corso' ? 'In Corso' : 'Sospeso';
+                                    message += `• ${intervention.title} (${statusLabel})\n`;
+                                });
+                                
+                                message += '\nChiudere prima tutti gli interventi per poter chiudere l\'evento.';
+                                
+                                alert(message);
+                                statusSelect.value = initialStatus;
+                            } else {
+                                // Nessun intervento attivo, procedi con il submit
+                                eventForm.submit();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Errore verifica interventi attivi:', error);
+                            alert('Errore durante la verifica degli interventi attivi');
+                        });
+                }
+            });
+        }
         
         // Listen to location input changes
         locationInput.addEventListener('input', function() {

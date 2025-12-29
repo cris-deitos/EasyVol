@@ -697,6 +697,35 @@ try {
             echo json_encode(['success' => true, 'message' => 'Mezzo rimosso dall\'intervento']);
             break;
             
+        case 'check_active_interventions':
+            // Check if event has active interventions before closing
+            if (!$app->checkPermission('events', 'view')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            $eventId = intval($_GET['event_id'] ?? 0);
+            
+            if ($eventId <= 0) {
+                echo json_encode(['error' => 'ID evento non valido']);
+                exit;
+            }
+            
+            $hasActive = $controller->hasActiveInterventions($eventId);
+            $activeInterventions = [];
+            
+            if ($hasActive) {
+                $activeInterventions = $controller->getActiveInterventions($eventId);
+            }
+            
+            echo json_encode([
+                'success' => true, 
+                'has_active' => $hasActive,
+                'interventions' => $activeInterventions
+            ]);
+            break;
+            
         default:
             http_response_code(400);
             echo json_encode(['error' => 'Azione non valida']);
