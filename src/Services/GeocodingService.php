@@ -203,10 +203,38 @@ class GeocodingService {
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         
         // Rispetta il rate limit di Nominatim (1 richiesta al secondo)
-        usleep(1100000); // 1.1 secondi
+        // Usa un file di lock per coordinare le richieste tra processi multipli
+        $lockFile = sys_get_temp_dir() . '/nominatim_rate_limit.lock';
+        $lockHandle = fopen($lockFile, 'c+');
         
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($lockHandle && flock($lockHandle, LOCK_EX)) {
+            // Leggi il timestamp dell'ultima richiesta
+            $lastRequest = floatval(fgets($lockHandle) ?: 0);
+            $now = microtime(true);
+            $elapsed = $now - $lastRequest;
+            
+            // Se l'ultima richiesta è stata meno di 1 secondo fa, aspetta
+            if ($elapsed < 1.0) {
+                usleep((int)(($1.0 - $elapsed) * 1000000));
+            }
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
+            // Aggiorna il timestamp dell'ultima richiesta
+            ftruncate($lockHandle, 0);
+            rewind($lockHandle);
+            fwrite($lockHandle, (string)microtime(true));
+            fflush($lockHandle);
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+        } else {
+            // Fallback se non possiamo usare il lock
+            usleep(1100000); // 1.1 secondi
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if ($lockHandle) fclose($lockHandle);
+        }
         
         curl_close($ch);
         

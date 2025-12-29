@@ -1455,7 +1455,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             interventionLocationInput.value = result.address;
             
             // Show selected address
-            interventionSelectedAddressText.textContent = result.display_name;
+            interventionSelectedAddressText.innerHTML = escapeHtml(result.display_name);
             if (result.municipality) {
                 interventionSelectedAddressText.innerHTML += '<br><small>Comune: ' + escapeHtml(result.municipality) + '</small>';
             }

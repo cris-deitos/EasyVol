@@ -334,7 +334,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
             locationInput.value = result.address;
             
             // Show selected address
-            selectedAddressText.textContent = result.display_name;
+            selectedAddressText.innerHTML = escapeHtml(result.display_name);
             if (result.municipality) {
                 selectedAddressText.innerHTML += '<br><small>Comune: ' + escapeHtml(result.municipality) + '</small>';
             }
