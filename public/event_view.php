@@ -1748,14 +1748,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
         }
         
         // Quick Close Event functions
-        function formatDateTimeLocal(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        }
+        // Note: formatDateTimeLocal function already defined above at line 1268
         
         function openQuickCloseModal(eventId, eventTitle, eventDescription) {
             document.getElementById('quick_close_event_id').value = eventId;
