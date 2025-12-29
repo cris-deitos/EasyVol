@@ -142,9 +142,14 @@ $pageTitle = 'Centrale Operativa';
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Eventi Attivi</h5>
-                                <?php if ($app->checkPermission('events', 'view')): ?>
-                                    <a href="events.php" class="btn btn-sm btn-outline-primary">Vedi tutti</a>
-                                <?php endif; ?>
+                                <div>
+                                    <?php if ($app->checkPermission('events', 'view')): ?>
+                                        <a href="event_map.php" class="btn btn-sm btn-outline-info me-2" target="_blank">
+                                            <i class="bi bi-map"></i> Mappa Tempo Reale
+                                        </a>
+                                        <a href="events.php" class="btn btn-sm btn-outline-primary">Vedi tutti</a>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <?php if (empty($dashboard['active_events'])): ?>
