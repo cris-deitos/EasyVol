@@ -274,37 +274,47 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                 // Se l'utente sta cercando di chiudere l'evento
                 if (newStatus === 'concluso' && initialStatus !== 'concluso' && eventId > 0) {
                     // Verifica se ci sono interventi attivi
-                    checkActiveInterventions();
+                    checkAndWarnActiveInterventions(() => {
+                        // Se ci sono interventi attivi, ripristina lo stato precedente
+                        statusSelect.value = initialStatus;
+                    });
                 }
             });
         }
         
-        // Verifica se ci sono interventi attivi prima di chiudere l'evento
-        function checkActiveInterventions() {
+        // Helper function to build warning message
+        function buildActiveInterventionsMessage(interventions) {
+            let message = 'NON è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi:\n\n';
+            
+            interventions.forEach(intervention => {
+                const statusLabel = intervention.status === 'in_corso' ? 'In Corso' : 'Sospeso';
+                message += `• ${intervention.title} (${statusLabel})\n`;
+            });
+            
+            message += '\nChiudere prima tutti gli interventi per poter chiudere l\'evento.';
+            return message;
+        }
+        
+        // Verifica se ci sono interventi attivi e mostra warning
+        function checkAndWarnActiveInterventions(onActiveFound) {
             fetch(`event_ajax.php?action=check_active_interventions&event_id=${eventId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.has_active) {
-                        // Mostra popup con lista interventi attivi
-                        let message = 'NON è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi:\n\n';
-                        
-                        data.interventions.forEach(intervention => {
-                            const statusLabel = intervention.status === 'in_corso' ? 'In Corso' : 'Sospeso';
-                            message += `• ${intervention.title} (${statusLabel})\n`;
-                        });
-                        
-                        message += '\nChiudere prima tutti gli interventi per poter chiudere l\'evento.';
-                        
+                        const message = buildActiveInterventionsMessage(data.interventions);
                         alert(message);
                         
-                        // Ripristina lo stato precedente
-                        statusSelect.value = initialStatus;
+                        if (onActiveFound) {
+                            onActiveFound();
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Errore verifica interventi attivi:', error);
                     alert('Errore durante la verifica degli interventi attivi');
-                    statusSelect.value = initialStatus;
+                    if (onActiveFound) {
+                        onActiveFound();
+                    }
                 });
         }
         
@@ -322,16 +332,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                         .then(response => response.json())
                         .then(data => {
                             if (data.success && data.has_active) {
-                                // Mostra popup con lista interventi attivi
-                                let message = 'NON è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi:\n\n';
-                                
-                                data.interventions.forEach(intervention => {
-                                    const statusLabel = intervention.status === 'in_corso' ? 'In Corso' : 'Sospeso';
-                                    message += `• ${intervention.title} (${statusLabel})\n`;
-                                });
-                                
-                                message += '\nChiudere prima tutti gli interventi per poter chiudere l\'evento.';
-                                
+                                const message = buildActiveInterventionsMessage(data.interventions);
                                 alert(message);
                                 statusSelect.value = initialStatus;
                             } else {
