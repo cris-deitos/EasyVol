@@ -343,6 +343,7 @@ class ReportController {
     public function volunteerHoursByEventType($year) {
         $sql = "SELECT 
                     e.event_type,
+                    e.municipality,
                     COUNT(DISTINCT e.id) as num_eventi,
                     COUNT(DISTINCT ep.member_id) as num_volontari,
                     SUM(ep.hours) as ore_totali,
@@ -350,8 +351,8 @@ class ReportController {
                 FROM events e
                 LEFT JOIN event_participants ep ON e.id = ep.event_id
                 WHERE YEAR(e.start_date) = ?
-                GROUP BY e.event_type
-                ORDER BY ore_totali DESC";
+                GROUP BY e.event_type, e.municipality
+                ORDER BY e.event_type, ore_totali DESC";
         
         return $this->db->fetchAll($sql, [$year]);
     }
@@ -366,6 +367,7 @@ class ReportController {
         $sql = "SELECT 
                     e.event_type,
                     e.status,
+                    e.municipality,
                     COUNT(*) as numero_eventi,
                     COUNT(DISTINCT ep.member_id) as volontari_coinvolti,
                     SUM(ep.hours) as ore_totali,
@@ -374,8 +376,8 @@ class ReportController {
                 FROM events e
                 LEFT JOIN event_participants ep ON e.id = ep.event_id
                 WHERE YEAR(e.start_date) = ?
-                GROUP BY e.event_type, e.status
-                ORDER BY e.event_type, numero_eventi DESC";
+                GROUP BY e.event_type, e.status, e.municipality
+                ORDER BY e.event_type, e.municipality, numero_eventi DESC";
         
         return $this->db->fetchAll($sql, [$year]);
     }
