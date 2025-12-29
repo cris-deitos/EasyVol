@@ -380,7 +380,7 @@ class ReportController {
                     COUNT(DISTINCT ep.member_id) as volontari_coinvolti,
                     SUM(ep.hours) as ore_totali,
                     MIN(i.start_time) as data_ora_primo_intervento,
-                    MAX(i.end_time) as data_ora_ultimo_intervento
+                    COALESCE(MAX(i.end_time), MAX(i.start_time)) as data_ora_ultimo_intervento
                 FROM events e
                 LEFT JOIN event_participants ep ON e.id = ep.event_id
                 LEFT JOIN interventions i ON e.id = i.event_id
@@ -405,21 +405,23 @@ class ReportController {
                     m.last_name,
                     m.member_status,
                     COUNT(DISTINCT ep.event_id) as num_eventi,
-                    COUNT(DISTINCT i.id) as num_interventi,
+                    (SELECT COUNT(DISTINCT i2.id) 
+                     FROM interventions i2 
+                     INNER JOIN event_participants ep2 ON i2.event_id = ep2.event_id 
+                     WHERE ep2.member_id = m.id 
+                       AND YEAR(i2.start_time) = ?) as num_interventi,
                     SUM(ep.hours) as ore_totali,
                     AVG(ep.hours) as ore_medie_per_evento,
                     GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as tipi_eventi,
                     MIN(e.start_date) as primo_evento,
                     MAX(e.start_date) as ultimo_evento
                 FROM members m
-                LEFT JOIN event_participants ep ON m.id = ep.member_id
-                LEFT JOIN events e ON ep.event_id = e.id AND YEAR(e.start_date) = ?
-                LEFT JOIN interventions i ON e.id = i.event_id
-                WHERE ep.id IS NOT NULL
+                INNER JOIN event_participants ep ON m.id = ep.member_id
+                INNER JOIN events e ON ep.event_id = e.id AND YEAR(e.start_date) = ?
                 GROUP BY m.id
                 ORDER BY ore_totali DESC, m.last_name, m.first_name";
         
-        return $this->db->fetchAll($sql, [$year]);
+        return $this->db->fetchAll($sql, [$year, $year]);
     }
     
     /**
