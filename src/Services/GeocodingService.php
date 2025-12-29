@@ -215,7 +215,7 @@ class GeocodingService {
             
             // Se l'ultima richiesta è stata meno di 1 secondo fa, aspetta
             if ($elapsed < 1.0) {
-                usleep((int)(($1.0 - $elapsed) * 1000000));
+                usleep((int)((1.0 - $elapsed) * 1000000));
             }
             
             $response = curl_exec($ch);
