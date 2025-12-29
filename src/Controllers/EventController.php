@@ -543,7 +543,7 @@ class EventController {
         try {
             $sql = "UPDATE interventions SET
                 title = ?, description = ?, start_time = ?, end_time = ?,
-                location = ?, status = ?
+                location = ?, status = ?, latitude = ?, longitude = ?, full_address = ?, municipality = ?
                 WHERE id = ?";
             
             $params = [
@@ -553,6 +553,10 @@ class EventController {
                 $data['end_time'] ?? null,
                 $data['location'] ?? null,
                 $data['status'] ?? 'in_corso',
+                $data['latitude'] ?? null,
+                $data['longitude'] ?? null,
+                $data['full_address'] ?? null,
+                $data['municipality'] ?? null,
                 $interventionId
             ];
             

@@ -96,7 +96,11 @@ try {
                 'start_time' => $startTime,
                 'end_time' => !empty($input['end_time']) ? trim($input['end_time']) : null,
                 'location' => trim($input['location'] ?? ''),
-                'status' => $input['status'] ?? 'in_corso'
+                'status' => $input['status'] ?? 'in_corso',
+                'latitude' => !empty($input['latitude']) ? floatval($input['latitude']) : null,
+                'longitude' => !empty($input['longitude']) ? floatval($input['longitude']) : null,
+                'full_address' => trim($input['full_address'] ?? ''),
+                'municipality' => trim($input['municipality'] ?? '')
             ];
             
             $result = $controller->addIntervention($eventId, $data, $app->getUserId());
@@ -393,7 +397,11 @@ try {
                 'start_time' => $startTime,
                 'end_time' => !empty($input['end_time']) ? trim($input['end_time']) : null,
                 'location' => trim($input['location'] ?? ''),
-                'status' => $input['status'] ?? 'in_corso'
+                'status' => $input['status'] ?? 'in_corso',
+                'latitude' => !empty($input['latitude']) ? floatval($input['latitude']) : null,
+                'longitude' => !empty($input['longitude']) ? floatval($input['longitude']) : null,
+                'full_address' => trim($input['full_address'] ?? ''),
+                'municipality' => trim($input['municipality'] ?? '')
             ];
             
             $result = $controller->updateIntervention($interventionId, $data, $app->getUserId());

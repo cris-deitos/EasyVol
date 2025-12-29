@@ -338,6 +338,11 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         <?php if ($app->checkPermission('events', 'edit')): ?>
                                                             <td>
                                                                 <div class="btn-group btn-group-sm" role="group">
+                                                                    <button type="button" class="btn btn-info" 
+                                                                            onclick="viewInterventionCard(<?php echo $intervention['id']; ?>)" 
+                                                                            title="Visualizza Scheda">
+                                                                        <i class="bi bi-eye"></i>
+                                                                    </button>
                                                                     <button type="button" class="btn btn-primary" 
                                                                             onclick="viewInterventionDetails(<?php echo $intervention['id']; ?>)" 
                                                                             title="Gestisci Risorse">
@@ -355,7 +360,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                                             <i class="bi bi-check-circle"></i>
                                                                         </button>
                                                                     <?php else: ?>
-                                                                        <button type="button" class="btn btn-info" 
+                                                                        <button type="button" class="btn btn-secondary" 
                                                                                 onclick="reopenIntervention(<?php echo $intervention['id']; ?>)" 
                                                                                 title="Riapri Intervento">
                                                                             <i class="bi bi-arrow-clockwise"></i>
@@ -759,6 +764,102 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                         <button type="button" class="btn btn-primary btn-sm mt-2" onclick="addInterventionVehicle()">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Mezzo
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Intervention Card Modal (Read-only) -->
+    <div class="modal fade" id="viewInterventionCardModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-card-text"></i> Scheda Intervento
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Intervention Details -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Dati Intervento</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <th width="40%">Titolo:</th>
+                                            <td id="view_intervention_title">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Descrizione:</th>
+                                            <td id="view_intervention_description">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Località:</th>
+                                            <td id="view_intervention_location">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Indirizzo Completo:</th>
+                                            <td id="view_intervention_full_address">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Comune:</th>
+                                            <td id="view_intervention_municipality">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Data/Ora Inizio:</th>
+                                            <td id="view_intervention_start_time">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Data/Ora Fine:</th>
+                                            <td id="view_intervention_end_time">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Stato:</th>
+                                            <td id="view_intervention_status">-</td>
+                                        </tr>
+                                        <tr id="view_intervention_report_row" style="display: none;">
+                                            <th>Esito:</th>
+                                            <td id="view_intervention_report">-</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Volunteers and Vehicles -->
+                        <div class="col-md-6">
+                            <!-- Volunteers -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="bi bi-people"></i> Volontari Assegnati</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="view_intervention_members" style="max-height: 200px; overflow-y: auto;">
+                                        <p class="text-muted">Caricamento...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vehicles -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0"><i class="bi bi-truck"></i> Mezzi Assegnati</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="view_intervention_vehicles" style="max-height: 200px; overflow-y: auto;">
+                                        <p class="text-muted">Caricamento...</p>
                                     </div>
                                 </div>
                             </div>
@@ -1175,6 +1276,144 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             
             const modal = new bootstrap.Modal(document.getElementById('interventionResourcesModal'));
             modal.show();
+        }
+
+        // View intervention card (read-only) with details, members, and vehicles
+        function viewInterventionCard(interventionId) {
+            // Fetch intervention data
+            fetch('event_ajax.php?action=get_intervention&intervention_id=' + interventionId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Errore: ' + data.error);
+                        return;
+                    }
+                    
+                    const intervention = data.intervention;
+                    
+                    // Populate intervention details
+                    document.getElementById('view_intervention_title').textContent = intervention.title || '-';
+                    document.getElementById('view_intervention_description').textContent = intervention.description || '-';
+                    document.getElementById('view_intervention_location').textContent = intervention.location || '-';
+                    document.getElementById('view_intervention_full_address').textContent = intervention.full_address || '-';
+                    document.getElementById('view_intervention_municipality').textContent = intervention.municipality || '-';
+                    
+                    // Format datetime
+                    if (intervention.start_time) {
+                        const startDate = new Date(intervention.start_time);
+                        document.getElementById('view_intervention_start_time').textContent = 
+                            startDate.toLocaleString('it-IT', { 
+                                day: '2-digit', month: '2-digit', year: 'numeric', 
+                                hour: '2-digit', minute: '2-digit' 
+                            });
+                    } else {
+                        document.getElementById('view_intervention_start_time').textContent = '-';
+                    }
+                    
+                    if (intervention.end_time) {
+                        const endDate = new Date(intervention.end_time);
+                        document.getElementById('view_intervention_end_time').textContent = 
+                            endDate.toLocaleString('it-IT', { 
+                                day: '2-digit', month: '2-digit', year: 'numeric', 
+                                hour: '2-digit', minute: '2-digit' 
+                            });
+                    } else {
+                        document.getElementById('view_intervention_end_time').textContent = '-';
+                    }
+                    
+                    // Status badge
+                    const statusBadgeMap = {
+                        'in_corso': 'warning',
+                        'concluso': 'success',
+                        'sospeso': 'secondary'
+                    };
+                    const badgeClass = statusBadgeMap[intervention.status] || 'secondary';
+                    const statusLabel = intervention.status ? intervention.status.replace('_', ' ').toUpperCase() : '-';
+                    document.getElementById('view_intervention_status').innerHTML = 
+                        `<span class="badge bg-${badgeClass}">${escapeHtml(statusLabel)}</span>`;
+                    
+                    // Report (if intervention is closed)
+                    if (intervention.report) {
+                        document.getElementById('view_intervention_report').textContent = intervention.report;
+                        document.getElementById('view_intervention_report_row').style.display = '';
+                    } else {
+                        document.getElementById('view_intervention_report_row').style.display = 'none';
+                    }
+                    
+                    // Load members and vehicles
+                    loadViewInterventionMembers(interventionId);
+                    loadViewInterventionVehicles(interventionId);
+                    
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('viewInterventionCardModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Errore durante il caricamento dei dati');
+                });
+        }
+
+        // Load intervention members for read-only view
+        function loadViewInterventionMembers(interventionId) {
+            fetch(`event_ajax.php?action=get_intervention_members&intervention_id=${interventionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('view_intervention_members');
+                    if (data.error || !data.members || data.members.length === 0) {
+                        container.innerHTML = '<p class="text-muted">Nessun volontario assegnato</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = '<ul class="list-group">' + 
+                        data.members.map(member => `
+                            <li class="list-group-item">
+                                <i class="bi bi-person"></i> <strong>${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</strong>
+                                ${member.registration_number ? `<br><small class="text-muted">Matricola: ${escapeHtml(member.registration_number)}</small>` : ''}
+                                ${member.role ? `<br><small class="text-muted">Ruolo: ${escapeHtml(member.role)}</small>` : ''}
+                            </li>
+                        `).join('') +
+                    '</ul>';
+                })
+                .catch(error => {
+                    console.error('Error loading members:', error);
+                    document.getElementById('view_intervention_members').innerHTML = 
+                        '<p class="text-danger">Errore caricamento volontari</p>';
+                });
+        }
+
+        // Load intervention vehicles for read-only view
+        function loadViewInterventionVehicles(interventionId) {
+            fetch(`event_ajax.php?action=get_intervention_vehicles&intervention_id=${interventionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('view_intervention_vehicles');
+                    if (data.error || !data.vehicles || data.vehicles.length === 0) {
+                        container.innerHTML = '<p class="text-muted">Nessun mezzo assegnato</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = '<ul class="list-group">' + 
+                        data.vehicles.map(vehicle => {
+                            let label = vehicle.license_plate || vehicle.name || vehicle.serial_number || `Mezzo ID ${vehicle.vehicle_id}`;
+                            let details = '';
+                            if (vehicle.brand || vehicle.model) {
+                                details = `<br><small class="text-muted">${escapeHtml(vehicle.brand || '')} ${escapeHtml(vehicle.model || '')}</small>`;
+                            }
+                            return `
+                                <li class="list-group-item">
+                                    <i class="bi bi-truck"></i> <strong>${escapeHtml(label)}</strong>
+                                    ${details}
+                                </li>
+                            `;
+                        }).join('') +
+                    '</ul>';
+                })
+                .catch(error => {
+                    console.error('Error loading vehicles:', error);
+                    document.getElementById('view_intervention_vehicles').innerHTML = 
+                        '<p class="text-danger">Errore caricamento mezzi</p>';
+                });
         }
         
         // Load intervention members
