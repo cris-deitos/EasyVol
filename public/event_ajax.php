@@ -699,7 +699,7 @@ try {
             
         case 'check_active_interventions':
             // Check if event has active interventions before closing
-            if (!$app->checkPermission('events', 'view')) {
+            if (!$app->checkPermission('events', 'edit')) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Permesso negato']);
                 exit;

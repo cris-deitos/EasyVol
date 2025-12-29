@@ -631,6 +631,7 @@ class EventController {
     
     /**
      * Verifica se ci sono interventi attivi (in_corso o sospeso) per un evento
+     * Returns true if there are active interventions or if an error occurs (fail-safe)
      */
     public function hasActiveInterventions($eventId) {
         try {
@@ -644,7 +645,8 @@ class EventController {
             return isset($result['count']) && $result['count'] > 0;
         } catch (\Exception $e) {
             error_log("Errore verifica interventi attivi: " . $e->getMessage());
-            return false;
+            // Fail-safe: assume there are active interventions to prevent accidental closure
+            return true;
         }
     }
     
