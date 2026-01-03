@@ -44,8 +44,8 @@ $pageTitle = 'Dispatch - Monitoraggio Radio';
         .slot-tab {
             border: 2px solid #dee2e6;
             border-radius: 8px;
-            padding: 15px;
-            height: 200px;
+            padding: 10px;
+            height: 120px;
             background: #f8f9fa;
             transition: all 0.3s ease;
         }
@@ -64,6 +64,10 @@ $pageTitle = 'Dispatch - Monitoraggio Radio';
         #map {
             height: 500px;
             border-radius: 8px;
+            transition: height 0.3s ease;
+        }
+        #map.expanded {
+            height: 800px;
         }
         .radio-marker-tooltip {
             font-size: 12px;
@@ -203,9 +207,17 @@ $pageTitle = 'Dispatch - Monitoraggio Radio';
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-map"></i> Mappa Posizioni Radio</h5>
-                        <a href="dispatch_position_history.php" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-clock-history"></i> Storico Posizioni
-                        </a>
+                        <div>
+                            <button id="toggleMapSize" class="btn btn-sm btn-outline-info me-2" onclick="toggleMapSize()">
+                                <i class="bi bi-arrows-fullscreen"></i> <span id="mapSizeText">Espandi</span>
+                            </button>
+                            <a href="dispatch_map_fullscreen.php" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
+                                <i class="bi bi-box-arrow-up-right"></i> Apri in Nuova Scheda
+                            </a>
+                            <a href="dispatch_position_history.php" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-clock-history"></i> Storico Posizioni
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div id="map"></div>
@@ -266,8 +278,11 @@ $pageTitle = 'Dispatch - Monitoraggio Radio';
                             
                             <!-- Text Messages Tab -->
                             <div class="tab-pane fade" id="messages" role="tabpanel">
-                                <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6>Messaggi di Testo</h6>
+                                    <a href="dispatch_message_history.php" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-clock-history"></i> Storico Messaggi
+                                    </a>
                                 </div>
                                 <div id="messages-list" style="max-height: 400px; overflow-y: auto;">
                                     <p class="text-muted">Caricamento messaggi...</p>
@@ -613,6 +628,25 @@ $pageTitle = 'Dispatch - Monitoraggio Radio';
             } catch (error) {
                 console.error('Error acknowledging emergency:', error);
             }
+        }
+        
+        // Toggle map size
+        function toggleMapSize() {
+            const mapElement = document.getElementById('map');
+            const mapSizeText = document.getElementById('mapSizeText');
+            
+            if (mapElement.classList.contains('expanded')) {
+                mapElement.classList.remove('expanded');
+                mapSizeText.textContent = 'Espandi';
+            } else {
+                mapElement.classList.add('expanded');
+                mapSizeText.textContent = 'Riduci';
+            }
+            
+            // Trigger map resize after the CSS transition
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 300);
         }
         
         // Initialize and start polling

@@ -314,6 +314,10 @@ class DispatchController {
      * Get event history with filters
      */
     public function getEventHistory($filters = [], $page = 1, $perPage = 100) {
+        // Validate pagination parameters
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(1000, (int)$perPage));
+        
         $where = ["1=1"];
         $params = [];
         
@@ -359,7 +363,10 @@ class DispatchController {
                 LEFT JOIN dispatch_talkgroups tg ON e.talkgroup_id = tg.talkgroup_id
                 WHERE $whereClause
                 ORDER BY e.event_timestamp DESC
-                LIMIT $perPage OFFSET $offset";
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $perPage;
+        $params[] = $offset;
         
         return $this->db->fetchAll($sql, $params);
     }
@@ -418,6 +425,10 @@ class DispatchController {
      * Get audio recording history with filters
      */
     public function getAudioHistory($filters = [], $page = 1, $perPage = 100) {
+        // Validate pagination parameters
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(1000, (int)$perPage));
+        
         $where = ["1=1"];
         $params = [];
         
@@ -458,7 +469,10 @@ class DispatchController {
                 LEFT JOIN dispatch_talkgroups tg ON a.talkgroup_id = tg.talkgroup_id
                 WHERE $whereClause
                 ORDER BY a.recorded_at DESC
-                LIMIT $perPage OFFSET $offset";
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $perPage;
+        $params[] = $offset;
         
         return $this->db->fetchAll($sql, $params);
     }
@@ -514,6 +528,70 @@ class DispatchController {
         ]);
         
         return $this->db->lastInsertId();
+    }
+    
+    /**
+     * Get text message history with filters
+     */
+    public function getMessageHistory($filters = [], $page = 1, $perPage = 100) {
+        // Validate pagination parameters
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(1000, (int)$perPage));
+        
+        $where = ["1=1"];
+        $params = [];
+        
+        if (!empty($filters['slot'])) {
+            $where[] = "tm.slot = ?";
+            $params[] = $filters['slot'];
+        }
+        
+        if (!empty($filters['from_radio_dmr_id'])) {
+            $where[] = "tm.from_radio_dmr_id = ?";
+            $params[] = $filters['from_radio_dmr_id'];
+        }
+        
+        if (!empty($filters['to_radio_dmr_id'])) {
+            $where[] = "tm.to_radio_dmr_id = ?";
+            $params[] = $filters['to_radio_dmr_id'];
+        }
+        
+        if (!empty($filters['to_talkgroup_id'])) {
+            $where[] = "tm.to_talkgroup_id = ?";
+            $params[] = $filters['to_talkgroup_id'];
+        }
+        
+        if (!empty($filters['start_date'])) {
+            $where[] = "tm.message_timestamp >= ?";
+            $params[] = $filters['start_date'];
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $where[] = "tm.message_timestamp <= ?";
+            $params[] = $filters['end_date'];
+        }
+        
+        $whereClause = implode(' AND ', $where);
+        $offset = ($page - 1) * $perPage;
+        
+        $sql = "SELECT tm.*, 
+                rd_from.name as from_radio_name,
+                rd_from.identifier as from_radio_identifier,
+                rd_to.name as to_radio_name,
+                rd_to.identifier as to_radio_identifier,
+                tg.name as to_talkgroup_name
+                FROM dispatch_text_messages tm
+                LEFT JOIN radio_directory rd_from ON tm.from_radio_dmr_id = rd_from.dmr_id
+                LEFT JOIN radio_directory rd_to ON tm.to_radio_dmr_id = rd_to.dmr_id
+                LEFT JOIN dispatch_talkgroups tg ON tm.to_talkgroup_id = tg.talkgroup_id
+                WHERE $whereClause
+                ORDER BY tm.message_timestamp DESC
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $perPage;
+        $params[] = $offset;
+        
+        return $this->db->fetchAll($sql, $params);
     }
     
     // ============================================
