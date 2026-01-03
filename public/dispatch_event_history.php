@@ -42,7 +42,7 @@ if (!empty($_GET['end_date'])) {
     $filters['end_date'] = $_GET['end_date'];
 }
 
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $events = $dispatchController->getEventHistory($filters, $page, 100);
 
 // Get all radios for filter dropdown

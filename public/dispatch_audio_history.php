@@ -39,7 +39,7 @@ if (!empty($_GET['end_date'])) {
     $filters['end_date'] = $_GET['end_date'];
 }
 
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $recordings = $dispatchController->getAudioHistory($filters, $page, 100);
 
 // Get all radios for filter dropdown
@@ -214,11 +214,11 @@ $pageTitle = 'Storico Registrazioni Audio';
                                                     if (!empty($rec['file_path'])) {
                                                         // Extract only the filename and construct path within uploads directory
                                                         $fileName = basename($rec['file_path']);
-                                                        $fullPath = realpath($_SERVER['DOCUMENT_ROOT'] . '/../uploads/' . $fileName);
-                                                        $basePath = realpath($_SERVER['DOCUMENT_ROOT'] . '/../uploads/');
+                                                        $uploadsDir = realpath(__DIR__ . '/../uploads/');
+                                                        $fullPath = $uploadsDir ? realpath($uploadsDir . '/' . $fileName) : false;
                                                         
-                                                        // Check if file exists and is within the uploads directory
-                                                        if ($fullPath && $basePath && strpos($fullPath, $basePath) === 0 && file_exists($fullPath)):
+                                                        // Check if file exists and is within the uploads directory (after resolving symlinks)
+                                                        if ($fullPath && $uploadsDir && strpos($fullPath, $uploadsDir . DIRECTORY_SEPARATOR) === 0 && is_file($fullPath)):
                                                     ?>
                                                         <audio controls style="width: 250px; height: 30px;">
                                                             <source src="<?php echo htmlspecialchars('uploads/' . $fileName); ?>" type="audio/wav">

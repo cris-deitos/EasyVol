@@ -64,7 +64,7 @@ $pageTitle = 'Mappa Radio - Fullscreen';
 </head>
 <body>
     <div class="map-controls">
-        <button onclick="window.close()">
+        <button onclick="window.close()" aria-label="Chiudi mappa fullscreen">
             Chiudi
         </button>
     </div>
