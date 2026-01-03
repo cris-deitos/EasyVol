@@ -917,14 +917,4 @@ HTML;
         
         return $html;
     }
-            
-            $this->logActivity($userId, 'event', 'close', $id, 'Chiusura rapida evento');
-            
-            return true;
-            
-        } catch (\Exception $e) {
-            error_log("Errore chiusura rapida evento: " . $e->getMessage());
-            throw $e;
-        }
-    }
 }
