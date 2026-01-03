@@ -214,11 +214,11 @@ $pageTitle = 'Storico Messaggi Radio';
                                                     <?php 
                                                     if (!empty($msg['to_radio_name'])) {
                                                         echo '<span class="badge bg-primary">Radio</span> ' . htmlspecialchars($msg['to_radio_name'] . ' (' . $msg['to_radio_dmr_id'] . ')');
-                                                    } else if (!empty($msg['to_talkgroup_name'])) {
+                                                    } elseif (!empty($msg['to_talkgroup_name'])) {
                                                         echo '<span class="badge bg-success">TalkGroup</span> ' . htmlspecialchars($msg['to_talkgroup_name'] . ' (' . $msg['to_talkgroup_id'] . ')');
-                                                    } else if (!empty($msg['to_radio_dmr_id'])) {
+                                                    } elseif (!empty($msg['to_radio_dmr_id'])) {
                                                         echo '<span class="badge bg-primary">Radio</span> ' . htmlspecialchars($msg['to_radio_dmr_id']);
-                                                    } else if (!empty($msg['to_talkgroup_id'])) {
+                                                    } elseif (!empty($msg['to_talkgroup_id'])) {
                                                         echo '<span class="badge bg-success">TalkGroup</span> ' . htmlspecialchars($msg['to_talkgroup_id']);
                                                     } else {
                                                         echo '<span class="badge bg-secondary">Broadcast</span>';

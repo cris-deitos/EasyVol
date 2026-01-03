@@ -205,7 +205,7 @@ $pageTitle = 'Storico Eventi Radio';
                                                     <?php 
                                                     if (!empty($event['talkgroup_name'])) {
                                                         echo htmlspecialchars($event['talkgroup_name'] . ' (' . $event['talkgroup_id'] . ')');
-                                                    } else if (!empty($event['talkgroup_id'])) {
+                                                    } elseif (!empty($event['talkgroup_id'])) {
                                                         echo htmlspecialchars($event['talkgroup_id']);
                                                     } else {
                                                         echo 'N/A';

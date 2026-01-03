@@ -192,7 +192,7 @@ $pageTitle = 'Storico Registrazioni Audio';
                                                     <?php 
                                                     if (!empty($rec['talkgroup_name'])) {
                                                         echo htmlspecialchars($rec['talkgroup_name'] . ' (' . $rec['talkgroup_id'] . ')');
-                                                    } else if (!empty($rec['talkgroup_id'])) {
+                                                    } elseif (!empty($rec['talkgroup_id'])) {
                                                         echo htmlspecialchars($rec['talkgroup_id']);
                                                     } else {
                                                         echo 'N/A';
