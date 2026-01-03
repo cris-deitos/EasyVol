@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     'email' => trim($_POST['email'] ?? ''),
                     'pec' => trim($_POST['pec'] ?? ''),
                     'tax_code' => trim($_POST['tax_code'] ?? ''),
+                    'provincial_civil_protection_email' => trim($_POST['provincial_civil_protection_email'] ?? ''),
                 ];
                 
                 // Handle logo upload
@@ -125,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $app->checkPermission('settings', '
                     $allowedColumns = [
                         'name', 'logo', 'address_street', 'address_number', 
                         'address_city', 'address_province', 'address_cap', 
-                        'phone', 'email', 'pec', 'tax_code'
+                        'phone', 'email', 'pec', 'tax_code', 'provincial_civil_protection_email'
                     ];
                     
                     // Filter associationData to only include whitelisted columns
@@ -552,6 +553,18 @@ $pageTitle = 'Impostazioni Sistema';
                                         <input type="text" class="form-control" id="tax_code" name="tax_code" 
                                                value="<?php echo htmlspecialchars($associationData['tax_code'] ?? ''); ?>"
                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                    </div>
+                                    
+                                    <!-- Provincial Civil Protection Email -->
+                                    <div class="mb-3">
+                                        <label for="provincial_civil_protection_email" class="form-label">
+                                            <i class="bi bi-shield-check"></i> Email Ufficio Provinciale di Protezione Civile
+                                        </label>
+                                        <input type="email" class="form-control" id="provincial_civil_protection_email" name="provincial_civil_protection_email" 
+                                               value="<?php echo htmlspecialchars($associationData['provincial_civil_protection_email'] ?? ''); ?>"
+                                               placeholder="es. provincia@protezionecivile.it"
+                                               <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
+                                        <small class="text-muted">Email per le notifiche degli eventi alla Provincia</small>
                                     </div>
                                     
                                     <?php if ($app->checkPermission('settings', 'edit')): ?>

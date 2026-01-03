@@ -154,6 +154,16 @@ class EventController {
                 error_log("Errore invio notifica Telegram per nuovo evento: " . $e->getMessage());
             }
             
+            // Send province email if requested
+            if (!empty($data['send_province_email'])) {
+                try {
+                    $this->sendProvinceEmail($eventId, $userId);
+                } catch (\Exception $e) {
+                    error_log("Errore invio email Provincia: " . $e->getMessage());
+                    // Non bloccare la creazione dell'evento se l'email fallisce
+                }
+            }
+            
             $this->db->commit();
             return $eventId;
             
@@ -689,6 +699,218 @@ class EventController {
             ];
             
             $this->db->execute($sql, $params);
+            
+            $this->logActivity($userId, 'event', 'quick_close', $id, 'Chiuso rapidamente evento ID: ' . $id);
+            
+            $this->db->commit();
+            return true;
+            
+        } catch (\Exception $e) {
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+    
+    /**
+     * Send email notification to provincial civil protection
+     */
+    public function sendProvinceEmail($eventId, $userId) {
+        try {
+            // Get event details
+            $event = $this->get($eventId);
+            if (!$event) {
+                throw new \Exception('Evento non trovato');
+            }
+            
+            // Get association data including province email
+            $association = $this->db->fetchOne("SELECT * FROM association ORDER BY id ASC LIMIT 1");
+            $provinceEmail = $association['provincial_civil_protection_email'] ?? null;
+            
+            if (empty($provinceEmail)) {
+                throw new \Exception('Email Ufficio Provinciale non configurata');
+            }
+            
+            // Generate secure token and access code
+            $accessToken = bin2hex(random_bytes(32)); // 64 character hex token
+            $accessCode = $this->generateAccessCode(); // 8 alphanumeric characters
+            
+            // Update event with token and code
+            $sql = "UPDATE events SET 
+                    province_access_token = ?,
+                    province_access_code = ?
+                    WHERE id = ?";
+            $this->db->execute($sql, [$accessToken, $accessCode, $eventId]);
+            
+            // Prepare email content
+            $emailSubject = "Notifica Nuovo Evento - " . $event['title'];
+            
+            // Get base URL from config
+            $baseUrl = $this->config['email']['base_url'] ?? 'http://localhost';
+            $accessUrl = rtrim($baseUrl, '/') . '/public/province_event_view.php?token=' . $accessToken;
+            
+            $eventTypeLabels = [
+                'emergenza' => 'Emergenza',
+                'esercitazione' => 'Esercitazione',
+                'attivita' => 'Attività'
+            ];
+            $eventTypeLabel = $eventTypeLabels[$event['event_type']] ?? $event['event_type'];
+            
+            // Build email body
+            $emailBody = $this->buildProvinceEmailTemplate(
+                $event,
+                $eventTypeLabel,
+                $accessUrl,
+                $accessCode,
+                $association
+            );
+            
+            // Send email using EmailService
+            require_once __DIR__ . '/../Services/EmailService.php';
+            $emailService = new \EasyVol\Services\EmailService($this->db, $this->config);
+            
+            $emailOptions = [
+                'cc' => $association['email'] ?? null,
+                'reply_to' => $association['email'] ?? null
+            ];
+            
+            $emailSent = $emailService->sendEmail($provinceEmail, $emailSubject, $emailBody, $emailOptions);
+            
+            // Update event with email status
+            $emailStatus = $emailSent ? 'success' : 'failure';
+            $sql = "UPDATE events SET 
+                    province_email_sent = 1,
+                    province_email_sent_at = NOW(),
+                    province_email_sent_by = ?,
+                    province_email_status = ?
+                    WHERE id = ?";
+            $this->db->execute($sql, [$userId, $emailStatus, $eventId]);
+            
+            $this->logActivity($userId, 'event', 'province_email_sent', $eventId, 
+                'Inviata email alla Provincia per evento: ' . $event['title']);
+            
+            return $emailSent;
+            
+        } catch (\Exception $e) {
+            error_log("Errore invio email Provincia: " . $e->getMessage());
+            
+            // Update event with failure status
+            try {
+                $sql = "UPDATE events SET 
+                        province_email_sent = 0,
+                        province_email_sent_at = NOW(),
+                        province_email_sent_by = ?,
+                        province_email_status = ?
+                        WHERE id = ?";
+                $this->db->execute($sql, [$userId, 'failure: ' . $e->getMessage(), $eventId]);
+            } catch (\Exception $updateError) {
+                error_log("Errore aggiornamento stato email: " . $updateError->getMessage());
+            }
+            
+            throw $e;
+        }
+    }
+    
+    /**
+     * Generate random 8-character alphanumeric access code
+     */
+    private function generateAccessCode() {
+        $characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $code = '';
+        $max = strlen($characters) - 1;
+        for ($i = 0; $i < 8; $i++) {
+            $code .= $characters[random_int(0, $max)];
+        }
+        return $code;
+    }
+    
+    /**
+     * Build HTML email template for province notification
+     */
+    private function buildProvinceEmailTemplate($event, $eventTypeLabel, $accessUrl, $accessCode, $association) {
+        $associationName = htmlspecialchars($association['name'] ?? 'Associazione');
+        $eventTitle = htmlspecialchars($event['title']);
+        $eventType = htmlspecialchars($eventTypeLabel);
+        $startDate = date('d/m/Y H:i', strtotime($event['start_date']));
+        $location = htmlspecialchars($event['location'] ?? 'Non specificato');
+        $description = nl2br(htmlspecialchars($event['description'] ?? 'Nessuna descrizione'));
+        
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifica Nuovo Evento</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #0d6efd; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background-color: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; }
+        .event-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .event-details strong { display: inline-block; min-width: 120px; }
+        .access-info { background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .access-code { font-size: 24px; font-weight: bold; color: #0d6efd; text-align: center; padding: 10px; background-color: white; border: 2px dashed #0d6efd; margin: 10px 0; }
+        .button { display: inline-block; background-color: #0d6efd; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+        .info-box { background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Notifica Nuovo Evento</h1>
+            <p>Ufficio Provinciale di Protezione Civile</p>
+        </div>
+        <div class="content">
+            <p>Gentile Ufficio Provinciale,</p>
+            <p>l'associazione <strong>{$associationName}</strong> ha creato un nuovo evento che richiede la vostra attenzione.</p>
+            
+            <div class="event-details">
+                <h3>📋 Dettagli Evento</h3>
+                <p><strong>Titolo:</strong> {$eventTitle}</p>
+                <p><strong>Tipo Evento:</strong> {$eventType}</p>
+                <p><strong>Data e Ora Inizio:</strong> {$startDate}</p>
+                <p><strong>Località:</strong> {$location}</p>
+                <p><strong>Descrizione:</strong><br>{$description}</p>
+            </div>
+            
+            <div class="access-info">
+                <h3>🔐 Accesso alla Pagina di Monitoraggio</h3>
+                <p>Per accedere ai dettagli completi dell'evento e agli interventi associati, utilizzare il seguente link e codice:</p>
+                
+                <p style="text-align: center;">
+                    <a href="{$accessUrl}" class="button">Accedi alla Pagina Evento</a>
+                </p>
+                
+                <p><strong>Codice di Accesso (richiesto):</strong></p>
+                <div class="access-code">{$accessCode}</div>
+                
+                <p><small><em>Nota: Il codice di accesso sarà richiesto per visualizzare i dati dell'evento.</em></small></p>
+            </div>
+            
+            <div class="info-box">
+                <h4>ℹ️ Cosa potete visualizzare:</h4>
+                <ul>
+                    <li><strong>Dati generali dell'evento:</strong> Titolo, tipo, date, località e descrizione</li>
+                    <li><strong>Elenco degli interventi:</strong> Tutti gli interventi associati all'evento con relativi dettagli</li>
+                    <li><strong>Volontari partecipanti:</strong> Per motivi di privacy, visualizzerete solo i <strong>codici fiscali</strong> dei volontari, non i nomi e cognomi</li>
+                    <li><strong>Download Excel:</strong> Potete scaricare file Excel suddivisi per giorni contenenti i codici fiscali dei volontari partecipanti per ogni giornata dell'evento</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Questo messaggio è stato inviato automaticamente dal sistema di gestione di {$associationName}</p>
+            <p>Per qualsiasi informazione, rispondere a questa email o contattare direttamente l'associazione.</p>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+        
+        return $html;
+    }
             
             $this->logActivity($userId, 'event', 'close', $id, 'Chiusura rapida evento');
             
