@@ -747,7 +747,14 @@ class EventController {
             $emailSubject = "Notifica Nuovo Evento - " . $event['title'];
             
             // Get base URL from config
-            $baseUrl = $this->config['email']['base_url'] ?? 'http://localhost';
+            $baseUrl = $this->config['email']['base_url'] ?? '';
+            if (empty($baseUrl)) {
+                throw new \Exception('Base URL non configurato nelle impostazioni email');
+            }
+            // Ensure HTTPS in production
+            if (strpos($baseUrl, 'http://') === 0 && strpos($baseUrl, 'localhost') === false) {
+                error_log('Warning: Using HTTP instead of HTTPS for province access URL');
+            }
             $accessUrl = rtrim($baseUrl, '/') . '/public/province_event_view.php?token=' . $accessToken;
             
             $eventTypeLabels = [
@@ -767,7 +774,6 @@ class EventController {
             );
             
             // Send email using EmailService
-            require_once __DIR__ . '/../Services/EmailService.php';
             $emailService = new \EasyVol\Services\EmailService($this->db, $this->config);
             
             $emailOptions = [

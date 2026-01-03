@@ -23,7 +23,8 @@ $authenticated = false;
 // Get token from URL
 $token = $_GET['token'] ?? '';
 
-if (empty($token) || strlen($token) !== 64) {
+// Validate token format: must be 64 hexadecimal characters
+if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
     $error = 'Token non valido o mancante';
 } else {
     // Initialize database connection
