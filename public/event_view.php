@@ -220,6 +220,20 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                     </span>
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <th>Benefici di Legge:</th>
+                                                <td>
+                                                    <?php 
+                                                    $benefitsValue = $event['legal_benefits_recognized'] ?? 'no';
+                                                    $benefitsClass = $benefitsValue === 'si' ? 'success' : 'secondary';
+                                                    $benefitsLabel = $benefitsValue === 'si' ? 'SI' : 'NO';
+                                                    ?>
+                                                    <span class="badge bg-<?php echo $benefitsClass; ?>">
+                                                        <?php echo htmlspecialchars($benefitsLabel); ?>
+                                                    </span>
+                                                    <br><small class="text-muted">Art. 39 e 40 D. Lgs. n. 1 del 2018</small>
+                                                </td>
+                                            </tr>
                                         </table>
                                     </div>
                                 </div>

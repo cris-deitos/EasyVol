@@ -159,6 +159,7 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                         <th>Data Inizio</th>
                                         <th>Data Fine</th>
                                         <th>Luogo</th>
+                                        <th>Benefici</th>
                                         <th>Stato</th>
                                         <th>Azioni</th>
                                     </tr>
@@ -166,7 +167,7 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                 <tbody>
                                     <?php if (empty($events)): ?>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted">
+                                            <td colspan="8" class="text-center text-muted">
                                                 Nessun evento trovato
                                             </td>
                                         </tr>
@@ -194,6 +195,16 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                                     ?>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($event['location'] ?? '-'); ?></td>
+                                                <td>
+                                                    <?php
+                                                    $benefitsValue = $event['legal_benefits_recognized'] ?? 'no';
+                                                    $benefitsClass = $benefitsValue === 'si' ? 'success' : 'secondary';
+                                                    $benefitsLabel = $benefitsValue === 'si' ? 'SI' : 'NO';
+                                                    ?>
+                                                    <span class="badge bg-<?php echo $benefitsClass; ?>" title="Art. 39 e 40 D. Lgs. n. 1 del 2018">
+                                                        <?php echo htmlspecialchars($benefitsLabel); ?>
+                                                    </span>
+                                                </td>
                                                 <td>
                                                     <?php
                                                     $statusColors = [

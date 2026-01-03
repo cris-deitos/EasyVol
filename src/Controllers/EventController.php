@@ -85,8 +85,8 @@ class EventController {
             
             $sql = "INSERT INTO events (
                 event_type, title, description, start_date, end_date, location, status, created_by, created_at,
-                latitude, longitude, full_address, municipality
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)";
+                latitude, longitude, full_address, municipality, legal_benefits_recognized
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)";
             
             $params = [
                 $data['event_type'],
@@ -100,7 +100,8 @@ class EventController {
                 $data['latitude'] ?? null,
                 $data['longitude'] ?? null,
                 $data['full_address'] ?? null,
-                $data['municipality'] ?? null
+                $data['municipality'] ?? null,
+                $data['legal_benefits_recognized'] ?? 'no'
             ];
             
             $this->db->execute($sql, $params);
@@ -193,7 +194,8 @@ class EventController {
             $sql = "UPDATE events SET
                 event_type = ?, title = ?, description = ?, start_date = ?,
                 end_date = ?, location = ?, status = ?, updated_at = NOW(),
-                latitude = ?, longitude = ?, full_address = ?, municipality = ?
+                latitude = ?, longitude = ?, full_address = ?, municipality = ?,
+                legal_benefits_recognized = ?
                 WHERE id = ?";
             
             $params = [
@@ -208,6 +210,7 @@ class EventController {
                 $data['longitude'] ?? null,
                 $data['full_address'] ?? null,
                 $data['municipality'] ?? null,
+                $data['legal_benefits_recognized'] ?? 'no',
                 $id
             ];
             

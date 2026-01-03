@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'longitude' => !empty($_POST['longitude']) ? floatval($_POST['longitude']) : null,
             'full_address' => trim($_POST['full_address'] ?? ''),
             'municipality' => trim($_POST['municipality'] ?? ''),
+            'legal_benefits_recognized' => $_POST['legal_benefits_recognized'] ?? 'no',
             'send_province_email' => !$isEdit && isset($_POST['send_province_email']) ? true : false
         ];
         
@@ -227,13 +228,21 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-12 mb-3">
+                                <div class="col-md-6 mb-3">
                                     <label for="status" class="form-label">Stato Evento <span class="text-danger">*</span></label>
                                     <select class="form-select" id="status" name="status" required>
                                         <option value="aperto" <?php echo ($event['status'] ?? 'aperto') === 'aperto' ? 'selected' : ''; ?>>Aperto</option>
                                         <option value="in_corso" <?php echo ($event['status'] ?? '') === 'in_corso' ? 'selected' : ''; ?>>In Corso</option>
                                         <option value="concluso" <?php echo ($event['status'] ?? '') === 'concluso' ? 'selected' : ''; ?>>Concluso</option>
                                     </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="legal_benefits_recognized" class="form-label">Benefici di Legge <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="legal_benefits_recognized" name="legal_benefits_recognized" required>
+                                        <option value="no" <?php echo ($event['legal_benefits_recognized'] ?? 'no') === 'no' ? 'selected' : ''; ?>>NO</option>
+                                        <option value="si" <?php echo ($event['legal_benefits_recognized'] ?? '') === 'si' ? 'selected' : ''; ?>>SI</option>
+                                    </select>
+                                    <small class="form-text text-muted">Art. 39 e 40 D. Lgs. n. 1 del 2018</small>
                                 </div>
                             </div>
                         </div>
