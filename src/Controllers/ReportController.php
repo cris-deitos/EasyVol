@@ -374,6 +374,7 @@ class ReportController {
                     e.title,
                     e.status,
                     e.municipality,
+                    e.legal_benefits_recognized,
                     e.start_date as data_ora_apertura_evento,
                     e.end_date as data_ora_chiusura_evento,
                     COUNT(DISTINCT i.id) as numero_interventi,
@@ -385,7 +386,7 @@ class ReportController {
                 LEFT JOIN event_participants ep ON e.id = ep.event_id
                 LEFT JOIN interventions i ON e.id = i.event_id
                 WHERE YEAR(e.start_date) = ?
-                GROUP BY e.id, e.event_type, e.title, e.status, e.municipality, e.start_date, e.end_date
+                GROUP BY e.id, e.event_type, e.title, e.status, e.municipality, e.legal_benefits_recognized, e.start_date, e.end_date
                 ORDER BY e.start_date DESC, e.event_type";
         
         return $this->db->fetchAll($sql, [$year]);
