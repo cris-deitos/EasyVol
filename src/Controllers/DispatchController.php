@@ -314,6 +314,10 @@ class DispatchController {
      * Get event history with filters
      */
     public function getEventHistory($filters = [], $page = 1, $perPage = 100) {
+        // Validate pagination parameters
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(1000, (int)$perPage));
+        
         $where = ["1=1"];
         $params = [];
         
@@ -421,6 +425,10 @@ class DispatchController {
      * Get audio recording history with filters
      */
     public function getAudioHistory($filters = [], $page = 1, $perPage = 100) {
+        // Validate pagination parameters
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(1000, (int)$perPage));
+        
         $where = ["1=1"];
         $params = [];
         
@@ -526,6 +534,10 @@ class DispatchController {
      * Get text message history with filters
      */
     public function getMessageHistory($filters = [], $page = 1, $perPage = 100) {
+        // Validate pagination parameters
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(1000, (int)$perPage));
+        
         $where = ["1=1"];
         $params = [];
         

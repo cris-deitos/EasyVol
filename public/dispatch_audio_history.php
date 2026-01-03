@@ -214,8 +214,8 @@ $pageTitle = 'Storico Registrazioni Audio';
                                                     if (!empty($rec['file_path'])) {
                                                         // Extract only the filename and construct path within uploads directory
                                                         $fileName = basename($rec['file_path']);
-                                                        $uploadsDir = realpath(__DIR__ . '/../uploads/');
-                                                        $fullPath = $uploadsDir ? realpath($uploadsDir . '/' . $fileName) : false;
+                                                        $uploadsDir = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'uploads');
+                                                        $fullPath = $uploadsDir ? realpath($uploadsDir . DIRECTORY_SEPARATOR . $fileName) : false;
                                                         
                                                         // Check if file exists and is within the uploads directory (after resolving symlinks)
                                                         if ($fullPath && $uploadsDir && strpos($fullPath, $uploadsDir . DIRECTORY_SEPARATOR) === 0 && is_file($fullPath)):
