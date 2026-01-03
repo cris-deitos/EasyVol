@@ -50,11 +50,21 @@ $pageTitle = 'Mappa Radio - Fullscreen';
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
+        .map-controls button {
+            padding: 5px 10px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+        .map-controls button:hover {
+            background: #e2e6ea;
+        }
     </style>
 </head>
 <body>
     <div class="map-controls">
-        <button onclick="window.close()" style="padding: 5px 10px; cursor: pointer;">
+        <button onclick="window.close()">
             Chiudi
         </button>
     </div>

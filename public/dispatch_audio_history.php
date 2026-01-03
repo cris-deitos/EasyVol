@@ -210,14 +210,28 @@ $pageTitle = 'Storico Registrazioni Audio';
                                                     ?>
                                                 </td>
                                                 <td>
-                                                    <?php if (!empty($rec['file_path']) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/../' . $rec['file_path'])): ?>
+                                                    <?php 
+                                                    if (!empty($rec['file_path'])) {
+                                                        // Extract only the filename and construct path within uploads directory
+                                                        $fileName = basename($rec['file_path']);
+                                                        $fullPath = realpath($_SERVER['DOCUMENT_ROOT'] . '/../uploads/' . $fileName);
+                                                        $basePath = realpath($_SERVER['DOCUMENT_ROOT'] . '/../uploads/');
+                                                        
+                                                        // Check if file exists and is within the uploads directory
+                                                        if ($fullPath && $basePath && strpos($fullPath, $basePath) === 0 && file_exists($fullPath)):
+                                                    ?>
                                                         <audio controls style="width: 250px; height: 30px;">
-                                                            <source src="<?php echo htmlspecialchars($rec['file_path']); ?>" type="audio/wav">
+                                                            <source src="<?php echo htmlspecialchars('uploads/' . $fileName); ?>" type="audio/wav">
                                                             Il tuo browser non supporta la riproduzione audio
                                                         </audio>
                                                     <?php else: ?>
                                                         <span class="text-muted">File non disponibile</span>
-                                                    <?php endif; ?>
+                                                    <?php 
+                                                        endif;
+                                                    } else {
+                                                        echo '<span class="text-muted">File non disponibile</span>';
+                                                    }
+                                                    ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

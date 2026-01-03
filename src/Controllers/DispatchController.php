@@ -359,7 +359,10 @@ class DispatchController {
                 LEFT JOIN dispatch_talkgroups tg ON e.talkgroup_id = tg.talkgroup_id
                 WHERE $whereClause
                 ORDER BY e.event_timestamp DESC
-                LIMIT $perPage OFFSET $offset";
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $perPage;
+        $params[] = $offset;
         
         return $this->db->fetchAll($sql, $params);
     }
@@ -458,7 +461,10 @@ class DispatchController {
                 LEFT JOIN dispatch_talkgroups tg ON a.talkgroup_id = tg.talkgroup_id
                 WHERE $whereClause
                 ORDER BY a.recorded_at DESC
-                LIMIT $perPage OFFSET $offset";
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $perPage;
+        $params[] = $offset;
         
         return $this->db->fetchAll($sql, $params);
     }
@@ -568,7 +574,10 @@ class DispatchController {
                 LEFT JOIN dispatch_talkgroups tg ON tm.to_talkgroup_id = tg.talkgroup_id
                 WHERE $whereClause
                 ORDER BY tm.message_timestamp DESC
-                LIMIT $perPage OFFSET $offset";
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $perPage;
+        $params[] = $offset;
         
         return $this->db->fetchAll($sql, $params);
     }
