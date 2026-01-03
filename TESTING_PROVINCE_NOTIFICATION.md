@@ -2,10 +2,12 @@
 
 ## Prerequisites
 
-1. **Database Migration**
-   ```bash
-   mysql -u your_username -p your_database_name < migrations/add_province_notification_feature.sql
-   ```
+1. **Database Setup**
+   - **For new installations**: The schema is already included in `database_schema.sql`
+   - **For existing installations**: Run the migration:
+     ```bash
+     mysql -u your_username -p your_database_name < migrations/add_province_notification_feature.sql
+     ```
 
 2. **Email Configuration**
    - Ensure SMTP settings are configured in Settings → Email

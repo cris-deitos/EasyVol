@@ -12,9 +12,19 @@ This feature allows associations to send event notifications to Provincial Civil
 
 ## Installation Steps
 
-### 1. Database Migration
+### For New Installations
 
-Run the database migration to add required fields:
+If you are installing EasyVol from scratch, the province notification feature is **already included** in the main `database_schema.sql` file. No additional migration is needed.
+
+Simply run:
+
+```bash
+mysql -u your_username -p your_database < database_schema.sql
+```
+
+### For Existing Installations (Updates)
+
+If you have an existing EasyVol installation, run the migration to add the required fields:
 
 ```bash
 mysql -u your_username -p your_database < migrations/add_province_notification_feature.sql
@@ -22,7 +32,7 @@ mysql -u your_username -p your_database < migrations/add_province_notification_f
 
 Or manually execute the SQL commands in the file.
 
-### 2. Configure Provincial Email
+### Configure Provincial Email
 
 1. Log in to EasyVol as an administrator
 2. Navigate to **Settings** → **Association Data**
@@ -30,7 +40,7 @@ Or manually execute the SQL commands in the file.
 4. Enter the email address of the Provincial Civil Protection office
 5. Click **Save Changes**
 
-### 3. Configure Email Settings
+### Configure Email Settings
 
 Ensure that email settings are properly configured in **Settings** → **Email Configuration** so that notification emails can be sent.
 
