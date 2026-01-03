@@ -192,8 +192,11 @@ $pageTitle = 'Centrale Operativa';
                     <!-- Available Resources -->
                     <div class="col-md-6 mb-4">
                         <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-broadcast-pin"></i> Radio Disponibili</h5>
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-broadcast-pin"></i> Gestione Radio</h5>
+                                <a href="dispatch.php" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-broadcast"></i> Dispatch
+                                </a>
                             </div>
                             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                                 <?php if (empty($dashboard['available_radios'])): ?>
