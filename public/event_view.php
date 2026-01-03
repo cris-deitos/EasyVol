@@ -272,6 +272,73 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                         </table>
                                     </div>
                                 </div>
+                                
+                                <!-- Province Email Status Card -->
+                                <div class="card mb-3 <?php echo $event['province_email_sent'] ? 'border-success' : 'border-warning'; ?>">
+                                    <div class="card-header <?php echo $event['province_email_sent'] ? 'bg-success' : 'bg-warning'; ?> text-white">
+                                        <h5 class="mb-0"><i class="bi bi-envelope"></i> Notifica Provincia</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <?php if ($event['province_email_sent']): ?>
+                                            <div class="alert alert-success mb-2">
+                                                <i class="bi bi-check-circle-fill"></i> <strong>Email inviata alla Provincia</strong>
+                                            </div>
+                                            <table class="table table-sm mb-0">
+                                                <tr>
+                                                    <th width="40%">Data/Ora Invio:</th>
+                                                    <td><?php echo !empty($event['province_email_sent_at']) ? date('d/m/Y H:i', strtotime($event['province_email_sent_at'])) : '-'; ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Esito:</th>
+                                                    <td>
+                                                        <?php if ($event['province_email_status'] === 'success'): ?>
+                                                            <span class="badge bg-success">Inviata con successo</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-danger">Errore: <?php echo htmlspecialchars($event['province_email_status'] ?? 'Sconosciuto'); ?></span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Inviata da:</th>
+                                                    <td>
+                                                        <?php 
+                                                        if (!empty($event['province_email_sent_by'])) {
+                                                            $sender = $db->fetchOne(
+                                                                "SELECT u.username, m.first_name, m.last_name 
+                                                                FROM users u 
+                                                                LEFT JOIN members m ON u.member_id = m.id 
+                                                                WHERE u.id = ?", 
+                                                                [$event['province_email_sent_by']]
+                                                            );
+                                                            if ($sender) {
+                                                                if (!empty($sender['first_name']) && !empty($sender['last_name'])) {
+                                                                    echo htmlspecialchars($sender['first_name'] . ' ' . $sender['last_name']);
+                                                                } else {
+                                                                    echo htmlspecialchars($sender['username']);
+                                                                }
+                                                            } else {
+                                                                echo 'Utente sconosciuto';
+                                                            }
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        <?php else: ?>
+                                            <div class="alert alert-warning mb-2">
+                                                <i class="bi bi-exclamation-triangle-fill"></i> <strong>Email non ancora inviata</strong>
+                                            </div>
+                                            <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                <p class="mb-2">Puoi inviare la notifica alla Provincia in qualsiasi momento.</p>
+                                                <button type="button" class="btn btn-primary" onclick="sendProvinceEmailNow()">
+                                                    <i class="bi bi-send"></i> Invia Email alla Provincia
+                                                </button>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1761,6 +1828,38 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             
             const modal = new bootstrap.Modal(document.getElementById('quickCloseModal'));
             modal.show();
+        }
+        
+        // Send province email now
+        function sendProvinceEmailNow() {
+            if (!confirm('Sicuro di voler inviare una mail alla Provincia con le informazioni dell\'Evento?')) {
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'send_province_email',
+                    event_id: eventId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || 'Email inviata con successo alla Provincia');
+                    window.location.reload();
+                } else {
+                    alert('Errore: ' + (data.error || 'Errore durante l\'invio dell\'email'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante l\'invio dell\'email alla Provincia');
+            });
         }
         
         function confirmQuickClose() {
