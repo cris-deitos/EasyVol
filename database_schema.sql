@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS `association` (
   `phone` varchar(50),
   `email` varchar(255),
   `pec` varchar(255),
+  `provincial_civil_protection_email` varchar(255) DEFAULT NULL COMMENT 'Email dell\'Ufficio Provinciale di Protezione Civile',
   `tax_code` varchar(50),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -991,11 +992,20 @@ CREATE TABLE IF NOT EXISTS `events` (
   `created_by` int(11),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `province_email_sent` tinyint(1) DEFAULT 0 COMMENT 'Flag: email inviata alla Provincia',
+  `province_email_sent_at` timestamp NULL DEFAULT NULL COMMENT 'Data e ora invio email alla Provincia',
+  `province_email_sent_by` int(11) DEFAULT NULL COMMENT 'ID utente che ha inviato l\'email',
+  `province_email_status` varchar(50) DEFAULT NULL COMMENT 'Esito invio email (success/failure)',
+  `province_access_token` varchar(64) DEFAULT NULL COMMENT 'Token per accesso protetto alla pagina Provincia',
+  `province_access_code` varchar(8) DEFAULT NULL COMMENT 'Codice alfanumerico di 8 cifre per autenticazione',
   PRIMARY KEY (`id`),
   KEY `event_type` (`event_type`),
   KEY `status` (`status`),
   KEY `idx_municipality` (`municipality`),
-  KEY `idx_coordinates` (`latitude`, `longitude`)
+  KEY `idx_coordinates` (`latitude`, `longitude`),
+  KEY `idx_province_access_token` (`province_access_token`),
+  KEY `idx_province_email_sent` (`province_email_sent`),
+  CONSTRAINT `fk_events_province_email_sent_by` FOREIGN KEY (`province_email_sent_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `event_participants` (

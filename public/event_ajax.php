@@ -769,6 +769,50 @@ try {
             }
             break;
             
+        case 'send_province_email':
+            // Send email notification to provincial civil protection
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $eventId = intval($input['event_id'] ?? 0);
+            
+            if ($eventId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            try {
+                $result = $controller->sendProvinceEmail($eventId, $app->getUserId());
+                
+                if ($result) {
+                    echo json_encode(['success' => true, 'message' => 'Email inviata con successo alla Provincia']);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Errore durante l\'invio dell\'email alla Provincia']);
+                }
+            } catch (\Exception $e) {
+                http_response_code(400);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            break;
+            
         default:
             http_response_code(400);
             echo json_encode(['error' => 'Azione non valida']);

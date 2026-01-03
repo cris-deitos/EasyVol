@@ -69,7 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'latitude' => !empty($_POST['latitude']) ? floatval($_POST['latitude']) : null,
             'longitude' => !empty($_POST['longitude']) ? floatval($_POST['longitude']) : null,
             'full_address' => trim($_POST['full_address'] ?? ''),
-            'municipality' => trim($_POST['municipality'] ?? '')
+            'municipality' => trim($_POST['municipality'] ?? ''),
+            'send_province_email' => !$isEdit && isset($_POST['send_province_email']) ? true : false
         ];
         
         try {
@@ -238,6 +239,26 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                         </div>
                     </div>
                     
+                    <?php if (!$isEdit): // Solo per nuovi eventi ?>
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="bi bi-envelope"></i> Notifica Provincia</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="send_province_email" name="send_province_email" value="1">
+                                <label class="form-check-label" for="send_province_email">
+                                    <i class="bi bi-shield-check"></i> <strong>Invia email alla Provincia all'apertura dell'evento</strong>
+                                </label>
+                                <div class="form-text">
+                                    Se selezionato, verrà inviata una notifica all'Ufficio Provinciale di Protezione Civile 
+                                    con i dettagli dell'evento e un link per il monitoraggio degli interventi.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
                     <div class="d-flex justify-content-between mb-4">
                         <a href="events.php" class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> Annulla
@@ -322,7 +343,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
         const eventForm = document.querySelector('form');
         if (eventForm) {
             eventForm.addEventListener('submit', function(e) {
-                const newStatus = statusSelect.value;
+                const newStatus = statusSelect?.value;
                 
                 // Se l'utente sta cercando di chiudere l'evento, verifica prima
                 if (newStatus === 'concluso' && initialStatus !== 'concluso' && eventId > 0) {
@@ -334,7 +355,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                             if (data.success && data.has_active) {
                                 const message = buildActiveInterventionsMessage(data.interventions);
                                 alert(message);
-                                statusSelect.value = initialStatus;
+                                if (statusSelect) statusSelect.value = initialStatus;
                             } else {
                                 // Nessun intervento attivo, procedi con il submit
                                 eventForm.submit();
@@ -344,6 +365,20 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                             console.error('Errore verifica interventi attivi:', error);
                             alert('Errore durante la verifica degli interventi attivi');
                         });
+                    return;
+                }
+                
+                // Se è un nuovo evento e il checkbox provincia è selezionato, mostra conferma
+                const sendProvinceCheckbox = document.getElementById('send_province_email');
+                if (sendProvinceCheckbox && sendProvinceCheckbox.checked) {
+                    e.preventDefault();
+                    
+                    const confirmed = confirm('Sicuro di voler inviare una mail alla Provincia con le informazioni dell\'Evento?');
+                    if (confirmed) {
+                        // Procedi con il submit
+                        eventForm.submit();
+                    }
+                    // Se annulla, non fa nulla e l'utente può modificare il form
                 }
             });
         }
