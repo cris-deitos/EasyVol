@@ -998,6 +998,7 @@ CREATE TABLE IF NOT EXISTS `events` (
   `province_email_status` varchar(50) DEFAULT NULL COMMENT 'Esito invio email (success/failure)',
   `province_access_token` varchar(64) DEFAULT NULL COMMENT 'Token per accesso protetto alla pagina Provincia',
   `province_access_code` varchar(8) DEFAULT NULL COMMENT 'Codice alfanumerico di 8 cifre per autenticazione',
+  `legal_benefits_recognized` ENUM('no', 'si') NOT NULL DEFAULT 'no' COMMENT 'Benefici di Legge riconosciuti (Art. 39 e 40 D. Lgs. n. 1 del 2018)',
   PRIMARY KEY (`id`),
   KEY `event_type` (`event_type`),
   KEY `status` (`status`),
