@@ -62,7 +62,6 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../assets/css/main.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
     <?php include __DIR__ . '/../src/Views/includes/navbar.php'; ?>
@@ -469,7 +468,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
     const allowedTabs = ['info', 'movements', 'dpi'];
-    if (tab && allowedTabs. includes(tab)) {
+    if (tab && allowedTabs.includes(tab)) {
         const tabElement = document.getElementById(tab + '-tab');
         if (tabElement) {
             const bsTab = new bootstrap.Tab(tabElement);
@@ -478,7 +477,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     }
     
     console.log('Warehouse view loaded - Item ID:', itemId);
-    console.log('Movements data:', <? php echo json_encode($item['movements'] ?? []); ?>);
+    console.log('Movements data:', <?php echo json_encode($item['movements'] ?? []); ?>);
     console.log('DPI assignments data:', <?php echo json_encode($item['dpi_assignments'] ?? []); ?>);
 });
         
