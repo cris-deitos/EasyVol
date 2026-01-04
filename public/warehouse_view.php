@@ -466,13 +466,6 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     <script>
         const itemId = <?php echo $item['id']; ?>;
         
-        // Helper function to escape HTML for XSS protection
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
         // Member search autocomplete functionality
         function setupMemberSearch(searchInputId, resultsId, hiddenInputId) {
             const searchInput = document.getElementById(searchInputId);
@@ -510,36 +503,39 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                         const result = await response.json();
                         
                         if (result.success && result.members.length > 0) {
-                            // Build results with proper escaping to prevent XSS
-                            // Escape data once before mapping for better performance
-                            const escapedMembers = result.members.map(member => ({
-                                id: escapeHtml(String(member.id)),
-                                fullName: escapeHtml(member.last_name + ' ' + member.first_name),
-                                regNumber: escapeHtml(member.registration_number),
-                                displayText: escapeHtml(`${member.last_name} ${member.first_name} (${member.registration_number})`)
-                            }));
+                            // Build results safely using DOM manipulation to prevent XSS
+                            resultsDiv.innerHTML = '';
                             
-                            resultsDiv.innerHTML = escapedMembers.map(member => 
-                                `<button type="button" class="list-group-item list-group-item-action" 
-                                         role="option" 
-                                         data-id="${member.id}" 
-                                         data-name="${member.displayText}">
-                                    <strong>${member.fullName}</strong>
-                                    <small class="text-muted"> - Matricola: ${member.regNumber}</small>
-                                </button>`
-                            ).join('');
-                            resultsDiv.style.display = 'block';
-                            searchInput.setAttribute('aria-expanded', 'true');
-                            
-                            // Add click handlers to results
-                            resultsDiv.querySelectorAll('button').forEach(btn => {
-                                btn.addEventListener('click', function() {
+                            result.members.forEach(member => {
+                                const button = document.createElement('button');
+                                button.type = 'button';
+                                button.className = 'list-group-item list-group-item-action';
+                                button.setAttribute('role', 'option');
+                                button.dataset.id = String(member.id);
+                                button.dataset.name = `${member.last_name} ${member.first_name} (${member.registration_number})`;
+                                
+                                const strong = document.createElement('strong');
+                                strong.textContent = `${member.last_name} ${member.first_name}`;
+                                
+                                const small = document.createElement('small');
+                                small.className = 'text-muted';
+                                small.textContent = ` - Matricola: ${member.registration_number}`;
+                                
+                                button.appendChild(strong);
+                                button.appendChild(small);
+                                
+                                button.addEventListener('click', function() {
                                     hiddenInput.value = this.dataset.id;
                                     searchInput.value = this.dataset.name;
                                     resultsDiv.style.display = 'none';
                                     searchInput.setAttribute('aria-expanded', 'false');
                                 });
+                                
+                                resultsDiv.appendChild(button);
                             });
+                            
+                            resultsDiv.style.display = 'block';
+                            searchInput.setAttribute('aria-expanded', 'true');
                         } else {
                             // Use consistent DOM manipulation approach with safe content
                             const noResultMsg = document.createElement('div');
