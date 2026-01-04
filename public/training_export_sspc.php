@@ -86,12 +86,17 @@ $sheet->getColumnDimension('B')->setAutoSize(true);
 $sheet->getColumnDimension('C')->setAutoSize(true);
 $sheet->getColumnDimension('D')->setAutoSize(true);
 
-// Generate filename
-$filename = 'Partecipanti_SSPC_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $course['course_name']) . '_' . date('Ymd') . '.xlsx';
+// Generate filename - sanitize course name to prevent path traversal and header injection
+$sanitizedCourseName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $course['course_name']);
+$sanitizedCourseName = substr($sanitizedCourseName, 0, 50); // Limit length
+$filename = 'Partecipanti_SSPC_' . $sanitizedCourseName . '_' . date('Ymd') . '.xlsx';
+
+// Properly encode filename for Content-Disposition header (RFC 5987)
+$encodedFilename = rawurlencode($filename);
 
 // Set headers for download
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment;filename="' . $filename . '"');
+header("Content-Disposition: attachment; filename=\"{$filename}\"; filename*=UTF-8''{$encodedFilename}");
 header('Cache-Control: max-age=0');
 header('Cache-Control: max-age=1');
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
