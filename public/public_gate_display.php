@@ -85,7 +85,7 @@ $totalCount = $controller->getTotalPeopleCount();
             color: white;
             padding: 15px;
             text-align: center;
-            margin: 10px 40px;
+            margin: 5px 40px;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
@@ -103,7 +103,7 @@ $totalCount = $controller->getTotalPeopleCount();
         .content {
             flex: 1;
             display: flex;
-            padding: 0 40px 20px;
+            padding: 0 40px 10px;
             gap: 20px;
             overflow: hidden;
         }
@@ -112,7 +112,7 @@ $totalCount = $controller->getTotalPeopleCount();
             flex: 1;
             background: white;
             border-radius: 15px;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
@@ -139,7 +139,7 @@ $totalCount = $controller->getTotalPeopleCount();
         .gates-table thead th {
             background: #667eea;
             color: white;
-            padding: 10px;
+            padding: 8px 10px;
             text-align: left;
             font-size: 14px;
             position: sticky;
@@ -156,7 +156,7 @@ $totalCount = $controller->getTotalPeopleCount();
         }
         
         .gates-table tbody tr {
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #ddd;
             transition: background 0.3s;
         }
         
@@ -165,8 +165,9 @@ $totalCount = $controller->getTotalPeopleCount();
         }
         
         .gates-table tbody td {
-            padding: 8px 10px;
+            padding: 6px 10px;
             font-size: 13px;
+            line-height: 1.3;
         }
         
         .gate-number {
@@ -357,6 +358,7 @@ $totalCount = $controller->getTotalPeopleCount();
                 const currentLimit = getCurrentLimit(gate);
                 const isExceeded = gate.people_count > currentLimit;
                 const rowClass = isExceeded ? 'limit-exceeded' : '';
+                const limitLabel = getLimitLabel(gate.limit_in_use);
                 
                 return `
                     <tr class="${rowClass}">
@@ -369,7 +371,7 @@ $totalCount = $controller->getTotalPeopleCount();
                                 ${getStatusLabel(gate.status)}
                             </span>
                         </td>
-                        <td class="limit-value">${currentLimit}</td>
+                        <td class="limit-value">${limitLabel} (${currentLimit})</td>
                         <td class="people-count">${gate.people_count}</td>
                     </tr>
                 `;
@@ -446,6 +448,17 @@ $totalCount = $controller->getTotalPeopleCount();
                 case 'chiuso': return 'Chiuso';
                 case 'non_gestito': return 'Non Gestito';
                 default: return status;
+            }
+        }
+
+        // Get limit label
+        function getLimitLabel(limitInUse) {
+            switch (limitInUse) {
+                case 'a': return 'A';
+                case 'b': return 'B';
+                case 'c': return 'C';
+                case 'manual': return 'Man';
+                default: return limitInUse;
             }
         }
 

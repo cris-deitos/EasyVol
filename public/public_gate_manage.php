@@ -107,7 +107,7 @@ if ($selectedGateId) {
             border: 2px solid #ddd;
             border-radius: 10px;
             padding: 20px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         
         .gate-info h2 {
@@ -138,13 +138,13 @@ if ($selectedGateId) {
         
         .people-count {
             text-align: center;
-            margin: 10px 0;
+            margin: 5px 0;
         }
         
         .people-count-label {
             font-size: 18px;
             color: #666;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .people-count-value {
@@ -170,7 +170,7 @@ if ($selectedGateId) {
             font-weight: bold;
             font-size: 18px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin: 5px 0;
             animation: flash 1s infinite;
             display: none;
         }
@@ -187,7 +187,7 @@ if ($selectedGateId) {
             font-weight: bold;
             font-size: 18px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin: 5px 0;
             animation: flash 1s infinite;
             display: none;
         }
@@ -204,7 +204,7 @@ if ($selectedGateId) {
         .button-row {
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         
         .btn-action {
@@ -248,7 +248,7 @@ if ($selectedGateId) {
         .btn-back {
             width: 100%;
             padding: 12px;
-            margin-top: 20px;
+            margin-top: 10px;
             background: #6c757d;
             color: white;
             border: none;
@@ -454,6 +454,17 @@ if ($selectedGateId) {
             statusBadge.textContent = statusLabels[gate.status];
             statusBadge.className = 'status-badge status-' + gate.status;
             
+            // Update limit in use display
+            const limitLabels = {
+                'a': 'A',
+                'b': 'B',
+                'c': 'C',
+                'manual': 'Manuale'
+            };
+            const currentLimit = getCurrentLimitFromGate(gate);
+            document.getElementById('limit-in-use-label').textContent = limitLabels[gate.limit_in_use];
+            document.getElementById('limit-value').textContent = currentLimit;
+            
             // Update buttons state
             const isClosed = gate.status === 'chiuso';
             const isOpen = gate.status === 'aperto';
@@ -494,6 +505,17 @@ if ($selectedGateId) {
                 // More than 20 people to limit - no warnings
                 limitWarning.classList.remove('show');
                 countdownWarning.classList.remove('show');
+            }
+        }
+
+        // Helper function to get current limit from gate object
+        function getCurrentLimitFromGate(gate) {
+            switch (gate.limit_in_use) {
+                case 'a': return gate.limit_a;
+                case 'b': return gate.limit_b;
+                case 'c': return gate.limit_c;
+                case 'manual': return gate.limit_manual;
+                default: return gate.limit_manual;
             }
         }
 
