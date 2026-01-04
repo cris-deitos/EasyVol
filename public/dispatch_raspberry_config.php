@@ -6,6 +6,7 @@ require_once '../src/App.php';
 use EasyVol\App;
 use EasyVol\Controllers\DispatchController;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\AutoLogger;
 
 $app = App::getInstance();
 
@@ -17,6 +18,9 @@ if (!$app->isLoggedIn()) {
 if (!$app->checkPermission('operations_center', 'edit')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $controller = new DispatchController($app->getDb(), $app->getConfig());
 $csrf = new CsrfProtection();

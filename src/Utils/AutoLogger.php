@@ -103,9 +103,28 @@ class AutoLogger {
             'scheduler' => 'scheduler',
             'scheduler_edit' => 'scheduler',
             'operations_center' => 'operations_center',
+            'operations_members' => 'operations_center',
+            'operations_member_view' => 'operations_center',
+            'operations_vehicles' => 'operations_center',
+            'operations_vehicle_view' => 'operations_center',
             'radio_directory' => 'radio',
             'radio_view' => 'radio',
             'radio_edit' => 'radio',
+            'radio_assign' => 'radio',
+            'radio_return' => 'radio',
+            'radio_assignment_history' => 'radio',
+            'dispatch' => 'dispatch',
+            'dispatch_audio_history' => 'dispatch',
+            'dispatch_event_history' => 'dispatch',
+            'dispatch_message_history' => 'dispatch',
+            'dispatch_position_history' => 'dispatch',
+            'dispatch_map_fullscreen' => 'dispatch',
+            'dispatch_raspberry_config' => 'dispatch',
+            'talkgroup_manage' => 'dispatch',
+            'gate_management' => 'gate_management',
+            'gate_map_fullscreen' => 'gate_management',
+            'public_gate_display' => 'gate_management',
+            'public_gate_manage' => 'gate_management',
             'fee_payments' => 'fee_payments',
             'pay_fee' => 'fee_payments',
             'activity_logs' => 'activity_logs',
@@ -173,9 +192,28 @@ class AutoLogger {
             'scheduler' => 'Scadenziario',
             'scheduler_edit' => 'Modifica Scadenza',
             'operations_center' => 'Centro Operativo',
+            'operations_members' => 'Volontari Centro Operativo',
+            'operations_member_view' => 'Visualizzazione Volontario Centro Operativo',
+            'operations_vehicles' => 'Mezzi Centro Operativo',
+            'operations_vehicle_view' => 'Visualizzazione Mezzo Centro Operativo',
             'radio_directory' => 'Rubrica Radio',
             'radio_view' => 'Visualizzazione Radio',
             'radio_edit' => 'Modifica Radio',
+            'radio_assign' => 'Assegnazione Radio',
+            'radio_return' => 'Rientro Radio',
+            'radio_assignment_history' => 'Storico Assegnazioni Radio',
+            'dispatch' => 'Dispatch - Monitoraggio Radio',
+            'dispatch_audio_history' => 'Dispatch - Storico Audio',
+            'dispatch_event_history' => 'Dispatch - Storico Eventi',
+            'dispatch_message_history' => 'Dispatch - Storico Messaggi',
+            'dispatch_position_history' => 'Dispatch - Storico Posizioni GPS',
+            'dispatch_map_fullscreen' => 'Dispatch - Mappa Completa',
+            'dispatch_raspberry_config' => 'Dispatch - Configurazione Raspberry Pi',
+            'talkgroup_manage' => 'Gestione Talkgroup Dispatch',
+            'gate_management' => 'Gestione Varchi',
+            'gate_map_fullscreen' => 'Varchi - Mappa Completa',
+            'public_gate_display' => 'Varchi - Display Pubblico',
+            'public_gate_manage' => 'Varchi - Gestione Pubblica',
             'fee_payments' => 'Pagamenti Quote',
             'pay_fee' => 'Pagamento Quota',
             'activity_logs' => 'Log Attività',
@@ -354,12 +392,12 @@ class AutoLogger {
  * @param array|string|null $details Additional details
  */
 public static function logActivity($module, $action, $recordId = null, $details = null) {
-    if (!self:: $app) {
+    if (!self::$app) {
         self::$app = App::getInstance();
     }
     
     // Solo se l'utente è loggato, altrimenti logga comunque per pagine pubbliche
-    if (! self::$app->isInstalled()) {
+    if (!self::$app->isInstalled()) {
         return;
     }
     
@@ -367,10 +405,10 @@ public static function logActivity($module, $action, $recordId = null, $details 
     
     // Per pagine pubbliche, usa un metodo alternativo di logging
     try {
-        self:: $app->logActivity($action, $module, $recordId, $description);
+        self::$app->logActivity($action, $module, $recordId, $description);
     } catch (\Exception $e) {
         // Se fallisce (es. utente non loggato), logga su file
-        error_log("MemberPortal Activity:  [$module] $action - " . ($description ??  ''));
+        error_log("MemberPortal Activity: [$module] $action - " . ($description ?? ''));
     }
 }
 }

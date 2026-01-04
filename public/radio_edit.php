@@ -26,6 +26,9 @@ if (!$app->checkPermission('operations_center', $requiredPermission)) {
 $controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 $csrf = new CsrfProtection();
 
+// Log page access
+AutoLogger::logPageAccess();
+
 $radio = null;
 $errors = [];
 $success = false;

@@ -23,6 +23,9 @@ if (!$app->checkPermission('operations_center', 'view')) {
 $controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 $csrf = new CsrfProtection();
 
+// Log page access
+AutoLogger::logPageAccess();
+
 // Get dashboard data
 $dashboard = $controller->getDashboard();
 $counts = $controller->getCounts();

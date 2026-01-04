@@ -202,9 +202,10 @@ class OperationsCenterController {
             $this->db->execute($sql, $params);
             $radioId = $this->db->lastInsertId();
             
-            // Log activity
-            $this->logActivity($userId, 'operations_center', 'create_radio', $radioId, 
-                "Creata radio: {$data['name']}");
+            // Log activity with full details
+            $description = "Creata nuova radio: {$data['name']}. Dettagli: " . 
+                          json_encode($data, JSON_UNESCAPED_UNICODE);
+            $this->logActivity($userId, 'radio', 'create', $radioId, $description);
             
             return $radioId;
         } catch (\Exception $e) {
@@ -218,6 +219,13 @@ class OperationsCenterController {
      */
     public function updateRadio($id, $data, $userId) {
         try {
+            // Get old data before update
+            $oldData = $this->getRadio($id);
+            
+            if (!$oldData) {
+                return false; // Radio not found
+            }
+            
             $sql = "UPDATE radio_directory SET 
                 name = ?, identifier = ?, device_type = ?, brand = ?, 
                 model = ?, serial_number = ?, notes = ?, status = ?,
@@ -238,9 +246,16 @@ class OperationsCenterController {
             
             $this->db->execute($sql, $params);
             
-            // Log activity
-            $this->logActivity($userId, 'operations_center', 'update_radio', $id, 
-                "Aggiornata radio: {$data['name']}");
+            // Log activity with before/after data
+            $changes = [];
+            foreach ($data as $key => $value) {
+                if (isset($oldData[$key]) && $oldData[$key] != $value) {
+                    $changes[$key] = ['da' => $oldData[$key], 'a' => $value];
+                }
+            }
+            $description = "Aggiornata radio: {$data['name']}. Modifiche: " . 
+                          json_encode($changes, JSON_UNESCAPED_UNICODE);
+            $this->logActivity($userId, 'radio', 'update', $id, $description);
             
             return true;
         } catch (\Exception $e) {
@@ -263,15 +278,34 @@ class OperationsCenterController {
                 return ['success' => false, 'message' => 'Impossibile eliminare: radio attualmente assegnata'];
             }
             
-            // Get radio name for log
+            // Get radio data for log (BEFORE deletion)
             $radio = $this->getRadio($id);
+            
+            if (!$radio) {
+                return ['success' => false, 'message' => 'Radio non trovata'];
+            }
+            
+            // Create detailed description of deleted data
+            $deletedData = [
+                'id' => $radio['id'],
+                'name' => $radio['name'],
+                'identifier' => $radio['identifier'] ?? '',
+                'device_type' => $radio['device_type'] ?? '',
+                'brand' => $radio['brand'] ?? '',
+                'model' => $radio['model'] ?? '',
+                'serial_number' => $radio['serial_number'] ?? '',
+                'dmr_id' => $radio['dmr_id'] ?? '',
+                'notes' => $radio['notes'] ?? '',
+                'status' => $radio['status']
+            ];
             
             $sql = "DELETE FROM radio_directory WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
-            // Log activity
-            $this->logActivity($userId, 'operations_center', 'delete_radio', $id, 
-                "Eliminata radio: {$radio['name']}");
+            // Log activity with full deleted data
+            $description = "Eliminata radio: {$radio['name']}. Dati completi eliminati: " . 
+                          json_encode($deletedData, JSON_UNESCAPED_UNICODE);
+            $this->logActivity($userId, 'radio', 'delete', $id, $description);
             
             return ['success' => true];
         } catch (\Exception $e) {
@@ -331,9 +365,14 @@ class OperationsCenterController {
             
             $this->db->commit();
             
-            // Log activity
-            $this->logActivity($userId, 'operations_center', 'assign_radio', $radioId, 
-                "Radio assegnata a volontario ID: $memberId");
+            // Log activity with detailed information
+            $radioInfo = $this->getRadio($radioId);
+            $description = "Radio '{$radioInfo['name']}' (ID: $radioId) assegnata a volontario: " . 
+                          "{$member['first_name']} {$member['last_name']} (ID: $memberId)";
+            if ($notes) {
+                $description .= ". Note: $notes";
+            }
+            $this->logActivity($userId, 'radio', 'assign', $radioId, $description);
             
             return ['success' => true];
         } catch (\Exception $e) {
@@ -390,9 +429,15 @@ class OperationsCenterController {
             
             $this->db->commit();
             
-            // Log activity
-            $this->logActivity($userId, 'operations_center', 'assign_radio_external', $radioId, 
-                "Radio assegnata a personale esterno: {$externalData['first_name']} {$externalData['last_name']} ({$externalData['organization']})");
+            // Log activity with detailed information
+            $radioInfo = $this->getRadio($radioId);
+            $description = "Radio '{$radioInfo['name']}' (ID: $radioId) assegnata a personale esterno: " . 
+                          "{$externalData['first_name']} {$externalData['last_name']} " .
+                          "(Organizzazione: {$externalData['organization']}, Telefono: {$externalData['phone']})";
+            if ($notes) {
+                $description .= ". Note: $notes";
+            }
+            $this->logActivity($userId, 'radio', 'assign_external', $radioId, $description);
             
             return ['success' => true];
         } catch (\Exception $e) {
@@ -409,8 +454,15 @@ class OperationsCenterController {
         try {
             $this->db->beginTransaction();
             
-            // Get assignment details
-            $sql = "SELECT radio_id FROM radio_assignments WHERE id = ?";
+            // Get full assignment details for logging
+            $sql = "SELECT ra.*, rd.name as radio_name, rd.identifier,
+                    COALESCE(m.first_name, ra.assignee_first_name) as assignee_first_name,
+                    COALESCE(m.last_name, ra.assignee_last_name) as assignee_last_name,
+                    ra.assignee_organization
+                    FROM radio_assignments ra
+                    LEFT JOIN radio_directory rd ON ra.radio_id = rd.id
+                    LEFT JOIN members m ON ra.member_id = m.id
+                    WHERE ra.id = ?";
             $assignment = $this->db->fetchOne($sql, [$assignmentId]);
             
             if (!$assignment) {
@@ -433,13 +485,18 @@ class OperationsCenterController {
             
             $this->db->commit();
             
-            // Log activity - include notes in description if provided
-            $description = "Radio restituita";
-            if (!empty($notes)) {
-                $description .= " - Note: " . substr($notes, 0, 100);
+            // Log activity with full details
+            $assigneeName = "{$assignment['assignee_first_name']} {$assignment['assignee_last_name']}";
+            if ($assignment['assignee_organization']) {
+                $assigneeName .= " ({$assignment['assignee_organization']})";
             }
-            $this->logActivity($userId, 'operations_center', 'return_radio', $assignment['radio_id'], 
-                $description);
+            $description = "Radio '{$assignment['radio_name']}' (ID: {$assignment['radio_id']}) " . 
+                          "restituita da: $assigneeName. " .
+                          "Assegnazione ID: $assignmentId";
+            if ($notes) {
+                $description .= ". Note rientro: $notes";
+            }
+            $this->logActivity($userId, 'radio', 'return', $assignment['radio_id'], $description);
             
             return ['success' => true];
         } catch (\Exception $e) {

@@ -6,6 +6,7 @@ require_once '../src/App.php';
 use EasyVol\App;
 use EasyVol\Controllers\DispatchController;
 use EasyVol\Controllers\OperationsCenterController;
+use EasyVol\Utils\AutoLogger;
 
 $app = App::getInstance();
 
@@ -17,6 +18,9 @@ if (!$app->isLoggedIn()) {
 if (!$app->checkPermission('operations_center', 'view')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $dispatchController = new DispatchController($app->getDb(), $app->getConfig());
 $opsController = new OperationsCenterController($app->getDb(), $app->getConfig());

@@ -316,10 +316,11 @@ class GateController
     }
 
     /**
-     * Log activity
+     * Log activity to both gate_activity_log and main activity_logs
      */
     private function logActivity($gateId, $actionType, $previousValue, $newValue)
     {
+        // Log to gate-specific activity log
         $stmt = $this->db->getConnection()->prepare("
             INSERT INTO gate_activity_log 
             (gate_id, action_type, previous_value, new_value, ip_address, user_agent) 
@@ -334,5 +335,42 @@ class GateController
             $_SERVER['REMOTE_ADDR'] ?? null,
             $_SERVER['HTTP_USER_AGENT'] ?? null
         ]);
+        
+        // Also log to main activity_logs for comprehensive tracking
+        try {
+            $app = \EasyVol\App::getInstance();
+            
+            // Build detailed description
+            $gate = $this->getGateById($gateId);
+            $gateName = $gate ? $gate['name'] : "Varco ID $gateId";
+            
+            $actionLabels = [
+                'create_gate' => 'Creazione',
+                'update_limit' => 'Aggiornamento limiti',
+                'delete_gate' => 'Eliminazione',
+                'add_person' => 'Aggiunta persona',
+                'remove_person' => 'Rimozione persona',
+                'open_gate' => 'Apertura varco',
+                'close_gate' => 'Chiusura varco',
+                'set_manual_count' => 'Impostazione conteggio manuale'
+            ];
+            
+            $actionLabel = $actionLabels[$actionType] ?? $actionType;
+            $description = "$actionLabel - Varco: $gateName";
+            
+            // Add previous/new value details
+            if ($actionType === 'add_person' || $actionType === 'remove_person' || $actionType === 'set_manual_count') {
+                $description .= " (Da: $previousValue, A: $newValue)";
+            } elseif ($actionType === 'open_gate' || $actionType === 'close_gate') {
+                $description .= " (Stato da: $previousValue, a: $newValue)";
+            } elseif ($actionType === 'update_limit' || $actionType === 'create_gate') {
+                // For these, previous/new values are JSON encoded
+                $description .= ". Dati: " . (is_string($newValue) ? $newValue : json_encode($newValue, JSON_UNESCAPED_UNICODE));
+            }
+            
+            $app->logActivity('update', 'gate_management', $gateId, $description);
+        } catch (\Exception $e) {
+            error_log("Failed to log gate activity to main log: " . $e->getMessage());
+        }
     }
 }

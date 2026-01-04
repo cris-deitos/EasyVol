@@ -21,6 +21,9 @@ if (!$app->checkPermission('operations_center', 'view')) {
 
 $controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 
+// Log page access
+AutoLogger::logPageAccess();
+
 // Handle filters
 $filters = [];
 if (!empty($_GET['status'])) {

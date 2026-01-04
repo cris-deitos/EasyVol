@@ -23,6 +23,9 @@ if (!$app->checkPermission('operations_center', 'view')) {
 $controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 $memberController = new MemberController($app->getDb(), $app->getConfig());
 
+// Log page access
+AutoLogger::logPageAccess();
+
 // Get radio ID
 $radioId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$radioId) {

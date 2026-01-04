@@ -26,6 +26,9 @@ if (!$app->checkPermission('operations_center', 'view')) {
 
 $controller = new OperationsCenterController($app->getDb(), $app->getConfig());
 
+// Log page access
+AutoLogger::logPageAccess();
+
 // Get filters
 $filters = [
     'radio_id' => $_GET['radio_id'] ?? '',
