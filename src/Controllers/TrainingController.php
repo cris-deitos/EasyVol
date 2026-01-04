@@ -738,4 +738,25 @@ class TrainingController {
         
         return $this->db->fetchAll($sql, $params);
     }
+    
+    /**
+     * Ottieni partecipanti con email per export SSPC
+     */
+    public function getParticipantsWithEmail($courseId) {
+        $sql = "SELECT 
+                    m.first_name AS Nome,
+                    m.last_name AS Cognome,
+                    m.tax_code AS Codice_Fiscale,
+                    (SELECT mc.value 
+                     FROM member_contacts mc 
+                     WHERE mc.member_id = m.id 
+                     AND mc.contact_type = 'email' 
+                     LIMIT 1) AS Email
+                FROM training_participants tp
+                JOIN members m ON tp.member_id = m.id
+                WHERE tp.course_id = ?
+                ORDER BY m.last_name, m.first_name";
+        
+        return $this->db->fetchAll($sql, [$courseId]);
+    }
 }

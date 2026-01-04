@@ -296,11 +296,18 @@ $csrfToken = $csrf->generateToken();
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Elenco Partecipanti</h5>
-                                <?php if ($app->checkPermission('training', 'edit')): ?>
-                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
-                                        <i class="bi bi-plus-circle"></i> Aggiungi Partecipante
-                                    </button>
-                                <?php endif; ?>
+                                <div class="btn-group">
+                                    <?php if (!empty($course['participants'])): ?>
+                                        <a href="training_export_sspc.php?course_id=<?php echo $course['id']; ?>" class="btn btn-sm btn-success">
+                                            <i class="bi bi-file-earmark-excel"></i> Scarica Excel per SSPC
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if ($app->checkPermission('training', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
+                                            <i class="bi bi-plus-circle"></i> Aggiungi Partecipante
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
