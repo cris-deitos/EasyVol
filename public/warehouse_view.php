@@ -364,18 +364,11 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     
                                     <div class="mb-3">
                                         <label class="form-label">Socio/Volontario</label>
-                                        <select class="form-select" name="member_id" id="memberSelect">
-                                            <option value="">Nessuno</option>
-                                            <?php
-                                            $members = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
-                                            foreach ($members as $member) {
-                                                echo '<option value="' . $member['id'] . '">' . 
-                                                     htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
-                                                     ' (' . htmlspecialchars($member['registration_number']) . ')' .
-                                                     '</option>';
-                                            }
-                                            ?>
-                                        </select>
+                                        <input type="hidden" name="member_id" id="memberIdInput">
+                                        <input type="text" class="form-control" id="memberSearch" 
+                                               placeholder="Cerca per matricola, nome o cognome..." autocomplete="off">
+                                        <div id="memberSearchResults" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
+                                        <small class="text-muted">Opzionale - lascia vuoto se non associato a un volontario</small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -412,17 +405,11 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     
                                     <div class="mb-3">
                                         <label class="form-label">Socio/Volontario <span class="text-danger">*</span></label>
-                                        <select class="form-select" name="member_id" required>
-                                            <option value="">Seleziona un volontario...</option>
-                                            <?php
-                                            foreach ($members as $member) {
-                                                echo '<option value="' . $member['id'] . '">' . 
-                                                     htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
-                                                     ' (' . htmlspecialchars($member['registration_number']) . ')' .
-                                                     '</option>';
-                                            }
-                                            ?>
-                                        </select>
+                                        <input type="hidden" name="member_id" id="dpiMemberIdInput" required>
+                                        <input type="text" class="form-control" id="dpiMemberSearch" 
+                                               placeholder="Cerca per matricola, nome o cognome..." autocomplete="off" required>
+                                        <div id="dpiMemberSearchResults" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
+                                        <small class="text-muted">Inizia a digitare per cercare un volontario</small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -462,8 +449,74 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     <script>
         const itemId = <?php echo $item['id']; ?>;
         
+        // Member search autocomplete functionality
+        function setupMemberSearch(searchInputId, resultsId, hiddenInputId) {
+            const searchInput = document.getElementById(searchInputId);
+            const resultsDiv = document.getElementById(resultsId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            let searchTimeout;
+            
+            if (!searchInput) return;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    resultsDiv.style.display = 'none';
+                    resultsDiv.innerHTML = '';
+                    hiddenInput.value = '';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const response = await fetch('warehouse_api.php?action=get_members&search=' + encodeURIComponent(query));
+                        const result = await response.json();
+                        
+                        if (result.success && result.members.length > 0) {
+                            resultsDiv.innerHTML = result.members.map(member => 
+                                `<button type="button" class="list-group-item list-group-item-action" data-id="${member.id}" data-name="${member.last_name} ${member.first_name} (${member.registration_number})">
+                                    <strong>${member.last_name} ${member.first_name}</strong>
+                                    <small class="text-muted"> - Matricola: ${member.registration_number}</small>
+                                </button>`
+                            ).join('');
+                            resultsDiv.style.display = 'block';
+                            
+                            // Add click handlers to results
+                            resultsDiv.querySelectorAll('button').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    hiddenInput.value = this.dataset.id;
+                                    searchInput.value = this.dataset.name;
+                                    resultsDiv.style.display = 'none';
+                                });
+                            });
+                        } else {
+                            resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun volontario trovato</div>';
+                            resultsDiv.style.display = 'block';
+                            hiddenInput.value = '';
+                        }
+                    } catch (error) {
+                        console.error('Errore nella ricerca:', error);
+                        resultsDiv.style.display = 'none';
+                    }
+                }, 300);
+            });
+            
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (e.target !== searchInput && !resultsDiv.contains(e.target)) {
+                    resultsDiv.style.display = 'none';
+                }
+            });
+        }
+        
         // Debug: Log when tabs are clicked
         document.addEventListener('DOMContentLoaded', function() {
+    // Setup member search autocomplete for both forms
+    setupMemberSearch('memberSearch', 'memberSearchResults', 'memberIdInput');
+    setupMemberSearch('dpiMemberSearch', 'dpiMemberSearchResults', 'dpiMemberIdInput');
+    
     // Handle tab parameter from URL
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
@@ -498,7 +551,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 
                 if (result.success) {
                     alert(result.message);
-                    location.reload();
+                    // Redirect to movements tab after successful submission
+                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=movements';
                 } else {
                     alert('Errore: ' + result.message);
                 }
@@ -524,7 +578,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 
                 if (result.success) {
                     alert(result.message);
-                    location.reload();
+                    // Redirect to DPI tab after successful submission
+                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=dpi';
                 } else {
                     alert('Errore: ' + result.message);
                 }
