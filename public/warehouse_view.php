@@ -512,14 +512,16 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                 button.className = 'list-group-item list-group-item-action';
                                 button.setAttribute('role', 'option');
                                 button.dataset.id = String(member.id);
-                                button.dataset.name = `${member.last_name} ${member.first_name} (${member.registration_number})`;
+                                // Safe string concatenation - no template literals with user data
+                                button.dataset.name = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
                                 
                                 const strong = document.createElement('strong');
-                                strong.textContent = `${member.last_name} ${member.first_name}`;
+                                // Safe textContent assignment - no template literals
+                                strong.textContent = member.last_name + ' ' + member.first_name;
                                 
                                 const small = document.createElement('small');
                                 small.className = 'text-muted';
-                                small.textContent = ` - Matricola: ${member.registration_number}`;
+                                small.textContent = ' - Matricola: ' + member.registration_number;
                                 
                                 button.appendChild(strong);
                                 button.appendChild(small);
