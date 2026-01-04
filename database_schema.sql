@@ -2506,7 +2506,8 @@ CREATE TABLE IF NOT EXISTS `gate_system_config` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default configuration (system disabled by default)
-INSERT INTO `gate_system_config` (`id`, `is_active`) VALUES (1, 0);
+INSERT INTO `gate_system_config` (`is_active`) 
+SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM `gate_system_config` WHERE `id` = 1);
 
 -- Gates table
 CREATE TABLE IF NOT EXISTS `gates` (
@@ -2547,10 +2548,17 @@ CREATE TABLE IF NOT EXISTS `gate_activity_log` (
   FOREIGN KEY (`gate_id`) REFERENCES `gates`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Log attività varchi';
 
--- Add permissions for gate management
-INSERT IGNORE INTO `permissions` (`module`, `action`, `description`) VALUES
-('gate_management', 'view', 'Visualizzare sistema gestione varchi'),
-('gate_management', 'edit', 'Modificare configurazione sistema e varchi'),
-('gate_management', 'delete', 'Eliminare varchi');
+-- Add permissions for gate management (if they don't exist)
+INSERT INTO `permissions` (`module`, `action`, `description`) 
+SELECT 'gate_management', 'view', 'Visualizzare sistema gestione varchi'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'gate_management' AND `action` = 'view');
+
+INSERT INTO `permissions` (`module`, `action`, `description`) 
+SELECT 'gate_management', 'edit', 'Modificare configurazione sistema e varchi'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'gate_management' AND `action` = 'edit');
+
+INSERT INTO `permissions` (`module`, `action`, `description`) 
+SELECT 'gate_management', 'delete', 'Eliminare varchi'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'gate_management' AND `action` = 'delete');
 
 COMMIT;
