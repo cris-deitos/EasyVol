@@ -359,7 +359,7 @@ class EventController {
         try {
             $sql = "SELECT m.id, m.first_name, m.last_name, m.registration_number
                     FROM members m
-                    WHERE m.status = 'attivo'
+                    WHERE m.member_status = 'attivo'
                     AND m.id NOT IN (SELECT member_id FROM event_participants WHERE event_id = ?)";
             
             $params = [$eventId];
