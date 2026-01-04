@@ -159,6 +159,53 @@ This document describes how to test the Excel export modifications for the Provi
 - ✅ Column widths are appropriate
 - ✅ No hidden columns or sheets
 
+### Test Case 7: Training SSPC Export
+**Purpose**: Verify simple participant export for SSPC Regione Lombardia
+
+**Steps:**
+1. Log in to the EasyVol system
+2. Navigate to Gestione Formazione (Training Management)
+3. Select a training course with participants
+4. Click on the "Partecipanti" tab
+5. Click "Scarica Excel per SSPC" button
+6. Excel file should download
+7. Open the downloaded Excel file
+
+**Expected Results:**
+- ✅ Excel file downloads successfully
+- ✅ File has exactly 4 columns:
+  - Nome (first name)
+  - Cognome (last name)
+  - Codice_Fiscale (fiscal code)
+  - Email (email address)
+- ✅ Single sheet with all participants
+- ✅ NO styling: no borders, no colors, no formatting
+- ✅ Plain text only for import compatibility
+- ✅ All participants listed in alphabetical order by last name
+- ✅ Email addresses retrieved from member_contacts table
+
+**Test Data Verification:**
+- Verify participant count matches the count in the Partecipanti tab
+- Check that names and fiscal codes match member records
+- Verify email addresses are correct (from member_contacts)
+- Test with participants who don't have email (should show empty cell)
+
+**Edge Cases:**
+1. Course with no participants
+   - ✅ Should show error: "Nessun partecipante registrato per questo corso"
+   
+2. Participant without email address
+   - ✅ Should show empty cell in Email column
+   
+3. Participant with multiple email addresses
+   - ✅ Should show only the first email found
+
+**File Format Compatibility:**
+- ✅ Opens correctly in Microsoft Excel
+- ✅ Opens correctly in LibreOffice Calc
+- ✅ Can be imported into SSPC Regione Lombardia system
+- ✅ No formatting issues that would prevent import
+
 ## Troubleshooting
 
 ### Problem: Excel file doesn't download
@@ -171,7 +218,10 @@ This document describes how to test the Excel export modifications for the Provi
 **Solution:** Check that volunteers are assigned to interventions, not just to the event
 
 ### Problem: Access denied
-**Solution:** Verify user has 'events' -> 'view' permission
+**Solution:** Verify user has 'events' -> 'view' permission for event exports, or 'training' -> 'view' permission for training exports
+
+### Problem: Missing email addresses in training export
+**Solution:** Check that members have email addresses in the member_contacts table with contact_type = 'email'
 
 ## Success Criteria
 
@@ -182,12 +232,28 @@ All tests pass when:
 - ✅ Security controls work properly
 - ✅ Data is consistent between exports
 - ✅ Files open correctly in Excel applications
+- ✅ Training SSPC export shows plain format with 4 columns only
+- ✅ Training SSPC export has no styling for import compatibility
 
 ## Related Files
 - `/public/province_export_excel.php` - Province export (simplified)
 - `/public/event_export_excel.php` - Internal management export (full details)
 - `/public/event_view.php` - Event detail page with export button
 - `/public/province_event_view.php` - Public province access page
+- `/public/training_export_sspc.php` - Training SSPC export (plain format)
+- `/public/training_view.php` - Training course detail page with SSPC export button
+- `/src/Controllers/TrainingController.php` - Training controller with getParticipantsWithEmail method
+
+### 4. Training SSPC Export (training_export_sspc.php)
+**New**: Simple participant list for SSPC (Regione Lombardia)
+
+**What's Included:**
+- Nome (first name)
+- Cognome (last name)
+- Codice_Fiscale (fiscal code)
+- Email (email address)
+- Plain text format without borders, colors, or styling
+- Single sheet with all participants
 
 ## Notes
 - Both exports require the event to have interventions with assigned volunteers
@@ -195,3 +261,4 @@ All tests pass when:
 - Internal export requires user login and permissions
 - Data privacy: Province export shows only fiscal codes (minimal personal data)
 - Internal export shows full details (for authorized personnel only)
+- Training SSPC export is designed specifically for importing into Regione Lombardia's system
