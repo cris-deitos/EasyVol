@@ -425,7 +425,7 @@ if ($selectedGateId) {
         let updateInterval;
 
         function getCountdownText(remaining) {
-            return 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+            return `ATTENZIONE - Mancano ${remaining} persone al limite!`;
         }
 
         function selectGate() {
