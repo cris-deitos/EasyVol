@@ -92,11 +92,21 @@ $pageTitle = 'Centrale Operativa';
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><i class="bi bi-broadcast"></i> <?php echo htmlspecialchars($pageTitle); ?></h1>
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
-                            <i class="bi bi-arrow-clockwise"></i> Aggiorna
-                        </button>
-                    </div>
+<div class="btn-toolbar mb-2 mb-md-0">
+    <div class="btn-group me-2">
+        <?php if ($app->checkPermission('gate_management', 'view')): ?>
+            <a href="gate_management.php" class="btn btn-sm btn-primary">
+                <i class="bi bi-door-open"></i> Gestione Varchi
+            </a>
+        <?php endif; ?>
+		    <a href="dispatch.php" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-broadcast-pin"></i> Consolle Radio
+            </a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Aggiorna
+        </button>
+    </div>
+</div>
                 </div>
 
                 <!-- Statistics Cards -->
