@@ -261,7 +261,7 @@ $totalCount = $controller->getTotalPeopleCount();
             <div class="header">
                 <div class="logo-section">
                     <?php if (!empty($association['logo'])): ?>
-                        <img src="../uploads/<?php echo htmlspecialchars($association['logo']); ?>" 
+                        <img src="logo_display.php" 
                              alt="Logo" class="logo">
                     <?php endif; ?>
                     <div class="association-name">
