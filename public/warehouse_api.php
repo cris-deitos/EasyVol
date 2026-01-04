@@ -156,28 +156,42 @@ try {
                 throw new Exception('Il DPI è già stato restituito');
             }
             
-            // Update DPI assignment status
-            // Note: return_date is DATE type, exact timestamp is in warehouse_movements.created_at
-            $sql = "UPDATE dpi_assignments 
-                    SET status = 'restituito', return_date = CURDATE() 
-                    WHERE id = ?";
-            $db->execute($sql, [$assignmentId]);
+            // Begin transaction to ensure data consistency
+            $db->beginTransaction();
             
-            // Register movement for DPI return
-            $movementData = [
-                'movement_type' => 'restituzione',
-                'quantity' => $assignment['quantity'],
-                'member_id' => $assignment['member_id'],
-                'destination' => null,
-                'notes' => 'Restituzione DPI'
-            ];
-            
-            $controller->addMovement($assignment['item_id'], $movementData, $app->getUserId());
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'DPI restituito con successo'
-            ]);
+            try {
+                // Update DPI assignment status
+                // Note: return_date is DATE type, exact timestamp is in warehouse_movements.created_at
+                $sql = "UPDATE dpi_assignments 
+                        SET status = 'restituito', return_date = CURDATE() 
+                        WHERE id = ?";
+                $db->execute($sql, [$assignmentId]);
+                
+                // Register movement for DPI return
+                $movementData = [
+                    'movement_type' => 'restituzione',
+                    'quantity' => $assignment['quantity'],
+                    'member_id' => $assignment['member_id'],
+                    'destination' => null,
+                    'notes' => 'Restituzione DPI'
+                ];
+                
+                $movementId = $controller->addMovement($assignment['item_id'], $movementData, $app->getUserId());
+                
+                if (!$movementId) {
+                    throw new Exception('Errore nella creazione del movimento');
+                }
+                
+                $db->commit();
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'DPI restituito con successo'
+                ]);
+            } catch (Exception $e) {
+                $db->rollBack();
+                throw $e;
+            }
             break;
             
         default:

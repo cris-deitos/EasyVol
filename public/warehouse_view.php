@@ -722,8 +722,9 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 
                 if (result.success) {
                     alert(result.message);
-                    // Reload page to show updated DPI list
-                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=dpi';
+                    // Reload page to show updated DPI list - use global itemId variable
+                    const currentItemId = typeof itemId !== 'undefined' ? itemId : new URLSearchParams(window.location.search).get('id');
+                    window.location.href = 'warehouse_view.php?id=' + currentItemId + '&tab=dpi';
                 } else {
                     alert('Errore: ' + result.message);
                 }
