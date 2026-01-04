@@ -238,8 +238,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                     <th>Data</th>
                                                     <th>Tipo</th>
                                                     <th>Quantità</th>
-                                                    <th>Note</th>
-                                                    <th>Utente</th>
+                                                    <th>Volontario</th>
+                                                    <th>Azioni</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -247,13 +247,36 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                     <tr>
                                                         <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($movement['created_at']))); ?></td>
                                                         <td>
-                                                            <span class="badge bg-<?php echo $movement['movement_type'] == 'carico' ? 'success' : 'danger'; ?>">
+                                                            <?php
+                                                            $typeColors = [
+                                                                'carico' => 'success',
+                                                                'scarico' => 'danger',
+                                                                'assegnazione' => 'info',
+                                                                'restituzione' => 'warning',
+                                                                'trasferimento' => 'secondary'
+                                                            ];
+                                                            $color = $typeColors[$movement['movement_type']] ?? 'secondary';
+                                                            ?>
+                                                            <span class="badge bg-<?php echo $color; ?>">
                                                                 <?php echo htmlspecialchars(ucfirst($movement['movement_type'])); ?>
                                                             </span>
                                                         </td>
-                                                        <td><?php echo htmlspecialchars($movement['quantity']); ?></td>
-                                                        <td><?php echo htmlspecialchars($movement['notes'] ?? '-'); ?></td>
-                                                        <td><?php echo htmlspecialchars($movement['created_by_name'] ?? '-'); ?></td>
+                                                        <td>
+                                                            <?php 
+                                                            $sign = in_array($movement['movement_type'], ['carico', 'restituzione']) ? '+' : '-';
+                                                            $class = $sign === '+' ? 'text-success' : 'text-danger';
+                                                            ?>
+                                                            <strong class="<?php echo $class; ?>">
+                                                                <?php echo $sign . htmlspecialchars($movement['quantity']); ?>
+                                                            </strong>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($movement['member_name'] ?? '-'); ?></td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-info movement-detail-btn" 
+                                                                    data-movement='<?php echo htmlspecialchars(json_encode($movement), ENT_QUOTES); ?>'>
+                                                                <i class="bi bi-eye"></i> Dettagli
+                                                            </button>
+                                                        </td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
@@ -321,23 +344,19 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            <?php if ($assignment['status'] == 'assegnato' && $app->checkPermission('warehouse', 'edit')): ?>
-                                                                <button type="button" class="btn btn-sm btn-warning dpi-return-btn" 
-                                                                        data-assignment-id="<?php echo $assignment['id']; ?>"
-                                                                        data-member-name="<?php echo htmlspecialchars($memberName, ENT_QUOTES); ?>">
-                                                                    <i class="bi bi-arrow-return-left"></i> Restituzione
+                                                            <div class="btn-group" role="group">
+                                                                <button type="button" class="btn btn-sm btn-info dpi-detail-btn" 
+                                                                        data-assignment='<?php echo htmlspecialchars(json_encode($assignment), ENT_QUOTES); ?>'>
+                                                                    <i class="bi bi-eye"></i> Dettagli
                                                                 </button>
-                                                            <?php elseif ($assignment['status'] == 'restituito'): ?>
-                                                                <span class="text-muted">
-                                                                    <?php if (!empty($assignment['return_date'])): ?>
-                                                                        <small>Restituito il <?php echo htmlspecialchars(date('d/m/Y', strtotime($assignment['return_date']))); ?></small>
-                                                                    <?php else: ?>
-                                                                        <small>Restituito</small>
-                                                                    <?php endif; ?>
-                                                                </span>
-                                                            <?php else: ?>
-                                                                -
-                                                            <?php endif; ?>
+                                                                <?php if ($assignment['status'] == 'assegnato' && $app->checkPermission('warehouse', 'edit')): ?>
+                                                                    <button type="button" class="btn btn-sm btn-warning dpi-return-btn" 
+                                                                            data-assignment-id="<?php echo $assignment['id']; ?>"
+                                                                            data-member-name="<?php echo htmlspecialchars($memberName, ENT_QUOTES); ?>">
+                                                                        <i class="bi bi-arrow-return-left"></i> Restituzione
+                                                                    </button>
+                                                                <?php endif; ?>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 <?php endforeach; ?>
@@ -477,8 +496,127 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                             </form>
                         </div>
                     </div>
+                    </div>
                 </div>
             </main>
+        </div>
+    </div>
+    
+    <!-- Modal: Dettaglio DPI Assignment -->
+    <div class="modal fade" id="dpiDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dettagli Assegnazione DPI</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="40%">Volontario:</th>
+                                    <td id="dpi-detail-member"></td>
+                                </tr>
+                                <tr>
+                                    <th>Matricola:</th>
+                                    <td id="dpi-detail-registration"></td>
+                                </tr>
+                                <tr>
+                                    <th>Quantità:</th>
+                                    <td id="dpi-detail-quantity"></td>
+                                </tr>
+                                <tr>
+                                    <th>Stato:</th>
+                                    <td id="dpi-detail-status"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="40%">Data Assegnazione:</th>
+                                    <td id="dpi-detail-assignment-date"></td>
+                                </tr>
+                                <tr>
+                                    <th>Data Scadenza:</th>
+                                    <td id="dpi-detail-expiry-date"></td>
+                                </tr>
+                                <tr>
+                                    <th>Data Restituzione:</th>
+                                    <td id="dpi-detail-return-date"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Note:</h6>
+                            <div class="border rounded p-3 bg-light" id="dpi-detail-notes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: Dettaglio Movimento -->
+    <div class="modal fade" id="movementDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dettagli Movimento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="40%">Data/Ora:</th>
+                                    <td id="movement-detail-date"></td>
+                                </tr>
+                                <tr>
+                                    <th>Tipo Movimento:</th>
+                                    <td id="movement-detail-type"></td>
+                                </tr>
+                                <tr>
+                                    <th>Quantità:</th>
+                                    <td id="movement-detail-quantity"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="40%">Volontario:</th>
+                                    <td id="movement-detail-member"></td>
+                                </tr>
+                                <tr>
+                                    <th>Destinazione:</th>
+                                    <td id="movement-detail-destination"></td>
+                                </tr>
+                                <tr>
+                                    <th>Creato da:</th>
+                                    <td id="movement-detail-created-by"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Note:</h6>
+                            <div class="border rounded p-3 bg-light" id="movement-detail-notes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -592,6 +730,40 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     // Setup member search autocomplete for both forms
     setupMemberSearch('memberSearch', 'memberSearchResults', 'memberIdInput');
     setupMemberSearch('dpiMemberSearch', 'dpiMemberSearchResults', 'dpiMemberIdInput');
+    
+    // Setup movement detail buttons
+    const movementDetailButtons = document.querySelectorAll('.movement-detail-btn');
+    movementDetailButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const movementData = this.getAttribute('data-movement');
+            if (movementData) {
+                try {
+                    const movement = JSON.parse(movementData);
+                    showMovementDetail(movement);
+                } catch (e) {
+                    console.error('Error parsing movement data:', e);
+                    alert('Errore nel caricamento dei dettagli');
+                }
+            }
+        });
+    });
+    
+    // Setup DPI detail buttons
+    const dpiDetailButtons = document.querySelectorAll('.dpi-detail-btn');
+    dpiDetailButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const assignmentData = this.getAttribute('data-assignment');
+            if (assignmentData) {
+                try {
+                    const assignment = JSON.parse(assignmentData);
+                    showDpiDetail(assignment);
+                } catch (e) {
+                    console.error('Error parsing assignment data:', e);
+                    alert('Errore nel caricamento dei dettagli');
+                }
+            }
+        });
+    });
     
     // Setup DPI return buttons
     const dpiReturnButtons = document.querySelectorAll('.dpi-return-btn');
@@ -730,6 +902,113 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
             } catch (error) {
                 alert('Errore durante la restituzione: ' + error.message);
             }
+        }
+        
+        // Show DPI assignment detail modal
+        function showDpiDetail(assignment) {
+            // Member info
+            const memberName = (assignment.first_name || '') + ' ' + (assignment.last_name || '');
+            document.getElementById('dpi-detail-member').textContent = memberName.trim() || 'N/A';
+            document.getElementById('dpi-detail-registration').textContent = assignment.registration_number || '-';
+            
+            // Quantity
+            document.getElementById('dpi-detail-quantity').textContent = assignment.quantity || '1';
+            
+            // Status
+            const statusBadge = document.createElement('span');
+            statusBadge.className = 'badge bg-' + (assignment.status === 'assegnato' ? 'success' : 'secondary');
+            statusBadge.textContent = assignment.status ? assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1) : 'N/A';
+            document.getElementById('dpi-detail-status').innerHTML = '';
+            document.getElementById('dpi-detail-status').appendChild(statusBadge);
+            
+            // Dates
+            if (assignment.assignment_date || assignment.assigned_date) {
+                const assignDate = new Date(assignment.assignment_date || assignment.assigned_date);
+                document.getElementById('dpi-detail-assignment-date').textContent = assignDate.toLocaleDateString('it-IT');
+            } else {
+                document.getElementById('dpi-detail-assignment-date').textContent = '-';
+            }
+            
+            if (assignment.expiry_date) {
+                const expiryDate = new Date(assignment.expiry_date);
+                const now = new Date();
+                const isExpired = expiryDate < now;
+                
+                const expiryBadge = document.createElement('span');
+                expiryBadge.className = 'badge bg-' + (isExpired ? 'danger' : 'success');
+                expiryBadge.textContent = expiryDate.toLocaleDateString('it-IT');
+                document.getElementById('dpi-detail-expiry-date').innerHTML = '';
+                document.getElementById('dpi-detail-expiry-date').appendChild(expiryBadge);
+            } else {
+                document.getElementById('dpi-detail-expiry-date').textContent = '-';
+            }
+            
+            if (assignment.return_date) {
+                const returnDate = new Date(assignment.return_date);
+                document.getElementById('dpi-detail-return-date').textContent = returnDate.toLocaleDateString('it-IT');
+            } else {
+                document.getElementById('dpi-detail-return-date').textContent = '-';
+            }
+            
+            // Notes
+            document.getElementById('dpi-detail-notes').textContent = assignment.notes || 'Nessuna nota';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('dpiDetailModal'));
+            modal.show();
+        }
+        
+        // Show movement detail modal
+        function showMovementDetail(movement) {
+            // Format date
+            const date = new Date(movement.created_at);
+            const formattedDate = date.toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Type colors
+            const typeColors = {
+                'carico': 'success',
+                'scarico': 'danger',
+                'assegnazione': 'info',
+                'restituzione': 'warning',
+                'trasferimento': 'secondary'
+            };
+            const color = typeColors[movement.movement_type] || 'secondary';
+            
+            // Quantity sign
+            const sign = ['carico', 'restituzione'].includes(movement.movement_type) ? '+' : '-';
+            const qtyClass = sign === '+' ? 'text-success' : 'text-danger';
+            
+            // Populate modal with safe text content
+            document.getElementById('movement-detail-date').textContent = formattedDate;
+            
+            // Type badge
+            const typeBadge = document.createElement('span');
+            typeBadge.className = 'badge bg-' + color;
+            typeBadge.textContent = movement.movement_type.charAt(0).toUpperCase() + movement.movement_type.slice(1);
+            document.getElementById('movement-detail-type').innerHTML = '';
+            document.getElementById('movement-detail-type').appendChild(typeBadge);
+            
+            // Quantity
+            const qtyElement = document.createElement('strong');
+            qtyElement.className = qtyClass;
+            qtyElement.textContent = sign + movement.quantity;
+            document.getElementById('movement-detail-quantity').innerHTML = '';
+            document.getElementById('movement-detail-quantity').appendChild(qtyElement);
+            
+            document.getElementById('movement-detail-member').textContent = movement.member_name || '-';
+            document.getElementById('movement-detail-destination').textContent = movement.destination || '-';
+            document.getElementById('movement-detail-created-by').textContent = movement.created_by_name || '-';
+            document.getElementById('movement-detail-notes').textContent = movement.notes || 'Nessuna nota';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('movementDetailModal'));
+            modal.show();
         }
     </script>
 </body>
