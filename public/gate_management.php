@@ -375,22 +375,11 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
                         <td>${gate.limit_a}</td>
                         <td>${gate.limit_b}</td>
                         <td>${gate.limit_c}</td>
+                        <td>${gate.limit_manual}</td>
                         <td>
-                            <input type="number" class="form-control form-control-sm" value="${gate.limit_manual}" 
-                                   onchange="updateLimitManual(${gate.id}, this.value)" style="width: 80px;">
+                            ${getLimitInUseLabel(gate.limit_in_use, gate)} (${currentLimit})
                         </td>
-                        <td>
-                            <select class="form-select form-select-sm" onchange="updateLimitInUse(${gate.id}, this.value)" style="width: 100px;">
-                                <option value="a" ${gate.limit_in_use === 'a' ? 'selected' : ''}>A (${gate.limit_a})</option>
-                                <option value="b" ${gate.limit_in_use === 'b' ? 'selected' : ''}>B (${gate.limit_b})</option>
-                                <option value="c" ${gate.limit_in_use === 'c' ? 'selected' : ''}>C (${gate.limit_c})</option>
-                                <option value="manual" ${gate.limit_in_use === 'manual' ? 'selected' : ''}>Manuale (${gate.limit_manual})</option>
-                            </select>
-                        </td>
-                        <td>
-                            <input type="number" class="form-control form-control-sm" value="${gate.people_count}" 
-                                   onchange="updatePeopleCount(${gate.id}, this.value)" style="width: 80px;">
-                        </td>
+                        <td>${gate.people_count}</td>
                         <td>
                             <button class="btn btn-sm btn-warning me-1" onclick="editGate(${gate.id})" title="Modifica">
                                 <i class="bi bi-pencil"></i>
@@ -482,6 +471,17 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Get limit in use label
+        function getLimitInUseLabel(limitInUse, gate) {
+            switch (limitInUse) {
+                case 'a': return 'A';
+                case 'b': return 'B';
+                case 'c': return 'C';
+                case 'manual': return 'Manuale';
+                default: return limitInUse;
+            }
         }
 
         // Toggle system status
@@ -597,54 +597,6 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
                     loadGates();
                 } else {
                     alert(data.message || 'Errore nell\'eliminazione del varco');
-                }
-            });
-        }
-
-        // Update limit manual
-        function updateLimitManual(gateId, value) {
-            fetch('api/gates.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'update', id: gateId, limit_manual: value })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    alert('Errore nell\'aggiornamento del limite');
-                    loadGates();
-                }
-            });
-        }
-
-        // Update limit in use
-        function updateLimitInUse(gateId, value) {
-            fetch('api/gates.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'update', id: gateId, limit_in_use: value })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    alert('Errore nell\'aggiornamento del limite in uso');
-                }
-                loadGates();
-            });
-        }
-
-        // Update people count
-        function updatePeopleCount(gateId, value) {
-            fetch('api/gates.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'set_count', id: gateId, count: value })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    alert('Errore nell\'aggiornamento del conteggio');
-                    loadGates();
                 }
             });
         }
