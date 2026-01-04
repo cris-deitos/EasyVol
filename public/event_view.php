@@ -973,6 +973,38 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             return div.innerHTML;
         }
         
+        // Helper function to save and restore active tab
+        function saveActiveTab() {
+            const activeTab = document.querySelector('#eventTab .nav-link.active');
+            if (activeTab) {
+                sessionStorage.setItem('eventViewActiveTab', activeTab.id);
+            }
+        }
+        
+        function restoreActiveTab() {
+            const savedTab = sessionStorage.getItem('eventViewActiveTab');
+            if (savedTab) {
+                const tabElement = document.getElementById(savedTab);
+                if (tabElement) {
+                    const tab = new bootstrap.Tab(tabElement);
+                    tab.show();
+                }
+                // Clear after restoring to avoid affecting other page loads
+                sessionStorage.removeItem('eventViewActiveTab');
+            }
+        }
+        
+        // Restore tab on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            restoreActiveTab();
+        });
+        
+        // Helper function to reload page while preserving active tab
+        function reloadWithActiveTab() {
+            saveActiveTab();
+            window.location.reload();
+        }
+        
         // Save intervention
         function saveIntervention() {
             const title = document.getElementById('intervention_title').value.trim();
@@ -1092,7 +1124,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else {
                     alert(data.message);
-                    window.location.reload();
+                    reloadWithActiveTab();
                 }
             })
             .catch(error => {
@@ -1135,7 +1167,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     alert('Errore: ' + data.error);
                 } else {
                     alert(data.message);
-                    window.location.reload();
+                    reloadWithActiveTab();
                 }
             })
             .catch(error => {
