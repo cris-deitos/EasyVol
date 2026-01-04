@@ -78,6 +78,7 @@ private function loadAssociationData() {
             
             $this->config['association'] = [
                 'name' => $association['name'] ?? '',
+                'logo' => $association['logo'] ?? '',
                 'address' => $address,
                 'city' => $city,
                 'phone' => $association['phone'] ?? '',
@@ -88,6 +89,7 @@ private function loadAssociationData() {
         } else {
             $this->config['association'] = [
                 'name' => 'N/D',
+                'logo' => '',
                 'address' => 'N/D',
                 'city' => 'N/D',
                 'phone' => 'N/D',
@@ -100,6 +102,7 @@ private function loadAssociationData() {
         error_log("Failed to load association data: " .  $e->getMessage());
         $this->config['association'] = [
             'name' => 'N/D',
+            'logo' => '',
             'address' => 'N/D',
             'city' => 'N/D',
             'phone' => 'N/D',
@@ -241,6 +244,10 @@ private function loadEmailConfigFromDatabase() {
     
     public function getDb() {
         return $this->db;
+    }
+    
+    public function getAssociation() {
+        return $this->config['association'] ?? [];
     }
     
     public function redirect($url) {
