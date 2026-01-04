@@ -116,6 +116,9 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                     </button>
                                 <?php endif; ?>
                             <?php endif; ?>
+                            <a href="event_export_excel.php?event_id=<?php echo $event['id']; ?>" class="btn btn-primary" target="_blank">
+                                <i class="bi bi-file-earmark-excel"></i> Esporta Excel
+                            </a>
                             <button type="button" class="btn btn-info" onclick="printReport()">
                                 <i class="bi bi-printer"></i> Stampa Report
                             </button>
