@@ -362,7 +362,7 @@ INSERT INTO `print_templates` (
                 EMERGENZA
             </div>
             <div class="emergency-contact">
-                Tel. Tutore: ___________________
+                Tel. Tutore: {{#if junior_member_guardians.[0].phone}}{{junior_member_guardians.[0].phone}}{{else}}___________________{{/if}}
             </div>
         </div>
         
