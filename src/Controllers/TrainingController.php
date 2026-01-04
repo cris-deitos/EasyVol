@@ -747,7 +747,7 @@ class TrainingController {
                     m.first_name AS Nome,
                     m.last_name AS Cognome,
                     m.tax_code AS Codice_Fiscale,
-                    mc.value AS Email
+                    MAX(mc.value) AS Email
                 FROM training_participants tp
                 JOIN members m ON tp.member_id = m.id
                 LEFT JOIN member_contacts mc ON mc.member_id = m.id AND mc.contact_type = 'email'
