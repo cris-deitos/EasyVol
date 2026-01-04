@@ -25,6 +25,9 @@ if (!isset($user['is_operations_center_user']) || !$user['is_operations_center_u
     die('Accesso negato - Solo per utenti EasyCO');
 }
 
+// Log page access
+AutoLogger::logPageAccess();
+
 $db = $app->getDb();
 
 // Gestione ricerca e filtri
