@@ -322,6 +322,14 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
         let gateToDelete = null;
         let refreshInterval;
 
+        // Helper function to clear refresh interval
+        function clearRefreshInterval() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
         // Initialize map
         function initMap() {
             if (!map) {
@@ -651,18 +659,29 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
 
         // Auto-refresh map every 5 seconds when visible
         document.getElementById('gates-map-tab').addEventListener('shown.bs.tab', function () {
+            clearRefreshInterval();
             refreshInterval = setInterval(loadGates, 5000);
         });
 
         document.getElementById('gates-map-tab').addEventListener('hidden.bs.tab', function () {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
+            clearRefreshInterval();
+        });
+
+        // Auto-refresh list every 3 seconds when visible
+        document.getElementById('gates-list-tab').addEventListener('shown.bs.tab', function () {
+            clearRefreshInterval();
+            refreshInterval = setInterval(loadGates, 3000);
+        });
+
+        document.getElementById('gates-list-tab').addEventListener('hidden.bs.tab', function () {
+            clearRefreshInterval();
         });
 
         // Initial load
         document.addEventListener('DOMContentLoaded', function() {
             loadGates();
+            // Start auto-refresh for list tab (which is the default active tab in the HTML)
+            refreshInterval = setInterval(loadGates, 3000);
         });
     </script>
 </body>
