@@ -2507,7 +2507,7 @@ CREATE TABLE IF NOT EXISTS `gate_system_config` (
 
 -- Insert default configuration (system disabled by default)
 INSERT INTO `gate_system_config` (`is_active`) 
-SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM `gate_system_config` WHERE `id` = 1);
+SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM `gate_system_config` LIMIT 1);
 
 -- Gates table
 CREATE TABLE IF NOT EXISTS `gates` (
