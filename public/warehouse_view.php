@@ -363,19 +363,20 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">Socio/Volontario</label>
-                                        <select class="form-select" name="member_id" id="memberSelect">
-                                            <option value="">Nessuno</option>
-                                            <?php
-                                            $members = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
-                                            foreach ($members as $member) {
-                                                echo '<option value="' . $member['id'] . '">' . 
-                                                     htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
-                                                     ' (' . htmlspecialchars($member['registration_number']) . ')' .
-                                                     '</option>';
-                                            }
-                                            ?>
-                                        </select>
+                                        <label class="form-label" id="memberSearchLabel">Socio/Volontario</label>
+                                        <input type="hidden" name="member_id" id="memberIdInput">
+                                        <input type="text" class="form-control" id="memberSearch" 
+                                               placeholder="Cerca per matricola, nome o cognome..." 
+                                               autocomplete="off"
+                                               aria-label="Cerca socio o volontario"
+                                               aria-describedby="memberSearchHelp"
+                                               aria-expanded="false"
+                                               aria-controls="memberSearchResults"
+                                               role="combobox">
+                                        <div id="memberSearchResults" class="list-group position-absolute" 
+                                             style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"
+                                             role="listbox"></div>
+                                        <small class="text-muted" id="memberSearchHelp">Opzionale - lascia vuoto se non associato a un volontario</small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -411,18 +412,21 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">Socio/Volontario <span class="text-danger">*</span></label>
-                                        <select class="form-select" name="member_id" required>
-                                            <option value="">Seleziona un volontario...</option>
-                                            <?php
-                                            foreach ($members as $member) {
-                                                echo '<option value="' . $member['id'] . '">' . 
-                                                     htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
-                                                     ' (' . htmlspecialchars($member['registration_number']) . ')' .
-                                                     '</option>';
-                                            }
-                                            ?>
-                                        </select>
+                                        <label class="form-label" id="dpiMemberSearchLabel">Socio/Volontario <span class="text-danger">*</span></label>
+                                        <input type="hidden" name="member_id" id="dpiMemberIdInput">
+                                        <input type="text" class="form-control" id="dpiMemberSearch" 
+                                               placeholder="Cerca per matricola, nome o cognome..." 
+                                               autocomplete="off" 
+                                               required
+                                               aria-label="Cerca socio o volontario per assegnazione DPI"
+                                               aria-describedby="dpiMemberSearchHelp"
+                                               aria-expanded="false"
+                                               aria-controls="dpiMemberSearchResults"
+                                               role="combobox">
+                                        <div id="dpiMemberSearchResults" class="list-group position-absolute" 
+                                             style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"
+                                             role="listbox"></div>
+                                        <small class="text-muted" id="dpiMemberSearchHelp">Inizia a digitare per cercare un volontario</small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -462,8 +466,128 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     <script>
         const itemId = <?php echo $item['id']; ?>;
         
+        // Member search autocomplete functionality
+        function setupMemberSearch(searchInputId, resultsId, hiddenInputId) {
+            const searchInput = document.getElementById(searchInputId);
+            const resultsDiv = document.getElementById(resultsId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            
+            // Check if all elements exist
+            if (!searchInput || !resultsDiv || !hiddenInput) {
+                console.warn('Member search elements not found:', { searchInputId, resultsId, hiddenInputId });
+                return;
+            }
+            
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    resultsDiv.style.display = 'none';
+                    resultsDiv.innerHTML = '';
+                    hiddenInput.value = '';
+                    searchInput.setAttribute('aria-expanded', 'false');
+                    return;
+                }
+                
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        // Construct API URL securely
+                        const url = new URL('warehouse_api.php', window.location.href);
+                        url.searchParams.set('action', 'get_members');
+                        url.searchParams.set('search', query);
+                        
+                        const response = await fetch(url.toString());
+                        const result = await response.json();
+                        
+                        if (result.success && result.members.length > 0) {
+                            // Build results safely using DOM manipulation to prevent XSS
+                            resultsDiv.innerHTML = '';
+                            
+                            result.members.forEach(member => {
+                                const button = document.createElement('button');
+                                button.type = 'button';
+                                button.className = 'list-group-item list-group-item-action';
+                                button.setAttribute('role', 'option');
+                                button.dataset.id = String(member.id);
+                                // Safe string concatenation - no template literals with user data
+                                button.dataset.name = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
+                                
+                                const strong = document.createElement('strong');
+                                // Safe textContent assignment - no template literals
+                                strong.textContent = member.last_name + ' ' + member.first_name;
+                                
+                                const small = document.createElement('small');
+                                small.className = 'text-muted';
+                                small.textContent = ' - Matricola: ' + member.registration_number;
+                                
+                                button.appendChild(strong);
+                                button.appendChild(small);
+                                
+                                button.addEventListener('click', function() {
+                                    hiddenInput.value = this.dataset.id;
+                                    searchInput.value = this.dataset.name;
+                                    resultsDiv.style.display = 'none';
+                                    searchInput.setAttribute('aria-expanded', 'false');
+                                });
+                                
+                                resultsDiv.appendChild(button);
+                            });
+                            
+                            resultsDiv.style.display = 'block';
+                            searchInput.setAttribute('aria-expanded', 'true');
+                        } else {
+                            // Use consistent DOM manipulation approach with safe content
+                            const noResultMsg = document.createElement('div');
+                            noResultMsg.className = 'list-group-item text-muted';
+                            noResultMsg.setAttribute('role', 'option');
+                            noResultMsg.textContent = 'Nessun volontario trovato';
+                            resultsDiv.innerHTML = '';
+                            resultsDiv.appendChild(noResultMsg);
+                            resultsDiv.style.display = 'block';
+                            searchInput.setAttribute('aria-expanded', 'true');
+                            hiddenInput.value = '';
+                        }
+                    } catch (error) {
+                        console.error('Errore nella ricerca:', error);
+                        resultsDiv.style.display = 'none';
+                        searchInput.setAttribute('aria-expanded', 'false');
+                    }
+                }, 300);
+            });
+            
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (e.target !== searchInput && !resultsDiv.contains(e.target)) {
+                    resultsDiv.style.display = 'none';
+                    searchInput.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+        
         // Debug: Log when tabs are clicked
         document.addEventListener('DOMContentLoaded', function() {
+    // Setup member search autocomplete for both forms
+    setupMemberSearch('memberSearch', 'memberSearchResults', 'memberIdInput');
+    setupMemberSearch('dpiMemberSearch', 'dpiMemberSearchResults', 'dpiMemberIdInput');
+    
+    // Clear forms when modals are closed
+    document.getElementById('addMovementModal')?.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('movementForm').reset();
+        document.getElementById('memberIdInput').value = '';
+        document.getElementById('memberSearch').value = '';
+        document.getElementById('memberSearchResults').style.display = 'none';
+    });
+    
+    document.getElementById('assignDpiModal')?.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('dpiAssignmentForm').reset();
+        document.getElementById('dpiMemberIdInput').value = '';
+        document.getElementById('dpiMemberSearch').value = '';
+        document.getElementById('dpiMemberSearchResults').style.display = 'none';
+    });
+    
     // Handle tab parameter from URL
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
@@ -498,7 +622,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 
                 if (result.success) {
                     alert(result.message);
-                    location.reload();
+                    // Redirect to movements tab after successful submission
+                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=movements';
                 } else {
                     alert('Errore: ' + result.message);
                 }
@@ -510,6 +635,16 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
         // Handle DPI assignment form submission
         document.getElementById('dpiAssignmentForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Custom validation: ensure a member is selected
+            const dpiMemberIdInput = document.getElementById('dpiMemberIdInput');
+            const dpiMemberSearch = document.getElementById('dpiMemberSearch');
+            
+            if (!dpiMemberIdInput.value) {
+                alert('Errore: Seleziona un volontario dalla lista dei risultati');
+                dpiMemberSearch.focus();
+                return;
+            }
             
             const formData = new FormData(this);
             formData.append('action', 'assign_dpi');
@@ -524,7 +659,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 
                 if (result.success) {
                     alert(result.message);
-                    location.reload();
+                    // Redirect to DPI tab after successful submission
+                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=dpi';
                 } else {
                     alert('Errore: ' + result.message);
                 }
