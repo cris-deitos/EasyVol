@@ -5,6 +5,7 @@ require_once '../src/App.php';
 
 use EasyVol\App;
 use EasyVol\Controllers\GateController;
+use EasyVol\Utils\AutoLogger;
 
 $app = App::getInstance();
 
@@ -17,6 +18,9 @@ if (!$app->isLoggedIn()) {
 if (!$app->checkPermission('gate_management', 'view')) {
     die('Accesso negato');
 }
+
+// Log page access
+AutoLogger::logPageAccess();
 
 $controller = new GateController($app->getDb(), $app->getConfig());
 $user = $app->getCurrentUser();

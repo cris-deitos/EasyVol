@@ -78,6 +78,10 @@ try {
             $userId = $app->getCurrentUser()['id'] ?? null;
             $result = $controller->setSystemStatus($isActive, $userId);
             
+            // Log activity
+            $statusLabel = $isActive ? 'attivato' : 'disattivato';
+            $app->logActivity('update', 'gate_management', null, "Sistema varchi $statusLabel");
+            
             echo json_encode(['success' => $result]);
             break;
 
@@ -89,6 +93,9 @@ try {
             
             $gateId = $controller->createGate($data);
             if ($gateId) {
+                // Log activity
+                $app->logActivity('create', 'gate_management', $gateId, 
+                    "Creato nuovo varco: {$data['name']} (Numero: {$data['gate_number']})");
                 echo json_encode(['success' => true, 'id' => $gateId]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Errore nella creazione del varco']);

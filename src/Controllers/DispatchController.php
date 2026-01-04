@@ -49,13 +49,23 @@ class DispatchController {
             $data['name'],
             $data['description'] ?? null
         ]);
-        return $this->db->lastInsertId();
+        $id = $this->db->lastInsertId();
+        
+        // Log activity with full details
+        $description = "Creato TalkGroup: {$data['name']} (TG ID: {$data['talkgroup_id']}). Dettagli: " . 
+                      json_encode($data, JSON_UNESCAPED_UNICODE);
+        $this->logActivity('dispatch', 'create', $id, $description);
+        
+        return $id;
     }
     
     /**
      * Update TalkGroup
      */
     public function updateTalkGroup($id, $data) {
+        // Get old data before update
+        $oldData = $this->getTalkGroup($id);
+        
         $sql = "UPDATE dispatch_talkgroups 
                 SET talkgroup_id = ?, name = ?, description = ?, updated_at = NOW() 
                 WHERE id = ?";
@@ -65,6 +75,18 @@ class DispatchController {
             $data['description'] ?? null,
             $id
         ]);
+        
+        // Log activity with before/after data
+        $changes = [];
+        foreach ($data as $key => $value) {
+            if (isset($oldData[$key]) && $oldData[$key] != $value) {
+                $changes[$key] = ['da' => $oldData[$key], 'a' => $value];
+            }
+        }
+        $description = "Aggiornato TalkGroup: {$data['name']} (ID: $id). Modifiche: " . 
+                      json_encode($changes, JSON_UNESCAPED_UNICODE);
+        $this->logActivity('dispatch', 'update', $id, $description);
+        
         return true;
     }
     
@@ -72,8 +94,23 @@ class DispatchController {
      * Delete TalkGroup
      */
     public function deleteTalkGroup($id) {
+        // Get talkgroup data before deletion
+        $talkgroup = $this->getTalkGroup($id);
+        
         $sql = "DELETE FROM dispatch_talkgroups WHERE id = ?";
         $this->db->execute($sql, [$id]);
+        
+        // Log deletion with full data
+        $deletedData = [
+            'id' => $talkgroup['id'],
+            'talkgroup_id' => $talkgroup['talkgroup_id'],
+            'name' => $talkgroup['name'],
+            'description' => $talkgroup['description'] ?? ''
+        ];
+        $description = "Eliminato TalkGroup: {$talkgroup['name']} (TG ID: {$talkgroup['talkgroup_id']}). " .
+                      "Dati completi eliminati: " . json_encode($deletedData, JSON_UNESCAPED_UNICODE);
+        $this->logActivity('dispatch', 'delete', $id, $description);
+        
         return true;
     }
     
@@ -708,5 +745,17 @@ class DispatchController {
         
         $this->db->execute($sql, [$value, $key]);
         return true;
+    }
+    
+    /**
+     * Log activity helper method
+     */
+    private function logActivity($module, $action, $recordId = null, $description = null) {
+        try {
+            $app = \EasyVol\App::getInstance();
+            $app->logActivity($action, $module, $recordId, $description);
+        } catch (\Exception $e) {
+            error_log("Failed to log dispatch activity: " . $e->getMessage());
+        }
     }
 }
