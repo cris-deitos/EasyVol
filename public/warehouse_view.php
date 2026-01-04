@@ -511,20 +511,23 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                         
                         if (result.success && result.members.length > 0) {
                             // Build results with proper escaping to prevent XSS
-                            resultsDiv.innerHTML = result.members.map(member => {
-                                const fullName = escapeHtml(member.last_name + ' ' + member.first_name);
-                                const regNumber = escapeHtml(member.registration_number);
-                                const memberId = escapeHtml(String(member.id));
-                                const displayText = escapeHtml(`${member.last_name} ${member.first_name} (${member.registration_number})`);
-                                
-                                return `<button type="button" class="list-group-item list-group-item-action" 
+                            // Escape data once before mapping for better performance
+                            const escapedMembers = result.members.map(member => ({
+                                id: escapeHtml(String(member.id)),
+                                fullName: escapeHtml(member.last_name + ' ' + member.first_name),
+                                regNumber: escapeHtml(member.registration_number),
+                                displayText: escapeHtml(`${member.last_name} ${member.first_name} (${member.registration_number})`)
+                            }));
+                            
+                            resultsDiv.innerHTML = escapedMembers.map(member => 
+                                `<button type="button" class="list-group-item list-group-item-action" 
                                          role="option" 
-                                         data-id="${memberId}" 
-                                         data-name="${displayText}">
-                                    <strong>${fullName}</strong>
-                                    <small class="text-muted"> - Matricola: ${regNumber}</small>
-                                </button>`;
-                            }).join('');
+                                         data-id="${member.id}" 
+                                         data-name="${member.displayText}">
+                                    <strong>${member.fullName}</strong>
+                                    <small class="text-muted"> - Matricola: ${member.regNumber}</small>
+                                </button>`
+                            ).join('');
                             resultsDiv.style.display = 'block';
                             searchInput.setAttribute('aria-expanded', 'true');
                             
@@ -538,8 +541,13 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                 });
                             });
                         } else {
-                            // Use consistent DOM manipulation approach
-                            resultsDiv.innerHTML = '<div class="list-group-item text-muted" role="option">Nessun volontario trovato</div>';
+                            // Use consistent DOM manipulation approach with safe content
+                            const noResultMsg = document.createElement('div');
+                            noResultMsg.className = 'list-group-item text-muted';
+                            noResultMsg.setAttribute('role', 'option');
+                            noResultMsg.textContent = 'Nessun volontario trovato';
+                            resultsDiv.innerHTML = '';
+                            resultsDiv.appendChild(noResultMsg);
                             resultsDiv.style.display = 'block';
                             searchInput.setAttribute('aria-expanded', 'true');
                             hiddenInput.value = '';
