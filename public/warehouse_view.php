@@ -514,12 +514,13 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                             resultsDiv.innerHTML = result.members.map(member => {
                                 const fullName = escapeHtml(member.last_name + ' ' + member.first_name);
                                 const regNumber = escapeHtml(member.registration_number);
-                                const displayText = `${member.last_name} ${member.first_name} (${member.registration_number})`;
+                                const memberId = escapeHtml(String(member.id));
+                                const displayText = escapeHtml(`${member.last_name} ${member.first_name} (${member.registration_number})`);
                                 
                                 return `<button type="button" class="list-group-item list-group-item-action" 
                                          role="option" 
-                                         data-id="${member.id}" 
-                                         data-name="${escapeHtml(displayText)}">
+                                         data-id="${memberId}" 
+                                         data-name="${displayText}">
                                     <strong>${fullName}</strong>
                                     <small class="text-muted"> - Matricola: ${regNumber}</small>
                                 </button>`;
