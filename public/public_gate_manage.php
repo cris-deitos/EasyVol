@@ -107,19 +107,19 @@ if ($selectedGateId) {
             border: 2px solid #ddd;
             border-radius: 10px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         
         .gate-info h2 {
             font-size: 22px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             color: #333;
         }
         
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 5px 0;
             border-bottom: 1px solid #eee;
         }
         
@@ -138,19 +138,32 @@ if ($selectedGateId) {
         
         .people-count {
             text-align: center;
-            margin: 30px 0;
+            margin: 10px 0;
         }
         
         .people-count-label {
             font-size: 18px;
             color: #666;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         
         .people-count-value {
             font-size: 72px;
             font-weight: bold;
             color: #333;
+            transition: color 0.3s;
+        }
+        
+        .people-count-value.warning-20 {
+            color: #ff9800;
+        }
+        
+        .people-count-value.warning-5 {
+            color: #ff9800;
+        }
+        
+        .people-count-value.at-limit {
+            color: #dc3545;
         }
         
         .limit-warning {
@@ -161,12 +174,29 @@ if ($selectedGateId) {
             font-weight: bold;
             font-size: 18px;
             border-radius: 8px;
-            margin: 15px 0;
+            margin: 10px 0;
             animation: flash 1s infinite;
             display: none;
         }
         
         .limit-warning.show {
+            display: block;
+        }
+        
+        .countdown-warning {
+            background: #ffc107;
+            color: #000;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            border-radius: 8px;
+            margin: 10px 0;
+            animation: flash 1s infinite;
+            display: none;
+        }
+        
+        .countdown-warning.show {
             display: block;
         }
         
@@ -178,7 +208,7 @@ if ($selectedGateId) {
         .button-row {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         
         .btn-action {
@@ -191,6 +221,7 @@ if ($selectedGateId) {
             color: white;
             cursor: pointer;
             transition: all 0.3s;
+            min-height: 80px;
         }
         
         .btn-action:active {
@@ -353,6 +384,11 @@ if ($selectedGateId) {
                     </div>
                 </div>
                 
+                <div class="countdown-warning" id="countdown-warning">
+                    <i class="bi bi-exclamation-circle"></i>
+                    <span id="countdown-text">ATTENZIONE - Mancano X persone al limite!</span>
+                </div>
+                
                 <div class="limit-warning" id="limit-warning">
                     <i class="bi bi-exclamation-triangle"></i>
                     LIMITE RAGGIUNTO - CHIUDI VARCO!
@@ -405,7 +441,8 @@ if ($selectedGateId) {
 
         function updateGateDisplay(gate) {
             // Update people count
-            document.getElementById('people-count').textContent = gate.people_count;
+            const peopleCountElement = document.getElementById('people-count');
+            peopleCountElement.textContent = gate.people_count;
             
             // Update status badge
             const statusBadge = document.getElementById('gate-status-badge');
@@ -426,12 +463,37 @@ if ($selectedGateId) {
             document.getElementById('btn-open').disabled = isOpen;
             document.getElementById('btn-close').disabled = isClosed;
             
-            // Show/hide limit warning
+            // Calculate remaining people to limit
+            const remaining = currentLimit - gate.people_count;
+            
+            // Reset all warning classes
+            peopleCountElement.classList.remove('warning-20', 'warning-5', 'at-limit');
+            
+            // Show/hide warnings and update number color
             const limitWarning = document.getElementById('limit-warning');
-            if (gate.people_count > currentLimit) {
+            const countdownWarning = document.getElementById('countdown-warning');
+            const countdownText = document.getElementById('countdown-text');
+            
+            if (gate.people_count >= currentLimit) {
+                // At or over limit - red number and red alert
                 limitWarning.classList.add('show');
-            } else {
+                countdownWarning.classList.remove('show');
+                peopleCountElement.classList.add('at-limit');
+            } else if (remaining <= 5) {
+                // 5 or less people to limit - orange number and yellow countdown
                 limitWarning.classList.remove('show');
+                countdownWarning.classList.add('show');
+                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+                peopleCountElement.classList.add('warning-5');
+            } else if (remaining <= 20) {
+                // 20 or less people to limit - normal number and yellow countdown
+                limitWarning.classList.remove('show');
+                countdownWarning.classList.add('show');
+                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+            } else {
+                // More than 20 people to limit - no warnings
+                limitWarning.classList.remove('show');
+                countdownWarning.classList.remove('show');
             }
         }
 
@@ -537,11 +599,28 @@ if ($selectedGateId) {
             }, 2000);
         }
 
-        // Check initial limit warning
+        // Check initial warnings
         if (gateId) {
             const peopleCount = parseInt(document.getElementById('people-count').textContent);
-            if (peopleCount > currentLimit) {
-                document.getElementById('limit-warning').classList.add('show');
+            const remaining = currentLimit - peopleCount;
+            const peopleCountElement = document.getElementById('people-count');
+            const limitWarning = document.getElementById('limit-warning');
+            const countdownWarning = document.getElementById('countdown-warning');
+            const countdownText = document.getElementById('countdown-text');
+            
+            if (peopleCount >= currentLimit) {
+                // At or over limit
+                limitWarning.classList.add('show');
+                peopleCountElement.classList.add('at-limit');
+            } else if (remaining <= 5) {
+                // 5 or less people to limit
+                countdownWarning.classList.add('show');
+                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+                peopleCountElement.classList.add('warning-5');
+            } else if (remaining <= 20) {
+                // 20 or less people to limit
+                countdownWarning.classList.add('show');
+                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
             }
         }
     </script>
