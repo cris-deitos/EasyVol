@@ -144,11 +144,19 @@ $pageTitle = 'Dispatch - Monitoraggio Radio';
                         <a href="talkgroup_manage.php" class="btn btn-sm btn-outline-primary me-2">
                             <i class="bi bi-collection"></i> Gestione TalkGroup
                         </a>
+                        <?php if ($app->checkPermission('gate_management', 'view')): ?>
+                            <a href="gate_management.php" class="btn btn-sm btn-outline-success me-2">
+                                <i class="bi bi-door-open"></i> Gestione Varchi
+                            </a>
+                        <?php endif; ?>
                         <?php if ($app->checkPermission('operations_center', 'edit')): ?>
                             <a href="dispatch_raspberry_config.php" class="btn btn-sm btn-outline-info me-2">
                                 <i class="bi bi-gear-fill"></i> Configurazione
                             </a>
                         <?php endif; ?>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise"></i> Aggiorna
+                        </button>
                         <a href="radio_directory.php" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-arrow-left"></i> Rubrica Radio
                         </a>
