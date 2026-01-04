@@ -207,6 +207,7 @@ $pageTitle = 'Rubrica Radio';
                                         <tr>
                                             <th>Nome</th>
                                             <th>Identificativo</th>
+                                            <th>DMR ID</th>
                                             <th>Tipo</th>
                                             <th>Marca/Modello</th>
                                             <th>Seriale</th>
@@ -219,6 +220,7 @@ $pageTitle = 'Rubrica Radio';
                                             <tr>
                                                 <td><strong><?php echo htmlspecialchars($radio['name']); ?></strong></td>
                                                 <td><?php echo htmlspecialchars($radio['identifier'] ?? '-'); ?></td>
+                                                <td><code><?php echo htmlspecialchars($radio['dmr_id'] ?? '-'); ?></code></td>
                                                 <td><?php echo htmlspecialchars($radio['device_type'] ?? '-'); ?></td>
                                                 <td>
                                                     <?php 

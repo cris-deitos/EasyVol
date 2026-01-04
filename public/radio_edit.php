@@ -49,13 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $data = [
             'name' => trim($_POST['name'] ?? ''),
-            'identifier' => trim($_POST['identifier'] ?? ''),
-            'dmr_id' => trim($_POST['dmr_id'] ?? ''),
-            'device_type' => trim($_POST['device_type'] ?? ''),
-            'brand' => trim($_POST['brand'] ?? ''),
-            'model' => trim($_POST['model'] ?? ''),
-            'serial_number' => trim($_POST['serial_number'] ?? ''),
-            'notes' => trim($_POST['notes'] ?? ''),
+            'identifier' => trim($_POST['identifier'] ?? '') ?: null,
+            'dmr_id' => trim($_POST['dmr_id'] ?? '') ?: null,
+            'device_type' => trim($_POST['device_type'] ?? '') ?: null,
+            'brand' => trim($_POST['brand'] ?? '') ?: null,
+            'model' => trim($_POST['model'] ?? '') ?: null,
+            'serial_number' => trim($_POST['serial_number'] ?? '') ?: null,
+            'notes' => trim($_POST['notes'] ?? '') ?: null,
             'status' => $_POST['status'] ?? 'disponibile'
         ];
         

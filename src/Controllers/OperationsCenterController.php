@@ -102,8 +102,9 @@ class OperationsCenterController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(name LIKE ? OR identifier LIKE ? OR serial_number LIKE ?)";
+            $where[] = "(name LIKE ? OR identifier LIKE ? OR dmr_id LIKE ? OR serial_number LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
