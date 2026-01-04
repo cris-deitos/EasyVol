@@ -121,6 +121,11 @@ $pageTitle = 'Dettaglio Radio';
                                         <dd class="col-sm-8"><?php echo htmlspecialchars($radio['identifier']); ?></dd>
                                     <?php endif; ?>
                                     
+                                    <?php if ($radio['dmr_id']): ?>
+                                        <dt class="col-sm-4">DMR ID:</dt>
+                                        <dd class="col-sm-8"><code><?php echo htmlspecialchars($radio['dmr_id']); ?></code></dd>
+                                    <?php endif; ?>
+                                    
                                     <?php if ($radio['device_type']): ?>
                                         <dt class="col-sm-4">Tipo:</dt>
                                         <dd class="col-sm-8"><?php echo htmlspecialchars($radio['device_type']); ?></dd>
