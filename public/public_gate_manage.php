@@ -154,10 +154,6 @@ if ($selectedGateId) {
             transition: color 0.3s;
         }
         
-        .people-count-value.warning-20 {
-            color: #ff9800;
-        }
-        
         .people-count-value.warning-5 {
             color: #ff9800;
         }
@@ -428,6 +424,10 @@ if ($selectedGateId) {
         const currentLimit = <?php echo isset($currentLimit) ? $currentLimit : 0; ?>;
         let updateInterval;
 
+        function getCountdownText(remaining) {
+            return 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+        }
+
         function selectGate() {
             const select = document.getElementById('gateSelect');
             if (select.value) {
@@ -467,7 +467,7 @@ if ($selectedGateId) {
             const remaining = currentLimit - gate.people_count;
             
             // Reset all warning classes
-            peopleCountElement.classList.remove('warning-20', 'warning-5', 'at-limit');
+            peopleCountElement.classList.remove('warning-5', 'at-limit');
             
             // Show/hide warnings and update number color
             const limitWarning = document.getElementById('limit-warning');
@@ -483,13 +483,13 @@ if ($selectedGateId) {
                 // 5 or less people to limit - orange number and yellow countdown
                 limitWarning.classList.remove('show');
                 countdownWarning.classList.add('show');
-                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+                countdownText.textContent = getCountdownText(remaining);
                 peopleCountElement.classList.add('warning-5');
             } else if (remaining <= 20) {
                 // 20 or less people to limit - normal number and yellow countdown
                 limitWarning.classList.remove('show');
                 countdownWarning.classList.add('show');
-                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+                countdownText.textContent = getCountdownText(remaining);
             } else {
                 // More than 20 people to limit - no warnings
                 limitWarning.classList.remove('show');
@@ -615,12 +615,12 @@ if ($selectedGateId) {
             } else if (remaining <= 5) {
                 // 5 or less people to limit
                 countdownWarning.classList.add('show');
-                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+                countdownText.textContent = getCountdownText(remaining);
                 peopleCountElement.classList.add('warning-5');
             } else if (remaining <= 20) {
                 // 20 or less people to limit
                 countdownWarning.classList.add('show');
-                countdownText.textContent = 'ATTENZIONE - Mancano ' + remaining + ' persone al limite!';
+                countdownText.textContent = getCountdownText(remaining);
             }
         }
     </script>
