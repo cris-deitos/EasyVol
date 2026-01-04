@@ -363,12 +363,20 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">Socio/Volontario</label>
+                                        <label class="form-label" id="memberSearchLabel">Socio/Volontario</label>
                                         <input type="hidden" name="member_id" id="memberIdInput">
                                         <input type="text" class="form-control" id="memberSearch" 
-                                               placeholder="Cerca per matricola, nome o cognome..." autocomplete="off">
-                                        <div id="memberSearchResults" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
-                                        <small class="text-muted">Opzionale - lascia vuoto se non associato a un volontario</small>
+                                               placeholder="Cerca per matricola, nome o cognome..." 
+                                               autocomplete="off"
+                                               aria-label="Cerca socio o volontario"
+                                               aria-describedby="memberSearchHelp"
+                                               aria-expanded="false"
+                                               aria-controls="memberSearchResults"
+                                               role="combobox">
+                                        <div id="memberSearchResults" class="list-group position-absolute" 
+                                             style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"
+                                             role="listbox"></div>
+                                        <small class="text-muted" id="memberSearchHelp">Opzionale - lascia vuoto se non associato a un volontario</small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -404,12 +412,21 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">Socio/Volontario <span class="text-danger">*</span></label>
+                                        <label class="form-label" id="dpiMemberSearchLabel">Socio/Volontario <span class="text-danger">*</span></label>
                                         <input type="hidden" name="member_id" id="dpiMemberIdInput" required>
                                         <input type="text" class="form-control" id="dpiMemberSearch" 
-                                               placeholder="Cerca per matricola, nome o cognome..." autocomplete="off" required>
-                                        <div id="dpiMemberSearchResults" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
-                                        <small class="text-muted">Inizia a digitare per cercare un volontario</small>
+                                               placeholder="Cerca per matricola, nome o cognome..." 
+                                               autocomplete="off" 
+                                               required
+                                               aria-label="Cerca socio o volontario per assegnazione DPI"
+                                               aria-describedby="dpiMemberSearchHelp"
+                                               aria-expanded="false"
+                                               aria-controls="dpiMemberSearchResults"
+                                               role="combobox">
+                                        <div id="dpiMemberSearchResults" class="list-group position-absolute" 
+                                             style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"
+                                             role="listbox"></div>
+                                        <small class="text-muted" id="dpiMemberSearchHelp">Inizia a digitare per cercare un volontario</small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -466,22 +483,32 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                     resultsDiv.style.display = 'none';
                     resultsDiv.innerHTML = '';
                     hiddenInput.value = '';
+                    searchInput.setAttribute('aria-expanded', 'false');
                     return;
                 }
                 
                 searchTimeout = setTimeout(async () => {
                     try {
-                        const response = await fetch('warehouse_api.php?action=get_members&search=' + encodeURIComponent(query));
+                        // Construct API URL securely
+                        const url = new URL('warehouse_api.php', window.location.href);
+                        url.searchParams.set('action', 'get_members');
+                        url.searchParams.set('search', query);
+                        
+                        const response = await fetch(url.toString());
                         const result = await response.json();
                         
                         if (result.success && result.members.length > 0) {
                             resultsDiv.innerHTML = result.members.map(member => 
-                                `<button type="button" class="list-group-item list-group-item-action" data-id="${member.id}" data-name="${member.last_name} ${member.first_name} (${member.registration_number})">
+                                `<button type="button" class="list-group-item list-group-item-action" 
+                                         role="option" 
+                                         data-id="${member.id}" 
+                                         data-name="${member.last_name} ${member.first_name} (${member.registration_number})">
                                     <strong>${member.last_name} ${member.first_name}</strong>
                                     <small class="text-muted"> - Matricola: ${member.registration_number}</small>
                                 </button>`
                             ).join('');
                             resultsDiv.style.display = 'block';
+                            searchInput.setAttribute('aria-expanded', 'true');
                             
                             // Add click handlers to results
                             resultsDiv.querySelectorAll('button').forEach(btn => {
@@ -489,16 +516,19 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     hiddenInput.value = this.dataset.id;
                                     searchInput.value = this.dataset.name;
                                     resultsDiv.style.display = 'none';
+                                    searchInput.setAttribute('aria-expanded', 'false');
                                 });
                             });
                         } else {
-                            resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun volontario trovato</div>';
+                            resultsDiv.innerHTML = '<div class="list-group-item text-muted" role="option">Nessun volontario trovato</div>';
                             resultsDiv.style.display = 'block';
+                            searchInput.setAttribute('aria-expanded', 'true');
                             hiddenInput.value = '';
                         }
                     } catch (error) {
                         console.error('Errore nella ricerca:', error);
                         resultsDiv.style.display = 'none';
+                        searchInput.setAttribute('aria-expanded', 'false');
                     }
                 }, 300);
             });
@@ -507,6 +537,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
             document.addEventListener('click', function(e) {
                 if (e.target !== searchInput && !resultsDiv.contains(e.target)) {
                     resultsDiv.style.display = 'none';
+                    searchInput.setAttribute('aria-expanded', 'false');
                 }
             });
         }
