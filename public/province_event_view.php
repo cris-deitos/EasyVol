@@ -29,13 +29,7 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
 } else {
     // Initialize database connection
     $config = require __DIR__ . '/../config/config.php';
-    $db = new Database(
-        $config['database']['host'],
-        $config['database']['port'] ?? 3306,
-        $config['database']['name'],
-        $config['database']['user'],
-        $config['database']['password']
-    );
+    $db = Database::getInstance($config['database']);
     
     // Check if access code has been submitted
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['access_code'])) {

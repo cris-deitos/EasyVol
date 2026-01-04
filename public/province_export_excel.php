@@ -25,13 +25,7 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
 
 // Initialize database
 $config = require __DIR__ . '/../config/config.php';
-$db = new Database(
-    $config['database']['host'],
-    $config['database']['port'] ?? 3306,
-    $config['database']['name'],
-    $config['database']['user'],
-    $config['database']['password']
-);
+$db = Database::getInstance($config['database']);
 
 // Check authentication in session
 if (session_status() === PHP_SESSION_NONE) {
