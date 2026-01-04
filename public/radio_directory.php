@@ -80,9 +80,9 @@ $pageTitle = 'Rubrica Radio';
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><i class="bi bi-broadcast"></i> <?php echo htmlspecialchars($pageTitle); ?></h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <a href="dispatch.php" class="btn btn-sm btn-success me-2">
-                            <i class="bi bi-broadcast-pin"></i> Dispatch
-                        </a>
+<!--                        <a href="dispatch.php" class="btn btn-sm btn-success me-2">                                                      -->
+<!--                            <i class="bi bi-broadcast-pin"></i> Dispatch                                                      -->
+<!--                        </a>                                                      -->
                         <a href="radio_assignment_history.php" class="btn btn-sm btn-outline-info me-2">
                             <i class="bi bi-clock-history"></i> Storico Assegnazioni
                         </a>
