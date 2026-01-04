@@ -514,11 +514,11 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                             resultsDiv.innerHTML = result.members.map(member => {
                                 const fullName = escapeHtml(member.last_name + ' ' + member.first_name);
                                 const regNumber = escapeHtml(member.registration_number);
-                                const displayText = `${fullName} (${regNumber})`;
+                                const displayText = `${member.last_name} ${member.first_name} (${member.registration_number})`;
                                 
                                 return `<button type="button" class="list-group-item list-group-item-action" 
                                          role="option" 
-                                         data-id="${escapeHtml(member.id)}" 
+                                         data-id="${member.id}" 
                                          data-name="${escapeHtml(displayText)}">
                                     <strong>${fullName}</strong>
                                     <small class="text-muted"> - Matricola: ${regNumber}</small>
@@ -537,12 +537,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                 });
                             });
                         } else {
-                            const noResultMsg = document.createElement('div');
-                            noResultMsg.className = 'list-group-item text-muted';
-                            noResultMsg.setAttribute('role', 'option');
-                            noResultMsg.textContent = 'Nessun volontario trovato';
-                            resultsDiv.innerHTML = '';
-                            resultsDiv.appendChild(noResultMsg);
+                            // Use consistent DOM manipulation approach
+                            resultsDiv.innerHTML = '<div class="list-group-item text-muted" role="option">Nessun volontario trovato</div>';
                             resultsDiv.style.display = 'block';
                             searchInput.setAttribute('aria-expanded', 'true');
                             hiddenInput.value = '';
