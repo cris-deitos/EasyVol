@@ -464,17 +464,22 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
         
         // Debug: Log when tabs are clicked
         document.addEventListener('DOMContentLoaded', function() {
-            const tabButtons = document.querySelectorAll('button[data-bs-toggle="tab"]');
-            tabButtons.forEach(button => {
-                button.addEventListener('shown.bs.tab', function (event) {
-                    console.log('Tab shown:', event.target.id);
-                });
-            });
-            
-            console.log('Warehouse view loaded - Item ID:', itemId);
-            console.log('Movements data:', <?php echo json_encode($item['movements'] ?? []); ?>);
-            console.log('DPI assignments data:', <?php echo json_encode($item['dpi_assignments'] ?? []); ?>);
-        });
+    // Handle tab parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    const allowedTabs = ['info', 'movements', 'dpi'];
+    if (tab && allowedTabs. includes(tab)) {
+        const tabElement = document.getElementById(tab + '-tab');
+        if (tabElement) {
+            const bsTab = new bootstrap.Tab(tabElement);
+            bsTab.show();
+        }
+    }
+    
+    console.log('Warehouse view loaded - Item ID:', itemId);
+    console.log('Movements data:', <? php echo json_encode($item['movements'] ?? []); ?>);
+    console.log('DPI assignments data:', <?php echo json_encode($item['dpi_assignments'] ?? []); ?>);
+});
         
         // Handle movement form submission
         document.getElementById('movementForm')?.addEventListener('submit', async function(e) {
