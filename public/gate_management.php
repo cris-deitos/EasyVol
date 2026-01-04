@@ -680,11 +680,8 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
         // Initial load
         document.addEventListener('DOMContentLoaded', function() {
             loadGates();
-            // Start auto-refresh for the initially active tab (list tab)
-            const activeTab = document.querySelector('.nav-link.active');
-            if (activeTab && activeTab.id === 'gates-list-tab') {
-                refreshInterval = setInterval(loadGates, 3000);
-            }
+            // Start auto-refresh for list tab (which is the default active tab in the HTML)
+            refreshInterval = setInterval(loadGates, 3000);
         });
     </script>
 </body>
