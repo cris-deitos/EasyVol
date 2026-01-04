@@ -141,7 +141,7 @@ $totalCount = $controller->getTotalPeopleCount();
             color: white;
             padding: 8px 10px;
             text-align: left;
-            font-size: 15px;
+            font-size: 16px;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -166,14 +166,14 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .gates-table tbody td {
             padding: 6px 10px;
-            font-size: 14px;
+            font-size: 15px;
             line-height: 1.3;
         }
         
         .gate-number {
             font-weight: bold;
             color: #667eea;
-            font-size: 15px;
+            font-size: 16px;
         }
         
         .gate-name {
@@ -191,7 +191,7 @@ $totalCount = $controller->getTotalPeopleCount();
             padding: 4px 10px;
             border-radius: 12px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 13px;
         }
         
         .status-aperto {
