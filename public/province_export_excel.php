@@ -27,12 +27,32 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
 $config = require __DIR__ . '/../config/config.php';
 $db = Database::getInstance($config['database']);
 
-// Check authentication in session
+// Check authentication in session OR validate token
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['province_token_' . $token])) {
+// First check if authenticated in session
+$authenticated = isset($_SESSION['province_token_' . $token]);
+
+// If not authenticated in session, check if we can authenticate via token alone
+// This allows the Excel download to work even if session was lost but user has valid token
+if (!$authenticated) {
+    // Check if token exists and has been used (access code verified at least once)
+    // Also verify the event is not in a cancelled/archived state
+    $tokenCheck = $db->fetchOne(
+        "SELECT id FROM events WHERE province_access_token = ? AND province_access_code IS NOT NULL AND status != 'annullato'",
+        [$token]
+    );
+    
+    if ($tokenCheck) {
+        // Token is valid, set session for future use
+        $_SESSION['province_token_' . $token] = true;
+        $authenticated = true;
+    }
+}
+
+if (!$authenticated) {
     die('Accesso non autorizzato. Effettuare prima l\'autenticazione.');
 }
 

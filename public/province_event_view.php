@@ -85,11 +85,14 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
     if ($authenticated && $event) {
         // Load interventions with member count
         $interventions = $db->fetchAll(
-            "SELECT i.*, COUNT(DISTINCT im.member_id) as members_count
+            "SELECT i.id, i.event_id, i.title, i.description, i.start_time, i.end_time, 
+                    i.location, i.status, i.latitude, i.longitude, i.full_address, i.municipality,
+                    COUNT(DISTINCT im.member_id) as members_count
              FROM interventions i
              LEFT JOIN intervention_members im ON i.id = im.intervention_id
              WHERE i.event_id = ?
-             GROUP BY i.id
+             GROUP BY i.id, i.event_id, i.title, i.description, i.start_time, i.end_time, 
+                      i.location, i.status, i.latitude, i.longitude, i.full_address, i.municipality
              ORDER BY i.start_time",
             [$event['id']]
         );
@@ -97,7 +100,7 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
         // For each intervention, load members with fiscal codes only
         foreach ($interventions as &$intervention) {
             $members = $db->fetchAll(
-                "SELECT m.tax_code, im.role, im.hours_worked
+                "SELECT m.tax_code
                  FROM intervention_members im
                  JOIN members m ON im.member_id = m.id
                  WHERE im.intervention_id = ?
@@ -392,16 +395,12 @@ $pageTitle = $authenticated ? 'Visualizzazione Evento - Provincia' : 'Accesso Ri
                                                             <thead>
                                                                 <tr>
                                                                     <th>Codice Fiscale</th>
-                                                                    <th>Ruolo</th>
-                                                                    <th>Ore Lavorate</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
                                                                 <?php foreach ($intervention['members'] as $member): ?>
                                                                     <tr>
                                                                         <td><code><?php echo htmlspecialchars($member['tax_code'] ?? 'N/D'); ?></code></td>
-                                                                        <td><?php echo htmlspecialchars($member['role'] ?? '-'); ?></td>
-                                                                        <td><?php echo htmlspecialchars($member['hours_worked'] ?? '-'); ?></td>
                                                                     </tr>
                                                                 <?php endforeach; ?>
                                                             </tbody>
