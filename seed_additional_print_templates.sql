@@ -329,7 +329,7 @@ INSERT INTO `print_templates` (
             <!-- Right side: Member info -->
             <div class="info-section">
                 <div class="association-name">{{association_name}}</div>
-                <div class="card-title junior-badge">GIOVANE VOLONTARIO</div>
+                <div class="card-title junior-badge">CADETTO</div>
                 
                 <div class="member-details">
                     <div class="detail-row">
