@@ -34,14 +34,14 @@ $totalCount = $controller->getTotalPeopleCount();
         html, body {
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
+            overflow:  hidden;
             font-family: Arial, sans-serif;
             background: #f5f5f5;
         }
         
         #app {
-            height: 100vh;
-            width: 100vw;
+            height:  100vh;
+            width:  100vw;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -63,19 +63,19 @@ $totalCount = $controller->getTotalPeopleCount();
         }
         
         .logo {
-            max-height: 50px;
+            max-height:  50px;
             max-width: 120px;
         }
         
         .association-name {
-            font-size: 18px;
-            font-weight: bold;
+            font-size:  20px;
+            font-weight:  bold;
             color: #333;
         }
         
         .system-title {
-            font-size: 24px;
-            font-weight: bold;
+            font-size:  20px;
+            font-weight:  bold;
             color: #667eea;
             text-align: center;
         }
@@ -83,7 +83,7 @@ $totalCount = $controller->getTotalPeopleCount();
         .total-count {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
+            padding: 10px;
             text-align: center;
             margin: 5px 40px;
             border-radius: 10px;
@@ -92,12 +92,13 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .total-count-label {
             font-size: 18px;
-            margin-bottom: 5px;
+            margin-bottom: -8px;
         }
         
         .total-count-value {
-            font-size: 48px;
+            font-size: 60px;
             font-weight: bold;
+			margin-bottom: -8px;
         }
         
         .content {
@@ -105,7 +106,7 @@ $totalCount = $controller->getTotalPeopleCount();
             display: flex;
             padding: 0 40px 10px;
             gap: 20px;
-            overflow: hidden;
+            overflow:  hidden;
         }
         
         .table-section {
@@ -113,8 +114,8 @@ $totalCount = $controller->getTotalPeopleCount();
             background: white;
             border-radius: 15px;
             padding: 15px;
-            overflow-y: auto;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow-y:  auto;
+            box-shadow:  0 2px 10px rgba(0,0,0,0.1);
         }
         
         .map-section {
@@ -132,19 +133,19 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .gates-table {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
+            border-collapse:  separate;
+            border-spacing:  0;
         }
         
         .gates-table thead th {
             background: #667eea;
             color: white;
-            padding: 8px 10px;
-            text-align: left;
-            font-size: 16px;
+            padding: 6px 12px;
+            text-align:  left;
+            font-size:  16px;
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index:  10;
         }
         
         .gates-table thead th:first-child {
@@ -160,35 +161,44 @@ $totalCount = $controller->getTotalPeopleCount();
             transition: background 0.3s;
         }
         
+        .gates-table tbody tr:nth-child(odd) {
+            background: #e9ecef;
+        }
+        
+        .gates-table tbody tr:nth-child(even) {
+            background: #ffffff;
+        }
+        
         .gates-table tbody tr:hover {
-            background: #f8f9fa;
+            background: #e9ecef ! important;
         }
         
         .gates-table tbody td {
-            padding: 6px 10px;
-            font-size: 15px;
-            line-height: 1.3;
+            padding: 5px 12px;
+            font-size: 16px;
+            line-height: 1.4;
         }
         
         .gate-number {
             font-weight: bold;
             color: #667eea;
-            font-size: 16px;
+            font-size: 17px;
         }
         
         .gate-name {
             color: #333;
+            font-size: 16px;
         }
         
         .people-count {
             font-weight: bold;
-            font-size: 18px;
+            font-size: 20px;
             color: #333;
         }
         
         .status-badge {
             display: inline-block;
-            padding: 4px 10px;
+            padding: 3px 12px;
             border-radius: 12px;
             font-weight: bold;
             font-size: 13px;
@@ -196,7 +206,7 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .status-aperto {
             background: #4caf50;
-            color: white;
+            color:  white;
         }
         
         .status-chiuso {
@@ -210,12 +220,12 @@ $totalCount = $controller->getTotalPeopleCount();
         }
         
         .limit-exceeded {
-            background: #fff3cd !important;
+            background: #fff3cd ! important;
         }
         
         .limit-value {
             color: #666;
-            font-size: 13px;
+            font-size: 15px;
         }
         
         .no-gates {
@@ -233,7 +243,7 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .disabled-message i {
             font-size: 96px;
-            margin-bottom: 20px;
+            margin-bottom:  20px;
         }
         
         .disabled-message h2 {
@@ -254,8 +264,8 @@ $totalCount = $controller->getTotalPeopleCount();
             <div class="disabled-message">
                 <i class="bi bi-exclamation-triangle"></i>
                 <h2>Sistema Gestione Varchi Disabilitato</h2>
-                <p>Il sistema di gestione varchi è attualmente disattivato.</p>
-                <p>Contattare la Centrale Operativa o il Responsabile del Nucleo Informatico e Telecomunicazioni.</p>
+                <p>Il sistema di gestione varchi è attualmente disattivato. </p>
+                <p>Contattare la Centrale Operativa o il Responsabile del Nucleo Informatico e Telecomunicazioni. </p>
             </div>
         <?php else: ?>
             <!-- Header -->
@@ -318,7 +328,7 @@ $totalCount = $controller->getTotalPeopleCount();
     <script>
         let map;
         let markers = [];
-        const systemActive = <?php echo $systemStatus['is_active'] ? 'true' : 'false'; ?>;
+        const systemActive = <?php echo $systemStatus['is_active'] ?  'true' : 'false'; ?>;
 
         // Initialize map
         function initMap() {
@@ -333,7 +343,7 @@ $totalCount = $controller->getTotalPeopleCount();
             if (!systemActive) return;
             
             fetch('api/gates.php?action=list')
-                .then(response => response.json())
+                .then(response => response. json())
                 .then(data => {
                     if (data.success) {
                         updateTable(data.gates);
@@ -349,7 +359,7 @@ $totalCount = $controller->getTotalPeopleCount();
             const tbody = document.getElementById('gates-tbody');
             if (!tbody) return;
             
-            if (!gates || gates.length === 0) {
+            if (! gates || gates.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="no-gates">Nessun varco configurato</td></tr>';
                 return;
             }
@@ -398,13 +408,13 @@ $totalCount = $controller->getTotalPeopleCount();
                     
                     const icon = L.divIcon({
                         className: 'custom-marker',
-                        html: `<div style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; border: 4px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.4);"></div>`
+                        html: `<div style="background-color: ${color}; width:  40px; height: 40px; border-radius: 50%; border: 4px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.4);"></div>`
                     });
 
                     const marker = L.marker([lat, lng], { icon: icon }).addTo(map);
                     marker.bindTooltip(`
-                        <div style="background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 14px;">
-                            <strong style="font-size: 16px;">Nr. ${gate.gate_number}: ${gate.name}</strong>
+                        <div style="background:  white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 14px;">
+                            <strong style="font-size: 16px;">Nr. ${gate.gate_number}:  ${gate.name}</strong>
                         </div>
                     `, { permanent: false, direction: 'top' });
                     
@@ -413,7 +423,7 @@ $totalCount = $controller->getTotalPeopleCount();
             });
 
             // Fit map to bounds
-            if (bounds.length > 0) {
+            if (bounds. length > 0) {
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
         }
@@ -427,13 +437,13 @@ $totalCount = $controller->getTotalPeopleCount();
                         document.getElementById('total-count').textContent = data.total;
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => console. error('Error:', error));
         }
 
         // Get current limit for a gate
         function getCurrentLimit(gate) {
             switch (gate.limit_in_use) {
-                case 'a': return gate.limit_a;
+                case 'a':  return gate.limit_a;
                 case 'b': return gate.limit_b;
                 case 'c': return gate.limit_c;
                 case 'manual': return gate.limit_manual;
@@ -455,9 +465,9 @@ $totalCount = $controller->getTotalPeopleCount();
         function getLimitLabel(limitInUse) {
             switch (limitInUse) {
                 case 'a': return 'A';
-                case 'b': return 'B';
+                case 'b':  return 'B';
                 case 'c': return 'C';
-                case 'manual': return 'Manuale';
+                case 'manual':  return 'Manuale';
                 default: return limitInUse;
             }
         }
