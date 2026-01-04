@@ -109,6 +109,7 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
             );
             $intervention['members'] = $members;
         }
+        unset($intervention); // Important: unset reference to avoid bugs in subsequent foreach loops
     }
 }
 

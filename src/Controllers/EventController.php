@@ -246,7 +246,7 @@ class EventController {
      * Ottieni partecipanti di un evento
      */
     private function getParticipants($eventId) {
-        $sql = "SELECT ep.*, m.first_name, m.last_name, m.registration_number
+        $sql = "SELECT ep.*, m.first_name, m.last_name, m.registration_number, m.tax_code
                 FROM event_participants ep
                 JOIN members m ON ep.member_id = m.id
                 WHERE ep.event_id = ?
@@ -377,6 +377,35 @@ class EventController {
             return $this->db->fetchAll($sql, $params);
         } catch (\Exception $e) {
             error_log("Errore ricerca membri: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Cerca membri disponibili per un intervento
+     */
+    public function getAvailableMembersForIntervention($interventionId, $search = '') {
+        try {
+            $sql = "SELECT m.id, m.first_name, m.last_name, m.registration_number
+                    FROM members m
+                    WHERE m.member_status = 'attivo'
+                    AND m.id NOT IN (SELECT member_id FROM intervention_members WHERE intervention_id = ?)";
+            
+            $params = [$interventionId];
+            
+            if (!empty($search)) {
+                $sql .= " AND (m.first_name LIKE ? OR m.last_name LIKE ? OR m.registration_number LIKE ?)";
+                $searchTerm = '%' . $search . '%';
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            $sql .= " ORDER BY m.last_name, m.first_name LIMIT 20";
+            
+            return $this->db->fetchAll($sql, $params);
+        } catch (\Exception $e) {
+            error_log("Errore ricerca membri per intervento: " . $e->getMessage());
             return [];
         }
     }

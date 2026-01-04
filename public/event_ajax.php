@@ -139,6 +139,26 @@ try {
             echo json_encode(['success' => true, 'members' => $members]);
             break;
             
+        case 'search_intervention_members':
+            // Search available members for adding to intervention
+            if (!$app->checkPermission('events', 'view')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            $interventionId = intval($_GET['intervention_id'] ?? 0);
+            $search = trim($_GET['search'] ?? '');
+            
+            if ($interventionId <= 0) {
+                echo json_encode(['error' => 'ID intervento non valido']);
+                exit;
+            }
+            
+            $members = $controller->getAvailableMembersForIntervention($interventionId, $search);
+            echo json_encode(['success' => true, 'members' => $members]);
+            break;
+            
         case 'add_participant':
             // Add participant to event
             if (!$app->checkPermission('events', 'edit')) {
