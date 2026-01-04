@@ -488,18 +488,14 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                             <thead>
                                                 <tr>
                                                     <th>Volontario</th>
-                                                    <th>Ruolo</th>
-                                                    <th>Ore di Servizio</th>
-                                                    <th>Note</th>
+                                                    <th>Codice Fiscale</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php foreach ($event['participants'] as $participant): ?>
                                                     <tr>
                                                         <td><?php echo htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']); ?></td>
-                                                        <td><?php echo htmlspecialchars($participant['role'] ?? '-'); ?></td>
-                                                        <td><?php echo htmlspecialchars($participant['hours'] ?? 0); ?></td>
-                                                        <td><?php echo htmlspecialchars($participant['notes'] ?? '-'); ?></td>
+                                                        <td><code><?php echo htmlspecialchars($participant['tax_code'] ?? 'N/D'); ?></code></td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
@@ -1605,7 +1601,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             }
             
             interventionMemberSearchTimeout = setTimeout(function() {
-                fetch(`event_ajax.php?action=search_members&event_id=${eventId}&search=${encodeURIComponent(search)}`)
+                fetch(`event_ajax.php?action=search_intervention_members&intervention_id=${interventionId}&search=${encodeURIComponent(search)}`)
                     .then(response => response.json())
                     .then(data => {
                         const resultsDiv = document.getElementById('interventionMemberSearchResults');
