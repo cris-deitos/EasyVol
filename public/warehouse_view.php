@@ -690,6 +690,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
         
         // Handle DPI return
         async function confirmDpiReturn(assignmentId, memberName) {
+            const currentItemId = itemId; // Use the globally defined itemId
+            
             if (!confirm('Confermi la restituzione del DPI da parte di ' + memberName + '?')) {
                 return;
             }
@@ -710,7 +712,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 if (result.success) {
                     alert(result.message);
                     // Reload page to show updated DPI list
-                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=dpi';
+                    window.location.href = 'warehouse_view.php?id=' + currentItemId + '&tab=dpi';
                 } else {
                     alert('Errore: ' + result.message);
                 }

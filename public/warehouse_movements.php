@@ -246,8 +246,8 @@ $pageTitle = 'Movimenti Magazzino';
                                                 </td>
                                                 <td><?php echo htmlspecialchars($movement['member_name'] ?? '-'); ?></td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm btn-info" 
-                                                            onclick='showMovementDetail(<?php echo json_encode($movement, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)'>
+                                                    <button type="button" class="btn btn-sm btn-info movement-detail-btn" 
+                                                            data-movement='<?php echo htmlspecialchars(json_encode($movement), ENT_QUOTES); ?>'>
                                                         <i class="bi bi-eye"></i> Dettagli
                                                     </button>
                                                 </td>
@@ -347,6 +347,25 @@ $pageTitle = 'Movimenti Magazzino';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Add event listeners to all movement detail buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const detailButtons = document.querySelectorAll('.movement-detail-btn');
+            detailButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const movementData = this.getAttribute('data-movement');
+                    if (movementData) {
+                        try {
+                            const movement = JSON.parse(movementData);
+                            showMovementDetail(movement);
+                        } catch (e) {
+                            console.error('Error parsing movement data:', e);
+                            alert('Errore nel caricamento dei dettagli');
+                        }
+                    }
+                });
+            });
+        });
+        
         function showMovementDetail(movement) {
             // Format date
             const date = new Date(movement.created_at);

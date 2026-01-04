@@ -157,6 +157,7 @@ try {
             }
             
             // Update DPI assignment status
+            // Note: return_date is DATE type, exact timestamp is in warehouse_movements.created_at
             $sql = "UPDATE dpi_assignments 
                     SET status = 'restituito', return_date = CURDATE() 
                     WHERE id = ?";
