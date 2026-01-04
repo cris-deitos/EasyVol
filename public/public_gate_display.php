@@ -457,7 +457,7 @@ $totalCount = $controller->getTotalPeopleCount();
                 case 'a': return 'A';
                 case 'b': return 'B';
                 case 'c': return 'C';
-                case 'manual': return 'Man';
+                case 'manual': return 'Manuale';
                 default: return limitInUse;
             }
         }
