@@ -413,7 +413,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                     
                                     <div class="mb-3">
                                         <label class="form-label" id="dpiMemberSearchLabel">Socio/Volontario <span class="text-danger">*</span></label>
-                                        <input type="hidden" name="member_id" id="dpiMemberIdInput" required>
+                                        <input type="hidden" name="member_id" id="dpiMemberIdInput">
                                         <input type="text" class="form-control" id="dpiMemberSearch" 
                                                placeholder="Cerca per matricola, nome o cognome..." 
                                                autocomplete="off" 
@@ -466,14 +466,26 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     <script>
         const itemId = <?php echo $item['id']; ?>;
         
+        // Helper function to escape HTML for XSS protection
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         // Member search autocomplete functionality
         function setupMemberSearch(searchInputId, resultsId, hiddenInputId) {
             const searchInput = document.getElementById(searchInputId);
             const resultsDiv = document.getElementById(resultsId);
             const hiddenInput = document.getElementById(hiddenInputId);
-            let searchTimeout;
             
-            if (!searchInput) return;
+            // Check if all elements exist
+            if (!searchInput || !resultsDiv || !hiddenInput) {
+                console.warn('Member search elements not found:', { searchInputId, resultsId, hiddenInputId });
+                return;
+            }
+            
+            let searchTimeout;
             
             searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
@@ -498,15 +510,20 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                         const result = await response.json();
                         
                         if (result.success && result.members.length > 0) {
-                            resultsDiv.innerHTML = result.members.map(member => 
-                                `<button type="button" class="list-group-item list-group-item-action" 
+                            // Build results with proper escaping to prevent XSS
+                            resultsDiv.innerHTML = result.members.map(member => {
+                                const fullName = escapeHtml(member.last_name + ' ' + member.first_name);
+                                const regNumber = escapeHtml(member.registration_number);
+                                const displayText = `${fullName} (${regNumber})`;
+                                
+                                return `<button type="button" class="list-group-item list-group-item-action" 
                                          role="option" 
-                                         data-id="${member.id}" 
-                                         data-name="${member.last_name} ${member.first_name} (${member.registration_number})">
-                                    <strong>${member.last_name} ${member.first_name}</strong>
-                                    <small class="text-muted"> - Matricola: ${member.registration_number}</small>
-                                </button>`
-                            ).join('');
+                                         data-id="${escapeHtml(member.id)}" 
+                                         data-name="${escapeHtml(displayText)}">
+                                    <strong>${fullName}</strong>
+                                    <small class="text-muted"> - Matricola: ${regNumber}</small>
+                                </button>`;
+                            }).join('');
                             resultsDiv.style.display = 'block';
                             searchInput.setAttribute('aria-expanded', 'true');
                             
@@ -520,7 +537,12 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                 });
                             });
                         } else {
-                            resultsDiv.innerHTML = '<div class="list-group-item text-muted" role="option">Nessun volontario trovato</div>';
+                            const noResultMsg = document.createElement('div');
+                            noResultMsg.className = 'list-group-item text-muted';
+                            noResultMsg.setAttribute('role', 'option');
+                            noResultMsg.textContent = 'Nessun volontario trovato';
+                            resultsDiv.innerHTML = '';
+                            resultsDiv.appendChild(noResultMsg);
                             resultsDiv.style.display = 'block';
                             searchInput.setAttribute('aria-expanded', 'true');
                             hiddenInput.value = '';
@@ -610,6 +632,16 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
         // Handle DPI assignment form submission
         document.getElementById('dpiAssignmentForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Custom validation: ensure a member is selected
+            const dpiMemberIdInput = document.getElementById('dpiMemberIdInput');
+            const dpiMemberSearch = document.getElementById('dpiMemberSearch');
+            
+            if (!dpiMemberIdInput.value) {
+                alert('Errore: Seleziona un volontario dalla lista dei risultati');
+                dpiMemberSearch.focus();
+                return;
+            }
             
             const formData = new FormData(this);
             formData.append('action', 'assign_dpi');
