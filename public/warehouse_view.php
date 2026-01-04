@@ -517,6 +517,21 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     setupMemberSearch('memberSearch', 'memberSearchResults', 'memberIdInput');
     setupMemberSearch('dpiMemberSearch', 'dpiMemberSearchResults', 'dpiMemberIdInput');
     
+    // Clear forms when modals are closed
+    document.getElementById('addMovementModal')?.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('movementForm').reset();
+        document.getElementById('memberIdInput').value = '';
+        document.getElementById('memberSearch').value = '';
+        document.getElementById('memberSearchResults').style.display = 'none';
+    });
+    
+    document.getElementById('assignDpiModal')?.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('dpiAssignmentForm').reset();
+        document.getElementById('dpiMemberIdInput').value = '';
+        document.getElementById('dpiMemberSearch').value = '';
+        document.getElementById('dpiMemberSearchResults').style.display = 'none';
+    });
+    
     // Handle tab parameter from URL
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
