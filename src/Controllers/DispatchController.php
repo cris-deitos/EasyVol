@@ -66,6 +66,10 @@ class DispatchController {
         // Get old data before update
         $oldData = $this->getTalkGroup($id);
         
+        if (!$oldData) {
+            throw new \Exception("TalkGroup non trovato con ID: $id");
+        }
+        
         $sql = "UPDATE dispatch_talkgroups 
                 SET talkgroup_id = ?, name = ?, description = ?, updated_at = NOW() 
                 WHERE id = ?";

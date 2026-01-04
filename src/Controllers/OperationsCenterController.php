@@ -222,6 +222,10 @@ class OperationsCenterController {
             // Get old data before update
             $oldData = $this->getRadio($id);
             
+            if (!$oldData) {
+                return false; // Radio not found
+            }
+            
             $sql = "UPDATE radio_directory SET 
                 name = ?, identifier = ?, device_type = ?, brand = ?, 
                 model = ?, serial_number = ?, notes = ?, status = ?,
