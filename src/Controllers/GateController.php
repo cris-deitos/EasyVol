@@ -275,7 +275,7 @@ class GateController
         $result = $stmt->execute([$count, $gateId]);
 
         if ($result) {
-            $this->logActivity($gateId, 'update_limit', $oldCount, $count);
+            $this->logActivity($gateId, 'set_manual_count', $oldCount, $count);
         }
 
         return $result;

@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `gates` (
 CREATE TABLE IF NOT EXISTS `gate_activity_log` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `gate_id` int(11) NOT NULL,
-  `action_type` enum('add_person', 'remove_person', 'open_gate', 'close_gate', 'change_status', 'update_limit', 'create_gate', 'delete_gate') NOT NULL,
+  `action_type` enum('add_person', 'remove_person', 'open_gate', 'close_gate', 'change_status', 'update_limit', 'set_manual_count', 'create_gate', 'delete_gate') NOT NULL,
   `previous_value` text COMMENT 'Valore precedente (JSON)',
   `new_value` text COMMENT 'Nuovo valore (JSON)',
   `ip_address` varchar(45) DEFAULT NULL,
