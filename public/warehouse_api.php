@@ -114,7 +114,7 @@ try {
             $sql = "SELECT id, first_name, last_name, registration_number 
                     FROM members 
                     WHERE (first_name LIKE ? OR last_name LIKE ? OR registration_number LIKE ?)
-                    AND status = 'attivo'
+                    AND member_status = 'attivo'
                     ORDER BY last_name, first_name
                     LIMIT 50";
             
