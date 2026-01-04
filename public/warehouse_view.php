@@ -322,8 +322,9 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                         </td>
                                                         <td>
                                                             <?php if ($assignment['status'] == 'assegnato' && $app->checkPermission('warehouse', 'edit')): ?>
-                                                                <button type="button" class="btn btn-sm btn-warning" 
-                                                                        onclick="confirmDpiReturn(<?php echo $assignment['id']; ?>, '<?php echo htmlspecialchars($memberName, ENT_QUOTES); ?>')">
+                                                                <button type="button" class="btn btn-sm btn-warning dpi-return-btn" 
+                                                                        data-assignment-id="<?php echo $assignment['id']; ?>"
+                                                                        data-member-name="<?php echo htmlspecialchars($memberName, ENT_QUOTES); ?>">
                                                                     <i class="bi bi-arrow-return-left"></i> Restituzione
                                                                 </button>
                                                             <?php elseif ($assignment['status'] == 'restituito'): ?>
@@ -592,6 +593,18 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
     setupMemberSearch('memberSearch', 'memberSearchResults', 'memberIdInput');
     setupMemberSearch('dpiMemberSearch', 'dpiMemberSearchResults', 'dpiMemberIdInput');
     
+    // Setup DPI return buttons
+    const dpiReturnButtons = document.querySelectorAll('.dpi-return-btn');
+    dpiReturnButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const assignmentId = this.getAttribute('data-assignment-id');
+            const memberName = this.getAttribute('data-member-name');
+            if (assignmentId && memberName) {
+                confirmDpiReturn(parseInt(assignmentId), memberName);
+            }
+        });
+    });
+    
     // Clear forms when modals are closed
     document.getElementById('addMovementModal')?.addEventListener('hidden.bs.modal', function() {
         document.getElementById('movementForm').reset();
@@ -690,8 +703,6 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
         
         // Handle DPI return
         async function confirmDpiReturn(assignmentId, memberName) {
-            const currentItemId = itemId; // Use the globally defined itemId
-            
             if (!confirm('Confermi la restituzione del DPI da parte di ' + memberName + '?')) {
                 return;
             }
@@ -712,7 +723,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 if (result.success) {
                     alert(result.message);
                     // Reload page to show updated DPI list
-                    window.location.href = 'warehouse_view.php?id=' + currentItemId + '&tab=dpi';
+                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=dpi';
                 } else {
                     alert('Errore: ' + result.message);
                 }
