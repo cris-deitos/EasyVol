@@ -39,9 +39,9 @@ $authenticated = isset($_SESSION['province_token_' . $token]);
 // This allows the Excel download to work even if session was lost but user has valid token
 if (!$authenticated) {
     // Check if token exists and has been used (access code verified at least once)
-    // We verify this by checking if the province_notification_sent field exists or if the token is valid
+    // Also verify the event is not in a cancelled/archived state
     $tokenCheck = $db->fetchOne(
-        "SELECT id FROM events WHERE province_access_token = ? AND province_access_code IS NOT NULL",
+        "SELECT id FROM events WHERE province_access_token = ? AND province_access_code IS NOT NULL AND status != 'annullato'",
         [$token]
     );
     

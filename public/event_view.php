@@ -989,8 +989,10 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     const tab = new bootstrap.Tab(tabElement);
                     tab.show();
                 }
-                // Clear after restoring to avoid affecting other page loads
-                sessionStorage.removeItem('eventViewActiveTab');
+                // Clear after a short delay to ensure it's been used
+                setTimeout(function() {
+                    sessionStorage.removeItem('eventViewActiveTab');
+                }, 100);
             }
         }
         
