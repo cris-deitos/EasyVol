@@ -402,51 +402,59 @@ class ReportController {
      */
     public function volunteerActivityReport($year) {
         $sql = "SELECT 
-                    m.id,
-                    m.registration_number as numero_matricola,
-                    m.first_name as nome,
-                    m.last_name as cognome,
-                    m.member_status as stato_socio,
-                    COUNT(DISTINCT e.id) as numero_eventi,
-                    (SELECT COUNT(DISTINCT i2.id) 
-                     FROM interventions i2 
-                     INNER JOIN intervention_members im2 ON i2.id = im2.intervention_id
-                     WHERE im2.member_id = m.id 
-                       AND YEAR(i2.start_time) = ?) as numero_interventi,
-                    (COALESCE(SUM(ep.hours), 0) + 
-                     COALESCE((SELECT SUM(im3.hours_worked) 
-                               FROM intervention_members im3
-                               INNER JOIN interventions i3 ON im3.intervention_id = i3.id
-                               INNER JOIN events e3 ON i3.event_id = e3.id
-                               WHERE im3.member_id = m.id 
-                               AND YEAR(e3.start_date) = ?), 0)) as ore_totali,
-                    (COALESCE(SUM(ep.hours), 0) + 
-                     COALESCE((SELECT SUM(im3.hours_worked) 
-                               FROM intervention_members im3
-                               INNER JOIN interventions i3 ON im3.intervention_id = i3.id
-                               INNER JOIN events e3 ON i3.event_id = e3.id
-                               WHERE im3.member_id = m.id 
-                               AND YEAR(e3.start_date) = ?), 0)) / NULLIF(COUNT(DISTINCT e.id), 0) as ore_medie_per_evento,
-                    GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as tipi_eventi,
-                    MIN(e.start_date) as primo_evento,
-                    MAX(e.start_date) as ultimo_evento
-                FROM members m
-                LEFT JOIN event_participants ep ON m.id = ep.member_id
-                LEFT JOIN events e ON ep.event_id = e.id AND YEAR(e.start_date) = ?
-                WHERE EXISTS (
-                    SELECT 1 FROM event_participants ep2 
-                    INNER JOIN events e2 ON ep2.event_id = e2.id 
-                    WHERE ep2.member_id = m.id AND YEAR(e2.start_date) = ?
-                ) OR EXISTS (
-                    SELECT 1 FROM intervention_members im4
-                    INNER JOIN interventions i4 ON im4.intervention_id = i4.id
-                    INNER JOIN events e4 ON i4.event_id = e4.id
-                    WHERE im4.member_id = m.id AND YEAR(e4.start_date) = ?
-                )
-                GROUP BY m.id
-                ORDER BY ore_totali DESC, m.last_name, m.first_name";
+                    member_data.id,
+                    member_data.numero_matricola,
+                    member_data.nome,
+                    member_data.cognome,
+                    member_data.stato_socio,
+                    member_data.numero_eventi,
+                    member_data.numero_interventi,
+                    member_data.ore_totali,
+                    member_data.ore_totali / NULLIF(member_data.numero_eventi, 0) as ore_medie_per_evento,
+                    member_data.tipi_eventi,
+                    member_data.primo_evento,
+                    member_data.ultimo_evento
+                FROM (
+                    SELECT 
+                        m.id,
+                        m.registration_number as numero_matricola,
+                        m.first_name as nome,
+                        m.last_name as cognome,
+                        m.member_status as stato_socio,
+                        COUNT(DISTINCT e.id) as numero_eventi,
+                        (SELECT COUNT(DISTINCT i2.id) 
+                         FROM interventions i2 
+                         INNER JOIN intervention_members im2 ON i2.id = im2.intervention_id
+                         WHERE im2.member_id = m.id 
+                           AND YEAR(i2.start_time) = ?) as numero_interventi,
+                        (COALESCE(SUM(ep.hours), 0) + 
+                         COALESCE((SELECT SUM(im3.hours_worked) 
+                                   FROM intervention_members im3
+                                   INNER JOIN interventions i3 ON im3.intervention_id = i3.id
+                                   INNER JOIN events e3 ON i3.event_id = e3.id
+                                   WHERE im3.member_id = m.id 
+                                   AND YEAR(e3.start_date) = ?), 0)) as ore_totali,
+                        GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as tipi_eventi,
+                        MIN(e.start_date) as primo_evento,
+                        MAX(e.start_date) as ultimo_evento
+                    FROM members m
+                    LEFT JOIN event_participants ep ON m.id = ep.member_id
+                    LEFT JOIN events e ON ep.event_id = e.id AND YEAR(e.start_date) = ?
+                    WHERE EXISTS (
+                        SELECT 1 FROM event_participants ep2 
+                        INNER JOIN events e2 ON ep2.event_id = e2.id 
+                        WHERE ep2.member_id = m.id AND YEAR(e2.start_date) = ?
+                    ) OR EXISTS (
+                        SELECT 1 FROM intervention_members im4
+                        INNER JOIN interventions i4 ON im4.intervention_id = i4.id
+                        INNER JOIN events e4 ON i4.event_id = e4.id
+                        WHERE im4.member_id = m.id AND YEAR(e4.start_date) = ?
+                    )
+                    GROUP BY m.id
+                ) AS member_data
+                ORDER BY member_data.ore_totali DESC, member_data.cognome, member_data.nome";
         
-        return $this->db->fetchAll($sql, [$year, $year, $year, $year, $year, $year]);
+        return $this->db->fetchAll($sql, [$year, $year, $year, $year, $year]);
     }
     
     /**
