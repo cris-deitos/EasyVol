@@ -382,7 +382,7 @@ if ($selectedGateId) {
                 
                 <div class="countdown-warning" id="countdown-warning">
                     <i class="bi bi-exclamation-circle"></i>
-                    <span id="countdown-text">ATTENZIONE - Mancano X persone al limite!</span>
+                    <span id="countdown-text">Mancano X persone al limite!</span>
                 </div>
                 
                 <div class="limit-warning" id="limit-warning">
