@@ -49,7 +49,7 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .header {
             background: white;
-            padding: 20px 40px;
+            padding: 12px 40px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
@@ -59,22 +59,22 @@ $totalCount = $controller->getTotalPeopleCount();
         .logo-section {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
         
         .logo {
-            max-height: 80px;
-            max-width: 150px;
+            max-height: 50px;
+            max-width: 120px;
         }
         
         .association-name {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             color: #333;
         }
         
         .system-title {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: bold;
             color: #667eea;
             text-align: center;
@@ -83,20 +83,20 @@ $totalCount = $controller->getTotalPeopleCount();
         .total-count {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px;
+            padding: 15px;
             text-align: center;
-            margin: 20px 40px;
-            border-radius: 15px;
+            margin: 10px 40px;
+            border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         
         .total-count-label {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 18px;
+            margin-bottom: 5px;
         }
         
         .total-count-value {
-            font-size: 72px;
+            font-size: 48px;
             font-weight: bold;
         }
         
@@ -139,9 +139,9 @@ $totalCount = $controller->getTotalPeopleCount();
         .gates-table thead th {
             background: #667eea;
             color: white;
-            padding: 15px;
+            padding: 10px;
             text-align: left;
-            font-size: 18px;
+            font-size: 14px;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -165,14 +165,14 @@ $totalCount = $controller->getTotalPeopleCount();
         }
         
         .gates-table tbody td {
-            padding: 15px;
-            font-size: 16px;
+            padding: 8px 10px;
+            font-size: 13px;
         }
         
         .gate-number {
             font-weight: bold;
             color: #667eea;
-            font-size: 20px;
+            font-size: 15px;
         }
         
         .gate-name {
@@ -181,16 +181,16 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .people-count {
             font-weight: bold;
-            font-size: 24px;
+            font-size: 18px;
             color: #333;
         }
         
         .status-badge {
             display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 4px 10px;
+            border-radius: 12px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 11px;
         }
         
         .status-aperto {
@@ -214,7 +214,7 @@ $totalCount = $controller->getTotalPeopleCount();
         
         .limit-value {
             color: #666;
-            font-size: 16px;
+            font-size: 13px;
         }
         
         .no-gates {

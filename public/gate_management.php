@@ -651,6 +651,9 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
 
         // Auto-refresh map every 5 seconds when visible
         document.getElementById('gates-map-tab').addEventListener('shown.bs.tab', function () {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
             refreshInterval = setInterval(loadGates, 5000);
         });
 
@@ -660,9 +663,25 @@ $pageTitle = 'Gestione Varchi - Sistema Conta Persone';
             }
         });
 
+        // Auto-refresh list every 3 seconds when visible
+        document.getElementById('gates-list-tab').addEventListener('shown.bs.tab', function () {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            refreshInterval = setInterval(loadGates, 3000);
+        });
+
+        document.getElementById('gates-list-tab').addEventListener('hidden.bs.tab', function () {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+
         // Initial load
         document.addEventListener('DOMContentLoaded', function() {
             loadGates();
+            // Start auto-refresh for list tab (default active tab)
+            refreshInterval = setInterval(loadGates, 3000);
         });
     </script>
 </body>
