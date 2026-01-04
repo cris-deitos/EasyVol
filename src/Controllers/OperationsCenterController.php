@@ -102,8 +102,9 @@ class OperationsCenterController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(name LIKE ? OR identifier LIKE ? OR serial_number LIKE ?)";
+            $where[] = "(name LIKE ? OR identifier LIKE ? OR dmr_id LIKE ? OR serial_number LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -184,13 +185,14 @@ class OperationsCenterController {
     public function createRadio($data, $userId) {
         try {
             $sql = "INSERT INTO radio_directory (
-                name, identifier, device_type, brand, model, 
+                name, identifier, dmr_id, device_type, brand, model, 
                 serial_number, notes, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['name'],
                 $data['identifier'] ?? null,
+                $data['dmr_id'] ?? null,
                 $data['device_type'] ?? null,
                 $data['brand'] ?? null,
                 $data['model'] ?? null,
@@ -227,7 +229,7 @@ class OperationsCenterController {
             }
             
             $sql = "UPDATE radio_directory SET 
-                name = ?, identifier = ?, device_type = ?, brand = ?, 
+                name = ?, identifier = ?, dmr_id = ?, device_type = ?, brand = ?, 
                 model = ?, serial_number = ?, notes = ?, status = ?,
                 updated_at = NOW()
                 WHERE id = ?";
@@ -235,6 +237,7 @@ class OperationsCenterController {
             $params = [
                 $data['name'],
                 $data['identifier'] ?? null,
+                $data['dmr_id'] ?? null,
                 $data['device_type'] ?? null,
                 $data['brand'] ?? null,
                 $data['model'] ?? null,

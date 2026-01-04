@@ -49,12 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $data = [
             'name' => trim($_POST['name'] ?? ''),
-            'identifier' => trim($_POST['identifier'] ?? ''),
-            'device_type' => trim($_POST['device_type'] ?? ''),
-            'brand' => trim($_POST['brand'] ?? ''),
-            'model' => trim($_POST['model'] ?? ''),
-            'serial_number' => trim($_POST['serial_number'] ?? ''),
-            'notes' => trim($_POST['notes'] ?? ''),
+            'identifier' => trim($_POST['identifier'] ?? '') ?: null,
+            'dmr_id' => trim($_POST['dmr_id'] ?? '') ?: null,
+            'device_type' => trim($_POST['device_type'] ?? '') ?: null,
+            'brand' => trim($_POST['brand'] ?? '') ?: null,
+            'model' => trim($_POST['model'] ?? '') ?: null,
+            'serial_number' => trim($_POST['serial_number'] ?? '') ?: null,
+            'notes' => trim($_POST['notes'] ?? '') ?: null,
             'status' => $_POST['status'] ?? 'disponibile'
         ];
         
@@ -166,6 +167,17 @@ $pageTitle = $isEdit ? 'Modifica Radio' : 'Nuova Radio';
                                            value="<?php echo htmlspecialchars($radio['identifier'] ?? $_POST['identifier'] ?? ''); ?>" 
                                            maxlength="100"
                                            placeholder="Es: PC-01, Codice chiamata">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="dmr_id" class="form-label">DMR ID</label>
+                                    <input type="text" class="form-control" id="dmr_id" name="dmr_id" 
+                                           value="<?php echo htmlspecialchars($radio['dmr_id'] ?? $_POST['dmr_id'] ?? ''); ?>" 
+                                           maxlength="50"
+                                           placeholder="Es: 2222001">
+                                    <small class="form-text text-muted">ID univoco per radio DMR (Digital Mobile Radio)</small>
                                 </div>
                             </div>
                             
