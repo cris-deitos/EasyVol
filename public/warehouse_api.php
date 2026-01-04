@@ -82,30 +82,45 @@ try {
             $expiryDate = !empty($_POST['expiry_date']) ? $_POST['expiry_date'] : null;
             $notes = trim($_POST['notes'] ?? '');
             
-            // Insert DPI assignment
-            $sql = "INSERT INTO dpi_assignments 
-                    (item_id, member_id, quantity, assignment_date, assigned_date, expiry_date, status, notes, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, 'assegnato', ?, NOW())";
+            // Begin transaction to ensure data consistency
+            $db->beginTransaction();
             
-            $db->execute($sql, [$itemId, $memberId, $quantity, $assignmentDate, $assignmentDate, $expiryDate, $notes]);
-            $assignmentId = $db->lastInsertId();
-            
-            // Register movement for DPI assignment
-            $movementData = [
-                'movement_type' => 'assegnazione',
-                'quantity' => $quantity,
-                'member_id' => $memberId,
-                'destination' => null,
-                'notes' => 'Assegnazione DPI'
-            ];
-            
-            $controller->addMovement($itemId, $movementData, $app->getUserId());
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'DPI assegnato con successo',
-                'assignment_id' => $assignmentId
-            ]);
+            try {
+                // Insert DPI assignment
+                $sql = "INSERT INTO dpi_assignments 
+                        (item_id, member_id, quantity, assignment_date, assigned_date, expiry_date, status, notes, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, 'assegnato', ?, NOW())";
+                
+                $db->execute($sql, [$itemId, $memberId, $quantity, $assignmentDate, $assignmentDate, $expiryDate, $notes]);
+                $assignmentId = $db->lastInsertId();
+                
+                // Register movement for DPI assignment
+                // Pass false to useTransaction parameter since we're already in a transaction
+                $movementData = [
+                    'movement_type' => 'assegnazione',
+                    'quantity' => $quantity,
+                    'member_id' => $memberId,
+                    'destination' => null,
+                    'notes' => 'Assegnazione DPI'
+                ];
+                
+                $movementId = $controller->addMovement($itemId, $movementData, $app->getUserId(), false);
+                
+                if (!$movementId) {
+                    throw new Exception('Errore nella creazione del movimento');
+                }
+                
+                $db->commit();
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'DPI assegnato con successo',
+                    'assignment_id' => $assignmentId
+                ]);
+            } catch (Exception $e) {
+                $db->rollBack();
+                throw $e;
+            }
             break;
             
         case 'get_members':
@@ -168,6 +183,7 @@ try {
                 $db->execute($sql, [$assignmentId]);
                 
                 // Register movement for DPI return
+                // Pass false to useTransaction parameter since we're already in a transaction
                 $movementData = [
                     'movement_type' => 'restituzione',
                     'quantity' => $assignment['quantity'],
@@ -176,7 +192,7 @@ try {
                     'notes' => 'Restituzione DPI'
                 ];
                 
-                $movementId = $controller->addMovement($assignment['item_id'], $movementData, $app->getUserId());
+                $movementId = $controller->addMovement($assignment['item_id'], $movementData, $app->getUserId(), false);
                 
                 if (!$movementId) {
                     throw new Exception('Errore nella creazione del movimento');

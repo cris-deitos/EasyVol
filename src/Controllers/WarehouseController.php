@@ -186,10 +186,18 @@ class WarehouseController {
     
     /**
      * Registra movimento
+     * 
+     * @param int $itemId ID dell'articolo
+     * @param array $data Dati del movimento
+     * @param int $userId ID utente che registra il movimento
+     * @param bool $useTransaction Se true, gestisce la transazione internamente. Se false, assume che ci sia già una transazione attiva.
+     * @return int|false ID del movimento creato o false in caso di errore
      */
-    public function addMovement($itemId, $data, $userId) {
+    public function addMovement($itemId, $data, $userId, $useTransaction = true) {
         try {
-            $this->db->beginTransaction();
+            if ($useTransaction) {
+                $this->db->beginTransaction();
+            }
             
             // Registra movimento
             $sql = "INSERT INTO warehouse_movements (
@@ -219,11 +227,15 @@ class WarehouseController {
             $this->logActivity($userId, 'warehouse_movement', 'create', $movementId, 
                 'Registrato movimento ' . $data['movement_type'] . ' per articolo ID ' . $itemId);
             
-            $this->db->commit();
+            if ($useTransaction) {
+                $this->db->commit();
+            }
             return $movementId;
             
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($useTransaction) {
+                $this->db->rollBack();
+            }
             error_log("Errore registrazione movimento: " . $e->getMessage());
             return false;
         }
