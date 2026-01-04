@@ -277,6 +277,10 @@ class OperationsCenterController {
             // Get radio data for log (BEFORE deletion)
             $radio = $this->getRadio($id);
             
+            if (!$radio) {
+                return ['success' => false, 'message' => 'Radio non trovata'];
+            }
+            
             // Create detailed description of deleted data
             $deletedData = [
                 'id' => $radio['id'],

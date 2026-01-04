@@ -392,12 +392,12 @@ class AutoLogger {
  * @param array|string|null $details Additional details
  */
 public static function logActivity($module, $action, $recordId = null, $details = null) {
-    if (!self:: $app) {
+    if (!self::$app) {
         self::$app = App::getInstance();
     }
     
     // Solo se l'utente è loggato, altrimenti logga comunque per pagine pubbliche
-    if (! self::$app->isInstalled()) {
+    if (!self::$app->isInstalled()) {
         return;
     }
     
@@ -405,10 +405,10 @@ public static function logActivity($module, $action, $recordId = null, $details 
     
     // Per pagine pubbliche, usa un metodo alternativo di logging
     try {
-        self:: $app->logActivity($action, $module, $recordId, $description);
+        self::$app->logActivity($action, $module, $recordId, $description);
     } catch (\Exception $e) {
         // Se fallisce (es. utente non loggato), logga su file
-        error_log("MemberPortal Activity:  [$module] $action - " . ($description ??  ''));
+        error_log("MemberPortal Activity: [$module] $action - " . ($description ?? ''));
     }
 }
 }

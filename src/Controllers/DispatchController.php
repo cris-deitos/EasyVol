@@ -97,6 +97,10 @@ class DispatchController {
         // Get talkgroup data before deletion
         $talkgroup = $this->getTalkGroup($id);
         
+        if (!$talkgroup) {
+            throw new \Exception("TalkGroup non trovato con ID: $id");
+        }
+        
         $sql = "DELETE FROM dispatch_talkgroups WHERE id = ?";
         $this->db->execute($sql, [$id]);
         
