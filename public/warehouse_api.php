@@ -127,6 +127,58 @@ try {
             ]);
             break;
             
+        case 'return_dpi':
+            // Verifica permessi
+            if (!$app->checkPermission('warehouse', 'edit')) {
+                throw new Exception('Permessi insufficienti');
+            }
+            
+            // Verifica CSRF
+            if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+                throw new Exception('Token CSRF non valido');
+            }
+            
+            $assignmentId = intval($_POST['assignment_id'] ?? 0);
+            
+            if ($assignmentId <= 0) {
+                throw new Exception('ID assegnazione non valido');
+            }
+            
+            // Get assignment details
+            $sql = "SELECT * FROM dpi_assignments WHERE id = ?";
+            $assignment = $db->fetchOne($sql, [$assignmentId]);
+            
+            if (!$assignment) {
+                throw new Exception('Assegnazione DPI non trovata');
+            }
+            
+            if ($assignment['status'] === 'restituito') {
+                throw new Exception('Il DPI è già stato restituito');
+            }
+            
+            // Update DPI assignment status
+            $sql = "UPDATE dpi_assignments 
+                    SET status = 'restituito', return_date = CURDATE() 
+                    WHERE id = ?";
+            $db->execute($sql, [$assignmentId]);
+            
+            // Register movement for DPI return
+            $movementData = [
+                'movement_type' => 'restituzione',
+                'quantity' => $assignment['quantity'],
+                'member_id' => $assignment['member_id'],
+                'destination' => null,
+                'notes' => 'Restituzione DPI'
+            ];
+            
+            $controller->addMovement($assignment['item_id'], $movementData, $app->getUserId());
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'DPI restituito con successo'
+            ]);
+            break;
+            
         default:
             throw new Exception('Azione non valida');
     }

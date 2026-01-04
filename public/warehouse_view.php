@@ -290,6 +290,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                     <th>Data Assegnazione</th>
                                                     <th>Scadenza</th>
                                                     <th>Stato</th>
+                                                    <th>Azioni</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -318,6 +319,24 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                             <span class="badge bg-<?php echo $assignment['status'] == 'assegnato' ? 'success' : 'secondary'; ?>">
                                                                 <?php echo htmlspecialchars(ucfirst($assignment['status'])); ?>
                                                             </span>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($assignment['status'] == 'assegnato' && $app->checkPermission('warehouse', 'edit')): ?>
+                                                                <button type="button" class="btn btn-sm btn-warning" 
+                                                                        onclick="confirmDpiReturn(<?php echo $assignment['id']; ?>, '<?php echo htmlspecialchars($memberName, ENT_QUOTES); ?>')">
+                                                                    <i class="bi bi-arrow-return-left"></i> Restituzione
+                                                                </button>
+                                                            <?php elseif ($assignment['status'] == 'restituito'): ?>
+                                                                <span class="text-muted">
+                                                                    <?php if (!empty($assignment['return_date'])): ?>
+                                                                        <small>Restituito il <?php echo htmlspecialchars(date('d/m/Y', strtotime($assignment['return_date']))); ?></small>
+                                                                    <?php else: ?>
+                                                                        <small>Restituito</small>
+                                                                    <?php endif; ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                -
+                                                            <?php endif; ?>
                                                         </td>
                                                     </tr>
                                                 <?php endforeach; ?>
@@ -668,6 +687,37 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                 alert('Errore durante l\'assegnazione: ' + error.message);
             }
         });
+        
+        // Handle DPI return
+        async function confirmDpiReturn(assignmentId, memberName) {
+            if (!confirm('Confermi la restituzione del DPI da parte di ' + memberName + '?')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'return_dpi');
+                formData.append('assignment_id', assignmentId);
+                formData.append('csrf_token', '<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>');
+                
+                const response = await fetch('warehouse_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    // Reload page to show updated DPI list
+                    window.location.href = 'warehouse_view.php?id=' + itemId + '&tab=dpi';
+                } else {
+                    alert('Errore: ' + result.message);
+                }
+            } catch (error) {
+                alert('Errore durante la restituzione: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>
