@@ -368,7 +368,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                         <select class="form-select" name="member_id" id="memberSelect">
                                             <option value="">Nessuno</option>
                                             <?php
-                                            $members = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE status = 'attivo' ORDER BY last_name, first_name");
+                                            $members = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
                                             foreach ($members as $member) {
                                                 echo '<option value="' . $member['id'] . '">' . 
                                                      htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
