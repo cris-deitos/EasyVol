@@ -275,7 +275,7 @@ class GateController
         $result = $stmt->execute([$count, $gateId]);
 
         if ($result) {
-            $this->logActivity($gateId, 'add_person', $oldCount, $count);
+            $this->logActivity($gateId, 'update_limit', $oldCount, $count);
         }
 
         return $result;
