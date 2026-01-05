@@ -46,6 +46,10 @@ try {
         if (is_string($recordIds)) {
             $recordIds = explode(',', $recordIds);
         }
+        // Validate that all parts are numeric before converting
+        $recordIds = array_filter($recordIds, function($id) {
+            return is_numeric(trim($id));
+        });
         $options['record_ids'] = array_map('intval', $recordIds);
     }
     

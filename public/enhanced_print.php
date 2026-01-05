@@ -23,8 +23,12 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new EnhancedPrintController($db, $config);
 
-// Get entity type from parameter
+// Get entity type from parameter with validation
+$allowedEntities = ['members', 'junior_members', 'vehicles', 'meetings', 'events', 'applications'];
 $entityType = $_GET['entity'] ?? 'members';
+if (!in_array($entityType, $allowedEntities, true)) {
+    $entityType = 'members'; // Fallback to safe default
+}
 
 // Get available templates
 $templates = $controller->getAvailableTemplates($entityType);

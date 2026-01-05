@@ -42,7 +42,17 @@ class TemplateEngine {
         $files = glob($entityDir . '/*.json');
         
         foreach ($files as $file) {
-            $data = json_decode(file_get_contents($file), true);
+            $content = @file_get_contents($file);
+            if ($content === false) {
+                continue; // Skip unreadable files
+            }
+            
+            $data = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log("Invalid JSON in template file: $file - " . json_last_error_msg());
+                continue; // Skip invalid JSON files
+            }
+            
             if ($data && isset($data['name'])) {
                 $templates[] = [
                     'file' => basename($file),
@@ -73,7 +83,18 @@ class TemplateEngine {
             return false;
         }
         
-        $data = json_decode(file_get_contents($filepath), true);
+        $content = @file_get_contents($filepath);
+        if ($content === false) {
+            error_log("Failed to read template file: $filepath");
+            return false;
+        }
+        
+        $data = json_decode($content, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("Invalid JSON in template file: $filepath - " . json_last_error_msg());
+            return false;
+        }
         
         if (!$data) {
             return false;
