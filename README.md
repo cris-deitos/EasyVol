@@ -19,6 +19,7 @@ EasyVol è un sistema di gestione completo progettato specificamente per le asso
 - **Riunioni e Assemblee**: Gestione completa con verbali e votazioni
 - **Gestione Mezzi**: Veicoli, natanti, rimorchi con manutenzioni e scadenze
 - **Magazzino**: Inventario, DPI, movimenti con QR code e barcode
+- **Strutture**: Gestione sedi e strutture dell'associazione con mappe GPS
 - **Formazione**: Corsi, attestati, presenze, scadenze
 - **Eventi/Interventi**: Gestione emergenze, esercitazioni, attività
 - **Scadenzario**: Promemoria automatici con notifiche email

@@ -87,6 +87,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </li>
             <?php endif; ?>
             
+            <?php if ($app->checkPermission('structure_management', 'view')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'structure_management.php' ? 'active' : '' ?>" href="structure_management.php">
+                    <i class="bi bi-building"></i> Strutture
+                </a>
+            </li>
+            <?php endif; ?>
+            
             <?php if ($app->checkPermission('training', 'view')): ?>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'training.php' ? 'active' : '' ?>" href="training.php">
