@@ -128,7 +128,8 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                     'attivo' => 'success',
                                     'sospeso' => 'warning',
                                     'dimesso' => 'secondary',
-                                    'deceduto' => 'dark'
+                                    'decaduto' => 'dark',
+                                    'escluso' => 'danger'
                                 ];
                                 $color = $statusColors[$member['member_status']] ?? 'secondary';
                                 ?>

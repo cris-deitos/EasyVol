@@ -11,7 +11,7 @@ class SanctionService {
     /**
      * Valid sanction types
      */
-    const VALID_TYPES = ['decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo', 'attivo', 'approvazione_consiglio_direttivo'];
+    const VALID_TYPES = ['decaduto', 'dimesso', 'escluso', 'in_aspettativa', 'sospeso', 'in_congedo', 'attivo', 'approvazione_consiglio_direttivo'];
     
     /**
      * Suspension sanction types that can be reversed by 'attivo'

@@ -131,7 +131,8 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                     'attivo' => 'success',
                                     'sospeso' => 'warning',
                                     'dimesso' => 'secondary',
-                                    'deceduto' => 'dark'
+                                    'decaduto' => 'dark',
+                                    'escluso' => 'danger'
                                 ];
                                 $color = $statusColors[$member['member_status']] ?? 'secondary';
                                 ?>

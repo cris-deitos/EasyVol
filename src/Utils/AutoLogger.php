@@ -249,6 +249,7 @@ class AutoLogger {
                     'attivo' => 'Attivo',
                     'decaduto' => 'Decaduto',
                     'dimesso' => 'Dimesso',
+                    'escluso' => 'Escluso',
                     'in_aspettativa' => 'In Aspettativa',
                     'sospeso' => 'Sospeso',
                     'in_congedo' => 'In Congedo',

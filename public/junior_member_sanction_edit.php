@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <small>
                                         - <strong>In Aspettativa/In Congedo</strong>: imposta lo stato a "Sospeso"<br>
                                         - <strong>Attivo</strong>: se inserito DOPO un provvedimento sospensivo, riporta lo stato ad "Attivo"<br>
-                                        - <strong>Decaduto/Dimesso</strong>: imposta lo stato rispettivo
+                                        - <strong>Decaduto/Dimesso/Escluso</strong>: imposta lo stato rispettivo
                                     </small>
                                 </div>
                                 
@@ -160,8 +160,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <select class="form-select" id="sanction_type" name="sanction_type" required>
                                             <option value="">-- Seleziona Tipo --</option>
                                             <option value="approvazione_consiglio_direttivo" <?php echo $sanction['sanction_type'] === 'approvazione_consiglio_direttivo' ? 'selected' : ''; ?>>Approvazione del Consiglio Direttivo</option>
-                                            <option value="decaduto" <?php echo $sanction['sanction_type'] === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
-                                            <option value="dimesso" <?php echo $sanction['sanction_type'] === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
+                                            <option value="decaduto" <?php echo $sanction['sanction_type'] === 'decaduto' ? 'selected' : ''; ?>>Decadenza</option>
+                                            <option value="dimesso" <?php echo $sanction['sanction_type'] === 'dimesso' ? 'selected' : ''; ?>>Dimissioni</option>
+                                            <option value="escluso" <?php echo $sanction['sanction_type'] === 'escluso' ? 'selected' : ''; ?>>Esclusione</option>
                                             <option value="in_aspettativa" <?php echo $sanction['sanction_type'] === 'in_aspettativa' ? 'selected' : ''; ?>>In Aspettativa</option>
                                             <option value="sospeso" <?php echo $sanction['sanction_type'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                             <option value="in_congedo" <?php echo $sanction['sanction_type'] === 'in_congedo' ? 'selected' : ''; ?>>In Congedo</option>

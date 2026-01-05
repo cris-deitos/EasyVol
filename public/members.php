@@ -62,7 +62,7 @@ if (!empty($filters['search'])) {
 $statusCounts = [
     'attivo' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status = 'attivo'")['count'] ?? 0,
     'sospeso' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status IN ('sospeso', 'in_aspettativa', 'in_congedo')")['count'] ?? 0,
-    'dimessi_decaduti' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status IN ('dimesso', 'decaduto')")['count'] ?? 0,
+    'dimessi_decaduti' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status IN ('dimesso', 'decaduto', 'escluso')")['count'] ?? 0,
 ];
 
 $pageTitle = 'Gestione Soci';
@@ -163,6 +163,7 @@ $pageTitle = 'Gestione Soci';
                                     <option value="sospeso" <?php echo $filters['status'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                     <option value="dimesso" <?php echo $filters['status'] === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
                                     <option value="decaduto" <?php echo $filters['status'] === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
+                                    <option value="escluso" <?php echo $filters['status'] === 'escluso' ? 'selected' : ''; ?>>Escluso</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
