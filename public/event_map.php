@@ -115,11 +115,6 @@ $pageTitle = 'Mappa Eventi e Interventi';
             font-weight: bold;
         }
         
-        .status-aperto {
-            background: #17a2b8;
-            color: white;
-        }
-        
         .status-in_corso {
             background: #ffc107;
             color: #333;

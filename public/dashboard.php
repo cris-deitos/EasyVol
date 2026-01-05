@@ -28,7 +28,7 @@ try {
     $stats['pending_applications'] = $result['count'] ?? 0;
     
     // Upcoming events
-    $result = $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status IN ('aperto', 'in_corso') AND start_date >= NOW()");
+    $result = $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status = 'in_corso' AND start_date >= NOW()");
     $stats['upcoming_events'] = $result['count'] ?? 0;
     
     // Pending fee payment requests

@@ -95,7 +95,7 @@ class EventController {
                 $data['start_date'],
                 !empty($data['end_date']) ? $data['end_date'] : null,
                 $data['location'] ?? null,
-                $data['status'] ?? 'aperto',
+                $data['status'] ?? 'in_corso',
                 $userId,
                 $data['latitude'] ?? null,
                 $data['longitude'] ?? null,
@@ -183,7 +183,7 @@ class EventController {
     public function update($id, $data, $userId) {
         try {
             // Verifica se si sta cercando di chiudere l'evento
-            $newStatus = $data['status'] ?? 'aperto';
+            $newStatus = $data['status'] ?? 'in_corso';
             if ($newStatus === 'concluso') {
                 // Controlla se ci sono interventi ancora in corso o sospesi
                 if ($this->hasActiveInterventions($id)) {

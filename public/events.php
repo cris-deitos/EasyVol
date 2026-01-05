@@ -41,7 +41,6 @@ $events = $controller->index($filters, $page, $perPage);
 
 // Conteggi per status
 $statusCounts = [
-    'aperto' => $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status = 'aperto'")['count'] ?? 0,
     'in_corso' => $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status = 'in_corso'")['count'] ?? 0,
     'concluso' => $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status = 'concluso'")['count'] ?? 0,
 ];
@@ -79,15 +78,7 @@ $pageTitle = 'Gestione Eventi e Interventi';
                 
                 <!-- Statistiche Rapide -->
                 <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="card bg-info text-white">
-                            <div class="card-body">
-                                <h5 class="card-title">Eventi Aperti</h5>
-                                <h2><?php echo number_format($statusCounts['aperto']); ?></h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card bg-warning text-dark">
                             <div class="card-body">
                                 <h5 class="card-title">In Corso</h5>
@@ -95,7 +86,7 @@ $pageTitle = 'Gestione Eventi e Interventi';
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card bg-success text-white">
                             <div class="card-body">
                                 <h5 class="card-title">Conclusi</h5>
@@ -128,7 +119,6 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                 <label for="status" class="form-label">Stato</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="">Tutti</option>
-                                    <option value="aperto" <?php echo $filters['status'] === 'aperto' ? 'selected' : ''; ?>>Aperto</option>
                                     <option value="in_corso" <?php echo $filters['status'] === 'in_corso' ? 'selected' : ''; ?>>In Corso</option>
                                     <option value="concluso" <?php echo $filters['status'] === 'concluso' ? 'selected' : ''; ?>>Concluso</option>
                                     <option value="annullato" <?php echo $filters['status'] === 'annullato' ? 'selected' : ''; ?>>Annullato</option>
@@ -208,7 +198,6 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                                 <td>
                                                     <?php
                                                     $statusColors = [
-                                                        'aperto' => 'info',
                                                         'in_corso' => 'warning',
                                                         'concluso' => 'success',
                                                         'annullato' => 'secondary'

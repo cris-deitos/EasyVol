@@ -1001,7 +1001,7 @@ CREATE TABLE IF NOT EXISTS `events` (
   `longitude` DECIMAL(11, 8) NULL COMMENT 'Longitudine per georeferenziazione',
   `full_address` VARCHAR(500) NULL COMMENT 'Indirizzo completo georeferenziato',
   `municipality` VARCHAR(100) NULL COMMENT 'Comune di riferimento',
-  `status` enum('aperto', 'in_corso', 'concluso', 'annullato') DEFAULT 'aperto',
+  `status` enum('in_corso', 'concluso', 'annullato') DEFAULT 'in_corso',
   `created_by` int(11),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
