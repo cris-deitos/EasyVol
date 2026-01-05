@@ -85,6 +85,7 @@ if ($activeTab === 'unpaid') {
     $unpaidYear = isset($_GET['unpaid_year']) && !empty($_GET['unpaid_year']) ? intval($_GET['unpaid_year']) : date('Y');
     $unpaidResult = $controller->getUnpaidMembers($unpaidYear, $page, $perPage);
     $unpaidMembers = $unpaidResult['members'];
+    $unpaidTotal = $unpaidResult['total'];
     $totalPages = $unpaidResult['totalPages'];
     $requests = [];
 } else {
@@ -93,6 +94,7 @@ if ($activeTab === 'unpaid') {
     $requests = $result['requests'];
     $totalPages = $result['totalPages'];
     $unpaidMembers = [];
+    $unpaidTotal = 0;
     $unpaidYear = date('Y');
 }
 
@@ -402,8 +404,8 @@ $pageTitle = 'Gestione Pagamento Quote';
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
                                     Soci Attivi senza Pagamento per l'Anno <?php echo $unpaidYear; ?>
-                                    <?php if (!empty($unpaidMembers)): ?>
-                                        (<?php echo count($unpaidMembers); ?>)
+                                    <?php if ($unpaidTotal > 0): ?>
+                                        (<?php echo $unpaidTotal; ?>)
                                     <?php endif; ?>
                                 </h5>
                             </div>
