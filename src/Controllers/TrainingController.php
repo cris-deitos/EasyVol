@@ -289,6 +289,12 @@ class TrainingController {
      */
     public function updateParticipant($participantId, $data, $userId) {
         try {
+            // Get participant and course info before update
+            $participant = $this->getParticipant($participantId);
+            if (!$participant) {
+                return ['error' => 'Partecipante non trovato'];
+            }
+            
             $sql = "UPDATE training_participants SET
                 attendance_status = ?, final_grade = ?, 
                 exam_passed = ?, exam_score = ?,
@@ -305,17 +311,24 @@ class TrainingController {
                 $examScore = max(1, min(10, (int)$data['exam_score']));
             }
             
+            $certificateIssued = isset($data['certificate_issued']) ? (int)$data['certificate_issued'] : 0;
+            
             $params = [
                 $data['attendance_status'] ?? 'iscritto',
                 $data['final_grade'] ?? null,
                 $examPassed,
                 $examScore,
-                isset($data['certificate_issued']) ? (int)$data['certificate_issued'] : 0,
+                $certificateIssued,
                 $data['certificate_file'] ?? null,
                 $participantId
             ];
             
             $this->db->execute($sql, $params);
+            
+            // If exam passed or certificate issued, add to member_courses
+            if ($examPassed === 1 || $certificateIssued === 1) {
+                $this->addCourseToMemberRecord($participant, $userId);
+            }
             
             $this->logActivity($userId, 'training', 'update_participant', $participantId, 'Aggiornato partecipante');
             
@@ -737,6 +750,75 @@ class TrainingController {
         $sql .= " ORDER BY m.last_name, m.first_name LIMIT 50";
         
         return $this->db->fetchAll($sql, $params);
+    }
+    
+    /**
+     * Aggiungi corso completato al registro personale del socio (member_courses)
+     * Viene chiamato quando un partecipante supera l'esame o riceve il certificato
+     * 
+     * @param array $participant Dati partecipante con course_id e member_id
+     * @param int $userId ID utente che esegue l'operazione
+     * @return bool
+     */
+    private function addCourseToMemberRecord($participant, $userId) {
+        try {
+            // Get course details
+            $course = $this->get($participant['course_id']);
+            if (!$course) {
+                error_log("Corso non trovato per partecipante ID: " . $participant['id']);
+                return false;
+            }
+            
+            // Check if already exists in member_courses
+            $sql = "SELECT id FROM member_courses 
+                    WHERE member_id = ? AND training_course_id = ?";
+            $existing = $this->db->fetchOne($sql, [$participant['member_id'], $course['id']]);
+            
+            if ($existing) {
+                // Update existing record
+                $sql = "UPDATE member_courses SET
+                        course_name = ?,
+                        course_type = ?,
+                        completion_date = ?
+                        WHERE id = ?";
+                
+                $completionDate = $course['end_date'] ?? date('Y-m-d');
+                
+                $this->db->execute($sql, [
+                    $course['course_name'],
+                    $course['course_type'],
+                    $completionDate,
+                    $existing['id']
+                ]);
+                
+                $this->logActivity($userId, 'training', 'update_member_course', $existing['id'], 
+                    "Aggiornato corso nel registro del socio ID: {$participant['member_id']}");
+            } else {
+                // Insert new record
+                $sql = "INSERT INTO member_courses 
+                        (member_id, course_name, course_type, completion_date, training_course_id)
+                        VALUES (?, ?, ?, ?, ?)";
+                
+                $completionDate = $course['end_date'] ?? date('Y-m-d');
+                
+                $this->db->execute($sql, [
+                    $participant['member_id'],
+                    $course['course_name'],
+                    $course['course_type'],
+                    $completionDate,
+                    $course['id']
+                ]);
+                
+                $this->logActivity($userId, 'training', 'add_member_course', $this->db->lastInsertId(), 
+                    "Aggiunto corso '{$course['course_name']}' al registro del socio ID: {$participant['member_id']}");
+            }
+            
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta corso a registro socio: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**

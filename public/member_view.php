@@ -461,6 +461,13 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                 </button>
                                             <?php endif; ?>
                                         </div>
+                                        <div class="alert alert-info small mb-3">
+                                            <i class="bi bi-info-circle"></i> 
+                                            I corsi completati con successo nella sezione <strong>Formazione</strong> 
+                                            vengono automaticamente aggiunti qui. I corsi provenienti da Formazione 
+                                            hanno l'etichetta <span class="badge bg-success"><i class="bi bi-building"></i> Formazione</span> 
+                                            e non possono essere eliminati manualmente.
+                                        </div>
                                         <?php if (!empty($member['courses'])): ?>
                                             <div class="table-responsive">
                                                 <table class="table table-hover">
@@ -470,21 +477,49 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                             <th>Tipo</th>
                                                             <th>Data Completamento</th>
                                                             <th>Data Scadenza</th>
+                                                            <th>Fonte</th>
                                                             <th>Azioni</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <?php foreach ($member['courses'] as $course): ?>
                                                             <tr>
-                                                                <td><?php echo htmlspecialchars($course['course_name']); ?></td>
+                                                                <td>
+                                                                    <?php if (!empty($course['training_course_id'])): ?>
+                                                                        <a href="training_view.php?id=<?php echo $course['training_course_id']; ?>" 
+                                                                           class="text-decoration-none" title="Visualizza corso formazione">
+                                                                            <?php echo htmlspecialchars($course['course_name']); ?>
+                                                                        </a>
+                                                                    <?php else: ?>
+                                                                        <?php echo htmlspecialchars($course['course_name']); ?>
+                                                                    <?php endif; ?>
+                                                                </td>
                                                                 <td><?php echo htmlspecialchars($course['course_type'] ?? 'N/D'); ?></td>
                                                                 <td><?php echo $course['completion_date'] ? date('d/m/Y', strtotime($course['completion_date'])) : 'N/D'; ?></td>
                                                                 <td><?php echo $course['expiry_date'] ? date('d/m/Y', strtotime($course['expiry_date'])) : 'N/D'; ?></td>
                                                                 <td>
+                                                                    <?php if (!empty($course['training_course_id'])): ?>
+                                                                        <span class="badge bg-success" title="Corso organizzato dall'associazione">
+                                                                            <i class="bi bi-building"></i> Formazione
+                                                                        </span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge bg-secondary" title="Corso esterno">
+                                                                            <i class="bi bi-file-earmark"></i> Manuale
+                                                                        </span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td>
                                                                     <?php if ($app->checkPermission('members', 'edit')): ?>
-                                                                        <button class="btn btn-sm btn-danger" onclick="deleteCourse(<?php echo $course['id']; ?>)">
-                                                                            <i class="bi bi-trash"></i>
-                                                                        </button>
+                                                                        <?php if (empty($course['training_course_id'])): ?>
+                                                                            <button class="btn btn-sm btn-danger" onclick="deleteCourse(<?php echo $course['id']; ?>)" 
+                                                                                    title="Elimina corso">
+                                                                                <i class="bi bi-trash"></i>
+                                                                            </button>
+                                                                        <?php else: ?>
+                                                                            <span class="text-muted small" title="I corsi dalla Formazione non possono essere eliminati da qui">
+                                                                                <i class="bi bi-lock"></i>
+                                                                            </span>
+                                                                        <?php endif; ?>
                                                                     <?php endif; ?>
                                                                 </td>
                                                             </tr>

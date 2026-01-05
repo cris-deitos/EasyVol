@@ -96,7 +96,10 @@ try {
         case 'delete_course':
             $id = intval($_GET['id'] ?? 0);
             if ($id > 0) {
-                $memberModel->deleteCourse($id);
+                $result = $memberModel->deleteCourse($id);
+                if ($result === false) {
+                    $_SESSION['error'] = 'Impossibile eliminare: questo corso proviene dal modulo Formazione e deve essere gestito da lì.';
+                }
             }
             break;
             
