@@ -593,9 +593,9 @@ class FeePaymentController {
         
         // Get adult members without payment for the specified year
         $sqlAdult = "SELECT m.id, m.registration_number, m.first_name, m.last_name, 
-                    m.status, 'adult' as member_type
+                    m.member_status as status, 'adult' as member_type
                     FROM members m
-                    WHERE m.status = 'attivo'
+                    WHERE m.member_status = 'attivo'
                     AND NOT EXISTS (
                         SELECT 1 FROM member_fees mf 
                         WHERE mf.member_id = m.id 
@@ -604,9 +604,9 @@ class FeePaymentController {
         
         // Get junior members without payment for the specified year
         $sqlJunior = "SELECT jm.id, jm.registration_number, jm.first_name, jm.last_name, 
-                     jm.status, 'junior' as member_type
+                     jm.member_status as status, 'junior' as member_type
                      FROM junior_members jm
-                     WHERE jm.status = 'attivo'
+                     WHERE jm.member_status = 'attivo'
                      AND NOT EXISTS (
                          SELECT 1 FROM junior_member_fees jmf 
                          WHERE jmf.junior_member_id = jm.id 
