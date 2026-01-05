@@ -247,7 +247,6 @@ class ReportController {
         // Eventi
         $sql = "SELECT 
                     COUNT(*) as total,
-                    SUM(CASE WHEN status = 'aperto' THEN 1 ELSE 0 END) as open,
                     SUM(CASE WHEN status = 'in_corso' THEN 1 ELSE 0 END) as in_progress
                 FROM events";
         $stats['events'] = $this->db->fetchOne($sql);
