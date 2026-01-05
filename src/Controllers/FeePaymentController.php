@@ -591,6 +591,10 @@ class FeePaymentController {
             $year = date('Y');
         }
         
+        // Ensure page and perPage are integers to prevent SQL injection
+        $page = max(1, intval($page));
+        $perPage = max(1, min(100, intval($perPage))); // Max 100 per page
+        
         // Get adult members without payment for the specified year
         $sqlAdult = "SELECT m.id, m.registration_number, m.first_name, m.last_name, 
                     m.member_status as status, 'adult' as member_type
@@ -613,17 +617,20 @@ class FeePaymentController {
                          AND jmf.year = ?
                      )";
         
-        // Union both queries
-        $sql = "($sqlAdult) UNION ALL ($sqlJunior) ORDER BY registration_number";
-        
-        // Get total count first
-        $countSql = "SELECT COUNT(*) as total FROM (($sqlAdult) UNION ALL ($sqlJunior)) as combined";
+        // Get total count first (without pagination)
+        $countSql = "SELECT COUNT(*) as total FROM (
+                        ($sqlAdult) UNION ALL ($sqlJunior)
+                     ) as combined";
         $countStmt = $this->db->query($countSql, [$year, $year]);
         $total = $countStmt->fetch()['total'];
         
-        // Get paginated results
+        // Get paginated results - safe integer interpolation after validation
         $offset = ($page - 1) * $perPage;
-        $sql .= " LIMIT $perPage OFFSET $offset";
+        $sql = "SELECT * FROM (
+                    ($sqlAdult) UNION ALL ($sqlJunior)
+                ) as combined
+                ORDER BY registration_number
+                LIMIT $perPage OFFSET $offset";
         
         $stmt = $this->db->query($sql, [$year, $year]);
         $members = $stmt->fetchAll();
