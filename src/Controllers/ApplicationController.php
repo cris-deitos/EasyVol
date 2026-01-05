@@ -14,6 +14,10 @@ class ApplicationController {
     private $db;
     private $config;
     
+    // Costanti per validazione
+    const MIN_COURSE_YEAR = 1950; // Anno minimo accettabile per corsi
+    const MAX_COURSE_YEAR_OFFSET = 1; // Offset anni futuri accettabili
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -1006,11 +1010,12 @@ class ApplicationController {
         // Inserisci socio
         $sql = "INSERT INTO members (
             registration_number, member_type, member_status, volunteer_status,
-            last_name, first_name, birth_date, birth_place, tax_code,
+            last_name, first_name, birth_date, birth_place, birth_province, tax_code,
+            gender, nationality,
             worker_type, education_level,
             registration_date, approval_date,
             created_at
-        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
         $params = [
             $regNumber,
@@ -1018,7 +1023,10 @@ class ApplicationController {
             $data['first_name'],
             $data['birth_date'],
             $data['birth_place'], // Required field from form
+            $data['birth_province'] ?? null,
             $data['tax_code'],
+            $data['gender'] ?? null,
+            $data['nationality'] ?? 'Italiana',
             $data['worker_type'] ?? null,
             $data['education_level'] ?? null,
             date('Y-m-d'),
@@ -1107,6 +1115,30 @@ class ApplicationController {
             }
         }
         
+        // Inserisci Corso Base Protezione Civile Regione Lombardia (se presente)
+        if (!empty($data['corso_base_pc'])) {
+            $courseName = 'Corso Base Protezione Civile Regione Lombardia';
+            $completionDate = null;
+            
+            // If year is provided, validate and use December 31st of that year as completion date
+            if (!empty($data['corso_base_pc_anno'])) {
+                $year = intval($data['corso_base_pc_anno']);
+                // Validate year is reasonable (MIN_COURSE_YEAR to current year + MAX_COURSE_YEAR_OFFSET)
+                $maxYear = date('Y') + self::MAX_COURSE_YEAR_OFFSET;
+                if ($year >= self::MIN_COURSE_YEAR && $year <= $maxYear) {
+                    $completionDate = sprintf('%04d-12-31', $year);
+                }
+            }
+            
+            $sql = "INSERT INTO member_courses (member_id, course_name, completion_date) 
+                    VALUES (?, ?, ?)";
+            $this->db->execute($sql, [
+                $memberId,
+                $courseName,
+                $completionDate
+            ]);
+        }
+        
         // Inserisci informazioni salute
         if (!empty($data['health_vegetarian'])) {
             $this->db->execute("INSERT INTO member_health (member_id, health_type, description) VALUES (?, 'vegetariano', '')", [$memberId]);
@@ -1157,10 +1189,11 @@ class ApplicationController {
         // Inserisci cadetto
         $sql = "INSERT INTO junior_members (
             registration_number, member_status,
-            last_name, first_name, birth_date, birth_place, tax_code,
+            last_name, first_name, birth_date, birth_place, birth_province, tax_code,
+            gender, nationality,
             registration_date, approval_date,
             created_at
-        ) VALUES (?, 'attivo', ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (?, 'attivo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
         $params = [
             $regNumber,
@@ -1168,7 +1201,10 @@ class ApplicationController {
             $data['first_name'],
             $data['birth_date'],
             $data['birth_place'], // Required field from form
+            $data['birth_province'] ?? null,
             $data['tax_code'],
+            $data['gender'] ?? null,
+            $data['nationality'] ?? 'Italiana',
             date('Y-m-d'),
             date('Y-m-d')
         ];
@@ -1237,14 +1273,16 @@ class ApplicationController {
             foreach ($data['guardians'] as $guardian) {
                 $sql = "INSERT INTO junior_member_guardians (
                     junior_member_id, guardian_type,
-                    last_name, first_name, tax_code, phone, email
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    last_name, first_name, birth_date, birth_place, tax_code, phone, email
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 $this->db->execute($sql, [
                     $juniorMemberId,
                     $guardian['type'],
                     $guardian['last_name'],
                     $guardian['first_name'],
+                    !empty($guardian['birth_date']) ? $guardian['birth_date'] : null,
+                    $guardian['birth_place'] ?? null,
                     $guardian['tax_code'] ?? null,
                     $guardian['phone'] ?? null,
                     $guardian['email'] ?? null
