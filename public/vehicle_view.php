@@ -143,8 +143,13 @@ if (!empty($vehicle['license_plate'])) {
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="checklists-tab" data-bs-toggle="tab" data-bs-target="#checklists" type="button">
-                            <i class="bi bi-list-check"></i> Check List
+                        <button class="nav-link" id="checklists-departure-tab" data-bs-toggle="tab" data-bs-target="#checklists-departure" type="button">
+                            <i class="bi bi-box-arrow-right"></i> Check List Uscita
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="checklists-return-tab" data-bs-toggle="tab" data-bs-target="#checklists-return" type="button">
+                            <i class="bi bi-box-arrow-in-left"></i> Check List Rientro
                         </button>
                     </li>
                 </ul>
@@ -400,14 +405,14 @@ if (!empty($vehicle['license_plate'])) {
                         </div>
                     </div>
                     
-                    <!-- Tab Check List -->
-                    <div class="tab-pane fade" id="checklists" role="tabpanel">
+                    <!-- Tab Check List Uscita -->
+                    <div class="tab-pane fade" id="checklists-departure" role="tabpanel">
                         <div class="card">
                             <div class="card-header">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Check List Mezzo</h5>
+                                    <h5 class="mb-0"><i class="bi bi-box-arrow-right text-primary"></i> Check List Uscita</h5>
                                     <?php if ($app->checkPermission('vehicles', 'edit')): ?>
-                                        <button type="button" class="btn btn-sm btn-success" onclick="showAddChecklistModal()">
+                                        <button type="button" class="btn btn-sm btn-success" onclick="showAddChecklistModal('departure')">
                                             <i class="bi bi-plus-circle"></i> Aggiungi Elemento
                                         </button>
                                     <?php endif; ?>
@@ -416,13 +421,44 @@ if (!empty($vehicle['license_plate'])) {
                             <div class="card-body">
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i>
-                                    Le check list vengono utilizzate durante l'uscita e il rientro dei mezzi per verificare lo stato del veicolo.
+                                    Le check list di uscita vengono utilizzate durante la partenza dei mezzi per verificare lo stato del veicolo.
                                     Gli autisti compileranno questi elementi tramite l'interfaccia dedicata.
                                 </div>
                                 
-                                <div id="checklistsContainer">
+                                <div id="checklistsDepartureContainer">
                                     <div class="text-center py-4">
                                         <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Caricamento...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Check List Rientro -->
+                    <div class="tab-pane fade" id="checklists-return" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-box-arrow-in-left text-success"></i> Check List Rientro</h5>
+                                    <?php if ($app->checkPermission('vehicles', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="showAddChecklistModal('return')">
+                                            <i class="bi bi-plus-circle"></i> Aggiungi Elemento
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Le check list di rientro vengono utilizzate al rientro dei mezzi per verificare lo stato del veicolo.
+                                    Gli autisti compileranno questi elementi tramite l'interfaccia dedicata.
+                                </div>
+                                
+                                <div id="checklistsReturnContainer">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-success" role="status">
                                             <span class="visually-hidden">Caricamento...</span>
                                         </div>
                                     </div>
@@ -571,27 +607,36 @@ if (!empty($vehicle['license_plate'])) {
         // Checklist Management Functions
         const vehicleId = <?php echo intval($vehicleId); ?>;
         let checklistModal;
+        let currentChecklistTiming = null; // Track which tab is being edited
         
         document.addEventListener('DOMContentLoaded', function() {
             checklistModal = new bootstrap.Modal(document.getElementById('checklistModal'));
             
-            // Load checklists when tab is shown
-            const checklistsTab = document.getElementById('checklists-tab');
-            if (checklistsTab) {
-                checklistsTab.addEventListener('shown.bs.tab', function () {
-                    loadChecklists();
+            // Load checklists when departure tab is shown
+            const checklistsDepartureTab = document.getElementById('checklists-departure-tab');
+            if (checklistsDepartureTab) {
+                checklistsDepartureTab.addEventListener('shown.bs.tab', function () {
+                    loadChecklists('departure');
+                });
+            }
+            
+            // Load checklists when return tab is shown
+            const checklistsReturnTab = document.getElementById('checklists-return-tab');
+            if (checklistsReturnTab) {
+                checklistsReturnTab.addEventListener('shown.bs.tab', function () {
+                    loadChecklists('return');
                 });
             }
         });
         
-        function loadChecklists() {
-            const container = document.getElementById('checklistsContainer');
+        function loadChecklists(timing) {
+            const container = document.getElementById(timing === 'departure' ? 'checklistsDepartureContainer' : 'checklistsReturnContainer');
             
             fetch('vehicle_checklist_api.php?action=list&vehicle_id=' + vehicleId)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        renderChecklists(data.checklists);
+                        renderChecklists(data.checklists, timing);
                     } else {
                         container.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
                     }
@@ -602,30 +647,22 @@ if (!empty($vehicle['license_plate'])) {
                 });
         }
         
-        function renderChecklists(checklists) {
-            const container = document.getElementById('checklistsContainer');
+        function renderChecklists(checklists, timing) {
+            const container = document.getElementById(timing === 'departure' ? 'checklistsDepartureContainer' : 'checklistsReturnContainer');
             
-            if (checklists.length === 0) {
-                container.innerHTML = '<p class="text-muted">Nessuna check list configurata. Aggiungi elementi per iniziare.</p>';
+            // Filter checklists by timing
+            const filteredChecklists = checklists.filter(c => 
+                c.check_timing === timing || c.check_timing === 'both'
+            );
+            
+            if (filteredChecklists.length === 0) {
+                container.innerHTML = '<p class="text-muted">Nessuna check list configurata per ' + 
+                    (timing === 'departure' ? 'l\'uscita' : 'il rientro') + 
+                    '. Aggiungi elementi per iniziare.</p>';
                 return;
             }
             
-            // Group by timing
-            const departure = checklists.filter(c => c.check_timing === 'departure' || c.check_timing === 'both');
-            const returnList = checklists.filter(c => c.check_timing === 'return' || c.check_timing === 'both');
-            
-            let html = '';
-            
-            if (departure.length > 0) {
-                html += '<h6 class="mt-3 mb-3"><i class="bi bi-box-arrow-right text-primary"></i> Check List Uscita</h6>';
-                html += renderChecklistTable(departure);
-            }
-            
-            if (returnList.length > 0) {
-                html += '<h6 class="mt-4 mb-3"><i class="bi bi-box-arrow-in-left text-success"></i> Check List Rientro</h6>';
-                html += renderChecklistTable(returnList);
-            }
-            
+            let html = renderChecklistTable(filteredChecklists);
             container.innerHTML = html;
         }
         
@@ -694,10 +731,20 @@ if (!empty($vehicle['license_plate'])) {
             return div.innerHTML;
         }
         
-        function showAddChecklistModal() {
+        function showAddChecklistModal(defaultTiming) {
             document.getElementById('checklistModalTitle').textContent = 'Aggiungi Elemento Check List';
             document.getElementById('checklistForm').reset();
             document.getElementById('checklist_id').value = '';
+            
+            // Set the default timing based on which tab is active
+            if (defaultTiming) {
+                currentChecklistTiming = defaultTiming;
+                const checkTimingSelect = document.getElementById('check_timing');
+                if (checkTimingSelect) {
+                    checkTimingSelect.value = defaultTiming;
+                }
+            }
+            
             checklistModal.show();
         }
         
@@ -733,6 +780,8 @@ if (!empty($vehicle['license_plate'])) {
             const action = id ? 'update' : 'create';
             formData.append('action', action);
             
+            const checkTiming = document.getElementById('check_timing').value;
+            
             fetch('vehicle_checklist_api.php', {
                 method: 'POST',
                 body: formData
@@ -741,7 +790,13 @@ if (!empty($vehicle['license_plate'])) {
             .then(data => {
                 if (data.success) {
                     checklistModal.hide();
-                    loadChecklists();
+                    // Reload both tabs if timing is 'both', otherwise reload the specific tab
+                    if (checkTiming === 'both' || checkTiming === 'departure') {
+                        loadChecklists('departure');
+                    }
+                    if (checkTiming === 'both' || checkTiming === 'return') {
+                        loadChecklists('return');
+                    }
                     showSuccessMessage(data.message);
                 } else {
                     showErrorMessage(data.message || 'Errore durante il salvataggio');
@@ -769,7 +824,9 @@ if (!empty($vehicle['license_plate'])) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    loadChecklists();
+                    // Reload both tabs to ensure consistency
+                    loadChecklists('departure');
+                    loadChecklists('return');
                     showSuccessMessage(data.message);
                 } else {
                     showErrorMessage(data.message || 'Errore durante l\'eliminazione');
@@ -783,23 +840,28 @@ if (!empty($vehicle['license_plate'])) {
         
         // Helper functions for showing messages
         function showSuccessMessage(message) {
-            const container = document.getElementById('checklistsContainer');
-            const alert = document.createElement('div');
-            alert.className = 'alert alert-success alert-dismissible fade show';
-            alert.innerHTML = '<i class="bi bi-check-circle"></i> ' + message + 
-                              '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-            container.insertBefore(alert, container.firstChild);
-            setTimeout(() => alert.remove(), 3000);
+            // Show message in both containers
+            showMessageInContainer('checklistsDepartureContainer', message, 'success');
+            showMessageInContainer('checklistsReturnContainer', message, 'success');
         }
         
         function showErrorMessage(message) {
-            const container = document.getElementById('checklistsContainer');
+            // Show message in both containers
+            showMessageInContainer('checklistsDepartureContainer', message, 'danger');
+            showMessageInContainer('checklistsReturnContainer', message, 'danger');
+        }
+        
+        function showMessageInContainer(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
             const alert = document.createElement('div');
-            alert.className = 'alert alert-danger alert-dismissible fade show';
-            alert.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + message + 
+            alert.className = 'alert alert-' + type + ' alert-dismissible fade show';
+            const icon = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+            alert.innerHTML = '<i class="bi bi-' + icon + '"></i> ' + message + 
                               '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
             container.insertBefore(alert, container.firstChild);
-            setTimeout(() => alert.remove(), 5000);
+            setTimeout(() => alert.remove(), type === 'success' ? 3000 : 5000);
         }
     </script>
 

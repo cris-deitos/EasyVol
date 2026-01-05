@@ -39,6 +39,20 @@ try {
             echo json_encode(['success' => true, 'drivers' => $drivers]);
             break;
             
+        case 'get_checklists':
+            $vehicleId = intval($_GET['vehicle_id'] ?? 0);
+            $timing = $_GET['timing'] ?? null;
+            $trailerId = !empty($_GET['trailer_id']) ? intval($_GET['trailer_id']) : null;
+            
+            if ($vehicleId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid vehicle ID']);
+                exit;
+            }
+            
+            $checklists = $controller->getVehicleChecklists($vehicleId, $timing, $trailerId);
+            echo json_encode(['success' => true, 'checklists' => $checklists]);
+            break;
+            
         default:
             echo json_encode(['success' => false, 'message' => 'Invalid action']);
     }

@@ -60,7 +60,7 @@ if ($controller->isVehicleInMission($vehicleId)) {
 // Get available trailers
 $availableTrailers = $controller->getAvailableTrailers();
 
-// Get vehicle checklists - will be updated based on trailer selection via JavaScript
+// Get vehicle checklists - will be dynamically updated when trailer is selected
 $checklists = $controller->getVehicleChecklists($vehicleId, 'departure');
 
 $error = '';
@@ -355,49 +355,53 @@ $pageTitle = 'Registra Uscita Veicolo';
                 <?php endif; ?>
 
                 <!-- Checklist Section -->
-                <?php if (!empty($checklists)): ?>
-                    <div class="section-header">
-                        <h5 class="mb-0"><i class="bi bi-3-circle-fill"></i> Check List Uscita</h5>
-                    </div>
-
-                    <?php foreach ($checklists as $item): ?>
-                        <div class="checklist-item">
-                            <label class="form-label fw-bold">
-                                <?php echo htmlspecialchars($item['item_name']); ?>
-                                <?php if ($item['is_required']): ?>
-                                    <span class="text-danger">*</span>
-                                <?php endif; ?>
-                            </label>
-                            
-                            <?php if ($item['item_type'] === 'boolean'): ?>
-                                <div class="form-check form-switch">
-                                    <input type="checkbox" 
-                                           class="form-check-input" 
+                <div class="section-header">
+                    <h5 class="mb-0"><i class="bi bi-3-circle-fill"></i> Check List Uscita</h5>
+                </div>
+                
+                <div id="checklistContainer">
+                    <?php if (!empty($checklists)): ?>
+                        <?php foreach ($checklists as $item): ?>
+                            <div class="checklist-item">
+                                <label class="form-label fw-bold">
+                                    <?php echo htmlspecialchars($item['item_name']); ?>
+                                    <?php if ($item['is_required']): ?>
+                                        <span class="text-danger">*</span>
+                                    <?php endif; ?>
+                                </label>
+                                
+                                <?php if ($item['item_type'] === 'boolean'): ?>
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" 
+                                               class="form-check-input" 
+                                               name="checklist[<?php echo $item['id']; ?>]" 
+                                               value="1"
+                                               id="checklist_<?php echo $item['id']; ?>"
+                                               <?php echo $item['is_required'] ? 'required' : ''; ?>>
+                                        <label class="form-check-label" for="checklist_<?php echo $item['id']; ?>">
+                                            Verificato
+                                        </label>
+                                    </div>
+                                <?php elseif ($item['item_type'] === 'numeric'): ?>
+                                    <input type="number" 
                                            name="checklist[<?php echo $item['id']; ?>]" 
-                                           value="1"
-                                           id="checklist_<?php echo $item['id']; ?>"
+                                           class="form-control" 
+                                           step="0.01"
+                                           placeholder="Inserisci quantità"
                                            <?php echo $item['is_required'] ? 'required' : ''; ?>>
-                                    <label class="form-check-label" for="checklist_<?php echo $item['id']; ?>">
-                                        Verificato
-                                    </label>
-                                </div>
-                            <?php elseif ($item['item_type'] === 'numeric'): ?>
-                                <input type="number" 
-                                       name="checklist[<?php echo $item['id']; ?>]" 
-                                       class="form-control" 
-                                       step="0.01"
-                                       placeholder="Inserisci quantità"
-                                       <?php echo $item['is_required'] ? 'required' : ''; ?>>
-                            <?php else: ?>
-                                <textarea name="checklist[<?php echo $item['id']; ?>]" 
-                                          class="form-control" 
-                                          rows="2"
-                                          placeholder="Inserisci note"
-                                          <?php echo $item['is_required'] ? 'required' : ''; ?>></textarea>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                                <?php else: ?>
+                                    <textarea name="checklist[<?php echo $item['id']; ?>]" 
+                                              class="form-control" 
+                                              rows="2"
+                                              placeholder="Inserisci note"
+                                              <?php echo $item['is_required'] ? 'required' : ''; ?>></textarea>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-muted"><i class="bi bi-info-circle"></i> Nessuna check list configurata per questo veicolo.</p>
+                    <?php endif; ?>
+                </div>
 
                 <!-- Anomalies Section -->
                 <div class="section-header">
@@ -545,6 +549,85 @@ $pageTitle = 'Registra Uscita Veicolo';
                 driverSearch.focus();
             }
         });
+        
+        // Trailer selection - reload checklists when trailer changes
+        const trailerSelect = document.getElementById('trailerSelect');
+        if (trailerSelect) {
+            trailerSelect.addEventListener('change', function() {
+                const trailerId = this.value;
+                loadChecklists(<?php echo $vehicleId; ?>, trailerId);
+            });
+        }
+        
+        // Function to load checklists (vehicle + optional trailer)
+        function loadChecklists(vehicleId, trailerId = '') {
+            let url = 'vehicle_movement_api.php?action=get_checklists&vehicle_id=' + vehicleId + '&timing=departure';
+            if (trailerId) {
+                url += '&trailer_id=' + trailerId;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.checklists) {
+                        renderChecklists(data.checklists);
+                    } else {
+                        console.error('Error loading checklists:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading checklists:', error);
+                });
+        }
+        
+        // Function to render checklists dynamically
+        function renderChecklists(checklists) {
+            const container = document.getElementById('checklistContainer');
+            if (!container) return;
+            
+            if (checklists.length === 0) {
+                container.innerHTML = '<p class="text-muted"><i class="bi bi-info-circle"></i> Nessuna check list configurata per questo veicolo.</p>';
+                return;
+            }
+            
+            let html = '';
+            checklists.forEach(item => {
+                html += '<div class="checklist-item">';
+                html += '<label class="form-label fw-bold">';
+                html += escapeHtml(item.item_name);
+                if (item.is_required == 1) {
+                    html += ' <span class="text-danger">*</span>';
+                }
+                html += '</label>';
+                
+                if (item.item_type === 'boolean') {
+                    html += '<div class="form-check form-switch">';
+                    html += '<input type="checkbox" class="form-check-input" name="checklist[' + item.id + ']" value="1" id="checklist_' + item.id + '"';
+                    if (item.is_required == 1) html += ' required';
+                    html += '>';
+                    html += '<label class="form-check-label" for="checklist_' + item.id + '">Verificato</label>';
+                    html += '</div>';
+                } else if (item.item_type === 'numeric') {
+                    html += '<input type="number" name="checklist[' + item.id + ']" class="form-control" step="0.01" placeholder="Inserisci quantità"';
+                    if (item.is_required == 1) html += ' required';
+                    html += '>';
+                } else {
+                    html += '<textarea name="checklist[' + item.id + ']" class="form-control" rows="2" placeholder="Inserisci note"';
+                    if (item.is_required == 1) html += ' required';
+                    html += '></textarea>';
+                }
+                
+                html += '</div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>
