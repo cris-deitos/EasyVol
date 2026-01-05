@@ -177,6 +177,7 @@ $pageTitle = $isEdit ? 'Modifica Socio Minorenne' : 'Nuovo Socio Minorenne';
                                         <option value="sospeso" <?php echo ($member['member_status'] ?? '') === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                         <option value="decaduto" <?php echo ($member['member_status'] ?? '') === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
                                         <option value="dimesso" <?php echo ($member['member_status'] ?? '') === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
+                                        <option value="escluso" <?php echo ($member['member_status'] ?? '') === 'escluso' ? 'selected' : ''; ?>>Escluso</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">

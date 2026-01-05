@@ -164,6 +164,8 @@ $pageTitle = 'Gestione Soci Minorenni';
                                     <option value="attivo" <?php echo $filters['status'] === 'attivo' ? 'selected' : ''; ?>>Attivo</option>
                                     <option value="sospeso" <?php echo $filters['status'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                     <option value="dimesso" <?php echo $filters['status'] === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
+                                    <option value="decaduto" <?php echo $filters['status'] === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>
+                                    <option value="escluso" <?php echo $filters['status'] === 'escluso' ? 'selected' : ''; ?>>Escluso</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
