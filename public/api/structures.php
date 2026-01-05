@@ -64,16 +64,26 @@ try {
                 exit;
             }
             
-            $userId = $app->getCurrentUser()['id'] ?? null;
-            $structureId = $controller->createStructure($data, $userId);
+            // Validate required fields
+            if (empty($data['name'])) {
+                echo json_encode(['success' => false, 'message' => 'Il campo Nome è obbligatorio']);
+                exit;
+            }
             
-            if ($structureId) {
-                // Log activity
-                $app->logActivity('create', 'structure_management', $structureId, 
-                    "Creata nuova struttura: {$data['name']}");
-                echo json_encode(['success' => true, 'id' => $structureId]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Errore nella creazione della struttura']);
+            try {
+                $userId = $app->getCurrentUser()['id'] ?? null;
+                $structureId = $controller->createStructure($data, $userId);
+                
+                if ($structureId) {
+                    // Log activity
+                    $app->logActivity('create', 'structure_management', $structureId, 
+                        "Creata nuova struttura: {$data['name']}");
+                    echo json_encode(['success' => true, 'id' => $structureId]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Errore nella creazione della struttura']);
+                }
+            } catch (\InvalidArgumentException $e) {
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
             break;
 
@@ -90,16 +100,26 @@ try {
                 exit;
             }
             
-            $userId = $app->getCurrentUser()['id'] ?? null;
-            $result = $controller->updateStructure($structureId, $data, $userId);
+            // Validate required fields
+            if (empty($data['name'])) {
+                echo json_encode(['success' => false, 'message' => 'Il campo Nome è obbligatorio']);
+                exit;
+            }
             
-            if ($result) {
-                // Log activity
-                $app->logActivity('update', 'structure_management', $structureId, 
-                    "Aggiornata struttura: {$data['name']}");
-                echo json_encode(['success' => true]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Errore nell\'aggiornamento della struttura']);
+            try {
+                $userId = $app->getCurrentUser()['id'] ?? null;
+                $result = $controller->updateStructure($structureId, $data, $userId);
+                
+                if ($result) {
+                    // Log activity
+                    $app->logActivity('update', 'structure_management', $structureId, 
+                        "Aggiornata struttura: {$data['name']}");
+                    echo json_encode(['success' => true]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Errore nell\'aggiornamento della struttura']);
+                }
+            } catch (\InvalidArgumentException $e) {
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
             break;
 

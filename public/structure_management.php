@@ -332,7 +332,7 @@ $pageTitle = 'Gestione Strutture';
                             </button>
                             <?php endif; ?>
                             <?php if ($app->checkPermission('structure_management', 'delete')): ?>
-                            <button class="btn btn-sm btn-danger" onclick="deleteStructure(${structure.id}, '${escapeHtml(structure.name)}')" title="Elimina">
+                            <button class="btn btn-sm btn-danger" onclick="deleteStructure(${structure.id}, ${JSON.stringify(structure.name)})" title="Elimina">
                                 <i class="bi bi-trash"></i>
                             </button>
                             <?php endif; ?>
@@ -561,9 +561,11 @@ $pageTitle = 'Gestione Strutture';
         // Delete structure
         function deleteStructure(structureId, structureName) {
             structureToDelete = structureId;
-            document.getElementById('delete-structure-info').innerHTML = `
-                <strong>${escapeHtml(structureName)}</strong>
-            `;
+            const infoElement = document.getElementById('delete-structure-info');
+            const nameElement = document.createElement('strong');
+            nameElement.textContent = structureName;
+            infoElement.innerHTML = '';
+            infoElement.appendChild(nameElement);
             new bootstrap.Modal(document.getElementById('deleteModal')).show();
         }
 

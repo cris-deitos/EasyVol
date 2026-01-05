@@ -46,6 +46,20 @@ class StructureController
      */
     public function createStructure($data, $userId = null)
     {
+        // Validate required fields
+        if (empty($data['name'])) {
+            throw new \InvalidArgumentException('Il campo Nome è obbligatorio');
+        }
+
+        // Validate data types for numeric fields
+        if (isset($data['latitude']) && $data['latitude'] !== '' && !is_numeric($data['latitude'])) {
+            throw new \InvalidArgumentException('Latitudine deve essere un numero valido');
+        }
+
+        if (isset($data['longitude']) && $data['longitude'] !== '' && !is_numeric($data['longitude'])) {
+            throw new \InvalidArgumentException('Longitudine deve essere un numero valido');
+        }
+
         $stmt = $this->db->getConnection()->prepare("
             INSERT INTO structures (
                 name, type, full_address, latitude, longitude,
@@ -81,6 +95,26 @@ class StructureController
      */
     public function updateStructure($structureId, $data, $userId = null)
     {
+        // Check if structure exists
+        $existing = $this->getStructureById($structureId);
+        if (!$existing) {
+            throw new \InvalidArgumentException('Struttura non trovata');
+        }
+
+        // Validate required fields
+        if (empty($data['name'])) {
+            throw new \InvalidArgumentException('Il campo Nome è obbligatorio');
+        }
+
+        // Validate data types for numeric fields
+        if (isset($data['latitude']) && $data['latitude'] !== '' && !is_numeric($data['latitude'])) {
+            throw new \InvalidArgumentException('Latitudine deve essere un numero valido');
+        }
+
+        if (isset($data['longitude']) && $data['longitude'] !== '' && !is_numeric($data['longitude'])) {
+            throw new \InvalidArgumentException('Longitudine deve essere un numero valido');
+        }
+
         $stmt = $this->db->getConnection()->prepare("
             UPDATE structures 
             SET name = ?, type = ?, full_address = ?, latitude = ?, longitude = ?,
