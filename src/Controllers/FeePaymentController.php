@@ -577,4 +577,70 @@ class FeePaymentController {
         $stmt = $this->db->query($sql);
         return $stmt->fetch();
     }
+    
+    /**
+     * Ottieni soci attivi senza pagamento quota per l'anno specificato
+     * 
+     * @param int $year Anno di riferimento
+     * @param int $page Pagina corrente
+     * @param int $perPage Risultati per pagina
+     * @return array
+     */
+    public function getUnpaidMembers($year = null, $page = 1, $perPage = 20) {
+        if ($year === null) {
+            $year = date('Y');
+        }
+        
+        // Ensure page and perPage are integers to prevent SQL injection
+        $page = max(1, intval($page));
+        $perPage = max(1, min(100, intval($perPage))); // Max 100 per page
+        
+        // Get adult members without payment for the specified year
+        $sqlAdult = "SELECT m.id, m.registration_number, m.first_name, m.last_name, 
+                    m.member_status as status, 'adult' as member_type
+                    FROM members m
+                    WHERE m.member_status = 'attivo'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM member_fees mf 
+                        WHERE mf.member_id = m.id 
+                        AND mf.year = ?
+                    )";
+        
+        // Get junior members without payment for the specified year
+        $sqlJunior = "SELECT jm.id, jm.registration_number, jm.first_name, jm.last_name, 
+                     jm.member_status as status, 'junior' as member_type
+                     FROM junior_members jm
+                     WHERE jm.member_status = 'attivo'
+                     AND NOT EXISTS (
+                         SELECT 1 FROM junior_member_fees jmf 
+                         WHERE jmf.junior_member_id = jm.id 
+                         AND jmf.year = ?
+                     )";
+        
+        // Get total count first (without pagination)
+        $countSql = "SELECT COUNT(*) as total FROM (
+                        ($sqlAdult) UNION ALL ($sqlJunior)
+                     ) as combined";
+        $countStmt = $this->db->query($countSql, [$year, $year]);
+        $total = $countStmt->fetch()['total'];
+        
+        // Get paginated results - safe integer interpolation after validation
+        $offset = ($page - 1) * $perPage;
+        $sql = "SELECT * FROM (
+                    ($sqlAdult) UNION ALL ($sqlJunior)
+                ) as combined
+                ORDER BY registration_number
+                LIMIT $perPage OFFSET $offset";
+        
+        $stmt = $this->db->query($sql, [$year, $year]);
+        $members = $stmt->fetchAll();
+        
+        return [
+            'members' => $members,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $perPage,
+            'totalPages' => ceil($total / $perPage)
+        ];
+    }
 }

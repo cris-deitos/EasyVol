@@ -290,6 +290,14 @@ CREATE TABLE IF NOT EXISTS `member_availability` (
   FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- =============================================
+-- MEMBER FEES (QUOTE ASSOCIATIVE)
+-- Tracks yearly membership fee payments for adult members
+-- Used by:
+-- - fee_payments.php "Richieste" tab to display payment requests
+-- - fee_payments.php "Quote Non Versate" tab to identify members without payment
+-- =============================================
+
 CREATE TABLE IF NOT EXISTS `member_fees` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `member_id` int(11) NOT NULL,
@@ -450,6 +458,14 @@ CREATE TABLE IF NOT EXISTS `junior_member_health` (
   KEY `junior_member_id` (`junior_member_id`),
   FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- JUNIOR MEMBER FEES (QUOTE ASSOCIATIVE CADETTI)
+-- Tracks yearly membership fee payments for junior members (cadetti)
+-- Used by:
+-- - fee_payments.php "Richieste" tab to display payment requests
+-- - fee_payments.php "Quote Non Versate" tab to identify junior members without payment
+-- =============================================
 
 CREATE TABLE IF NOT EXISTS `junior_member_fees` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
