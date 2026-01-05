@@ -46,6 +46,28 @@ try {
             echo json_encode(['success' => true, 'checklists' => $checklists]);
             break;
             
+        case 'get_checklists':
+            // Get checklists for vehicle and optional trailer (with timing filter)
+            if (!$app->checkPermission('vehicles', 'view')) {
+                throw new Exception('Accesso negato');
+            }
+            
+            $vehicleId = intval($_GET['vehicle_id'] ?? 0);
+            $timing = $_GET['timing'] ?? null;
+            $trailerId = !empty($_GET['trailer_id']) ? intval($_GET['trailer_id']) : null;
+            
+            if ($vehicleId <= 0) {
+                throw new Exception('ID veicolo non valido');
+            }
+            
+            // Use controller to get combined vehicle + trailer checklists
+            require_once __DIR__ . '/../src/Controllers/VehicleMovementController.php';
+            $controller = new \EasyVol\Controllers\VehicleMovementController($db, $app->getConfig());
+            $checklists = $controller->getVehicleChecklists($vehicleId, $timing, $trailerId);
+            
+            echo json_encode(['success' => true, 'checklists' => $checklists]);
+            break;
+            
         case 'create':
             // Create a new checklist item
             if (!$app->checkPermission('vehicles', 'edit')) {

@@ -400,7 +400,8 @@ $pageTitle = 'Registra Uscita Veicolo';
             vehicleSelect.addEventListener('change', function() {
                 const vehicleId = this.value;
                 if (vehicleId) {
-                    loadChecklists(vehicleId);
+                    const trailerId = document.getElementById('trailer_id') ? document.getElementById('trailer_id').value : '';
+                    loadChecklists(vehicleId, trailerId);
                 } else {
                     document.getElementById('checklistSection').style.display = 'none';
                 }
@@ -412,8 +413,25 @@ $pageTitle = 'Registra Uscita Veicolo';
             <?php endif; ?>
         }
         
-        function loadChecklists(vehicleId) {
-            fetch('vehicle_checklist_api.php?action=list&vehicle_id=' + vehicleId)
+        // Load checklists when trailer is selected
+        const trailerSelect = document.getElementById('trailer_id');
+        if (trailerSelect) {
+            trailerSelect.addEventListener('change', function() {
+                const vehicleSelect = document.getElementById('vehicle_id');
+                const vehicleId = vehicleSelect ? vehicleSelect.value : <?php echo $vehicleId ?: 0; ?>;
+                if (vehicleId) {
+                    loadChecklists(vehicleId, this.value);
+                }
+            });
+        }
+        
+        function loadChecklists(vehicleId, trailerId = '') {
+            let url = 'vehicle_checklist_api.php?action=get_checklists&vehicle_id=' + vehicleId + '&timing=departure';
+            if (trailerId) {
+                url += '&trailer_id=' + trailerId;
+            }
+            
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.checklists.length > 0) {
