@@ -11,10 +11,28 @@ use EasyVol\Database;
 class OperationsCenterController {
     private $db;
     private $config;
+    private static $juniorMemberColumnExists = null; // Cache for column existence check
     
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
+    }
+    
+    /**
+     * Check if junior_member_id column exists in radio_assignments table (cached)
+     */
+    private function hasJuniorMemberSupport() {
+        if (self::$juniorMemberColumnExists === null) {
+            try {
+                $checkColumnSql = "SHOW COLUMNS FROM radio_assignments LIKE 'junior_member_id'";
+                $columnExists = $this->db->fetchOne($checkColumnSql);
+                self::$juniorMemberColumnExists = !empty($columnExists);
+            } catch (\Exception $e) {
+                error_log("Error checking junior_member_id column: " . $e->getMessage());
+                self::$juniorMemberColumnExists = false;
+            }
+        }
+        return self::$juniorMemberColumnExists;
     }
     
     /**
@@ -133,42 +151,91 @@ class OperationsCenterController {
         }
         
         try {
-            // Carica assegnazione corrente - use LEFT JOIN to handle assignments without member_id
-            // Also select assignee_* columns for backward compatibility and phone from members
-            $sql = "SELECT ra.*, 
-                    COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
-                    COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
-                    m.badge_number,
-                    COALESCE(mc.value, ra.assignee_phone) as phone_number,
-                    ra.assignee_organization as organization,
-                    ra.member_id IS NULL as is_external,
-                    ra.notes as assignment_notes
-                    FROM radio_assignments ra
-                    LEFT JOIN members m ON ra.member_id = m.id
-                    LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
-                    WHERE ra.radio_id = ? 
-                    AND ra.return_date IS NULL
-                    AND ra.status = 'assegnata'
-                    ORDER BY ra.assignment_date DESC
-                    LIMIT 1";
-            $radio['current_assignment'] = $this->db->fetchOne($sql, [$id]);
-            
-            // Carica storico assegnazioni
-            $sql = "SELECT ra.*, 
-                    COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
-                    COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
-                    m.badge_number,
-                    COALESCE(mc.value, ra.assignee_phone) as phone_number,
-                    ra.assignee_organization as organization,
-                    ra.member_id IS NULL as is_external,
-                    ra.notes as assignment_notes
-                    FROM radio_assignments ra
-                    LEFT JOIN members m ON ra.member_id = m.id
-                    LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
-                    WHERE ra.radio_id = ? 
-                    ORDER BY ra.assignment_date DESC
-                    LIMIT 10";
-            $radio['assignment_history'] = $this->db->fetchAll($sql, [$id]);
+            // Check if junior_member_id column exists (cached)
+            if ($this->hasJuniorMemberSupport()) {
+                // New schema with junior_members support
+                // Carica assegnazione corrente - handle both members and junior_members
+                $sql = "SELECT ra.*, 
+                        COALESCE(m.first_name, jm.first_name, ra.assignee_first_name) as first_name, 
+                        COALESCE(m.last_name, jm.last_name, ra.assignee_last_name) as last_name, 
+                        COALESCE(m.badge_number, jm.registration_number) as badge_number,
+                        COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                        ra.assignee_organization as organization,
+                        CASE 
+                            WHEN ra.member_id IS NULL AND ra.junior_member_id IS NULL THEN 1 
+                            ELSE 0 
+                        END as is_external,
+                        ra.notes as assignment_notes,
+                        ra.assignee_type
+                        FROM radio_assignments ra
+                        LEFT JOIN members m ON ra.member_id = m.id
+                        LEFT JOIN junior_members jm ON ra.junior_member_id = jm.id
+                        LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
+                        WHERE ra.radio_id = ? 
+                        AND ra.return_date IS NULL
+                        AND ra.status = 'assegnata'
+                        ORDER BY ra.assignment_date DESC
+                        LIMIT 1";
+                $radio['current_assignment'] = $this->db->fetchOne($sql, [$id]);
+                
+                // Carica storico assegnazioni
+                $sql = "SELECT ra.*, 
+                        COALESCE(m.first_name, jm.first_name, ra.assignee_first_name) as first_name, 
+                        COALESCE(m.last_name, jm.last_name, ra.assignee_last_name) as last_name, 
+                        COALESCE(m.badge_number, jm.registration_number) as badge_number,
+                        COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                        ra.assignee_organization as organization,
+                        CASE 
+                            WHEN ra.member_id IS NULL AND ra.junior_member_id IS NULL THEN 1 
+                            ELSE 0 
+                        END as is_external,
+                        ra.notes as assignment_notes,
+                        ra.assignee_type
+                        FROM radio_assignments ra
+                        LEFT JOIN members m ON ra.member_id = m.id
+                        LEFT JOIN junior_members jm ON ra.junior_member_id = jm.id
+                        LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
+                        WHERE ra.radio_id = ? 
+                        ORDER BY ra.assignment_date DESC
+                        LIMIT 10";
+                $radio['assignment_history'] = $this->db->fetchAll($sql, [$id]);
+            } else {
+                // Old schema - only members table
+                $sql = "SELECT ra.*, 
+                        COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
+                        COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
+                        m.badge_number,
+                        COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                        ra.assignee_organization as organization,
+                        ra.member_id IS NULL as is_external,
+                        ra.notes as assignment_notes
+                        FROM radio_assignments ra
+                        LEFT JOIN members m ON ra.member_id = m.id
+                        LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
+                        WHERE ra.radio_id = ? 
+                        AND ra.return_date IS NULL
+                        AND ra.status = 'assegnata'
+                        ORDER BY ra.assignment_date DESC
+                        LIMIT 1";
+                $radio['current_assignment'] = $this->db->fetchOne($sql, [$id]);
+                
+                // Carica storico assegnazioni
+                $sql = "SELECT ra.*, 
+                        COALESCE(m.first_name, ra.assignee_first_name) as first_name, 
+                        COALESCE(m.last_name, ra.assignee_last_name) as last_name, 
+                        m.badge_number,
+                        COALESCE(mc.value, ra.assignee_phone) as phone_number,
+                        ra.assignee_organization as organization,
+                        ra.member_id IS NULL as is_external,
+                        ra.notes as assignment_notes
+                        FROM radio_assignments ra
+                        LEFT JOIN members m ON ra.member_id = m.id
+                        LEFT JOIN member_contacts mc ON (m.id = mc.member_id AND mc.contact_type = 'cellulare')
+                        WHERE ra.radio_id = ? 
+                        ORDER BY ra.assignment_date DESC
+                        LIMIT 10";
+                $radio['assignment_history'] = $this->db->fetchAll($sql, [$id]);
+            }
         } catch (\Exception $e) {
             // If query fails (e.g., missing columns), try simpler query
             error_log("Error loading radio assignments: " . $e->getMessage());
@@ -324,7 +391,7 @@ class OperationsCenterController {
     /**
      * Assegna radio a volontario
      */
-    public function assignRadio($radioId, $memberId, $userId, $notes = null) {
+    public function assignRadio($radioId, $memberId, $userId, $notes = null, $memberType = 'member') {
         try {
             $this->db->beginTransaction();
             
@@ -337,29 +404,79 @@ class OperationsCenterController {
                 return ['success' => false, 'message' => 'Radio non disponibile'];
             }
             
-            // Get member details for assignee fields (backward compatibility)
-            $sql = "SELECT first_name, last_name FROM members WHERE id = ?";
-            $member = $this->db->fetchOne($sql, [$memberId]);
+            // Get member details based on member type
+            if ($memberType === 'cadet') {
+                $sql = "SELECT first_name, last_name FROM junior_members WHERE id = ? AND member_status = 'attivo'";
+                $member = $this->db->fetchOne($sql, [$memberId]);
+                $assigneeType = 'cadet';
+                $assigneeLabel = 'cadetto';
+            } else {
+                $sql = "SELECT first_name, last_name FROM members WHERE id = ? AND member_status = 'attivo'";
+                $member = $this->db->fetchOne($sql, [$memberId]);
+                $assigneeType = 'member';
+                $assigneeLabel = 'volontario';
+            }
             
             if (!$member) {
                 $this->db->rollBack();
-                return ['success' => false, 'message' => 'Volontario non trovato'];
+                return ['success' => false, 'message' => ucfirst($assigneeLabel) . ' non trovato o non attivo'];
             }
             
-            // Create assignment with both member_id and assignee_* fields for compatibility
-            $sql = "INSERT INTO radio_assignments (
-                radio_id, member_id, assignee_first_name, assignee_last_name, 
-                assigned_by, assignment_date, status, notes
-            ) VALUES (?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
-            
-            $this->db->execute($sql, [
-                $radioId, 
-                $memberId, 
-                $member['first_name'],
-                $member['last_name'],
-                $userId,
-                $notes
-            ]);
+            // Check if assignee_type column exists in the database (cached)
+            if ($this->hasJuniorMemberSupport()) {
+                // New schema with assignee_type support
+                if ($memberType === 'cadet') {
+                    $sql = "INSERT INTO radio_assignments (
+                        radio_id, junior_member_id, assignee_type, assignee_first_name, assignee_last_name, 
+                        assigned_by, assignment_date, status, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+                    
+                    $this->db->execute($sql, [
+                        $radioId, 
+                        $memberId,
+                        $assigneeType,
+                        $member['first_name'],
+                        $member['last_name'],
+                        $userId,
+                        $notes
+                    ]);
+                } else {
+                    $sql = "INSERT INTO radio_assignments (
+                        radio_id, member_id, assignee_type, assignee_first_name, assignee_last_name, 
+                        assigned_by, assignment_date, status, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+                    
+                    $this->db->execute($sql, [
+                        $radioId, 
+                        $memberId,
+                        $assigneeType,
+                        $member['first_name'],
+                        $member['last_name'],
+                        $userId,
+                        $notes
+                    ]);
+                }
+            } else {
+                // Old schema - only supports members table
+                if ($memberType === 'cadet') {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Database non aggiornato per supportare cadetti. Eseguire migration.'];
+                }
+                
+                $sql = "INSERT INTO radio_assignments (
+                    radio_id, member_id, assignee_first_name, assignee_last_name, 
+                    assigned_by, assignment_date, status, notes
+                ) VALUES (?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+                
+                $this->db->execute($sql, [
+                    $radioId, 
+                    $memberId, 
+                    $member['first_name'],
+                    $member['last_name'],
+                    $userId,
+                    $notes
+                ]);
+            }
             
             // Update radio status
             $sql = "UPDATE radio_directory SET status = 'assegnata', updated_at = NOW() 
@@ -370,8 +487,8 @@ class OperationsCenterController {
             
             // Log activity with detailed information
             $radioInfo = $this->getRadio($radioId);
-            $description = "Radio '{$radioInfo['name']}' (ID: $radioId) assegnata a volontario: " . 
-                          "{$member['first_name']} {$member['last_name']} (ID: $memberId)";
+            $description = "Radio '{$radioInfo['name']}' (ID: $radioId) assegnata a $assigneeLabel: " . 
+                          "{$member['first_name']} {$member['last_name']} (ID: $memberId, Tipo: $assigneeType)";
             if ($notes) {
                 $description .= ". Note: $notes";
             }
@@ -381,7 +498,7 @@ class OperationsCenterController {
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("Error assigning radio: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Errore durante l\'assegnazione'];
+            return ['success' => false, 'message' => 'Errore durante l\'assegnazione: ' . $e->getMessage()];
         }
     }
     
