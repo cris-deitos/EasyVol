@@ -329,20 +329,15 @@ $pageTitle = 'Dettaglio Radio';
                         
                         <div id="member_fields">
                             <div class="mb-3">
-                                <label for="member_id" class="form-label">Volontario *</label>
-                                <select class="form-select" id="member_id" name="member_id">
-                                    <option value="">Seleziona volontario...</option>
-                                    <?php
-                                    // Carica lista volontari attivi
-                                    $members = $memberController->index(['status' => 'attivo', 'volunteer_status' => 'operativo'], 1, 1000);
-                                    foreach ($members as $member) {
-                                        echo '<option value="' . $member['id'] . '">' . 
-                                             htmlspecialchars($member['last_name'] . ' ' . $member['first_name']) . 
-                                             '</option>';
-                                    }
-                                    ?>
-                                </select>
+                                <label for="memberSearch" class="form-label">Volontario o Cadetto *</label>
+                                <input type="text" class="form-control" id="memberSearch" 
+                                       placeholder="Digita nome, cognome o matricola..." 
+                                       autocomplete="off">
+                                <input type="hidden" id="member_id" name="member_id">
+                                <input type="hidden" id="member_type" name="member_type" value="member">
+                                <small class="form-text text-muted">Inizia a digitare per cercare tra volontari attivi e cadetti</small>
                             </div>
+                            <div id="memberSearchResults" class="list-group" style="max-height: 300px; overflow-y: auto; display: none;"></div>
                         </div>
                         
                         <div id="external_fields" style="display:none;">
@@ -386,7 +381,7 @@ $pageTitle = 'Dettaglio Radio';
             const isMember = document.getElementById('assign_member').checked;
             const memberFields = document.getElementById('member_fields');
             const externalFields = document.getElementById('external_fields');
-            const memberSelect = document.getElementById('member_id');
+            const memberSearchInput = document.getElementById('memberSearch');
             const externalLastName = document.getElementById('external_last_name');
             const externalFirstName = document.getElementById('external_first_name');
             const externalOrganization = document.getElementById('external_organization');
@@ -395,7 +390,7 @@ $pageTitle = 'Dettaglio Radio';
             if (isMember) {
                 memberFields.style.display = 'block';
                 externalFields.style.display = 'none';
-                memberSelect.required = true;
+                if (memberSearchInput) memberSearchInput.required = true;
                 externalLastName.required = false;
                 externalFirstName.required = false;
                 externalOrganization.required = false;
@@ -403,12 +398,82 @@ $pageTitle = 'Dettaglio Radio';
             } else {
                 memberFields.style.display = 'none';
                 externalFields.style.display = 'block';
-                memberSelect.required = false;
+                if (memberSearchInput) memberSearchInput.required = false;
                 externalLastName.required = true;
                 externalFirstName.required = true;
                 externalOrganization.required = true;
                 externalPhone.required = true;
             }
+        }
+        
+        // Member search functionality
+        let searchTimeout;
+        const memberSearchInput = document.getElementById('memberSearch');
+        const memberSearchResults = document.getElementById('memberSearchResults');
+        const memberIdInput = document.getElementById('member_id');
+        const memberTypeInput = document.getElementById('member_type');
+        
+        if (memberSearchInput) {
+            memberSearchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    memberSearchResults.style.display = 'none';
+                    memberSearchResults.innerHTML = '';
+                    memberIdInput.value = '';
+                    memberTypeInput.value = 'member';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const response = await fetch('radio_member_search_ajax.php?q=' + encodeURIComponent(query));
+                        const results = await response.json();
+                        
+                        if (results.length === 0) {
+                            memberSearchResults.innerHTML = '<div class="list-group-item text-muted">Nessun volontario o cadetto trovato</div>';
+                            memberSearchResults.style.display = 'block';
+                            return;
+                        }
+                        
+                        memberSearchResults.innerHTML = '';
+                        results.forEach(result => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'list-group-item list-group-item-action';
+                            button.innerHTML = '<strong>' + escapeHtml(result.label) + '</strong>';
+                            button.onclick = function() {
+                                memberIdInput.value = result.id;
+                                memberTypeInput.value = result.source_type;
+                                memberSearchInput.value = result.value;
+                                memberSearchResults.style.display = 'none';
+                            };
+                            memberSearchResults.appendChild(button);
+                        });
+                        memberSearchResults.style.display = 'block';
+                        
+                    } catch (error) {
+                        console.error('Error searching members:', error);
+                        memberSearchResults.innerHTML = '<div class="list-group-item text-danger">Errore durante la ricerca</div>';
+                        memberSearchResults.style.display = 'block';
+                    }
+                }, 300);
+            });
+            
+            // Close results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (e.target !== memberSearchInput && !memberSearchResults.contains(e.target)) {
+                    memberSearchResults.style.display = 'none';
+                }
+            });
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         function returnRadio(assignmentId) {

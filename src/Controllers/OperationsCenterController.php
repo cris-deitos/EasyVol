@@ -324,7 +324,7 @@ class OperationsCenterController {
     /**
      * Assegna radio a volontario
      */
-    public function assignRadio($radioId, $memberId, $userId, $notes = null) {
+    public function assignRadio($radioId, $memberId, $userId, $notes = null, $memberType = 'member') {
         try {
             $this->db->beginTransaction();
             
@@ -337,29 +337,82 @@ class OperationsCenterController {
                 return ['success' => false, 'message' => 'Radio non disponibile'];
             }
             
-            // Get member details for assignee fields (backward compatibility)
-            $sql = "SELECT first_name, last_name FROM members WHERE id = ?";
-            $member = $this->db->fetchOne($sql, [$memberId]);
+            // Get member details based on member type
+            if ($memberType === 'cadet') {
+                $sql = "SELECT first_name, last_name FROM junior_members WHERE id = ? AND member_status = 'attivo'";
+                $member = $this->db->fetchOne($sql, [$memberId]);
+                $assigneeType = 'cadet';
+                $assigneeLabel = 'cadetto';
+            } else {
+                $sql = "SELECT first_name, last_name FROM members WHERE id = ? AND member_status = 'attivo'";
+                $member = $this->db->fetchOne($sql, [$memberId]);
+                $assigneeType = 'member';
+                $assigneeLabel = 'volontario';
+            }
             
             if (!$member) {
                 $this->db->rollBack();
-                return ['success' => false, 'message' => 'Volontario non trovato'];
+                return ['success' => false, 'message' => ucfirst($assigneeLabel) . ' non trovato o non attivo'];
             }
             
-            // Create assignment with both member_id and assignee_* fields for compatibility
-            $sql = "INSERT INTO radio_assignments (
-                radio_id, member_id, assignee_first_name, assignee_last_name, 
-                assigned_by, assignment_date, status, notes
-            ) VALUES (?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+            // Check if assignee_type column exists in the database
+            $checkColumnSql = "SHOW COLUMNS FROM radio_assignments LIKE 'assignee_type'";
+            $columnExists = $this->db->fetchOne($checkColumnSql);
             
-            $this->db->execute($sql, [
-                $radioId, 
-                $memberId, 
-                $member['first_name'],
-                $member['last_name'],
-                $userId,
-                $notes
-            ]);
+            if ($columnExists) {
+                // New schema with assignee_type support
+                if ($memberType === 'cadet') {
+                    $sql = "INSERT INTO radio_assignments (
+                        radio_id, junior_member_id, assignee_type, assignee_first_name, assignee_last_name, 
+                        assigned_by, assignment_date, status, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+                    
+                    $this->db->execute($sql, [
+                        $radioId, 
+                        $memberId,
+                        $assigneeType,
+                        $member['first_name'],
+                        $member['last_name'],
+                        $userId,
+                        $notes
+                    ]);
+                } else {
+                    $sql = "INSERT INTO radio_assignments (
+                        radio_id, member_id, assignee_type, assignee_first_name, assignee_last_name, 
+                        assigned_by, assignment_date, status, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+                    
+                    $this->db->execute($sql, [
+                        $radioId, 
+                        $memberId,
+                        $assigneeType,
+                        $member['first_name'],
+                        $member['last_name'],
+                        $userId,
+                        $notes
+                    ]);
+                }
+            } else {
+                // Old schema - only supports members table
+                if ($memberType === 'cadet') {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Database non aggiornato per supportare cadetti. Eseguire migration.'];
+                }
+                
+                $sql = "INSERT INTO radio_assignments (
+                    radio_id, member_id, assignee_first_name, assignee_last_name, 
+                    assigned_by, assignment_date, status, notes
+                ) VALUES (?, ?, ?, ?, ?, NOW(), 'assegnata', ?)";
+                
+                $this->db->execute($sql, [
+                    $radioId, 
+                    $memberId, 
+                    $member['first_name'],
+                    $member['last_name'],
+                    $userId,
+                    $notes
+                ]);
+            }
             
             // Update radio status
             $sql = "UPDATE radio_directory SET status = 'assegnata', updated_at = NOW() 
@@ -370,8 +423,8 @@ class OperationsCenterController {
             
             // Log activity with detailed information
             $radioInfo = $this->getRadio($radioId);
-            $description = "Radio '{$radioInfo['name']}' (ID: $radioId) assegnata a volontario: " . 
-                          "{$member['first_name']} {$member['last_name']} (ID: $memberId)";
+            $description = "Radio '{$radioInfo['name']}' (ID: $radioId) assegnata a $assigneeLabel: " . 
+                          "{$member['first_name']} {$member['last_name']} (ID: $memberId, Tipo: $assigneeType)";
             if ($notes) {
                 $description .= ". Note: $notes";
             }
@@ -381,7 +434,7 @@ class OperationsCenterController {
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("Error assigning radio: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Errore durante l\'assegnazione'];
+            return ['success' => false, 'message' => 'Errore durante l\'assegnazione: ' . $e->getMessage()];
         }
     }
     

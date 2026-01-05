@@ -48,8 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         if ($assignmentType === 'member') {
-            // Assignment to association member
+            // Assignment to association member or cadet
             $memberId = isset($_POST['member_id']) ? (int)$_POST['member_id'] : 0;
+            $memberType = $_POST['member_type'] ?? 'member'; // 'member' or 'cadet'
             
             if (!$memberId) {
                 $_SESSION['error'] = 'Volontario non selezionato';
@@ -57,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
             
-            $result = $controller->assignRadio($radioId, $memberId, $app->getUserId(), $notes);
+            $result = $controller->assignRadio($radioId, $memberId, $app->getUserId(), $notes, $memberType);
         } else {
             // Assignment to external personnel
             $externalData = [
