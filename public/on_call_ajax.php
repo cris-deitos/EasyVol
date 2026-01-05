@@ -65,17 +65,20 @@ try {
                 exit;
             }
             
+            // Convert to MySQL format
+            $startMysql = $start->format('Y-m-d H:i:s');
+            $endMysql = $end->format('Y-m-d H:i:s');
+            
             // Check for overlapping schedules for the same member
+            // Two date ranges overlap if: start1 < end2 AND start2 < end1
             $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
                     WHERE member_id = ? 
-                    AND ((start_datetime <= ? AND end_datetime >= ?) 
-                         OR (start_datetime <= ? AND end_datetime >= ?)
-                         OR (start_datetime >= ? AND end_datetime <= ?))";
+                    AND start_datetime < ? 
+                    AND end_datetime > ?";
             $result = $db->fetchOne($sql, [
                 $memberId,
-                $startDatetime, $startDatetime,
-                $endDatetime, $endDatetime,
-                $startDatetime, $endDatetime
+                $endMysql,
+                $startMysql
             ]);
             
             if ($result['count'] > 0) {
@@ -86,7 +89,7 @@ try {
             // Insert on-call schedule
             $sql = "INSERT INTO on_call_schedule (member_id, start_datetime, end_datetime, notes, created_by) 
                     VALUES (?, ?, ?, ?, ?)";
-            $db->execute($sql, [$memberId, $startDatetime, $endDatetime, $notes, $app->getUserId()]);
+            $db->execute($sql, [$memberId, $startMysql, $endMysql, $notes, $app->getUserId()]);
             
             echo json_encode(['success' => true, 'message' => 'Reperibilità aggiunta con successo']);
             break;
@@ -130,6 +133,10 @@ try {
                 exit;
             }
             
+            // Convert to MySQL format
+            $startMysql = $start->format('Y-m-d H:i:s');
+            $endMysql = $end->format('Y-m-d H:i:s');
+            
             // Get member_id for overlap check
             $sql = "SELECT member_id FROM on_call_schedule WHERE id = ?";
             $schedule = $db->fetchOne($sql, [$scheduleId]);
@@ -140,18 +147,17 @@ try {
             }
             
             // Check for overlapping schedules for the same member (excluding current schedule)
+            // Two date ranges overlap if: start1 < end2 AND start2 < end1
             $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
                     WHERE member_id = ? 
                     AND id != ?
-                    AND ((start_datetime <= ? AND end_datetime >= ?) 
-                         OR (start_datetime <= ? AND end_datetime >= ?)
-                         OR (start_datetime >= ? AND end_datetime <= ?))";
+                    AND start_datetime < ? 
+                    AND end_datetime > ?";
             $result = $db->fetchOne($sql, [
                 $schedule['member_id'],
                 $scheduleId,
-                $startDatetime, $startDatetime,
-                $endDatetime, $endDatetime,
-                $startDatetime, $endDatetime
+                $endMysql,
+                $startMysql
             ]);
             
             if ($result['count'] > 0) {
@@ -163,7 +169,7 @@ try {
             $sql = "UPDATE on_call_schedule 
                     SET start_datetime = ?, end_datetime = ?, notes = ?, updated_at = NOW()
                     WHERE id = ?";
-            $db->execute($sql, [$startDatetime, $endDatetime, $notes, $scheduleId]);
+            $db->execute($sql, [$startMysql, $endMysql, $notes, $scheduleId]);
             
             echo json_encode(['success' => true, 'message' => 'Reperibilità aggiornata con successo']);
             break;

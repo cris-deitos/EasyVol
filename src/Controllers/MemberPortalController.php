@@ -579,17 +579,20 @@ class MemberPortalController {
                 return false;
             }
             
+            // Convert to MySQL format
+            $startMysql = $start->format('Y-m-d H:i:s');
+            $endMysql = $end->format('Y-m-d H:i:s');
+            
             // Check for overlapping schedules
+            // Two date ranges overlap if: start1 < end2 AND start2 < end1
             $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
                     WHERE member_id = ? 
-                    AND ((start_datetime <= ? AND end_datetime >= ?) 
-                         OR (start_datetime <= ? AND end_datetime >= ?)
-                         OR (start_datetime >= ? AND end_datetime <= ?))";
+                    AND start_datetime < ? 
+                    AND end_datetime > ?";
             $result = $this->db->fetchOne($sql, [
                 $memberId,
-                $startDatetime, $startDatetime,
-                $endDatetime, $endDatetime,
-                $startDatetime, $endDatetime
+                $endMysql,
+                $startMysql
             ]);
             
             if ($result['count'] > 0) {
@@ -599,11 +602,11 @@ class MemberPortalController {
             // Insert on-call schedule (created_by is the member_id for self-service)
             $sql = "INSERT INTO on_call_schedule (member_id, start_datetime, end_datetime, notes, created_by) 
                     VALUES (?, ?, ?, ?, ?)";
-            $this->db->execute($sql, [$memberId, $startDatetime, $endDatetime, $notes, $memberId]);
+            $this->db->execute($sql, [$memberId, $startMysql, $endMysql, $notes, $memberId]);
             
             AutoLogger::logActivity('member_portal', 'add_on_call', $memberId, [
-                'start' => $startDatetime,
-                'end' => $endDatetime
+                'start' => $startMysql,
+                'end' => $endMysql
             ]);
             
             return true;
@@ -641,19 +644,22 @@ class MemberPortalController {
                 return false;
             }
             
+            // Convert to MySQL format
+            $startMysql = $start->format('Y-m-d H:i:s');
+            $endMysql = $end->format('Y-m-d H:i:s');
+            
             // Check for overlapping schedules (excluding current)
+            // Two date ranges overlap if: start1 < end2 AND start2 < end1
             $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
                     WHERE member_id = ? 
                     AND id != ?
-                    AND ((start_datetime <= ? AND end_datetime >= ?) 
-                         OR (start_datetime <= ? AND end_datetime >= ?)
-                         OR (start_datetime >= ? AND end_datetime <= ?))";
+                    AND start_datetime < ? 
+                    AND end_datetime > ?";
             $result = $this->db->fetchOne($sql, [
                 $memberId,
                 $scheduleId,
-                $startDatetime, $startDatetime,
-                $endDatetime, $endDatetime,
-                $startDatetime, $endDatetime
+                $endMysql,
+                $startMysql
             ]);
             
             if ($result['count'] > 0) {
@@ -664,7 +670,7 @@ class MemberPortalController {
             $sql = "UPDATE on_call_schedule 
                     SET start_datetime = ?, end_datetime = ?, notes = ?, updated_at = NOW()
                     WHERE id = ? AND member_id = ?";
-            $this->db->execute($sql, [$startDatetime, $endDatetime, $notes, $scheduleId, $memberId]);
+            $this->db->execute($sql, [$startMysql, $endMysql, $notes, $scheduleId, $memberId]);
             
             AutoLogger::logActivity('member_portal', 'update_on_call', $memberId, [
                 'schedule_id' => $scheduleId
