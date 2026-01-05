@@ -358,6 +358,10 @@ class TemplateEngine {
         // Add additional filters if specified
         if (isset($relationConfig['filters']) && is_array($relationConfig['filters'])) {
             foreach ($relationConfig['filters'] as $field => $value) {
+                // Validate field name to prevent SQL injection
+                if (!$this->isValidFieldName($field)) {
+                    throw new \Exception("Invalid field name in filter: " . htmlspecialchars($field));
+                }
                 $sql .= " AND {$field} = ?";
                 $params[] = $value;
             }
@@ -365,6 +369,10 @@ class TemplateEngine {
         
         // Add ordering if specified
         if (isset($relationConfig['order_by'])) {
+            // Validate ORDER BY clause to prevent SQL injection
+            if (!$this->isValidOrderBy($relationConfig['order_by'])) {
+                throw new \Exception("Invalid ORDER BY clause: " . htmlspecialchars($relationConfig['order_by']));
+            }
             $sql .= " ORDER BY " . $relationConfig['order_by'];
         }
         
@@ -663,5 +671,31 @@ class TemplateEngine {
         ];
         
         return $relations[$entityType] ?? [];
+    }
+    
+    /**
+     * Validate field name to prevent SQL injection
+     * 
+     * @param string $fieldName Field name to validate
+     * @return bool
+     */
+    private function isValidFieldName($fieldName) {
+        // Allow only alphanumeric characters and underscores
+        // This prevents SQL injection through field names
+        return preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $fieldName) === 1;
+    }
+    
+    /**
+     * Validate ORDER BY clause to prevent SQL injection
+     * 
+     * @param string $orderBy ORDER BY clause to validate
+     * @return bool
+     */
+    private function isValidOrderBy($orderBy) {
+        // Allow field names with optional ASC/DESC and spaces
+        // Format: field1 [ASC|DESC][, field2 [ASC|DESC]]*
+        // This prevents SQL injection through ORDER BY clauses
+        $pattern = '/^[a-zA-Z_][a-zA-Z0-9_]*(\s+(ASC|DESC))?(,\s*[a-zA-Z_][a-zA-Z0-9_]*(\s+(ASC|DESC))?)*$/i';
+        return preg_match($pattern, trim($orderBy)) === 1;
     }
 }
