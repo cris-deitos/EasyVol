@@ -486,7 +486,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                             <tr>
                                                                 <td>
                                                                     <?php if (!empty($course['training_course_id'])): ?>
-                                                                        <a href="training_view.php?id=<?php echo $course['training_course_id']; ?>" 
+                                                                        <a href="training_view.php?id=<?php echo intval($course['training_course_id']); ?>" 
                                                                            class="text-decoration-none" title="Visualizza corso formazione">
                                                                             <?php echo htmlspecialchars($course['course_name']); ?>
                                                                         </a>

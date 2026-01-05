@@ -769,6 +769,9 @@ class TrainingController {
                 return false;
             }
             
+            // Determine completion date (use course end_date or current date)
+            $completionDate = $course['end_date'] ?? date('Y-m-d');
+            
             // Check if already exists in member_courses
             $sql = "SELECT id FROM member_courses 
                     WHERE member_id = ? AND training_course_id = ?";
@@ -781,8 +784,6 @@ class TrainingController {
                         course_type = ?,
                         completion_date = ?
                         WHERE id = ?";
-                
-                $completionDate = $course['end_date'] ?? date('Y-m-d');
                 
                 $this->db->execute($sql, [
                     $course['course_name'],
@@ -798,8 +799,6 @@ class TrainingController {
                 $sql = "INSERT INTO member_courses 
                         (member_id, course_name, course_type, completion_date, training_course_id)
                         VALUES (?, ?, ?, ?, ?)";
-                
-                $completionDate = $course['end_date'] ?? date('Y-m-d');
                 
                 $this->db->execute($sql, [
                     $participant['member_id'],
