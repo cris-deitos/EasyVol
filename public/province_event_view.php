@@ -3,7 +3,7 @@
  * Province Event View - Public Access Page
  * 
  * This page allows provincial civil protection authorities to view event details
- * using a secure token and access code. Privacy-protected view showing only fiscal codes.
+ * using a secure token and access code.
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
@@ -97,14 +97,14 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
             [$event['id']]
         );
         
-        // For each intervention, load members with fiscal codes only
+        // For each intervention, load members with full information
         foreach ($interventions as &$intervention) {
             $members = $db->fetchAll(
-                "SELECT m.tax_code
+                "SELECT m.first_name, m.last_name, m.tax_code
                  FROM intervention_members im
                  JOIN members m ON im.member_id = m.id
                  WHERE im.intervention_id = ?
-                 ORDER BY m.tax_code",
+                 ORDER BY m.last_name, m.first_name",
                 [$intervention['id']]
             );
             $intervention['members'] = $members;
@@ -317,7 +317,7 @@ $pageTitle = $authenticated ? 'Visualizzazione Evento - Provincia' : 'Accesso Ri
                             <div class="col-md-8">
                                 <h5 class="mb-2"><i class="bi bi-file-earmark-excel"></i> Esporta Dati Volontari</h5>
                                 <p class="mb-0 text-muted">
-                                    Scarica file Excel con i codici fiscali dei volontari partecipanti, suddivisi per giorni.
+                                    Scarica file Excel con i dati dei volontari partecipanti (nome, cognome, codice fiscale), suddivisi per giorni.
                                 </p>
                             </div>
                             <div class="col-md-4 text-end">
@@ -386,21 +386,21 @@ $pageTitle = $authenticated ? 'Visualizzazione Evento - Provincia' : 'Accesso Ri
                                                 </div>
                                                 
                                                 <?php if (!empty($intervention['members'])): ?>
-                                                    <h6><i class="bi bi-people"></i> Volontari Partecipanti (Codici Fiscali):</h6>
-                                                    <div class="alert alert-info small">
-                                                        <i class="bi bi-info-circle"></i>
-                                                        Per motivi di privacy, vengono visualizzati solo i codici fiscali dei volontari.
-                                                    </div>
+                                                    <h6><i class="bi bi-people"></i> Volontari Partecipanti:</h6>
                                                     <div class="table-responsive">
                                                         <table class="table table-sm table-striped">
                                                             <thead>
                                                                 <tr>
+                                                                    <th>Nome</th>
+                                                                    <th>Cognome</th>
                                                                     <th>Codice Fiscale</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
                                                                 <?php foreach ($intervention['members'] as $member): ?>
                                                                     <tr>
+                                                                        <td><?php echo htmlspecialchars($member['first_name'] ?? 'N/D'); ?></td>
+                                                                        <td><?php echo htmlspecialchars($member['last_name'] ?? 'N/D'); ?></td>
                                                                         <td><code><?php echo htmlspecialchars($member['tax_code'] ?? 'N/D'); ?></code></td>
                                                                     </tr>
                                                                 <?php endforeach; ?>

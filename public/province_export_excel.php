@@ -2,7 +2,7 @@
 /**
  * Province Excel Export
  * 
- * Exports volunteer fiscal codes grouped by day for provincial civil protection
+ * Exports volunteer data (first name, last name, fiscal code) grouped by day for provincial civil protection
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
@@ -68,12 +68,12 @@ if (!$event) {
 
 // Get all interventions with members
 $interventions = $db->fetchAll(
-    "SELECT i.*, im.member_id, m.tax_code, im.hours_worked, im.role
+    "SELECT i.*, im.member_id, m.first_name, m.last_name, m.tax_code, im.hours_worked, im.role
      FROM interventions i
      LEFT JOIN intervention_members im ON i.id = im.intervention_id
      LEFT JOIN members m ON im.member_id = m.id
      WHERE i.event_id = ?
-     ORDER BY i.start_time, m.tax_code",
+     ORDER BY i.start_time, m.last_name, m.first_name",
     [$event['id']]
 );
 
@@ -98,6 +98,8 @@ foreach ($interventions as $intervention) {
     $taxCode = $intervention['tax_code'];
     if (!isset($dataByDate[$date]['members'][$taxCode])) {
         $dataByDate[$date]['members'][$taxCode] = [
+            'first_name' => $intervention['first_name'],
+            'last_name' => $intervention['last_name'],
             'tax_code' => $taxCode
         ];
     }
@@ -113,8 +115,8 @@ $spreadsheet = new Spreadsheet();
 $spreadsheet->getProperties()
     ->setCreator('EasyVol')
     ->setTitle('Volontari Evento - ' . $event['title'])
-    ->setSubject('Codici Fiscali Volontari per Provincia')
-    ->setDescription('Elenco codici fiscali volontari suddivisi per giorno')
+    ->setSubject('Dati Volontari per Provincia')
+    ->setDescription('Elenco volontari (nome, cognome, codice fiscale) suddivisi per giorno')
     ->setCategory('Report');
 
 $sheetIndex = 0;
@@ -130,20 +132,22 @@ foreach ($dataByDate as $date => $dayData) {
     
     // Header
     $sheet->setCellValue('A1', 'ELENCO VOLONTARI - ' . strtoupper($dayData['label']));
-    $sheet->mergeCells('A1:B1');
+    $sheet->mergeCells('A1:D1');
     $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
     $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     
     $sheet->setCellValue('A2', 'Evento: ' . $event['title']);
-    $sheet->mergeCells('A2:B2');
+    $sheet->mergeCells('A2:D2');
     $sheet->getStyle('A2')->getFont()->setSize(11);
     
     $sheet->setCellValue('A3', 'Tipo: ' . ucfirst($event['event_type']));
-    $sheet->mergeCells('A3:B3');
+    $sheet->mergeCells('A3:D3');
     
     // Column headers
     $sheet->setCellValue('A5', 'N°');
-    $sheet->setCellValue('B5', 'CODICE FISCALE');
+    $sheet->setCellValue('B5', 'NOME');
+    $sheet->setCellValue('C5', 'COGNOME');
+    $sheet->setCellValue('D5', 'CODICE FISCALE');
     
     // Style column headers
     $headerStyle = [
@@ -160,14 +164,16 @@ foreach ($dataByDate as $date => $dayData) {
             ]
         ]
     ];
-    $sheet->getStyle('A5:B5')->applyFromArray($headerStyle);
+    $sheet->getStyle('A5:D5')->applyFromArray($headerStyle);
     
     // Data rows
     $row = 6;
     $counter = 1;
     foreach ($dayData['members'] as $member) {
         $sheet->setCellValue('A' . $row, $counter);
-        $sheet->setCellValue('B' . $row, $member['tax_code']);
+        $sheet->setCellValue('B' . $row, $member['first_name']);
+        $sheet->setCellValue('C' . $row, $member['last_name']);
+        $sheet->setCellValue('D' . $row, $member['tax_code']);
         
         // Style data rows
         $dataStyle = [
@@ -178,11 +184,11 @@ foreach ($dataByDate as $date => $dayData) {
                 ]
             ]
         ];
-        $sheet->getStyle('A' . $row . ':B' . $row)->applyFromArray($dataStyle);
+        $sheet->getStyle('A' . $row . ':D' . $row)->applyFromArray($dataStyle);
         
         // Alternate row colors
         if ($counter % 2 == 0) {
-            $sheet->getStyle('A' . $row . ':B' . $row)->getFill()
+            $sheet->getStyle('A' . $row . ':D' . $row)->getFill()
                 ->setFillType(Fill::FILL_SOLID)
                 ->getStartColor()->setRGB('F2F2F2');
         }
@@ -195,7 +201,9 @@ foreach ($dataByDate as $date => $dayData) {
     $totalVolunteers = count($dayData['members']);
     
     $sheet->setCellValue('A' . $row, 'TOTALI:');
-    $sheet->setCellValue('B' . $row, $totalVolunteers . ' volontari');
+    $sheet->setCellValue('B' . $row, '');
+    $sheet->setCellValue('C' . $row, '');
+    $sheet->setCellValue('D' . $row, $totalVolunteers . ' volontari');
     
     $summaryStyle = [
         'font' => ['bold' => true],
@@ -210,11 +218,13 @@ foreach ($dataByDate as $date => $dayData) {
             ]
         ]
     ];
-    $sheet->getStyle('A' . $row . ':B' . $row)->applyFromArray($summaryStyle);
+    $sheet->getStyle('A' . $row . ':D' . $row)->applyFromArray($summaryStyle);
     
     // Auto-size columns
     $sheet->getColumnDimension('A')->setWidth(5);
     $sheet->getColumnDimension('B')->setWidth(20);
+    $sheet->getColumnDimension('C')->setWidth(20);
+    $sheet->getColumnDimension('D')->setWidth(20);
     
     $sheetIndex++;
 }
