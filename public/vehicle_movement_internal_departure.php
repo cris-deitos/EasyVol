@@ -435,13 +435,9 @@ $pageTitle = 'Registra Uscita Veicolo';
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.checklists.length > 0) {
-                        const checklists = data.checklists.filter(c => c.check_timing === 'departure' || c.check_timing === 'both');
-                        if (checklists.length > 0) {
-                            renderChecklists(checklists);
-                            document.getElementById('checklistSection').style.display = 'block';
-                        } else {
-                            document.getElementById('checklistSection').style.display = 'none';
-                        }
+                        // Server already filters by timing, no need to filter again
+                        renderChecklists(data.checklists);
+                        document.getElementById('checklistSection').style.display = 'block';
                     } else {
                         document.getElementById('checklistSection').style.display = 'none';
                     }
