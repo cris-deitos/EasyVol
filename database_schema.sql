@@ -417,6 +417,8 @@ CREATE TABLE IF NOT EXISTS `junior_member_guardians` (
   `guardian_type` enum('padre', 'madre', 'tutore') NOT NULL,
   `last_name` varchar(100) NOT NULL,
   `first_name` varchar(100) NOT NULL,
+  `birth_date` date DEFAULT NULL,
+  `birth_place` varchar(255) DEFAULT NULL,
   `tax_code` varchar(50),
   `phone` varchar(50),
   `email` varchar(255),
