@@ -213,7 +213,8 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                     <?php 
                                                     $statusClass = [
                                                         'in_corso' => 'warning',
-                                                        'concluso' => 'secondary'
+                                                        'concluso' => 'secondary',
+                                                        'annullato' => 'danger'
                                                     ];
                                                     $class = $statusClass[$event['status']] ?? 'secondary';
                                                     ?>

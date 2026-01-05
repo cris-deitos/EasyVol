@@ -200,7 +200,7 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                                     $statusColors = [
                                                         'in_corso' => 'warning',
                                                         'concluso' => 'success',
-                                                        'annullato' => 'secondary'
+                                                        'annullato' => 'danger'
                                                     ];
                                                     $color = $statusColors[$event['status']] ?? 'secondary';
                                                     ?>
