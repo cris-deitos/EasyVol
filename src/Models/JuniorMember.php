@@ -237,6 +237,24 @@ class JuniorMember {
         return $this->db->delete('junior_member_attachments', 'id = ?', [$id]);
     }
     
+    // Notes
+    public function getNotes($juniorMemberId) {
+        return $this->db->fetchAll("SELECT * FROM junior_member_notes WHERE junior_member_id = ? ORDER BY created_at DESC", [$juniorMemberId]);
+    }
+    
+    public function addNote($juniorMemberId, $data) {
+        $data['junior_member_id'] = $juniorMemberId;
+        return $this->db->insert('junior_member_notes', $data);
+    }
+    
+    public function updateNote($id, $data) {
+        return $this->db->update('junior_member_notes', $data, 'id = ?', [$id]);
+    }
+    
+    public function deleteNote($id) {
+        return $this->db->delete('junior_member_notes', 'id = ?', [$id]);
+    }
+    
     // Sanctions
     public function getSanctions($juniorMemberId) {
         return $this->db->fetchAll("SELECT * FROM junior_member_sanctions WHERE junior_member_id = ? ORDER BY sanction_date DESC", [$juniorMemberId]);

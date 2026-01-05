@@ -97,6 +97,27 @@ try {
                 $memberModel->deleteSanction($id);
             }
             break;
+            
+        case 'delete_fee':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteFee($id);
+            }
+            break;
+            
+        case 'delete_note':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteNote($id);
+            }
+            break;
+            
+        case 'delete_attachment':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $memberModel->deleteAttachment($id);
+            }
+            break;
     }
     
     header('Location: junior_member_view.php?id=' . $memberId . '&success=1');

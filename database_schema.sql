@@ -496,6 +496,19 @@ CREATE TABLE IF NOT EXISTS `junior_member_sanctions` (
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `junior_member_notes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `junior_member_id` int(11) NOT NULL,
+  `note` text NOT NULL,
+  `created_by` int(11),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `junior_member_id` (`junior_member_id`),
+  KEY `created_at` (`created_at`),
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =============================================
 -- REGISTRATION REQUESTS (PENDING APPLICATIONS)
 -- =============================================
