@@ -219,6 +219,10 @@ class JuniorMember {
         return $this->db->insert('junior_member_fees', $data);
     }
     
+    public function updateFee($id, $data) {
+        return $this->db->update('junior_member_fees', $data, 'id = ?', [$id]);
+    }
+    
     public function deleteFee($id) {
         return $this->db->delete('junior_member_fees', 'id = ?', [$id]);
     }
