@@ -342,6 +342,14 @@ class Member {
     }
     
     public function deleteCourse($id) {
+        // Check if course is linked to training module
+        $course = $this->db->fetchOne("SELECT training_course_id FROM member_courses WHERE id = ?", [$id]);
+        
+        if ($course && !empty($course['training_course_id'])) {
+            // Cannot delete courses that come from training module
+            return false;
+        }
+        
         // Remove from scheduler when deleting
         $syncController = $this->getSyncController();
         $syncController->removeSchedulerItem('qualification', $id);
