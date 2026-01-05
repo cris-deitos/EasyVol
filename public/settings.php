@@ -1042,6 +1042,34 @@ $pageTitle = 'Impostazioni Sistema';
                     
                     <!-- Modelli di Stampa -->
                     <div class="tab-pane fade" id="print-templates" role="tabpanel">
+                        <!-- New Enhanced Print System Banner -->
+                        <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-stars fs-3 me-3"></i>
+                                <div class="flex-grow-1">
+                                    <h5 class="alert-heading mb-1">
+                                        <i class="bi bi-rocket-takeoff"></i> Nuovo Sistema di Stampa Avanzato
+                                    </h5>
+                                    <p class="mb-2">
+                                        È disponibile il nuovo sistema di stampa file-based con supporto multi-tabella, 
+                                        editor WYSIWYG e template JSON portabili!
+                                    </p>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a href="enhanced_print.php" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-printer-fill"></i> Vai al Nuovo Sistema
+                                        </a>
+                                        <a href="template_migration.php" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-arrow-repeat"></i> Migra Template Esistenti
+                                        </a>
+                                        <a href="../templates/README.md" target="_blank" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-book"></i> Documentazione
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        
                         <?php
                         // Initialize Print Template Controller
                         $printTemplateController = new PrintTemplateController($db, $config);
@@ -1161,7 +1189,7 @@ $pageTitle = 'Impostazioni Sistema';
                         
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0"><i class="bi bi-printer me-2"></i>Gestione Modelli di Stampa</h5>
+                                <h5 class="mb-0"><i class="bi bi-database me-2"></i>Template Database (Legacy)</h5>
                                 <div class="btn-group">
                                     <?php if ($app->checkPermission('settings', 'edit')): ?>
                                     <a href="print_template_editor.php" class="btn btn-primary btn-sm">
@@ -1188,10 +1216,12 @@ $pageTitle = 'Impostazioni Sistema';
                                     </div>
                                 <?php endif; ?>
 
-                                <div class="alert alert-info">
-                                    <i class="bi bi-info-circle"></i>
-                                    <strong>Sistema di Modelli di Stampa</strong><br>
-                                    Crea, modifica e gestisci modelli di stampa per le varie sezioni del gestionale: Soci, Cadetti, Mezzi, Riunioni.
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <strong>Sistema Legacy</strong><br>
+                                    Questi template sono memorizzati nel database. Si consiglia di migrare al nuovo sistema file-based 
+                                    per maggiore portabilità e funzionalità avanzate. 
+                                    <a href="template_migration.php" class="alert-link">Migra ora</a>
                                 </div>
                                 
                                 <!-- Filters -->
@@ -1400,6 +1430,113 @@ $pageTitle = 'Impostazioni Sistema';
                                             <div class="card-body py-2">
                                                 <strong><i class="bi bi-diagram-3"></i> Relazionale</strong>
                                                 <br><small class="text-muted">Include dati da tabelle correlate (contatti, indirizzi, ecc.)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- File-Based Templates Info Card -->
+                        <div class="card mt-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-file-earmark-code"></i> Template File-Based (Nuovo Sistema)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6><i class="bi bi-check-circle-fill text-success"></i> Vantaggi del Nuovo Sistema</h6>
+                                        <ul class="mb-3">
+                                            <li><strong>Portabilità:</strong> Template salvati come file JSON facilmente esportabili</li>
+                                            <li><strong>Multi-Tabella:</strong> Supporto nativo per dati da tabelle correlate</li>
+                                            <li><strong>WYSIWYG Editor:</strong> Modifica documenti con editor completo prima della stampa</li>
+                                            <li><strong>Versionamento:</strong> Integrato con Git per tracciare le modifiche</li>
+                                            <li><strong>Backup:</strong> Incluso automaticamente nel backup del codice</li>
+                                            <li><strong>Performance:</strong> Caricamento più veloce rispetto al database</li>
+                                        </ul>
+                                        
+                                        <h6><i class="bi bi-folder-fill text-primary"></i> Template Disponibili</h6>
+                                        <?php
+                                        // Count file-based templates
+                                        require_once __DIR__ . '/../src/Controllers/EnhancedPrintController.php';
+                                        $enhancedController = new EasyVol\Controllers\EnhancedPrintController($db, $config);
+                                        
+                                        $entityTypes = ['members', 'junior_members', 'vehicles', 'meetings', 'events', 'applications'];
+                                        $totalFileTemplates = 0;
+                                        $templatesByEntity = [];
+                                        
+                                        foreach ($entityTypes as $entityType) {
+                                            $templates = $enhancedController->getAvailableTemplates($entityType);
+                                            $fileTemplates = array_filter($templates, function($t) { return $t['source'] === 'file'; });
+                                            $count = count($fileTemplates);
+                                            if ($count > 0) {
+                                                $templatesByEntity[$entityType] = $count;
+                                                $totalFileTemplates += $count;
+                                            }
+                                        }
+                                        ?>
+                                        
+                                        <?php if ($totalFileTemplates > 0): ?>
+                                            <div class="alert alert-success">
+                                                <i class="bi bi-check-circle"></i>
+                                                <strong><?php echo $totalFileTemplates; ?> template file-based trovati:</strong>
+                                                <ul class="mb-0 mt-2">
+                                                    <?php foreach ($templatesByEntity as $entity => $count): ?>
+                                                        <li>
+                                                            <?php
+                                                            $entityLabels = [
+                                                                'members' => 'Soci',
+                                                                'junior_members' => 'Cadetti',
+                                                                'vehicles' => 'Mezzi',
+                                                                'meetings' => 'Riunioni',
+                                                                'events' => 'Eventi',
+                                                                'applications' => 'Domande'
+                                                            ];
+                                                            echo $entityLabels[$entity] ?? $entity;
+                                                            ?>: <strong><?php echo $count; ?></strong> template
+                                                        </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="alert alert-info">
+                                                <i class="bi bi-info-circle"></i>
+                                                Nessun template file-based trovato. I template sono disponibili dopo la prima installazione 
+                                                o possono essere creati nel nuovo sistema.
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="bi bi-rocket-takeoff"></i> Inizia Subito
+                                                </h6>
+                                                <div class="d-grid gap-2">
+                                                    <a href="enhanced_print.php" class="btn btn-success">
+                                                        <i class="bi bi-printer-fill"></i> Nuovo Sistema di Stampa
+                                                    </a>
+                                                    <a href="template_migration.php" class="btn btn-outline-success">
+                                                        <i class="bi bi-arrow-repeat"></i> Migra Template DB
+                                                    </a>
+                                                    <a href="../PRINT_SYSTEM_GUIDE.md" target="_blank" class="btn btn-outline-secondary">
+                                                        <i class="bi bi-book"></i> Guida Rapida
+                                                    </a>
+                                                    <a href="../templates/README.md" target="_blank" class="btn btn-outline-secondary">
+                                                        <i class="bi bi-file-text"></i> Documentazione
+                                                    </a>
+                                                </div>
+                                                
+                                                <hr class="my-3">
+                                                
+                                                <h6><i class="bi bi-lightbulb"></i> Suggerimento</h6>
+                                                <small class="text-muted">
+                                                    Il nuovo sistema è completamente retrocompatibile. 
+                                                    I template database continueranno a funzionare mentre migri gradualmente.
+                                                </small>
                                             </div>
                                         </div>
                                     </div>

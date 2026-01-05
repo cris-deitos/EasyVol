@@ -1,0 +1,20 @@
+{
+  "name": "Tessera Socio",
+  "description": "Tessera associativa per singolo socio in formato carta di credito",
+  "type": "single",
+  "format": "custom",
+  "orientation": "landscape",
+  "page_size": {
+    "width": 85,
+    "height": 54,
+    "unit": "mm"
+  },
+  "margins": {
+    "top": 3,
+    "bottom": 3,
+    "left": 3,
+    "right": 3
+  },
+  "html": "<div style=\"width: 8.5cm; height: 5.4cm; border: 2px solid #333; padding: 0.3cm; box-sizing: border-box; font-family: Arial, sans-serif;\">\n  <div style=\"text-align: center; border-bottom: 2px solid #333; padding-bottom: 0.2cm; margin-bottom: 0.2cm;\">\n    <h3 style=\"margin: 0; font-size: 12pt; font-weight: bold;\">TESSERA ASSOCIATIVA</h3>\n    <p style=\"margin: 0; font-size: 9pt;\">{{association.name}}</p>\n  </div>\n  \n  <table style=\"width: 100%; font-size: 9pt; border-collapse: collapse;\">\n    <tr>\n      <td style=\"width: 40%; padding: 0.1cm;\"><strong>Nome:</strong></td>\n      <td style=\"padding: 0.1cm;\">{{first_name}} {{last_name}}</td>\n    </tr>\n    <tr>\n      <td style=\"padding: 0.1cm;\"><strong>Matricola:</strong></td>\n      <td style=\"padding: 0.1cm;\">{{registration_number}}</td>\n    </tr>\n    <tr>\n      <td style=\"padding: 0.1cm;\"><strong>Data Nasc.:</strong></td>\n      <td style=\"padding: 0.1cm;\">{{birth_date}}</td>\n    </tr>\n    <tr>\n      <td style=\"padding: 0.1cm;\"><strong>Tipo:</strong></td>\n      <td style=\"padding: 0.1cm;\">{{member_type}}</td>\n    </tr>\n    <tr>\n      <td style=\"padding: 0.1cm;\"><strong>Valida fino al:</strong></td>\n      <td style=\"padding: 0.1cm;\">31/12/{{current_year}}</td>\n    </tr>\n  </table>\n  \n  <div style=\"margin-top: auto; text-align: center; font-size: 7pt; color: #666; padding-top: 0.2cm;\">\n    Emessa il {{current_date}}\n  </div>\n</div>",
+  "css": "@page { size: 85mm 54mm; margin: 0; }\nbody { margin: 0; padding: 0; }\n@media print {\n  body { margin: 0; }\n}"
+}

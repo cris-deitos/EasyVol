@@ -1,0 +1,24 @@
+{
+  "name": "Elenco Soci con Contatti",
+  "description": "Lista soci con email e cellulare",
+  "type": "list",
+  "format": "A4",
+  "orientation": "landscape",
+  "margins": {
+    "top": 15,
+    "bottom": 15,
+    "left": 10,
+    "right": 10
+  },
+  "relations": {
+    "contacts": {
+      "table": "member_contacts",
+      "foreign_key": "member_id",
+      "filters": {
+        "is_primary": 1
+      }
+    }
+  },
+  "html": "<div style=\"font-family: Arial, sans-serif; font-size: 9pt;\">\n  <!-- Header -->\n  <div style=\"text-align: center; border-bottom: 2px solid #333; padding-bottom: 0.3cm; margin-bottom: 0.5cm;\">\n    <h1 style=\"margin: 0; font-size: 14pt;\">{{association.name}}</h1>\n    <h2 style=\"margin: 5px 0; font-size: 12pt;\">ELENCO SOCI CON CONTATTI</h2>\n    <p style=\"margin: 0; font-size: 9pt;\">Generato il {{current_date}} - Totale: {{total}} soci</p>\n  </div>\n\n  <!-- Table -->\n  <table style=\"width: 100%; border-collapse: collapse; font-size: 8pt;\">\n    <thead>\n      <tr style=\"background: #333; color: white;\">\n        <th style=\"border: 1px solid #333; padding: 5px; text-align: left;\">Matr.</th>\n        <th style=\"border: 1px solid #333; padding: 5px; text-align: left;\">Cognome</th>\n        <th style=\"border: 1px solid #333; padding: 5px; text-align: left;\">Nome</th>\n        <th style=\"border: 1px solid #333; padding: 5px; text-align: center;\">Tipo</th>\n        <th style=\"border: 1px solid #333; padding: 5px; text-align: center;\">Stato</th>\n        <th style=\"border: 1px solid #333; padding: 5px; text-align: left;\">Email</th>\n        <th style=\"border: 1px solid #333; padding: 5px; text-align: left;\">Cellulare</th>\n      </tr>\n    </thead>\n    <tbody>\n      {{#each records}}\n      <tr style=\"{{@index0}}\">\n        <td style=\"border: 1px solid #ccc; padding: 5px;\">{{registration_number}}</td>\n        <td style=\"border: 1px solid #ccc; padding: 5px;\">{{last_name}}</td>\n        <td style=\"border: 1px solid #ccc; padding: 5px;\">{{first_name}}</td>\n        <td style=\"border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 7pt;\">{{member_type}}</td>\n        <td style=\"border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 7pt;\">{{member_status}}</td>\n        <td style=\"border: 1px solid #ccc; padding: 5px; font-size: 7pt;\">{{email}}</td>\n        <td style=\"border: 1px solid #ccc; padding: 5px;\">{{mobile_phone}}</td>\n      </tr>\n      {{/each}}\n    </tbody>\n  </table>\n\n  <!-- Footer -->\n  <div style=\"margin-top: 0.5cm; text-align: center; font-size: 7pt; color: #666;\">\n    <p style=\"margin: 0;\">{{association.name}} - {{association.website}}</p>\n  </div>\n</div>",
+  "css": "@page {\n  size: A4 landscape;\n  margin: 0;\n}\n\nbody {\n  margin: 0;\n  padding: 0;\n}\n\n@media print {\n  body {\n    margin: 0;\n  }\n  \n  thead {\n    display: table-header-group;\n  }\n  \n  tr {\n    page-break-inside: avoid;\n  }\n}"
+}
