@@ -769,8 +769,9 @@ class TrainingController {
                 return false;
             }
             
-            // Determine completion date (use course end_date or current date)
-            $completionDate = $course['end_date'] ?? date('Y-m-d');
+            // Determine completion date
+            // Priority: 1. Course end_date, 2. Current date (for ongoing courses)
+            $completionDate = !empty($course['end_date']) ? $course['end_date'] : date('Y-m-d');
             
             // Check if already exists in member_courses
             $sql = "SELECT id FROM member_courses 
