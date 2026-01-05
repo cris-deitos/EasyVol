@@ -32,6 +32,17 @@ $controller = new VehicleMovementController($db, $config);
 
 try {
     switch ($action) {
+        case 'search_drivers':
+            $query = $_GET['q'] ?? '';
+            if (strlen($query) < 2) {
+                echo json_encode(['success' => false, 'message' => 'Query too short']);
+                exit;
+            }
+            
+            $drivers = $controller->searchMembers($query);
+            echo json_encode(['success' => true, 'drivers' => $drivers]);
+            break;
+            
         case 'complete_without_return':
             if (!$app->checkPermission('vehicles', 'edit')) {
                 throw new \Exception('Permission denied');

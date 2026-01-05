@@ -75,12 +75,7 @@ if ($vehicleId > 0) {
     $checklists = $controller->getVehicleChecklists($vehicleId, 'departure');
 }
 
-// Get active members for drivers
-$membersSql = "SELECT id, first_name, last_name, registration_number 
-               FROM members 
-               WHERE member_status = 'attivo' 
-               ORDER BY last_name, first_name";
-$members = $db->fetchAll($membersSql);
+// Note: Members/drivers are now loaded dynamically via AJAX search
 
 $errors = [];
 $success = false;
@@ -169,6 +164,36 @@ $pageTitle = 'Registra Uscita Veicolo';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        .search-results {
+            position: absolute;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .search-result-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        .driver-item {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
     <?php include __DIR__ . '/../src/Views/includes/navbar.php'; ?>
@@ -262,14 +287,16 @@ $pageTitle = 'Registra Uscita Veicolo';
                             <div class="row mb-3">
                                 <div class="col-md-12">
                                     <label class="form-label">Autisti <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="drivers[]" multiple size="8" required>
-                                        <?php foreach ($members as $member): ?>
-                                            <option value="<?php echo $member['id']; ?>">
-                                                <?php echo htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')'); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <small class="form-text text-muted">Tenere premuto Ctrl/Cmd per selezionare più autisti</small>
+                                    <div class="position-relative">
+                                        <input type="text" 
+                                               id="driverSearch" 
+                                               class="form-control" 
+                                               placeholder="Cerca per nome, cognome o matricola..."
+                                               autocomplete="off">
+                                        <div id="searchResults" class="search-results" style="display: none;"></div>
+                                    </div>
+                                    <div id="selectedDrivers" class="mt-2"></div>
+                                    <small class="form-text text-muted">Inizia a digitare per cercare e selezionare gli autisti</small>
                                 </div>
                             </div>
                             
@@ -489,6 +516,114 @@ $pageTitle = 'Registra Uscita Veicolo';
             div.textContent = text;
             return div.innerHTML;
         }
+        
+        // Driver search and selection functionality
+        const selectedDrivers = new Set();
+        const driverSearch = document.getElementById('driverSearch');
+        const searchResults = document.getElementById('searchResults');
+        const selectedDriversDiv = document.getElementById('selectedDrivers');
+        
+        let searchTimeout;
+        
+        if (driverSearch) {
+            driverSearch.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    fetch('vehicle_movement_internal_api.php?action=search_drivers&q=' + encodeURIComponent(query))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.drivers.length > 0) {
+                                let html = '';
+                                data.drivers.forEach(driver => {
+                                    if (!selectedDrivers.has(driver.id)) {
+                                        html += `<div class="search-result-item" data-id="${driver.id}" data-name="${driver.first_name} ${driver.last_name}" data-reg="${driver.registration_number}">
+                                            <strong>${driver.first_name} ${driver.last_name}</strong> 
+                                            (${driver.registration_number})
+                                            <br><small class="text-muted">${driver.roles || 'Nessuna qualifica'}</small>
+                                        </div>`;
+                                    }
+                                });
+                                
+                                if (html) {
+                                    searchResults.innerHTML = html;
+                                    searchResults.style.display = 'block';
+                                    
+                                    // Add click handlers
+                                    searchResults.querySelectorAll('.search-result-item').forEach(item => {
+                                        item.addEventListener('click', function() {
+                                            addDriver(this.dataset.id, this.dataset.name, this.dataset.reg);
+                                        });
+                                    });
+                                } else {
+                                    searchResults.style.display = 'none';
+                                }
+                            } else {
+                                searchResults.innerHTML = '<div class="search-result-item text-muted">Nessun autista trovato</div>';
+                                searchResults.style.display = 'block';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            searchResults.style.display = 'none';
+                        });
+                }, 300);
+            });
+        }
+        
+        function addDriver(id, name, reg) {
+            if (selectedDrivers.has(id)) {
+                return;
+            }
+            
+            selectedDrivers.add(id);
+            
+            const driverDiv = document.createElement('div');
+            driverDiv.className = 'driver-item';
+            driverDiv.innerHTML = `
+                <span>
+                    <i class="bi bi-person-check-fill text-success"></i>
+                    <strong>${name}</strong> (${reg})
+                </span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeDriver(${id}, this)">
+                    <i class="bi bi-x"></i>
+                </button>
+                <input type="hidden" name="drivers[]" value="${id}">
+            `;
+            
+            selectedDriversDiv.appendChild(driverDiv);
+            driverSearch.value = '';
+            searchResults.style.display = 'none';
+        }
+        
+        function removeDriver(id, button) {
+            selectedDrivers.delete(id.toString());
+            button.closest('.driver-item').remove();
+        }
+        
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (driverSearch && !driverSearch.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (selectedDrivers.size === 0) {
+                e.preventDefault();
+                alert('Selezionare almeno un autista');
+                if (driverSearch) {
+                    driverSearch.focus();
+                }
+            }
+        });
     </script>
 </body>
 </html>
