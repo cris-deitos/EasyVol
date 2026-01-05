@@ -58,7 +58,7 @@ class Member {
         
         // Hide dismissed/lapsed filter
         if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
-            $sql .= " AND m.member_status NOT IN ('dimesso', 'decaduto')";
+            $sql .= " AND m.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
         }
         
         if (!empty($filters['volunteer_status'])) {

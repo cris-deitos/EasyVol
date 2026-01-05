@@ -927,7 +927,7 @@ class ImportController {
      */
     private function parseMemberStatus($status) {
         $status = strtolower(trim($status));
-        $validStatuses = ['attivo', 'decaduto', 'dimesso', 'in_aspettativa', 'sospeso', 'in_congedo'];
+        $validStatuses = ['attivo', 'decaduto', 'dimesso', 'escluso', 'in_aspettativa', 'sospeso', 'in_congedo'];
         if (in_array($status, $validStatuses)) {
             return $status;
         }
