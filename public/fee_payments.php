@@ -1,8 +1,8 @@
 <?php
 /**
- * Gestione Richieste Pagamento Quote
+ * Gestione Pagamento Quote
  * 
- * Pagina interna per gestire le richieste di pagamento quote in sospeso
+ * Pagina interna per gestire le richieste di pagamento quote e verificare quote non versate
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
@@ -66,6 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Get active tab
+$activeTab = $_GET['tab'] ?? 'requests';
+
 // Get filters
 $filters = [
     'status' => $_GET['status'] ?? 'pending',
@@ -76,12 +79,24 @@ $filters = [
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 20;
 
-// Get payment requests
-$result = $controller->getPaymentRequests($filters, $page, $perPage);
-$requests = $result['requests'];
-$totalPages = $result['totalPages'];
+// Get data based on active tab
+if ($activeTab === 'unpaid') {
+    // Get unpaid members
+    $unpaidYear = isset($_GET['unpaid_year']) && !empty($_GET['unpaid_year']) ? intval($_GET['unpaid_year']) : date('Y');
+    $unpaidResult = $controller->getUnpaidMembers($unpaidYear, $page, $perPage);
+    $unpaidMembers = $unpaidResult['members'];
+    $totalPages = $unpaidResult['totalPages'];
+    $requests = [];
+} else {
+    // Get payment requests
+    $result = $controller->getPaymentRequests($filters, $page, $perPage);
+    $requests = $result['requests'];
+    $totalPages = $result['totalPages'];
+    $unpaidMembers = [];
+    $unpaidYear = date('Y');
+}
 
-$pageTitle = 'Gestione Richieste Pagamento Quote';
+$pageTitle = 'Gestione Pagamento Quote';
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -114,10 +129,39 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                 </div>
                 <?php endif; ?>
                 
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-3" id="feePaymentTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link <?php echo $activeTab === 'requests' ? 'active' : ''; ?>" 
+                                id="requests-tab" 
+                                type="button" 
+                                role="tab"
+                                onclick="window.location.href='fee_payments.php?tab=requests'">
+                            <i class="bi bi-inbox"></i> Richieste
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link <?php echo $activeTab === 'unpaid' ? 'active' : ''; ?>" 
+                                id="unpaid-tab" 
+                                type="button" 
+                                role="tab"
+                                onclick="window.location.href='fee_payments.php?tab=unpaid'">
+                            <i class="bi bi-exclamation-triangle"></i> Quote Non Versate
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="feePaymentTabsContent">
+                    <!-- Richieste Tab -->
+                    <div class="tab-pane fade <?php echo $activeTab === 'requests' ? 'show active' : ''; ?>" 
+                         id="requests" 
+                         role="tabpanel">
+                
                 <!-- Filters -->
                 <div class="card mb-4">
                     <div class="card-body">
                         <form method="GET" class="row g-3">
+                            <input type="hidden" name="tab" value="requests">
                             <div class="col-md-3">
                                 <label for="status" class="form-label">Stato</label>
                                 <select class="form-select" id="status" name="status">
@@ -153,7 +197,7 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="bi bi-search"></i> Filtra
                                 </button>
-                                <a href="fee_payments.php" class="btn btn-secondary">
+                                <a href="fee_payments.php?tab=requests" class="btn btn-secondary">
                                     <i class="bi bi-x"></i>
                                 </a>
                             </div>
@@ -309,7 +353,7 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                             <ul class="pagination justify-content-center mb-0">
                                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                                 <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
-                                    <a class="page-link" href="?page=<?php echo $i; ?>&status=<?php echo urlencode($filters['status']); ?>&year=<?php echo urlencode($filters['year']); ?>&search=<?php echo urlencode($filters['search']); ?>">
+                                    <a class="page-link" href="?tab=requests&page=<?php echo $i; ?>&status=<?php echo urlencode($filters['status']); ?>&year=<?php echo urlencode($filters['year']); ?>&search=<?php echo urlencode($filters['search']); ?>">
                                         <?php echo $i; ?>
                                     </a>
                                 </li>
@@ -319,6 +363,118 @@ $pageTitle = 'Gestione Richieste Pagamento Quote';
                     </div>
                     <?php endif; ?>
                 </div>
+                    </div>
+                    <!-- End Richieste Tab -->
+                    
+                    <!-- Quote Non Versate Tab -->
+                    <div class="tab-pane fade <?php echo $activeTab === 'unpaid' ? 'show active' : ''; ?>" 
+                         id="unpaid" 
+                         role="tabpanel">
+                        
+                        <!-- Year Filter -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <form method="GET" class="row g-3">
+                                    <input type="hidden" name="tab" value="unpaid">
+                                    <div class="col-md-3">
+                                        <label for="unpaid_year" class="form-label">Anno</label>
+                                        <select class="form-select" id="unpaid_year" name="unpaid_year" onchange="this.form.submit()">
+                                            <?php
+                                            $currentYear = date('Y');
+                                            for ($year = $currentYear + 1; $year >= $currentYear - 5; $year--) {
+                                                $selected = ($unpaidYear == $year) ? 'selected' : '';
+                                                echo "<option value=\"{$year}\" {$selected}>{$year}</option>";
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-9 d-flex align-items-end">
+                                        <a href="fee_payments.php?tab=unpaid" class="btn btn-secondary">
+                                            <i class="bi bi-x"></i> Reset
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Unpaid Members Table -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    Soci Attivi senza Pagamento per l'Anno <?php echo $unpaidYear; ?>
+                                    <?php if (!empty($unpaidMembers)): ?>
+                                        (<?php echo count($unpaidMembers); ?>)
+                                    <?php endif; ?>
+                                </h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <?php if (empty($unpaidMembers)): ?>
+                                <div class="p-4 text-center text-muted">
+                                    <i class="bi bi-check-circle" style="font-size: 48px; color: #28a745;"></i>
+                                    <p class="mt-3">Tutti i soci attivi hanno pagato la quota per l'anno <?php echo $unpaidYear; ?>!</p>
+                                </div>
+                                <?php else: ?>
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Matricola</th>
+                                                <th>Nome</th>
+                                                <th>Cognome</th>
+                                                <th>Tipo</th>
+                                                <th>Azioni</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($unpaidMembers as $member): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($member['registration_number']); ?></td>
+                                                <td><?php echo htmlspecialchars($member['first_name']); ?></td>
+                                                <td><?php echo htmlspecialchars($member['last_name']); ?></td>
+                                                <td>
+                                                    <?php if ($member['member_type'] === 'junior'): ?>
+                                                    <span class="badge bg-info">Cadetto</span>
+                                                    <?php else: ?>
+                                                    <span class="badge bg-primary">Volontario</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php 
+                                                    $viewPage = $member['member_type'] === 'junior' ? 'junior_member_view.php' : 'member_view.php';
+                                                    ?>
+                                                    <a href="<?php echo $viewPage; ?>?id=<?php echo $member['id']; ?>" 
+                                                       class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-eye"></i> Visualizza
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <?php if ($activeTab === 'unpaid' && $totalPages > 1): ?>
+                            <div class="card-footer">
+                                <nav>
+                                    <ul class="pagination justify-content-center mb-0">
+                                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                        <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
+                                            <a class="page-link" href="?tab=unpaid&unpaid_year=<?php echo $unpaidYear; ?>&page=<?php echo $i; ?>">
+                                                <?php echo $i; ?>
+                                            </a>
+                                        </li>
+                                        <?php endfor; ?>
+                                    </ul>
+                                </nav>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <!-- End Quote Non Versate Tab -->
+                </div>
+                <!-- End Tab Content -->
             </main>
         </div>
     </div>

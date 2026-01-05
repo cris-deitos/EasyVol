@@ -577,4 +577,63 @@ class FeePaymentController {
         $stmt = $this->db->query($sql);
         return $stmt->fetch();
     }
+    
+    /**
+     * Ottieni soci attivi senza pagamento quota per l'anno specificato
+     * 
+     * @param int $year Anno di riferimento
+     * @param int $page Pagina corrente
+     * @param int $perPage Risultati per pagina
+     * @return array
+     */
+    public function getUnpaidMembers($year = null, $page = 1, $perPage = 20) {
+        if ($year === null) {
+            $year = date('Y');
+        }
+        
+        // Get adult members without payment for the specified year
+        $sqlAdult = "SELECT m.id, m.registration_number, m.first_name, m.last_name, 
+                    m.status, 'adult' as member_type
+                    FROM members m
+                    WHERE m.status = 'attivo'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM member_fees mf 
+                        WHERE mf.member_id = m.id 
+                        AND mf.year = ?
+                    )";
+        
+        // Get junior members without payment for the specified year
+        $sqlJunior = "SELECT jm.id, jm.registration_number, jm.first_name, jm.last_name, 
+                     jm.status, 'junior' as member_type
+                     FROM junior_members jm
+                     WHERE jm.status = 'attivo'
+                     AND NOT EXISTS (
+                         SELECT 1 FROM junior_member_fees jmf 
+                         WHERE jmf.junior_member_id = jm.id 
+                         AND jmf.year = ?
+                     )";
+        
+        // Union both queries
+        $sql = "($sqlAdult) UNION ALL ($sqlJunior) ORDER BY registration_number";
+        
+        // Get total count first
+        $countSql = "SELECT COUNT(*) as total FROM (($sqlAdult) UNION ALL ($sqlJunior)) as combined";
+        $countStmt = $this->db->query($countSql, [$year, $year]);
+        $total = $countStmt->fetch()['total'];
+        
+        // Get paginated results
+        $offset = ($page - 1) * $perPage;
+        $sql .= " LIMIT $perPage OFFSET $offset";
+        
+        $stmt = $this->db->query($sql, [$year, $year]);
+        $members = $stmt->fetchAll();
+        
+        return [
+            'members' => $members,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $perPage,
+            'totalPages' => ceil($total / $perPage)
+        ];
+    }
 }
