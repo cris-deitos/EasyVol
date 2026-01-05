@@ -142,6 +142,11 @@ if (!empty($vehicle['license_plate'])) {
                             <i class="bi bi-file-earmark"></i> Documenti
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="checklists-tab" data-bs-toggle="tab" data-bs-target="#checklists" type="button">
+                            <i class="bi bi-list-check"></i> Check List
+                        </button>
+                    </li>
                 </ul>
                 
                 <div class="tab-content" id="vehicleTabContent">
@@ -394,8 +399,108 @@ if (!empty($vehicle['license_plate'])) {
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Tab Check List -->
+                    <div class="tab-pane fade" id="checklists" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Check List Mezzo</h5>
+                                    <?php if ($app->checkPermission('vehicles', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="showAddChecklistModal()">
+                                            <i class="bi bi-plus-circle"></i> Aggiungi Elemento
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Le check list vengono utilizzate durante l'uscita e il rientro dei mezzi per verificare lo stato del veicolo.
+                                    Gli autisti compileranno questi elementi tramite l'interfaccia dedicata.
+                                </div>
+                                
+                                <div id="checklistsContainer">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Caricamento...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Checklist Item Modal -->
+    <div class="modal fade" id="checklistModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="checklistModalTitle">Aggiungi Elemento Check List</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="checklistForm">
+                        <input type="hidden" id="checklist_id" name="id">
+                        <input type="hidden" name="vehicle_id" value="<?php echo $vehicleId; ?>">
+                        
+                        <div class="mb-3">
+                            <label for="item_name" class="form-label">Nome Elemento *</label>
+                            <input type="text" class="form-control" id="item_name" name="item_name" required 
+                                   placeholder="es: Verifica livello olio, Controllo pneumatici">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="item_type" class="form-label">Tipo *</label>
+                            <select class="form-select" id="item_type" name="item_type" required>
+                                <option value="boolean">Si/No (Checkbox)</option>
+                                <option value="numeric">Numerico (Quantità)</option>
+                                <option value="text">Testo Libero (Note)</option>
+                            </select>
+                            <small class="text-muted">
+                                Scegli il tipo di risposta che l'autista dovrà fornire
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="check_timing" class="form-label">Quando Verificare *</label>
+                            <select class="form-select" id="check_timing" name="check_timing" required>
+                                <option value="departure">Solo in Uscita</option>
+                                <option value="return">Solo al Rientro</option>
+                                <option value="both">Uscita e Rientro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="display_order" class="form-label">Ordine di Visualizzazione</label>
+                            <input type="number" class="form-control" id="display_order" name="display_order" 
+                                   value="0" min="0" step="1">
+                            <small class="text-muted">
+                                Numero più basso = mostrato per primo
+                            </small>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="is_required" name="is_required">
+                            <label class="form-check-label" for="is_required">
+                                Campo Obbligatorio
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Annulla
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveChecklistItem()">
+                        <i class="bi bi-save"></i> Salva
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -462,6 +567,235 @@ if (!empty($vehicle['license_plate'])) {
                 vehicleStatusSelect.value = currentVehicleStatus;
             }
         });
+        
+        // Checklist Management Functions
+        const vehicleId = <?php echo $vehicleId; ?>;
+        let checklistModal;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checklistModal = new bootstrap.Modal(document.getElementById('checklistModal'));
+            
+            // Load checklists when tab is shown
+            const checklistsTab = document.getElementById('checklists-tab');
+            if (checklistsTab) {
+                checklistsTab.addEventListener('shown.bs.tab', function () {
+                    loadChecklists();
+                });
+            }
+        });
+        
+        function loadChecklists() {
+            const container = document.getElementById('checklistsContainer');
+            
+            fetch('vehicle_checklist_api.php?action=list&vehicle_id=' + vehicleId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderChecklists(data.checklists);
+                    } else {
+                        container.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    container.innerHTML = '<div class="alert alert-danger">Errore nel caricamento delle check list</div>';
+                });
+        }
+        
+        function renderChecklists(checklists) {
+            const container = document.getElementById('checklistsContainer');
+            
+            if (checklists.length === 0) {
+                container.innerHTML = '<p class="text-muted">Nessuna check list configurata. Aggiungi elementi per iniziare.</p>';
+                return;
+            }
+            
+            // Group by timing
+            const departure = checklists.filter(c => c.check_timing === 'departure' || c.check_timing === 'both');
+            const returnList = checklists.filter(c => c.check_timing === 'return' || c.check_timing === 'both');
+            
+            let html = '';
+            
+            if (departure.length > 0) {
+                html += '<h6 class="mt-3 mb-3"><i class="bi bi-box-arrow-right text-primary"></i> Check List Uscita</h6>';
+                html += renderChecklistTable(departure);
+            }
+            
+            if (returnList.length > 0) {
+                html += '<h6 class="mt-4 mb-3"><i class="bi bi-box-arrow-in-left text-success"></i> Check List Rientro</h6>';
+                html += renderChecklistTable(returnList);
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function renderChecklistTable(items) {
+            const canEdit = <?php echo $app->checkPermission('vehicles', 'edit') ? 'true' : 'false'; ?>;
+            
+            let html = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            html += '<thead><tr>';
+            html += '<th width="40%">Elemento</th>';
+            html += '<th width="15%">Tipo</th>';
+            html += '<th width="15%">Quando</th>';
+            html += '<th width="10%">Obbligatorio</th>';
+            html += '<th width="10%">Ordine</th>';
+            if (canEdit) {
+                html += '<th width="10%">Azioni</th>';
+            }
+            html += '</tr></thead><tbody>';
+            
+            items.forEach(item => {
+                html += '<tr>';
+                html += '<td><strong>' + escapeHtml(item.item_name) + '</strong></td>';
+                html += '<td>' + getTypeLabel(item.item_type) + '</td>';
+                html += '<td>' + getTimingLabel(item.check_timing) + '</td>';
+                html += '<td>' + (item.is_required == 1 ? '<span class="badge bg-danger">Sì</span>' : '<span class="badge bg-secondary">No</span>') + '</td>';
+                html += '<td>' + item.display_order + '</td>';
+                
+                if (canEdit) {
+                    html += '<td>';
+                    html += '<button class="btn btn-sm btn-warning me-1" onclick="editChecklistItem(' + item.id + ')" title="Modifica">';
+                    html += '<i class="bi bi-pencil"></i>';
+                    html += '</button>';
+                    html += '<button class="btn btn-sm btn-danger" onclick="deleteChecklistItem(' + item.id + ')" title="Elimina">';
+                    html += '<i class="bi bi-trash"></i>';
+                    html += '</button>';
+                    html += '</td>';
+                }
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            return html;
+        }
+        
+        function getTypeLabel(type) {
+            const types = {
+                'boolean': '<i class="bi bi-check-square"></i> Si/No',
+                'numeric': '<i class="bi bi-123"></i> Numerico',
+                'text': '<i class="bi bi-text-paragraph"></i> Testo'
+            };
+            return types[type] || type;
+        }
+        
+        function getTimingLabel(timing) {
+            const timings = {
+                'departure': '<span class="badge bg-primary">Uscita</span>',
+                'return': '<span class="badge bg-success">Rientro</span>',
+                'both': '<span class="badge bg-info">Entrambi</span>'
+            };
+            return timings[timing] || timing;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showAddChecklistModal() {
+            document.getElementById('checklistModalTitle').textContent = 'Aggiungi Elemento Check List';
+            document.getElementById('checklistForm').reset();
+            document.getElementById('checklist_id').value = '';
+            checklistModal.show();
+        }
+        
+        function editChecklistItem(id) {
+            fetch('vehicle_checklist_api.php?action=list&vehicle_id=' + vehicleId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const item = data.checklists.find(c => c.id == id);
+                        if (item) {
+                            document.getElementById('checklistModalTitle').textContent = 'Modifica Elemento Check List';
+                            document.getElementById('checklist_id').value = item.id;
+                            document.getElementById('item_name').value = item.item_name;
+                            document.getElementById('item_type').value = item.item_type;
+                            document.getElementById('check_timing').value = item.check_timing;
+                            document.getElementById('display_order').value = item.display_order;
+                            document.getElementById('is_required').checked = item.is_required == 1;
+                            checklistModal.show();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Errore nel caricamento dei dati');
+                });
+        }
+        
+        function saveChecklistItem() {
+            const form = document.getElementById('checklistForm');
+            const formData = new FormData(form);
+            
+            const id = document.getElementById('checklist_id').value;
+            const action = id ? 'update' : 'create';
+            formData.append('action', action);
+            
+            fetch('vehicle_checklist_api.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    checklistModal.hide();
+                    loadChecklists();
+                    
+                    // Show success message
+                    const container = document.getElementById('checklistsContainer');
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show';
+                    alert.innerHTML = data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    container.insertBefore(alert, container.firstChild);
+                    
+                    setTimeout(() => alert.remove(), 3000);
+                } else {
+                    alert('Errore: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore nel salvataggio');
+            });
+        }
+        
+        function deleteChecklistItem(id) {
+            if (!confirm('Sei sicuro di voler eliminare questo elemento della check list?')) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'delete');
+            formData.append('id', id);
+            
+            fetch('vehicle_checklist_api.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadChecklists();
+                    
+                    // Show success message
+                    const container = document.getElementById('checklistsContainer');
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show';
+                    alert.innerHTML = data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    container.insertBefore(alert, container.firstChild);
+                    
+                    setTimeout(() => alert.remove(), 3000);
+                } else {
+                    alert('Errore: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore nell\'eliminazione');
+            });
+        }
     </script>
 
     <!-- Print Template Selection Modal -->
