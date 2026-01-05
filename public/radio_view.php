@@ -306,7 +306,7 @@ $pageTitle = 'Dettaglio Radio';
                     <h5 class="modal-title">Assegna Radio</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="radio_assign.php">
+                <form method="POST" action="radio_assign.php" onsubmit="return validateAssignmentForm()">
                     <div class="modal-body">
                         <input type="hidden" name="radio_id" value="<?php echo $radio['id']; ?>">
                         <input type="hidden" name="csrf_token" value="<?php echo \EasyVol\Middleware\CsrfProtection::generateToken(); ?>">
@@ -474,6 +474,32 @@ $pageTitle = 'Dettaglio Radio';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        // Validate assignment form before submission
+        function validateAssignmentForm() {
+            const assignmentType = document.querySelector('input[name="assignment_type"]:checked').value;
+            
+            if (assignmentType === 'member') {
+                const memberId = document.getElementById('member_id').value;
+                if (!memberId) {
+                    alert('Per favore, seleziona un volontario o cadetto dalla ricerca');
+                    return false;
+                }
+            } else {
+                // Validate external personnel fields
+                const lastName = document.getElementById('external_last_name').value.trim();
+                const firstName = document.getElementById('external_first_name').value.trim();
+                const organization = document.getElementById('external_organization').value.trim();
+                const phone = document.getElementById('external_phone').value.trim();
+                
+                if (!lastName || !firstName || !organization || !phone) {
+                    alert('Per favore, compila tutti i campi obbligatori per il personale esterno');
+                    return false;
+                }
+            }
+            
+            return true;
         }
         
         function returnRadio(assignmentId) {
