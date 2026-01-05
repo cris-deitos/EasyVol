@@ -28,7 +28,38 @@
 -- should either:
 -- 1. Check if columns exist before running (recommended), OR
 -- 2. Handle error 1060 gracefully as a non-fatal error
+--
+-- ALTERNATIVE APPROACH (if needed):
+-- You can wrap this in a stored procedure for safer execution:
+-- 
+-- DELIMITER $$
+-- CREATE PROCEDURE add_guardian_birth_fields()
+-- BEGIN
+--   IF NOT EXISTS(
+--     SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+--     WHERE TABLE_SCHEMA=DATABASE() 
+--       AND TABLE_NAME='junior_member_guardians' 
+--       AND COLUMN_NAME='birth_date'
+--   ) THEN
+--     ALTER TABLE junior_member_guardians 
+--     ADD COLUMN birth_date date DEFAULT NULL AFTER first_name;
+--   END IF;
+--   
+--   IF NOT EXISTS(
+--     SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+--     WHERE TABLE_SCHEMA=DATABASE() 
+--       AND TABLE_NAME='junior_member_guardians' 
+--       AND COLUMN_NAME='birth_place'
+--   ) THEN
+--     ALTER TABLE junior_member_guardians 
+--     ADD COLUMN birth_place varchar(255) DEFAULT NULL AFTER birth_date;
+--   END IF;
+-- END$$
+-- DELIMITER ;
+-- CALL add_guardian_birth_fields();
+-- DROP PROCEDURE add_guardian_birth_fields;
 
+-- Simple approach (following project pattern):
 -- Add birth_date field for guardians
 ALTER TABLE `junior_member_guardians` 
 ADD COLUMN `birth_date` date DEFAULT NULL AFTER `first_name`;

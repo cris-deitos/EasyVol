@@ -14,6 +14,10 @@ class ApplicationController {
     private $db;
     private $config;
     
+    // Costanti per validazione
+    const MIN_COURSE_YEAR = 1950; // Anno minimo accettabile per corsi
+    const MAX_COURSE_YEAR_OFFSET = 1; // Offset anni futuri accettabili
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -1119,8 +1123,9 @@ class ApplicationController {
             // If year is provided, validate and use December 31st of that year as completion date
             if (!empty($data['corso_base_pc_anno'])) {
                 $year = intval($data['corso_base_pc_anno']);
-                // Validate year is reasonable (between 1950 and current year + 1)
-                if ($year >= 1950 && $year <= (date('Y') + 1)) {
+                // Validate year is reasonable (MIN_COURSE_YEAR to current year + MAX_COURSE_YEAR_OFFSET)
+                $maxYear = date('Y') + self::MAX_COURSE_YEAR_OFFSET;
+                if ($year >= self::MIN_COURSE_YEAR && $year <= $maxYear) {
                     $completionDate = sprintf('%04d-12-31', $year);
                 }
             }
