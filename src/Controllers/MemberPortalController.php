@@ -580,16 +580,15 @@ class MemberPortalController {
             }
             
             // Check for overlapping schedules
+            // Two date ranges overlap if: start1 < end2 AND start2 < end1
             $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
                     WHERE member_id = ? 
-                    AND ((start_datetime <= ? AND end_datetime >= ?) 
-                         OR (start_datetime <= ? AND end_datetime >= ?)
-                         OR (start_datetime >= ? AND end_datetime <= ?))";
+                    AND start_datetime < ? 
+                    AND end_datetime > ?";
             $result = $this->db->fetchOne($sql, [
                 $memberId,
-                $startDatetime, $startDatetime,
-                $endDatetime, $endDatetime,
-                $startDatetime, $endDatetime
+                $endDatetime,
+                $startDatetime
             ]);
             
             if ($result['count'] > 0) {
@@ -642,18 +641,17 @@ class MemberPortalController {
             }
             
             // Check for overlapping schedules (excluding current)
+            // Two date ranges overlap if: start1 < end2 AND start2 < end1
             $sql = "SELECT COUNT(*) as count FROM on_call_schedule 
                     WHERE member_id = ? 
                     AND id != ?
-                    AND ((start_datetime <= ? AND end_datetime >= ?) 
-                         OR (start_datetime <= ? AND end_datetime >= ?)
-                         OR (start_datetime >= ? AND end_datetime <= ?))";
+                    AND start_datetime < ? 
+                    AND end_datetime > ?";
             $result = $this->db->fetchOne($sql, [
                 $memberId,
                 $scheduleId,
-                $startDatetime, $startDatetime,
-                $endDatetime, $endDatetime,
-                $startDatetime, $endDatetime
+                $endDatetime,
+                $startDatetime
             ]);
             
             if ($result['count'] > 0) {
