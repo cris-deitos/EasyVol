@@ -478,7 +478,14 @@ $pageTitle = 'Dettaglio Radio';
         
         // Validate assignment form before submission
         function validateAssignmentForm() {
-            const assignmentType = document.querySelector('input[name="assignment_type"]:checked').value;
+            const assignmentTypeElement = document.querySelector('input[name="assignment_type"]:checked');
+            
+            if (!assignmentTypeElement) {
+                alert('Per favore, seleziona un tipo di assegnazione');
+                return false;
+            }
+            
+            const assignmentType = assignmentTypeElement.value;
             
             if (assignmentType === 'member') {
                 const memberId = document.getElementById('member_id').value;

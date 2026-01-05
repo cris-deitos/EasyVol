@@ -11,10 +11,28 @@ use EasyVol\Database;
 class OperationsCenterController {
     private $db;
     private $config;
+    private static $juniorMemberColumnExists = null; // Cache for column existence check
     
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
+    }
+    
+    /**
+     * Check if junior_member_id column exists in radio_assignments table (cached)
+     */
+    private function hasJuniorMemberSupport() {
+        if (self::$juniorMemberColumnExists === null) {
+            try {
+                $checkColumnSql = "SHOW COLUMNS FROM radio_assignments LIKE 'junior_member_id'";
+                $columnExists = $this->db->fetchOne($checkColumnSql);
+                self::$juniorMemberColumnExists = !empty($columnExists);
+            } catch (\Exception $e) {
+                error_log("Error checking junior_member_id column: " . $e->getMessage());
+                self::$juniorMemberColumnExists = false;
+            }
+        }
+        return self::$juniorMemberColumnExists;
     }
     
     /**
@@ -133,11 +151,8 @@ class OperationsCenterController {
         }
         
         try {
-            // Check if junior_member_id column exists
-            $checkColumnSql = "SHOW COLUMNS FROM radio_assignments LIKE 'junior_member_id'";
-            $columnExists = $this->db->fetchOne($checkColumnSql);
-            
-            if ($columnExists) {
+            // Check if junior_member_id column exists (cached)
+            if ($this->hasJuniorMemberSupport()) {
                 // New schema with junior_members support
                 // Carica assegnazione corrente - handle both members and junior_members
                 $sql = "SELECT ra.*, 
@@ -407,11 +422,8 @@ class OperationsCenterController {
                 return ['success' => false, 'message' => ucfirst($assigneeLabel) . ' non trovato o non attivo'];
             }
             
-            // Check if assignee_type column exists in the database
-            $checkColumnSql = "SHOW COLUMNS FROM radio_assignments LIKE 'assignee_type'";
-            $columnExists = $this->db->fetchOne($checkColumnSql);
-            
-            if ($columnExists) {
+            // Check if assignee_type column exists in the database (cached)
+            if ($this->hasJuniorMemberSupport()) {
                 // New schema with assignee_type support
                 if ($memberType === 'cadet') {
                     $sql = "INSERT INTO radio_assignments (

@@ -37,6 +37,9 @@ if (empty($query)) {
 }
 
 try {
+    $searchTerm = '%' . $query . '%';
+    $exactStart = $query . '%';
+    
     // Search in members table - active volunteers who are operational
     $sqlMembers = "SELECT 
             id, 
@@ -44,7 +47,14 @@ try {
             last_name, 
             registration_number, 
             badge_number,
-            'member' as source_type
+            'member' as source_type,
+            CASE 
+                WHEN badge_number LIKE ? THEN 1
+                WHEN registration_number LIKE ? THEN 2
+                WHEN last_name LIKE ? THEN 3
+                WHEN first_name LIKE ? THEN 4
+                ELSE 5
+            END as sort_priority
         FROM members 
         WHERE member_status = 'attivo' 
         AND volunteer_status = 'operativo'
@@ -64,7 +74,13 @@ try {
             last_name, 
             registration_number,
             NULL as badge_number,
-            'cadet' as source_type
+            'cadet' as source_type,
+            CASE 
+                WHEN registration_number LIKE ? THEN 2
+                WHEN last_name LIKE ? THEN 3
+                WHEN first_name LIKE ? THEN 4
+                ELSE 5
+            END as sort_priority
         FROM junior_members 
         WHERE member_status = 'attivo'
         AND (
@@ -75,30 +91,33 @@ try {
             OR CONCAT(last_name, ' ', first_name) LIKE ?
         )";
     
-    // Union both queries
-    $sql = "($sqlMembers) UNION ($sqlCadets) 
-            ORDER BY 
-                CASE 
-                    WHEN badge_number LIKE ? THEN 1
-                    WHEN registration_number LIKE ? THEN 2
-                    WHEN last_name LIKE ? THEN 3
-                    WHEN first_name LIKE ? THEN 4
-                    ELSE 5
-                END,
-                last_name, first_name
+    // Union both queries with sorting
+    $sql = "SELECT * FROM (
+                ($sqlMembers) 
+                UNION 
+                ($sqlCadets)
+            ) as combined
+            ORDER BY sort_priority, last_name, first_name
             LIMIT 20";
     
-    $searchTerm = '%' . $query . '%';
-    $exactStart = $query . '%';
-    
-    $params = [
-        // Members params
-        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm,
-        // Cadets params (no badge_number)
-        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm,
-        // Order by params
-        $exactStart, $exactStart, $exactStart, $exactStart
+    // Prepare parameters for members query
+    $memberParams = [
+        // Sort priority params
+        $exactStart, $exactStart, $exactStart, $exactStart,
+        // Search params
+        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm
     ];
+    
+    // Prepare parameters for cadets query
+    $cadetParams = [
+        // Sort priority params
+        $exactStart, $exactStart, $exactStart,
+        // Search params
+        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm
+    ];
+    
+    // Combine all parameters in correct order
+    $params = array_merge($memberParams, $cadetParams);
     
     $results = $db->fetchAll($sql, $params);
     
