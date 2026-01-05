@@ -83,9 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         mkdir($uploadDir, 0755, true);
                     }
                     
-                    // Generate unique filename
+                    // Generate unique filename using cryptographically secure random bytes
                     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                    $filename = uniqid() . '_' . time() . '.' . $extension;
+                    $filename = bin2hex(random_bytes(16)) . '.' . $extension;
                     $filepath = $uploadDir . '/' . $filename;
                     
                     // Move uploaded file

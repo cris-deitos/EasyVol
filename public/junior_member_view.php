@@ -503,7 +503,14 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                                         <?php foreach ($member['fees'] as $fee): ?>
                                                             <tr>
                                                                 <td><?php echo htmlspecialchars($fee['year']); ?></td>
-                                                                <td><?php echo $fee['payment_date'] ? date('d/m/Y', strtotime($fee['payment_date'])) : 'N/D'; ?></td>
+                                                                <td><?php 
+                                                                    if (!empty($fee['payment_date'])) {
+                                                                        $timestamp = strtotime($fee['payment_date']);
+                                                                        echo $timestamp !== false ? date('d/m/Y', $timestamp) : 'N/D';
+                                                                    } else {
+                                                                        echo 'N/D';
+                                                                    }
+                                                                ?></td>
                                                                 <td><?php echo $fee['amount'] ? '€ ' . number_format($fee['amount'], 2) : 'N/D'; ?></td>
                                                                 <td>
                                                                     <?php if ($app->checkPermission('junior_members', 'edit')): ?>
