@@ -22,37 +22,17 @@
 -- JUNIOR_MEMBER_GUARDIANS TABLE - Add missing fields for guardians
 -- =============================================================================
 
--- Check if birth_date column exists, and add it if it doesn't
-SET @dbname = DATABASE();
-SET @tablename = 'junior_member_guardians';
-SET @columnname = 'birth_date';
-SET @preparedStatement = (SELECT IF(
-  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-   WHERE (table_name = @tablename)
-     AND (table_schema = @dbname)
-     AND (column_name = @columnname)
-  ) > 0,
-  "SELECT 1",
-  CONCAT("ALTER TABLE ", @tablename, " ADD COLUMN ", @columnname, " date DEFAULT NULL AFTER first_name")
-));
-PREPARE alterIfNotExists FROM @preparedStatement;
-EXECUTE alterIfNotExists;
-DEALLOCATE PREPARE alterIfNotExists;
+-- IMPORTANT: If these columns already exist, this migration will fail with a 
+-- "Duplicate column" error. This is expected and safe - it means the columns
+-- are already present. The migration system should handle this gracefully.
 
--- Check if birth_place column exists, and add it if it doesn't
-SET @columnname = 'birth_place';
-SET @preparedStatement = (SELECT IF(
-  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-   WHERE (table_name = @tablename)
-     AND (table_schema = @dbname)
-     AND (column_name = @columnname)
-  ) > 0,
-  "SELECT 1",
-  CONCAT("ALTER TABLE ", @tablename, " ADD COLUMN ", @columnname, " varchar(255) DEFAULT NULL AFTER birth_date")
-));
-PREPARE alterIfNotExists FROM @preparedStatement;
-EXECUTE alterIfNotExists;
-DEALLOCATE PREPARE alterIfNotExists;
+-- Add birth_date field for guardians
+ALTER TABLE `junior_member_guardians` 
+ADD COLUMN `birth_date` date DEFAULT NULL AFTER `first_name`;
+
+-- Add birth_place field for guardians
+ALTER TABLE `junior_member_guardians` 
+ADD COLUMN `birth_place` varchar(255) DEFAULT NULL AFTER `birth_date`;
 
 -- =============================================================================
 -- MEMBER_COURSES TABLE - Ensure proper structure for Corso Base PC

@@ -1116,9 +1116,13 @@ class ApplicationController {
             $courseName = 'Corso Base Protezione Civile Regione Lombardia';
             $completionDate = null;
             
-            // If year is provided, use December 31st of that year as completion date
+            // If year is provided, validate and use December 31st of that year as completion date
             if (!empty($data['corso_base_pc_anno'])) {
-                $completionDate = $data['corso_base_pc_anno'] . '-12-31';
+                $year = intval($data['corso_base_pc_anno']);
+                // Validate year is reasonable (between 1950 and current year + 1)
+                if ($year >= 1950 && $year <= (date('Y') + 1)) {
+                    $completionDate = sprintf('%04d-12-31', $year);
+                }
             }
             
             $sql = "INSERT INTO member_courses (member_id, course_name, completion_date) 
