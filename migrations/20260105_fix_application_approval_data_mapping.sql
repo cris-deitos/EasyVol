@@ -22,9 +22,12 @@
 -- JUNIOR_MEMBER_GUARDIANS TABLE - Add missing fields for guardians
 -- =============================================================================
 
--- IMPORTANT: If these columns already exist, this migration will fail with a 
--- "Duplicate column" error. This is expected and safe - it means the columns
--- are already present. The migration system should handle this gracefully.
+-- NOTE: MySQL 5.6 does not support "ADD COLUMN IF NOT EXISTS" syntax.
+-- If these columns already exist, this migration will fail with error 1060 
+-- "Duplicate column name". This is expected behavior. The migration runner
+-- should either:
+-- 1. Check if columns exist before running (recommended), OR
+-- 2. Handle error 1060 gracefully as a non-fatal error
 
 -- Add birth_date field for guardians
 ALTER TABLE `junior_member_guardians` 
