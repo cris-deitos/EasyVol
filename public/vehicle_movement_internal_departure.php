@@ -69,6 +69,12 @@ $vehicles = $db->fetchAll($vehiclesSql);
 // Get available trailers
 $availableTrailers = $controller->getAvailableTrailers();
 
+// Get vehicle checklists if a vehicle is pre-selected
+$checklists = [];
+if ($vehicleId > 0) {
+    $checklists = $controller->getVehicleChecklists($vehicleId, 'departure');
+}
+
 // Get active members for drivers
 $membersSql = "SELECT id, first_name, last_name, registration_number 
                FROM members 
@@ -97,6 +103,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new \Exception('Selezionare almeno un autista');
             }
             
+            // Prepare checklist data
+            $checklistData = [];
+            if (!empty($_POST['checklist'])) {
+                // Get checklists for the selected vehicle
+                $vehicleChecklists = $controller->getVehicleChecklists($selectedVehicleId, 'departure');
+                
+                foreach ($_POST['checklist'] as $itemId => $value) {
+                    $checklistItem = array_filter($vehicleChecklists, function($c) use ($itemId) {
+                        return $c['id'] == $itemId;
+                    });
+                    
+                    if (!empty($checklistItem)) {
+                        $item = reset($checklistItem);
+                        $checklistData[] = [
+                            'checklist_item_id' => $itemId,
+                            'item_name' => $item['item_name'],
+                            'item_type' => $item['item_type'],
+                            'value_boolean' => $item['item_type'] === 'boolean' ? intval($value) : null,
+                            'value_numeric' => $item['item_type'] === 'numeric' ? floatval($value) : null,
+                            'value_text' => $item['item_type'] === 'text' ? $value : null
+                        ];
+                    }
+                }
+            }
+            
             $departureData = [
                 'vehicle_id' => $selectedVehicleId,
                 'trailer_id' => !empty($_POST['trailer_id']) ? intval($_POST['trailer_id']) : null,
@@ -109,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'authorized_by' => $_POST['authorized_by'] ?? null,
                 'departure_notes' => $_POST['departure_notes'] ?? null,
                 'departure_anomaly_flag' => isset($_POST['departure_anomaly_flag']) ? 1 : 0,
-                'checklist' => [] // Empty for now, can be enhanced later
+                'checklist' => $checklistData
             ];
             
             $result = $controller->createDeparture($departureData, $app->getUserId());
@@ -293,6 +324,13 @@ $pageTitle = 'Registra Uscita Veicolo';
                                 <textarea class="form-control" id="departure_notes" name="departure_notes" rows="3"></textarea>
                             </div>
                             
+                            <!-- Checklist Section (loaded dynamically) -->
+                            <div id="checklistSection" style="display: none;">
+                                <hr>
+                                <h5><i class="bi bi-list-check"></i> Check List Uscita</h5>
+                                <div id="checklistContainer"></div>
+                            </div>
+                            
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="departure_anomaly_flag" name="departure_anomaly_flag">
                                 <label class="form-check-label text-warning" for="departure_anomaly_flag">
@@ -356,6 +394,87 @@ $pageTitle = 'Registra Uscita Veicolo';
             kmInput.removeAttribute('required');
         }
         <?php endif; ?>
+        
+        // Load checklists when vehicle is selected
+        if (vehicleSelect) {
+            vehicleSelect.addEventListener('change', function() {
+                const vehicleId = this.value;
+                if (vehicleId) {
+                    loadChecklists(vehicleId);
+                } else {
+                    document.getElementById('checklistSection').style.display = 'none';
+                }
+            });
+            
+            // Load checklists if vehicle is pre-selected
+            <?php if ($vehicleId > 0): ?>
+            loadChecklists(<?php echo $vehicleId; ?>);
+            <?php endif; ?>
+        }
+        
+        function loadChecklists(vehicleId) {
+            fetch('vehicle_checklist_api.php?action=list&vehicle_id=' + vehicleId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.checklists.length > 0) {
+                        const checklists = data.checklists.filter(c => c.check_timing === 'departure' || c.check_timing === 'both');
+                        if (checklists.length > 0) {
+                            renderChecklists(checklists);
+                            document.getElementById('checklistSection').style.display = 'block';
+                        } else {
+                            document.getElementById('checklistSection').style.display = 'none';
+                        }
+                    } else {
+                        document.getElementById('checklistSection').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading checklists:', error);
+                });
+        }
+        
+        function renderChecklists(checklists) {
+            const container = document.getElementById('checklistContainer');
+            let html = '';
+            
+            checklists.forEach(item => {
+                html += '<div class="card mb-3">';
+                html += '<div class="card-body">';
+                html += '<label class="form-label fw-bold">';
+                html += escapeHtml(item.item_name);
+                if (item.is_required == 1) {
+                    html += ' <span class="text-danger">*</span>';
+                }
+                html += '</label>';
+                
+                if (item.item_type === 'boolean') {
+                    html += '<div class="form-check form-switch">';
+                    html += '<input type="checkbox" class="form-check-input" name="checklist[' + item.id + ']" value="1" id="checklist_' + item.id + '"';
+                    if (item.is_required == 1) html += ' required';
+                    html += '>';
+                    html += '<label class="form-check-label" for="checklist_' + item.id + '">Verificato</label>';
+                    html += '</div>';
+                } else if (item.item_type === 'numeric') {
+                    html += '<input type="number" name="checklist[' + item.id + ']" class="form-control" step="0.01" placeholder="Inserisci quantità"';
+                    if (item.is_required == 1) html += ' required';
+                    html += '>';
+                } else {
+                    html += '<textarea name="checklist[' + item.id + ']" class="form-control" rows="2" placeholder="Inserisci note"';
+                    if (item.is_required == 1) html += ' required';
+                    html += '></textarea>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>

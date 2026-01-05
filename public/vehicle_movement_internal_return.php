@@ -62,6 +62,13 @@ $membersSql = "SELECT id, first_name, last_name, registration_number
                ORDER BY last_name, first_name";
 $members = $db->fetchAll($membersSql);
 
+// Get vehicle checklists for return (including trailer checklists if present)
+$checklists = $controller->getVehicleChecklists(
+    $movement['vehicle_id'], 
+    'return', 
+    $movement['trailer_id'] ?? null
+);
+
 $errors = [];
 $success = false;
 
@@ -77,6 +84,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new \Exception('Selezionare almeno un autista');
             }
             
+            // Prepare checklist data
+            $checklistData = [];
+            if (!empty($_POST['checklist'])) {
+                foreach ($_POST['checklist'] as $itemId => $value) {
+                    $checklistItem = array_filter($checklists, function($c) use ($itemId) {
+                        return $c['id'] == $itemId;
+                    });
+                    
+                    if (!empty($checklistItem)) {
+                        $item = reset($checklistItem);
+                        $checklistData[] = [
+                            'checklist_item_id' => $itemId,
+                            'item_name' => $item['item_name'],
+                            'item_type' => $item['item_type'],
+                            'value_boolean' => $item['item_type'] === 'boolean' ? intval($value) : null,
+                            'value_numeric' => $item['item_type'] === 'numeric' ? floatval($value) : null,
+                            'value_text' => $item['item_type'] === 'text' ? $value : null
+                        ];
+                    }
+                }
+            }
+            
             $returnData = [
                 'return_datetime' => $_POST['return_datetime'],
                 'drivers' => array_map('intval', $_POST['drivers']),
@@ -85,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'return_notes' => $_POST['return_notes'] ?? null,
                 'return_anomaly_flag' => isset($_POST['return_anomaly_flag']) ? 1 : 0,
                 'traffic_violation_flag' => isset($_POST['traffic_violation_flag']) ? 1 : 0,
-                'checklist' => [] // Empty for now, can be enhanced later
+                'checklist' => $checklistData
             ];
             
             $result = $controller->createReturn($movementId, $returnData, $app->getUserId());
@@ -238,6 +267,51 @@ $pageTitle = 'Registra Rientro Veicolo';
                                 <label for="return_notes" class="form-label">Note Rientro</label>
                                 <textarea class="form-control" id="return_notes" name="return_notes" rows="3"></textarea>
                             </div>
+                            
+                            <!-- Checklist Section -->
+                            <?php if (!empty($checklists)): ?>
+                                <hr>
+                                <h5><i class="bi bi-list-check"></i> Check List Rientro</h5>
+                                <?php foreach ($checklists as $item): ?>
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <label class="form-label fw-bold">
+                                                <?php echo htmlspecialchars($item['item_name']); ?>
+                                                <?php if ($item['is_required']): ?>
+                                                    <span class="text-danger">*</span>
+                                                <?php endif; ?>
+                                            </label>
+                                            
+                                            <?php if ($item['item_type'] === 'boolean'): ?>
+                                                <div class="form-check form-switch">
+                                                    <input type="checkbox" 
+                                                           class="form-check-input" 
+                                                           name="checklist[<?php echo $item['id']; ?>]" 
+                                                           value="1"
+                                                           id="checklist_<?php echo $item['id']; ?>"
+                                                           <?php echo $item['is_required'] ? 'required' : ''; ?>>
+                                                    <label class="form-check-label" for="checklist_<?php echo $item['id']; ?>">
+                                                        Verificato
+                                                    </label>
+                                                </div>
+                                            <?php elseif ($item['item_type'] === 'numeric'): ?>
+                                                <input type="number" 
+                                                       name="checklist[<?php echo $item['id']; ?>]" 
+                                                       class="form-control" 
+                                                       step="0.01"
+                                                       placeholder="Inserisci quantità"
+                                                       <?php echo $item['is_required'] ? 'required' : ''; ?>>
+                                            <?php else: ?>
+                                                <textarea name="checklist[<?php echo $item['id']; ?>]" 
+                                                          class="form-control" 
+                                                          rows="2"
+                                                          placeholder="Inserisci note"
+                                                          <?php echo $item['is_required'] ? 'required' : ''; ?>></textarea>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                             
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="return_anomaly_flag" name="return_anomaly_flag">
