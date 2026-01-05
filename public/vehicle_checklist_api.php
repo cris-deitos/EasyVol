@@ -57,6 +57,12 @@ try {
                 throw new Exception('ID veicolo non valido');
             }
             
+            // Verify vehicle exists
+            $vehicle = $db->fetchOne("SELECT id FROM vehicles WHERE id = ?", [$vehicleId]);
+            if (!$vehicle) {
+                throw new Exception('Veicolo non trovato');
+            }
+            
             $itemName = trim($_POST['item_name'] ?? '');
             if (empty($itemName)) {
                 throw new Exception('Nome elemento obbligatorio');
@@ -101,6 +107,18 @@ try {
                 throw new Exception('ID elemento non valido');
             }
             
+            // Verify checklist item exists and belongs to a valid vehicle
+            $existing = $db->fetchOne(
+                "SELECT vc.id, v.id as vehicle_id 
+                FROM vehicle_checklists vc 
+                JOIN vehicles v ON vc.vehicle_id = v.id 
+                WHERE vc.id = ?", 
+                [$id]
+            );
+            if (!$existing) {
+                throw new Exception('Elemento non trovato');
+            }
+            
             $itemName = trim($_POST['item_name'] ?? '');
             if (empty($itemName)) {
                 throw new Exception('Nome elemento obbligatorio');
@@ -141,6 +159,18 @@ try {
             $id = intval($_POST['id'] ?? 0);
             if ($id <= 0) {
                 throw new Exception('ID elemento non valido');
+            }
+            
+            // Verify checklist item exists and belongs to a valid vehicle
+            $existing = $db->fetchOne(
+                "SELECT vc.id 
+                FROM vehicle_checklists vc 
+                JOIN vehicles v ON vc.vehicle_id = v.id 
+                WHERE vc.id = ?", 
+                [$id]
+            );
+            if (!$existing) {
+                throw new Exception('Elemento non trovato');
             }
             
             $db->execute("DELETE FROM vehicle_checklists WHERE id = ?", [$id]);

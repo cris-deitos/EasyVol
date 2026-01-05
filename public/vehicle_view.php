@@ -569,7 +569,7 @@ if (!empty($vehicle['license_plate'])) {
         });
         
         // Checklist Management Functions
-        const vehicleId = <?php echo $vehicleId; ?>;
+        const vehicleId = <?php echo intval($vehicleId); ?>;
         let checklistModal;
         
         document.addEventListener('DOMContentLoaded', function() {
@@ -630,7 +630,7 @@ if (!empty($vehicle['license_plate'])) {
         }
         
         function renderChecklistTable(items) {
-            const canEdit = <?php echo $app->checkPermission('vehicles', 'edit') ? 'true' : 'false'; ?>;
+            const canEdit = <?php echo json_encode($app->checkPermission('vehicles', 'edit')); ?>;
             
             let html = '<div class="table-responsive"><table class="table table-hover table-sm">';
             html += '<thead><tr>';
@@ -721,7 +721,7 @@ if (!empty($vehicle['license_plate'])) {
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Errore nel caricamento dei dati');
+                    showErrorMessage('Errore nel caricamento dei dati della check list');
                 });
         }
         
@@ -742,22 +742,14 @@ if (!empty($vehicle['license_plate'])) {
                 if (data.success) {
                     checklistModal.hide();
                     loadChecklists();
-                    
-                    // Show success message
-                    const container = document.getElementById('checklistsContainer');
-                    const alert = document.createElement('div');
-                    alert.className = 'alert alert-success alert-dismissible fade show';
-                    alert.innerHTML = data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-                    container.insertBefore(alert, container.firstChild);
-                    
-                    setTimeout(() => alert.remove(), 3000);
+                    showSuccessMessage(data.message);
                 } else {
-                    alert('Errore: ' + data.message);
+                    showErrorMessage(data.message || 'Errore durante il salvataggio');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Errore nel salvataggio');
+                showErrorMessage('Errore di connessione durante il salvataggio');
             });
         }
         
@@ -778,23 +770,36 @@ if (!empty($vehicle['license_plate'])) {
             .then(data => {
                 if (data.success) {
                     loadChecklists();
-                    
-                    // Show success message
-                    const container = document.getElementById('checklistsContainer');
-                    const alert = document.createElement('div');
-                    alert.className = 'alert alert-success alert-dismissible fade show';
-                    alert.innerHTML = data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-                    container.insertBefore(alert, container.firstChild);
-                    
-                    setTimeout(() => alert.remove(), 3000);
+                    showSuccessMessage(data.message);
                 } else {
-                    alert('Errore: ' + data.message);
+                    showErrorMessage(data.message || 'Errore durante l\'eliminazione');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Errore nell\'eliminazione');
+                showErrorMessage('Errore di connessione durante l\'eliminazione');
             });
+        }
+        
+        // Helper functions for showing messages
+        function showSuccessMessage(message) {
+            const container = document.getElementById('checklistsContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = '<i class="bi bi-check-circle"></i> ' + message + 
+                              '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+            container.insertBefore(alert, container.firstChild);
+            setTimeout(() => alert.remove(), 3000);
+        }
+        
+        function showErrorMessage(message) {
+            const container = document.getElementById('checklistsContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger alert-dismissible fade show';
+            alert.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + message + 
+                              '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+            container.insertBefore(alert, container.firstChild);
+            setTimeout(() => alert.remove(), 5000);
         }
     </script>
 
