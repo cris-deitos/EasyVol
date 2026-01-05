@@ -126,6 +126,18 @@ class JuniorMemberController {
         // Carica salute
         $member['health'] = $this->getHealth($id);
         
+        // Carica provvedimenti/sanctions
+        $member['sanctions'] = $this->getSanctions($id);
+        
+        // Carica quote associative/fees
+        $member['fees'] = $this->getFees($id);
+        
+        // Carica note
+        $member['notes'] = $this->getNotes($id);
+        
+        // Carica allegati/attachments
+        $member['attachments'] = $this->getAttachments($id);
+        
         return $member;
     }
     
@@ -563,6 +575,50 @@ class JuniorMemberController {
      */
     private function getHealth($juniorMemberId) {
         $sql = "SELECT * FROM junior_member_health WHERE junior_member_id = ?";
+        return $this->db->fetchAll($sql, [$juniorMemberId]);
+    }
+    
+    /**
+     * Ottieni provvedimenti del socio minorenne
+     * 
+     * @param int $juniorMemberId ID socio minorenne
+     * @return array
+     */
+    private function getSanctions($juniorMemberId) {
+        $sql = "SELECT * FROM junior_member_sanctions WHERE junior_member_id = ? ORDER BY sanction_date DESC";
+        return $this->db->fetchAll($sql, [$juniorMemberId]);
+    }
+    
+    /**
+     * Ottieni quote associative del socio minorenne
+     * 
+     * @param int $juniorMemberId ID socio minorenne
+     * @return array
+     */
+    private function getFees($juniorMemberId) {
+        $sql = "SELECT * FROM junior_member_fees WHERE junior_member_id = ? ORDER BY year DESC";
+        return $this->db->fetchAll($sql, [$juniorMemberId]);
+    }
+    
+    /**
+     * Ottieni note del socio minorenne
+     * 
+     * @param int $juniorMemberId ID socio minorenne
+     * @return array
+     */
+    private function getNotes($juniorMemberId) {
+        $sql = "SELECT * FROM junior_member_notes WHERE junior_member_id = ? ORDER BY created_at DESC";
+        return $this->db->fetchAll($sql, [$juniorMemberId]);
+    }
+    
+    /**
+     * Ottieni allegati del socio minorenne
+     * 
+     * @param int $juniorMemberId ID socio minorenne
+     * @return array
+     */
+    private function getAttachments($juniorMemberId) {
+        $sql = "SELECT * FROM junior_member_attachments WHERE junior_member_id = ? ORDER BY uploaded_at DESC";
         return $this->db->fetchAll($sql, [$juniorMemberId]);
     }
     
