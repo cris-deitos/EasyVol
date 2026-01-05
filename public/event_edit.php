@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'location' => trim($_POST['location'] ?? ''),
             'start_date' => $_POST['start_date'] ?? '',
             'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
-            'status' => $_POST['status'] ?? 'aperto',
+            'status' => $_POST['status'] ?? 'in_corso',
             'latitude' => !empty($_POST['latitude']) ? floatval($_POST['latitude']) : null,
             'longitude' => !empty($_POST['longitude']) ? floatval($_POST['longitude']) : null,
             'full_address' => trim($_POST['full_address'] ?? ''),
@@ -231,8 +231,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                 <div class="col-md-6 mb-3">
                                     <label for="status" class="form-label">Stato Evento <span class="text-danger">*</span></label>
                                     <select class="form-select" id="status" name="status" required>
-                                        <option value="aperto" <?php echo ($event['status'] ?? 'aperto') === 'aperto' ? 'selected' : ''; ?>>Aperto</option>
-                                        <option value="in_corso" <?php echo ($event['status'] ?? '') === 'in_corso' ? 'selected' : ''; ?>>In Corso</option>
+                                        <option value="in_corso" <?php echo ($event['status'] ?? 'in_corso') === 'in_corso' ? 'selected' : ''; ?>>In Corso</option>
                                         <option value="concluso" <?php echo ($event['status'] ?? '') === 'concluso' ? 'selected' : ''; ?>>Concluso</option>
                                     </select>
                                 </div>
@@ -284,7 +283,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const eventId = <?php echo json_encode($eventId); ?>;
-        const initialStatus = <?php echo json_encode($event['status'] ?? 'aperto'); ?>;
+        const initialStatus = <?php echo json_encode($event['status'] ?? 'in_corso'); ?>;
         
         // Geocoding functionality
         let geocodingTimeout = null;

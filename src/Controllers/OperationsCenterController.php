@@ -31,7 +31,7 @@ class OperationsCenterController {
                 LEFT JOIN interventions i ON e.id = i.event_id
                 LEFT JOIN intervention_members im ON i.id = im.intervention_id
                 LEFT JOIN intervention_vehicles iv ON i.id = iv.intervention_id
-                WHERE e.status = 'aperto'
+                WHERE e.status = 'in_corso'
                 GROUP BY e.id
                 ORDER BY e.start_date DESC";
         $dashboard['active_events'] = $this->db->fetchAll($sql);
@@ -588,7 +588,7 @@ class OperationsCenterController {
         $counts = [];
         
         // Active events
-        $sql = "SELECT COUNT(*) as count FROM events WHERE status = 'aperto'";
+        $sql = "SELECT COUNT(*) as count FROM events WHERE status = 'in_corso'";
         $result = $this->db->fetchOne($sql);
         $counts['active_events'] = $result['count'];
         

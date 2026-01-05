@@ -47,7 +47,7 @@ try {
                     status,
                     created_at
                 FROM events
-                WHERE status IN ('aperto', 'in_corso')
+                WHERE status = 'in_corso'
                   AND latitude IS NOT NULL 
                   AND longitude IS NOT NULL
                 ORDER BY start_date DESC";

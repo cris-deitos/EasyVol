@@ -93,8 +93,8 @@ $pageTitle = 'Report e Statistiche';
                     <div class="col-md-3">
                         <div class="card bg-success text-white">
                             <div class="card-body">
-                                <h6 class="card-title">Eventi Aperti</h6>
-                                <h2><?php echo number_format($dashboardStats['events']['open'] ?? 0); ?></h2>
+                                <h6 class="card-title">Eventi In Corso</h6>
+                                <h2><?php echo number_format($dashboardStats['events']['in_progress'] ?? 0); ?></h2>
                                 <small>su <?php echo number_format($dashboardStats['events']['total'] ?? 0); ?> totali</small>
                             </div>
                         </div>

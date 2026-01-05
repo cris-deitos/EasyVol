@@ -267,9 +267,9 @@ $pageTitle = $authenticated ? 'Visualizzazione Evento - Provincia' : 'Accesso Ri
                                         <td>
                                             <?php 
                                             $statusClass = [
-                                                'aperto' => 'info',
                                                 'in_corso' => 'warning',
-                                                'concluso' => 'success'
+                                                'concluso' => 'success',
+                                                'annullato' => 'danger'
                                             ];
                                             $class = $statusClass[$event['status']] ?? 'secondary';
                                             ?>
