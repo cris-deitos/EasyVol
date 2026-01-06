@@ -20,10 +20,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token non valido';
     } else {
+        // Handle completion date - either full date or year only
+        $completionDate = null;
+        if (!empty($_POST['completion_type'])) {
+            if ($_POST['completion_type'] === 'year' && !empty($_POST['completion_year'])) {
+                $year = intval($_POST['completion_year']);
+                $completionDate = $year . '-01-01';
+            } elseif ($_POST['completion_type'] === 'date' && !empty($_POST['completion_date'])) {
+                $completionDate = $_POST['completion_date'];
+            }
+        }
+        
         $data = [
             'course_name' => trim($_POST['course_name'] ?? ''),
             'course_type' => trim($_POST['course_type'] ?? ''),
-            'completion_date' => $_POST['completion_date'] ?? null,
+            'completion_date' => $completionDate,
             'expiry_date' => $_POST['expiry_date'] ?? null
         ];
         try {
@@ -73,8 +84,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="completion_date" class="form-label">Data Completamento</label>
+                                    <label class="form-label">Data Completamento</label>
+                                    
+                                    <div class="mb-2">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="completion_type" id="completion_type_date" value="date" checked>
+                                            <label class="form-check-label" for="completion_type_date">Data completa</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="completion_type" id="completion_type_year" value="year">
+                                            <label class="form-check-label" for="completion_type_year">Solo anno</label>
+                                        </div>
+                                    </div>
+                                    
                                     <input type="date" class="form-control" id="completion_date" name="completion_date">
+                                    <input type="number" class="form-control d-none" id="completion_year" name="completion_year" min="1900" max="<?php echo date('Y') + 1; ?>" placeholder="es: 2024">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="expiry_date" class="form-label">Data Scadenza</label>
@@ -108,6 +132,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     });
                 }
             });
+            
+            // Handle completion date/year toggle
+            const completionTypeDate = document.getElementById('completion_type_date');
+            const completionTypeYear = document.getElementById('completion_type_year');
+            const completionDateField = document.getElementById('completion_date');
+            const completionYearField = document.getElementById('completion_year');
+            
+            function toggleCompletionFields() {
+                if (completionTypeYear.checked) {
+                    completionDateField.classList.add('d-none');
+                    completionDateField.value = '';
+                    completionYearField.classList.remove('d-none');
+                } else {
+                    completionYearField.classList.add('d-none');
+                    completionYearField.value = '';
+                    completionDateField.classList.remove('d-none');
+                }
+            }
+            
+            completionTypeDate.addEventListener('change', toggleCompletionFields);
+            completionTypeYear.addEventListener('change', toggleCompletionFields);
         });
     </script>
 </body>
