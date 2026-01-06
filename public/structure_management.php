@@ -539,12 +539,8 @@ $pageTitle = 'Gestione Strutture';
             data.action = structureId ? 'update' : 'create';
             
             // Convert empty coordinate strings to null to avoid database errors
-            if (data.latitude === '' || data.latitude === undefined) {
-                data.latitude = null;
-            }
-            if (data.longitude === '' || data.longitude === undefined) {
-                data.longitude = null;
-            }
+            data.latitude = data.latitude || null;
+            data.longitude = data.longitude || null;
             
             fetch('api/structures.php', {
                 method: 'POST',
