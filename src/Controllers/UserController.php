@@ -77,8 +77,12 @@ public function index($filters = [], $page = 1, $perPage = 20) {
         $sql = "SELECT u.*, r.name as role_name, r.description as role_description
                 FROM users u
                 LEFT JOIN roles r ON u.role_id = r.id
-                WHERE u.id = ?";
-        return $this->db->fetchOne($sql, [$id]);
+                WHERE u.id = :id";
+        // Use named parameters instead of positional ones for clarity
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
     
     /**

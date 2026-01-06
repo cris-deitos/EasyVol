@@ -57,8 +57,11 @@ $allPermissions = $db->fetchAll("SELECT * FROM permissions ORDER BY module, acti
 // Ottieni i permessi specifici dell'utente (se in modifica)
 $userPermissions = [];
 if ($isEdit) {
-    $stmt = $db->query("SELECT permission_id FROM user_permissions WHERE user_id = ?", [$userId]);
-    $userPermissions = array_column($stmt->fetchAll(), 'permission_id');
+    // Use named parameters for clarity and to ensure correct binding
+    $stmt = $db->getConnection()->prepare("SELECT permission_id FROM user_permissions WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $userId, \PDO::PARAM_INT);
+    $stmt->execute();
+    $userPermissions = array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'permission_id');
 }
 
 // Ottieni membri per collegamento
