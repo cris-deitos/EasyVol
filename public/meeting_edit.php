@@ -268,15 +268,23 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="convocator_member" class="form-label">Convocata da - Socio</label>
-                                    <select class="form-select" id="convocator_member" name="convocator_member_id">
-                                        <option value="">Seleziona socio...</option>
-                                        <?php foreach ($activeMembers as $member): ?>
-                                            <option value="<?= $member['id'] ?>" <?= ($convocatorMemberId == $member['id']) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')') ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <label for="convocator_member_search" class="form-label">Convocata da - Socio</label>
+                                    <input type="text" class="form-control" id="convocator_member_search" 
+                                           placeholder="Digita nome, cognome o matricola..." 
+                                           autocomplete="off"
+                                           value="<?php 
+                                               if ($convocatorMemberId) {
+                                                   foreach ($activeMembers as $member) {
+                                                       if ($member['id'] == $convocatorMemberId) {
+                                                           echo htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')');
+                                                           break;
+                                                       }
+                                                   }
+                                               }
+                                           ?>">
+                                    <input type="hidden" id="convocator_member_id" name="convocator_member_id" value="<?= htmlspecialchars($convocatorMemberId ?? '') ?>">
+                                    <div id="convocator_search_results" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
+                                    <small class="form-text text-muted">Inizia a digitare per cercare</small>
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
@@ -306,31 +314,41 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                         <div class="card-body">
                             <div id="participants-container">
                                 <?php if (!empty($participants)): ?>
-                                    <?php foreach ($participants as $index => $participant): ?>
+                                    <?php foreach ($participants as $index => $participant): 
+                                        // Get participant display name
+                                        $participantDisplay = '';
+                                        if (($participant['member_type'] ?? 'adult') === 'adult') {
+                                            foreach ($activeMembers as $member) {
+                                                if ($member['id'] == ($participant['member_id'] ?? 0)) {
+                                                    $participantDisplay = htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')');
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            foreach ($activeJuniorMembers as $member) {
+                                                if ($member['id'] == ($participant['junior_member_id'] ?? 0)) {
+                                                    $participantDisplay = htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')');
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    ?>
                                         <div class="row mb-2 participant-row">
                                             <div class="col-md-4">
-                                                <select class="form-select" name="participants[<?= $index ?>][type]" onchange="updateParticipantOptions(this)">
+                                                <select class="form-select participant-type" name="participants[<?= $index ?>][type]" onchange="updateParticipantType(this)">
                                                     <option value="adult" <?= ($participant['member_type'] ?? 'adult') === 'adult' ? 'selected' : '' ?>>Socio Maggiorenne</option>
                                                     <option value="junior" <?= ($participant['member_type'] ?? '') === 'junior' ? 'selected' : '' ?>>Socio Minorenne (Cadetto)</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-4">
-                                                <select class="form-select participant-select" name="participants[<?= $index ?>][id]">
-                                                    <option value="">Seleziona...</option>
-                                                    <?php if (($participant['member_type'] ?? 'adult') === 'adult'): ?>
-                                                        <?php foreach ($activeMembers as $member): ?>
-                                                            <option value="<?= $member['id'] ?>" <?= ($participant['member_id'] ?? 0) == $member['id'] ? 'selected' : '' ?>>
-                                                                <?= htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')') ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    <?php else: ?>
-                                                        <?php foreach ($activeJuniorMembers as $member): ?>
-                                                            <option value="<?= $member['id'] ?>" <?= ($participant['junior_member_id'] ?? 0) == $member['id'] ? 'selected' : '' ?>>
-                                                                <?= htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')') ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    <?php endif; ?>
-                                                </select>
+                                            <div class="col-md-4 position-relative">
+                                                <input type="text" class="form-control participant-search" 
+                                                       placeholder="Digita nome, cognome o matricola..." 
+                                                       autocomplete="off"
+                                                       value="<?= $participantDisplay ?>"
+                                                       data-index="<?= $index ?>">
+                                                <input type="hidden" class="participant-id" name="participants[<?= $index ?>][id]" 
+                                                       value="<?= ($participant['member_type'] ?? 'adult') === 'adult' ? ($participant['member_id'] ?? '') : ($participant['junior_member_id'] ?? '') ?>">
+                                                <div class="participant-search-results list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
                                             </div>
                                             <div class="col-md-3">
                                                 <select class="form-select" name="participants[<?= $index ?>][role]">
@@ -467,9 +485,126 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
     <script>
     let participantIndex = <?= count($participants) ?>;
     let agendaIndex = <?= count($agendaItems) ?>;
+    let convocatorSearchTimeout = null;
+    let participantSearchTimeouts = {};
     
     const activeMembersData = <?= json_encode($activeMembers) ?>;
     const activeJuniorMembersData = <?= json_encode($activeJuniorMembers) ?>;
+    
+    // Autocomplete for convocator member search
+    document.getElementById('convocator_member_search').addEventListener('input', function() {
+        clearTimeout(convocatorSearchTimeout);
+        const search = this.value.trim();
+        const resultsDiv = document.getElementById('convocator_search_results');
+        
+        if (search.length < 1) {
+            resultsDiv.style.display = 'none';
+            return;
+        }
+        
+        convocatorSearchTimeout = setTimeout(function() {
+            fetch('members_search_ajax.php?q=' + encodeURIComponent(search))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                        resultsDiv.style.display = 'block';
+                        return;
+                    }
+                    
+                    resultsDiv.innerHTML = data.map(function(member) {
+                        return '<button type="button" class="list-group-item list-group-item-action" onclick="selectConvocator(' + member.id + ', \'' + escapeHtml(member.label) + '\')">' +
+                            escapeHtml(member.label) +
+                            '</button>';
+                    }).join('');
+                    resultsDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }, 300);
+    });
+    
+    function selectConvocator(memberId, memberLabel) {
+        document.getElementById('convocator_member_search').value = memberLabel;
+        document.getElementById('convocator_member_id').value = memberId;
+        document.getElementById('convocator_search_results').style.display = 'none';
+    }
+    
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#convocator_member_search') && !e.target.closest('#convocator_search_results')) {
+            document.getElementById('convocator_search_results').style.display = 'none';
+        }
+        
+        // Close all participant search results
+        document.querySelectorAll('.participant-search-results').forEach(function(resultsDiv) {
+            if (!e.target.closest('.participant-search') && !e.target.closest('.participant-search-results')) {
+                resultsDiv.style.display = 'none';
+            }
+        });
+    });
+    
+    // Autocomplete for participant search (for existing participants)
+    document.querySelectorAll('.participant-search').forEach(function(input) {
+        input.addEventListener('input', function() {
+            const index = this.getAttribute('data-index');
+            clearTimeout(participantSearchTimeouts[index]);
+            const search = this.value.trim();
+            const resultsDiv = this.nextElementSibling.nextElementSibling; // Skip hidden input
+            const typeSelect = this.closest('.participant-row').querySelector('.participant-type');
+            const memberType = typeSelect.value;
+            
+            if (search.length < 1) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            participantSearchTimeouts[index] = setTimeout(function() {
+                // Search in appropriate member list based on type
+                const members = memberType === 'adult' ? activeMembersData : activeJuniorMembersData;
+                const filtered = members.filter(function(m) {
+                    const fullName = (m.last_name + ' ' + m.first_name + ' ' + m.registration_number).toLowerCase();
+                    return fullName.includes(search.toLowerCase());
+                });
+                
+                if (filtered.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = filtered.map(function(member) {
+                    const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
+                    return '<button type="button" class="list-group-item list-group-item-action" onclick="selectParticipant(this, ' + member.id + ', \'' + escapeHtml(label) + '\')">' +
+                        escapeHtml(label) +
+                        '</button>';
+                }).join('');
+                resultsDiv.style.display = 'block';
+            }, 300);
+        });
+    });
+    
+    function selectParticipant(button, memberId, memberLabel) {
+        const row = button.closest('.participant-row');
+        const searchInput = row.querySelector('.participant-search');
+        const hiddenInput = row.querySelector('.participant-id');
+        const resultsDiv = row.querySelector('.participant-search-results');
+        
+        searchInput.value = memberLabel;
+        hiddenInput.value = memberId;
+        resultsDiv.style.display = 'none';
+    }
+    
+    function updateParticipantType(select) {
+        const row = select.closest('.participant-row');
+        const searchInput = row.querySelector('.participant-search');
+        const hiddenInput = row.querySelector('.participant-id');
+        
+        // Clear the current selection when type changes
+        searchInput.value = '';
+        hiddenInput.value = '';
+    }
     
     function addParticipant() {
         const container = document.getElementById('participants-container');
@@ -478,16 +613,18 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         const html = `
             <div class="row mb-2 participant-row">
                 <div class="col-md-4">
-                    <select class="form-select" name="participants[${index}][type]" onchange="updateParticipantOptions(this)">
+                    <select class="form-select participant-type" name="participants[${index}][type]" onchange="updateParticipantType(this)">
                         <option value="adult">Socio Maggiorenne</option>
                         <option value="junior">Socio Minorenne (Cadetto)</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <select class="form-select participant-select" name="participants[${index}][id]">
-                        <option value="">Seleziona...</option>
-                        ${activeMembersData.map(m => `<option value="${m.id}">${m.last_name} ${m.first_name} (${m.registration_number})</option>`).join('')}
-                    </select>
+                <div class="col-md-4 position-relative">
+                    <input type="text" class="form-control participant-search-new" 
+                           placeholder="Digita nome, cognome o matricola..." 
+                           autocomplete="off"
+                           data-index="${index}">
+                    <input type="hidden" class="participant-id" name="participants[${index}][id]">
+                    <div class="participant-search-results list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
                 </div>
                 <div class="col-md-3">
                     <select class="form-select" name="participants[${index}][role]">
@@ -508,26 +645,56 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         `;
         
         container.insertAdjacentHTML('beforeend', html);
+        
+        // Attach event listener to the new search input
+        const newRow = container.lastElementChild;
+        const newSearchInput = newRow.querySelector('.participant-search-new');
+        newSearchInput.addEventListener('input', function() {
+            const idx = this.getAttribute('data-index');
+            clearTimeout(participantSearchTimeouts[idx]);
+            const search = this.value.trim();
+            const resultsDiv = this.nextElementSibling.nextElementSibling; // Skip hidden input
+            const typeSelect = this.closest('.participant-row').querySelector('.participant-type');
+            const memberType = typeSelect.value;
+            
+            if (search.length < 1) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            participantSearchTimeouts[idx] = setTimeout(function() {
+                // Search in appropriate member list based on type
+                const members = memberType === 'adult' ? activeMembersData : activeJuniorMembersData;
+                const filtered = members.filter(function(m) {
+                    const fullName = (m.last_name + ' ' + m.first_name + ' ' + m.registration_number).toLowerCase();
+                    return fullName.includes(search.toLowerCase());
+                });
+                
+                if (filtered.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = filtered.map(function(member) {
+                    const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
+                    return '<button type="button" class="list-group-item list-group-item-action" onclick="selectParticipant(this, ' + member.id + ', \'' + escapeHtml(label) + '\')">' +
+                        escapeHtml(label) +
+                        '</button>';
+                }).join('');
+                resultsDiv.style.display = 'block';
+            }, 300);
+        });
     }
     
     function removeParticipant(button) {
         button.closest('.participant-row').remove();
     }
     
-    function updateParticipantOptions(select) {
-        const row = select.closest('.participant-row');
-        const memberSelect = row.querySelector('.participant-select');
-        const type = select.value;
-        
-        memberSelect.innerHTML = '<option value="">Seleziona...</option>';
-        
-        const members = type === 'adult' ? activeMembersData : activeJuniorMembersData;
-        members.forEach(m => {
-            const option = document.createElement('option');
-            option.value = m.id;
-            option.textContent = `${m.last_name} ${m.first_name} (${m.registration_number})`;
-            memberSelect.appendChild(option);
-        });
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     function addAgendaItem() {

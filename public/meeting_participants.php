@@ -233,28 +233,14 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                                         </select>
                                     </div>
                                     
-                                    <div class="mb-3" id="adult_select">
-                                        <label class="form-label">Socio Maggiorenne</label>
-                                        <select class="form-select" name="member_id" id="adult_member_id">
-                                            <option value="">Seleziona...</option>
-                                            <?php foreach ($activeMembers as $member): ?>
-                                                <option value="<?php echo $member['id']; ?>">
-                                                    <?php echo htmlspecialchars($member['last_name'] . ' ' . $member['first_name'] . ' (' . $member['registration_number'] . ')'); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3" id="junior_select" style="display: none;">
-                                        <label class="form-label">Socio Minorenne</label>
-                                        <select class="form-select" name="member_id" id="junior_member_id" disabled>
-                                            <option value="">Seleziona...</option>
-                                            <?php foreach ($activeJuniors as $junior): ?>
-                                                <option value="<?php echo $junior['id']; ?>">
-                                                    <?php echo htmlspecialchars($junior['last_name'] . ' ' . $junior['first_name'] . ' (' . $junior['registration_number'] . ')'); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                    <div class="mb-3 position-relative">
+                                        <label class="form-label">Cerca Socio</label>
+                                        <input type="text" class="form-control" id="member_search" 
+                                               placeholder="Digita nome, cognome o matricola..." 
+                                               autocomplete="off" required>
+                                        <input type="hidden" name="member_id" id="selected_member_id">
+                                        <div id="member_search_results" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none; width: calc(100% - 30px);"></div>
+                                        <small class="form-text text-muted">Inizia a digitare per cercare</small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -482,24 +468,73 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle member type select
-        document.getElementById('member_type_select').addEventListener('change', function() {
-            const adultSelect = document.getElementById('adult_select');
-            const juniorSelect = document.getElementById('junior_select');
-            const adultInput = document.getElementById('adult_member_id');
-            const juniorInput = document.getElementById('junior_member_id');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const activeMembersData = <?= json_encode($activeMembers) ?>;
+        const activeJuniorsData = <?= json_encode($activeJuniors) ?>;
+        let memberSearchTimeout = null;
+        
+        // Member search autocomplete
+        document.getElementById('member_search').addEventListener('input', function() {
+            clearTimeout(memberSearchTimeout);
+            const search = this.value.trim();
+            const resultsDiv = document.getElementById('member_search_results');
+            const memberType = document.getElementById('member_type_select').value;
             
-            if (this.value === 'adult') {
-                adultSelect.style.display = 'block';
-                juniorSelect.style.display = 'none';
-                adultInput.disabled = false;
-                juniorInput.disabled = true;
-            } else {
-                adultSelect.style.display = 'none';
-                juniorSelect.style.display = 'block';
-                adultInput.disabled = true;
-                juniorInput.disabled = false;
+            if (search.length < 1) {
+                resultsDiv.style.display = 'none';
+                document.getElementById('selected_member_id').value = '';
+                return;
             }
+            
+            memberSearchTimeout = setTimeout(function() {
+                // Search in appropriate member list based on type
+                const members = memberType === 'adult' ? activeMembersData : activeJuniorsData;
+                const filtered = members.filter(function(m) {
+                    const fullName = (m.last_name + ' ' + m.first_name + ' ' + m.registration_number).toLowerCase();
+                    return fullName.includes(search.toLowerCase());
+                });
+                
+                if (filtered.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = filtered.map(function(member) {
+                    const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
+                    return '<button type="button" class="list-group-item list-group-item-action" onclick="selectMember(' + member.id + ', \'' + escapeHtml(label) + '\')">' +
+                        escapeHtml(label) +
+                        '</button>';
+                }).join('');
+                resultsDiv.style.display = 'block';
+            }, 300);
+        });
+        
+        function selectMember(memberId, memberLabel) {
+            document.getElementById('member_search').value = memberLabel;
+            document.getElementById('selected_member_id').value = memberId;
+            document.getElementById('member_search_results').style.display = 'none';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Close search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#member_search') && !e.target.closest('#member_search_results')) {
+                document.getElementById('member_search_results').style.display = 'none';
+            }
+        });
+        
+        // Toggle member type - clear search when type changes
+        document.getElementById('member_type_select').addEventListener('change', function() {
+            document.getElementById('member_search').value = '';
+            document.getElementById('selected_member_id').value = '';
+            document.getElementById('member_search_results').style.display = 'none';
         });
         
         // Modal for updating attendance
