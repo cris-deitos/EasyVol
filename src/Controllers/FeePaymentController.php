@@ -60,6 +60,7 @@ class FeePaymentController {
                     AND mc.contact_type = 'email'
                 WHERE m.registration_number = ? 
                 AND LOWER(m.last_name) = LOWER(?)
+                AND m.member_status = 'attivo'
                 LIMIT 1";
         
         $stmt = $this->db->query($sql, [$registrationNumber, $lastName]);
@@ -81,6 +82,7 @@ class FeePaymentController {
                     AND jmc.contact_type = 'email'
                 WHERE jm.registration_number = ? 
                 AND LOWER(jm.last_name) = LOWER(?)
+                AND jm.member_status = 'attivo'
                 LIMIT 1";
         
         $stmt = $this->db->query($sql, [$registrationNumber, $lastName]);
