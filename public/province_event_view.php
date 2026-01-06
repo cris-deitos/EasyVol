@@ -225,7 +225,8 @@ $pageTitle = $authenticated ? 'Visualizzazione Evento - Provincia' : 'Accesso Ri
                                             $eventTypes = [
                                                 'emergenza' => ['label' => 'Emergenza', 'class' => 'danger'],
                                                 'esercitazione' => ['label' => 'Esercitazione', 'class' => 'warning'],
-                                                'attivita' => ['label' => 'Attività', 'class' => 'info']
+                                                'attivita' => ['label' => 'Attività', 'class' => 'info'],
+                                                'servizio' => ['label' => 'Servizio', 'class' => 'primary']
                                             ];
                                             $typeInfo = $eventTypes[$event['event_type']] ?? ['label' => $event['event_type'], 'class' => 'secondary'];
                                             ?>

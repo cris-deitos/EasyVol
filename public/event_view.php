@@ -173,6 +173,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         'emergenza' => 'Emergenza',
                                                         'esercitazione' => 'Esercitazione',
                                                         'attivita' => 'Attività',
+                                                        'servizio' => 'Servizio',
                                                         'altro' => 'Altro'
                                                     ];
                                                     $type = $types[$event['event_type']] ?? $event['event_type'];
@@ -180,6 +181,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         'emergenza' => 'danger',
                                                         'esercitazione' => 'warning',
                                                         'attivita' => 'info',
+                                                        'servizio' => 'primary',
                                                         'altro' => 'secondary'
                                                     ];
                                                     $class = $typeClass[$event['event_type']] ?? 'secondary';
@@ -1919,32 +1921,58 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                 return;
             }
             
-            fetch('event_ajax.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'quick_close_event',
-                    event_id: eventId,
-                    description: description,
-                    end_date: endDate,
-                    csrf_token: csrfToken
+            // First check for active interventions
+            fetch(`event_ajax.php?action=check_active_interventions&event_id=${eventId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.has_active) {
+                        // Build red alert message with active interventions
+                        let message = 'ATTENZIONE: NON è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi:\n\n';
+                        
+                        data.interventions.forEach(intervention => {
+                            const statusLabel = intervention.status === 'in_corso' ? 'In Corso' : 'Sospeso';
+                            message += `• ${intervention.title} (${statusLabel})\n`;
+                        });
+                        
+                        message += '\nChiudere prima tutti gli interventi per poter chiudere l\'evento.';
+                        
+                        // Show red alert (using custom styling if available)
+                        alert(message);
+                        return;
+                    }
+                    
+                    // No active interventions, proceed with closing
+                    fetch('event_ajax.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'quick_close_event',
+                            event_id: eventId,
+                            description: description,
+                            end_date: endDate,
+                            csrf_token: csrfToken
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message || 'Evento chiuso con successo');
+                            window.location.reload();
+                        } else {
+                            alert('Errore: ' + (data.error || 'Errore durante la chiusura dell\'evento'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Errore durante la chiusura dell\'evento');
+                    });
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message || 'Evento chiuso con successo');
-                    window.location.reload();
-                } else {
-                    alert('Errore: ' + (data.error || 'Errore durante la chiusura dell\'evento'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Errore durante la chiusura dell\'evento');
-            });
+                .catch(error => {
+                    console.error('Error checking active interventions:', error);
+                    alert('Errore durante la verifica degli interventi attivi');
+                });
         }
     </script>
     

@@ -156,6 +156,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                         <option value="emergenza" <?php echo ($event['event_type'] ?? '') === 'emergenza' ? 'selected' : ''; ?>>Emergenza</option>
                                         <option value="esercitazione" <?php echo ($event['event_type'] ?? '') === 'esercitazione' ? 'selected' : ''; ?>>Esercitazione</option>
                                         <option value="attivita" <?php echo ($event['event_type'] ?? 'attivita') === 'attivita' ? 'selected' : ''; ?>>Attività</option>
+                                        <option value="servizio" <?php echo ($event['event_type'] ?? '') === 'servizio' ? 'selected' : ''; ?>>Servizio</option>
                                     </select>
                                 </div>
                             </div>
@@ -309,6 +310,35 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                     });
                 }
             });
+        }
+        
+        // Listen to event type changes to show/hide province email section
+        const eventTypeSelect = document.getElementById('event_type');
+        const provinceEmailCard = document.querySelector('.card.mb-3 .card-header.bg-info');
+        
+        if (eventTypeSelect && provinceEmailCard) {
+            const provinceCard = provinceEmailCard.closest('.card');
+            
+            function updateProvinceEmailVisibility() {
+                const eventType = eventTypeSelect.value;
+                const sendProvinceCheckbox = document.getElementById('send_province_email');
+                
+                // Hide for Attività and Servizio, show for Emergenza and Esercitazione
+                if (eventType === 'attivita' || eventType === 'servizio') {
+                    provinceCard.style.display = 'none';
+                    if (sendProvinceCheckbox) {
+                        sendProvinceCheckbox.checked = false;
+                    }
+                } else {
+                    provinceCard.style.display = 'block';
+                }
+            }
+            
+            // Initial check
+            updateProvinceEmailVisibility();
+            
+            // Listen to changes
+            eventTypeSelect.addEventListener('change', updateProvinceEmailVisibility);
         }
         
         // Helper function to build warning message

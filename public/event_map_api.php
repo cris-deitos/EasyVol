@@ -102,7 +102,8 @@ try {
                 'created_at' => $event['created_at'],
                 'marker_color' => 'red',
                 'icon' => $event['event_type'] === 'emergenza' ? 'exclamation-triangle' : 
-                          ($event['event_type'] === 'esercitazione' ? 'bullseye' : 'calendar-event')
+                          ($event['event_type'] === 'esercitazione' ? 'bullseye' : 
+                          ($event['event_type'] === 'servizio' ? 'briefcase' : 'calendar-event'))
             ];
         }, $events),
         'interventions' => array_map(function($intervention) {

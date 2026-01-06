@@ -124,7 +124,8 @@ class EventController {
                     $eventTypes = [
                         'emergenza' => '🚨 Emergenza',
                         'esercitazione' => '🎯 Esercitazione',
-                        'attivita' => '📅 Attività'
+                        'attivita' => '📅 Attività',
+                        'servizio' => '🛠️ Servizio'
                     ];
                     
                     $message = "📢 <b>NUOVO EVENTO CREATO</b>\n\n";
@@ -714,35 +715,26 @@ class EventController {
      * Chiusura rapida evento - aggiorna solo descrizione, data fine e stato
      */
     public function quickClose($id, $description, $endDate, $userId) {
-        try {
-            // Verifica se ci sono interventi ancora in corso o sospesi
-            if ($this->hasActiveInterventions($id)) {
-                throw new \Exception('Non è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi.');
-            }
-            
-            $sql = "UPDATE events SET
-                description = ?, end_date = ?, status = 'concluso', updated_at = NOW()
-                WHERE id = ?";
-            
-            $params = [
-                $description,
-                $endDate,
-                $id
-            ];
-            
-            $this->db->execute($sql, $params);
-            
-            $this->logActivity($userId, 'event', 'quick_close', $id, 'Chiuso rapidamente evento ID: ' . $id);
-            
-            $this->db->commit();
-            return true;
-            
-        } catch (\Exception $e) {
-            if ($this->db->getConnection()->inTransaction()) {
-                $this->db->rollBack();
-            }
-            throw $e;
+        // Verifica se ci sono interventi ancora in corso o sospesi
+        if ($this->hasActiveInterventions($id)) {
+            throw new \Exception('Non è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi.');
         }
+        
+        $sql = "UPDATE events SET
+            description = ?, end_date = ?, status = 'concluso', updated_at = NOW()
+            WHERE id = ?";
+        
+        $params = [
+            $description,
+            $endDate,
+            $id
+        ];
+        
+        $this->db->execute($sql, $params);
+        
+        $this->logActivity($userId, 'event', 'quick_close', $id, 'Chiuso rapidamente evento ID: ' . $id);
+        
+        return true;
     }
     
     /**
@@ -754,6 +746,13 @@ class EventController {
             $event = $this->get($eventId);
             if (!$event) {
                 throw new \Exception('Evento non trovato');
+            }
+            
+            // Check if email should be sent for this event type
+            // Do NOT send email for Attività and Servizio
+            if (in_array($event['event_type'], ['attivita', 'servizio'])) {
+                error_log("Email non inviata alla Provincia: evento di tipo " . $event['event_type']);
+                return false;
             }
             
             // Get association data including province email
@@ -775,8 +774,17 @@ class EventController {
                     WHERE id = ?";
             $this->db->execute($sql, [$accessToken, $accessCode, $eventId]);
             
-            // Prepare email content
-            $emailSubject = "Notifica Nuovo Evento - " . $event['title'];
+            // Prepare email subject with proper prefix
+            $eventTypeLabels = [
+                'emergenza' => 'Emergenza',
+                'esercitazione' => 'Esercitazione (Prova di Soccorso)',
+                'attivita' => 'Attività',
+                'servizio' => 'Servizio'
+            ];
+            $eventTypeLabel = $eventTypeLabels[$event['event_type']] ?? $event['event_type'];
+            
+            // Add event type prefix to subject for Emergenza and Esercitazione
+            $emailSubject = $eventTypeLabel . " - " . $event['title'];
             
             // Get base URL from config
             $baseUrl = $this->config['email']['base_url'] ?? '';
@@ -788,13 +796,6 @@ class EventController {
                 error_log('Warning: Using HTTP instead of HTTPS for province access URL');
             }
             $accessUrl = rtrim($baseUrl, '/') . '/public/province_event_view.php?token=' . $accessToken;
-            
-            $eventTypeLabels = [
-                'emergenza' => 'Emergenza',
-                'esercitazione' => 'Esercitazione',
-                'attivita' => 'Attività'
-            ];
-            $eventTypeLabel = $eventTypeLabels[$event['event_type']] ?? $event['event_type'];
             
             // Build email body
             $emailBody = $this->buildProvinceEmailTemplate(
