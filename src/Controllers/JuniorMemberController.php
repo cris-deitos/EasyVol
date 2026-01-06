@@ -36,13 +36,18 @@ class JuniorMemberController {
      * @return array
      */
     public function index($filters = [], $page = 1, $perPage = 20) {
-        $where = ["jm.member_status != 'decaduto'"];
+        $where = [];
         $params = [];
         
         // Filtro status
         if (!empty($filters['status'])) {
             $where[] = "jm.member_status = ?";
             $params[] = $filters['status'];
+        }
+        
+        // Hide dismissed/lapsed filter
+        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
+            $where[] = "jm.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
         }
         
         // Filtro ricerca
@@ -54,12 +59,23 @@ class JuniorMemberController {
             $params[] = $searchTerm;
         }
         
-        $whereClause = implode(' AND ', $where);
+        // Build WHERE clause
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
         
         // Ensure pagination parameters are safe integers
         $page = max(1, (int)$page);
         $perPage = max(1, (int)$perPage);
         $offset = ($page - 1) * $perPage;
+        
+        // Determine sort order
+        $sortBy = $filters['sort_by'] ?? 'alphabetical';
+        if ($sortBy === 'registration_number') {
+            // Junior members have registration numbers prefixed with "C-" (e.g., C-1, C-23)
+            // SUBSTRING(jm.registration_number, 3) removes the "C-" prefix for numeric sorting
+            $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) ASC";
+        } else {
+            $orderBy = "ORDER BY jm.last_name, jm.first_name";
+        }
         
         // Note: $whereClause is built from parameterized conditions above, safe from SQL injection
         // Get first guardian by priority: padre > madre > tutore
@@ -74,8 +90,8 @@ class JuniorMemberController {
                  ORDER BY FIELD(jmg.guardian_type, 'padre', 'madre', 'tutore'), jmg.id 
                  LIMIT 1) as guardian_last_name
                 FROM junior_members jm
-                WHERE $whereClause
-                ORDER BY jm.last_name, jm.first_name
+                $whereClause
+                $orderBy
                 LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
@@ -92,7 +108,7 @@ class JuniorMemberController {
                 CONCAT(jm.first_name, ' ', jm.last_name) as full_name,
                 TIMESTAMPDIFF(YEAR, jm.birth_date, CURDATE()) as age
                 FROM junior_members jm
-                WHERE jm.id = ? AND jm.member_status != 'decaduto'";
+                WHERE jm.id = ?";
         
         $member = $this->db->fetchOne($sql, [$id]);
         

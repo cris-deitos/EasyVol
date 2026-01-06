@@ -210,7 +210,7 @@ $pageTitle = 'Gestione Soci';
                                            <?php echo $filters['hide_dismissed'] === '1' ? 'checked' : ''; ?> 
                                            onchange="toggleDismissed()">
                                     <label class="form-check-label" for="hide_dismissed">
-                                        Nascondi dimessi/decaduti
+                                        Nascondi dimessi/decaduti/esclusi
                                     </label>
                                 </div>
                             </div>
@@ -346,6 +346,9 @@ $pageTitle = 'Gestione Soci';
                 urlParams.set('hide_dismissed', '0');
             }
             
+            // Reset pagination when filter changes
+            urlParams.set('page', '1');
+            
             window.location.search = urlParams.toString();
         }
         
@@ -383,6 +386,10 @@ $pageTitle = 'Gestione Soci';
             if (urlParams.has('status')) filters.member_status = urlParams.get('status');
             if (urlParams.has('type')) filters.member_type = urlParams.get('type');
             if (urlParams.has('search')) filters.search = urlParams.get('search');
+            if (urlParams.has('hide_dismissed')) filters.hide_dismissed = urlParams.get('hide_dismissed');
+            if (urlParams.has('sort_by')) filters.sort_by = urlParams.get('sort_by');
+            if (urlParams.has('volunteer_status')) filters.volunteer_status = urlParams.get('volunteer_status');
+            if (urlParams.has('role')) filters.role = urlParams.get('role');
             
             return filters;
         }
