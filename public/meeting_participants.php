@@ -468,8 +468,6 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
         const activeMembersData = <?= json_encode($activeMembers) ?>;
         const activeJuniorsData = <?= json_encode($activeJuniors) ?>;
         let memberSearchTimeout = null;
@@ -503,12 +501,21 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                 
                 resultsDiv.innerHTML = filtered.map(function(member) {
                     const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
-                    return '<button type="button" class="list-group-item list-group-item-action" onclick="selectMember(' + member.id + ', \'' + escapeHtml(label) + '\')">' +
+                    return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(label) + '">' +
                         escapeHtml(label) +
                         '</button>';
                 }).join('');
                 resultsDiv.style.display = 'block';
             }, 300);
+        });
+        
+        // Event delegation for selecting members
+        document.getElementById('member_search_results').addEventListener('click', function(e) {
+            if (e.target.classList.contains('list-group-item-action')) {
+                const memberId = e.target.getAttribute('data-member-id');
+                const memberLabel = e.target.getAttribute('data-member-label');
+                selectMember(memberId, memberLabel);
+            }
         });
         
         function selectMember(memberId, memberLabel) {

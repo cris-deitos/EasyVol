@@ -513,7 +513,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                     }
                     
                     resultsDiv.innerHTML = data.map(function(member) {
-                        return '<button type="button" class="list-group-item list-group-item-action" onclick="selectConvocator(' + member.id + ', \'' + escapeHtml(member.label) + '\')">' +
+                        return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(member.label) + '">' +
                             escapeHtml(member.label) +
                             '</button>';
                     }).join('');
@@ -523,6 +523,15 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                     console.error('Error:', error);
                 });
         }, 300);
+    });
+    
+    // Event delegation for convocator selection
+    document.getElementById('convocator_search_results').addEventListener('click', function(e) {
+        if (e.target.classList.contains('list-group-item-action')) {
+            const memberId = e.target.getAttribute('data-member-id');
+            const memberLabel = e.target.getAttribute('data-member-label');
+            selectConvocator(memberId, memberLabel);
+        }
     });
     
     function selectConvocator(memberId, memberLabel) {
@@ -576,7 +585,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                 
                 resultsDiv.innerHTML = filtered.map(function(member) {
                     const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
-                    return '<button type="button" class="list-group-item list-group-item-action" onclick="selectParticipant(this, ' + member.id + ', \'' + escapeHtml(label) + '\')">' +
+                    return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(label) + '">' +
                         escapeHtml(label) +
                         '</button>';
                 }).join('');
@@ -585,16 +594,22 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         });
     });
     
-    function selectParticipant(button, memberId, memberLabel) {
-        const row = button.closest('.participant-row');
-        const searchInput = row.querySelector('.participant-search');
-        const hiddenInput = row.querySelector('.participant-id');
-        const resultsDiv = row.querySelector('.participant-search-results');
-        
-        searchInput.value = memberLabel;
-        hiddenInput.value = memberId;
-        resultsDiv.style.display = 'none';
-    }
+    // Event delegation for participant selection (existing participants)
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('list-group-item-action') && 
+            e.target.closest('.participant-search-results')) {
+            const memberId = e.target.getAttribute('data-member-id');
+            const memberLabel = e.target.getAttribute('data-member-label');
+            const resultsDiv = e.target.closest('.participant-search-results');
+            const row = resultsDiv.closest('.participant-row');
+            const searchInput = row.querySelector('.participant-search');
+            const hiddenInput = row.querySelector('.participant-id');
+            
+            searchInput.value = memberLabel;
+            hiddenInput.value = memberId;
+            resultsDiv.style.display = 'none';
+        }
+    });
     
     function updateParticipantType(select) {
         const row = select.closest('.participant-row');
@@ -678,7 +693,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                 
                 resultsDiv.innerHTML = filtered.map(function(member) {
                     const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
-                    return '<button type="button" class="list-group-item list-group-item-action" onclick="selectParticipant(this, ' + member.id + ', \'' + escapeHtml(label) + '\')">' +
+                    return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(label) + '">' +
                         escapeHtml(label) +
                         '</button>';
                 }).join('');
