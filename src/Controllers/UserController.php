@@ -74,13 +74,18 @@ public function index($filters = [], $page = 1, $perPage = 20) {
      * Ottieni singolo utente
      */
     public function get($id) {
+        $id = (int)$id;
+        if ($id <= 0) {
+            return false;
+        }
+        
         $sql = "SELECT u.*, r.name as role_name, r.description as role_description
                 FROM users u
                 LEFT JOIN roles r ON u.role_id = r.id
                 WHERE u.id = :id";
         // Pass parameter directly to execute() to ensure proper binding
         $stmt = $this->db->getConnection()->prepare($sql);
-        $stmt->execute([':id' => (int)$id]);
+        $stmt->execute([':id' => $id]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
     
