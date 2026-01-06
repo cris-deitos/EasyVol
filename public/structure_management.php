@@ -197,11 +197,11 @@ $pageTitle = 'Gestione Strutture';
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="structure-latitude" class="form-label">Latitudine GPS</label>
-                                <input type="number" step="0.00000001" class="form-control" id="structure-latitude" name="latitude" readonly>
+                                <input type="number" step="0.00000001" class="form-control" id="structure-latitude" name="latitude">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="structure-longitude" class="form-label">Longitudine GPS</label>
-                                <input type="number" step="0.00000001" class="form-control" id="structure-longitude" name="longitude" readonly>
+                                <input type="number" step="0.00000001" class="form-control" id="structure-longitude" name="longitude">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -537,6 +537,14 @@ $pageTitle = 'Gestione Strutture';
             const structureId = data.id;
             
             data.action = structureId ? 'update' : 'create';
+            
+            // Convert empty coordinate strings to null to avoid database errors
+            if (data.latitude === '' || data.latitude === undefined) {
+                data.latitude = null;
+            }
+            if (data.longitude === '' || data.longitude === undefined) {
+                data.longitude = null;
+            }
             
             fetch('api/structures.php', {
                 method: 'POST',

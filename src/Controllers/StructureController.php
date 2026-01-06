@@ -51,12 +51,16 @@ class StructureController
             throw new \InvalidArgumentException('Il campo Nome è obbligatorio');
         }
 
+        // Convert empty strings to null for coordinate fields
+        $latitude = isset($data['latitude']) && $data['latitude'] !== '' ? $data['latitude'] : null;
+        $longitude = isset($data['longitude']) && $data['longitude'] !== '' ? $data['longitude'] : null;
+
         // Validate data types for numeric fields
-        if (isset($data['latitude']) && $data['latitude'] !== '' && !is_numeric($data['latitude'])) {
+        if ($latitude !== null && !is_numeric($latitude)) {
             throw new \InvalidArgumentException('Latitudine deve essere un numero valido');
         }
 
-        if (isset($data['longitude']) && $data['longitude'] !== '' && !is_numeric($data['longitude'])) {
+        if ($longitude !== null && !is_numeric($longitude)) {
             throw new \InvalidArgumentException('Longitudine deve essere un numero valido');
         }
 
@@ -72,8 +76,8 @@ class StructureController
             $data['name'],
             $data['type'] ?? null,
             $data['full_address'] ?? null,
-            $data['latitude'] ?? null,
-            $data['longitude'] ?? null,
+            $latitude,
+            $longitude,
             $data['owner'] ?? null,
             $data['owner_contacts'] ?? null,
             $data['contracts_deadlines'] ?? null,
@@ -106,12 +110,16 @@ class StructureController
             throw new \InvalidArgumentException('Il campo Nome è obbligatorio');
         }
 
+        // Convert empty strings to null for coordinate fields
+        $latitude = isset($data['latitude']) && $data['latitude'] !== '' ? $data['latitude'] : null;
+        $longitude = isset($data['longitude']) && $data['longitude'] !== '' ? $data['longitude'] : null;
+
         // Validate data types for numeric fields
-        if (isset($data['latitude']) && $data['latitude'] !== '' && !is_numeric($data['latitude'])) {
+        if ($latitude !== null && !is_numeric($latitude)) {
             throw new \InvalidArgumentException('Latitudine deve essere un numero valido');
         }
 
-        if (isset($data['longitude']) && $data['longitude'] !== '' && !is_numeric($data['longitude'])) {
+        if ($longitude !== null && !is_numeric($longitude)) {
             throw new \InvalidArgumentException('Longitudine deve essere un numero valido');
         }
 
@@ -127,8 +135,8 @@ class StructureController
             $data['name'],
             $data['type'] ?? null,
             $data['full_address'] ?? null,
-            $data['latitude'] ?? null,
-            $data['longitude'] ?? null,
+            $latitude,
+            $longitude,
             $data['owner'] ?? null,
             $data['owner_contacts'] ?? null,
             $data['contracts_deadlines'] ?? null,
