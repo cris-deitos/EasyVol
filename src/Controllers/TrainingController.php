@@ -18,6 +18,22 @@ class TrainingController {
     }
     
     /**
+     * Check if an exception is due to a missing database table
+     * Helper method to reduce code duplication
+     * 
+     * @param \Exception $e The exception to check
+     * @return bool True if the exception is due to a missing table
+     */
+    private function isMissingTableException(\Exception $e) {
+        $message = $e->getMessage();
+        // Check for SQLSTATE 42S02 (Base table or view not found) or text patterns
+        return strpos($message, "42S02") !== false ||
+               strpos($message, "Base table or view not found") !== false || 
+               strpos($message, "doesn't exist") !== false ||
+               strpos($message, "Table") !== false && strpos($message, "doesn't exist") !== false;
+    }
+    
+    /**
      * Lista corsi con filtri
      */
     public function index($filters = [], $page = 1, $perPage = 20) {
@@ -816,6 +832,11 @@ class TrainingController {
             return true;
             
         } catch (\Exception $e) {
+            // Handle missing table gracefully
+            if ($this->isMissingTableException($e)) {
+                error_log("Tabella member_courses non esiste - impossibile aggiornare il registro corsi del socio");
+                return false;
+            }
             error_log("Errore aggiunta corso a registro socio: " . $e->getMessage());
             return false;
         }

@@ -25,6 +25,22 @@ class Member {
     }
     
     /**
+     * Check if an exception is due to a missing database table
+     * Helper method to reduce code duplication
+     * 
+     * @param \Exception $e The exception to check
+     * @return bool True if the exception is due to a missing table
+     */
+    private function isMissingTableException(\Exception $e) {
+        $message = $e->getMessage();
+        // Check for SQLSTATE 42S02 (Base table or view not found) or text patterns
+        return strpos($message, "42S02") !== false ||
+               strpos($message, "Base table or view not found") !== false || 
+               strpos($message, "doesn't exist") !== false ||
+               strpos($message, "Table") !== false && strpos($message, "doesn't exist") !== false;
+    }
+    
+    /**
      * Get all members with optional filters
      */
     public function getAll($filters = [], $page = 1, $perPage = 20) {
@@ -323,62 +339,98 @@ class Member {
     
     // Courses
     public function getCourses($memberId) {
-        return $this->db->fetchAll("SELECT * FROM member_courses WHERE member_id = ?", [$memberId]);
+        try {
+            return $this->db->fetchAll("SELECT * FROM member_courses WHERE member_id = ?", [$memberId]);
+        } catch (\Exception $e) {
+            // Handle missing table gracefully - return empty array if table doesn't exist
+            if ($this->isMissingTableException($e)) {
+                return [];
+            }
+            // Re-throw other exceptions
+            throw $e;
+        }
     }
     
     public function addCourse($memberId, $data) {
-        $data = $this->uppercaseFields($data, 'course');
-        $data['member_id'] = $memberId;
-        $courseId = $this->db->insert('member_courses', $data);
-        
-        // Sincronizza con lo scadenziario se c'è una data di scadenza
-        if ($courseId && !empty($data['expiry_date'])) {
-            $syncController = $this->getSyncController();
-            $syncController->syncQualificationExpiry($courseId, $memberId);
+        try {
+            $data = $this->uppercaseFields($data, 'course');
+            $data['member_id'] = $memberId;
+            $courseId = $this->db->insert('member_courses', $data);
+            
+            // Sincronizza con lo scadenziario se c'è una data di scadenza
+            if ($courseId && !empty($data['expiry_date'])) {
+                $syncController = $this->getSyncController();
+                $syncController->syncQualificationExpiry($courseId, $memberId);
+            }
+            
+            return $courseId;
+        } catch (\Exception $e) {
+            // Handle missing table gracefully
+            if ($this->isMissingTableException($e)) {
+                throw new \Exception("La tabella member_courses non esiste. Contattare l'amministratore per applicare le migrazioni del database.");
+            }
+            // Re-throw other exceptions
+            throw $e;
         }
-        
-        return $courseId;
     }
     
     public function updateCourse($id, $data) {
-        $data = $this->uppercaseFields($data, 'course');
-        // Get member_id before update for sync
-        $course = $this->db->fetchOne("SELECT member_id FROM member_courses WHERE id = ?", [$id]);
-        if (!$course) {
-            return false;
-        }
-        
-        $result = $this->db->update('member_courses', $data, 'id = ?', [$id]);
-        
-        // Sincronizza con lo scadenziario
-        if ($result) {
-            $syncController = $this->getSyncController();
-            
-            if (!empty($data['expiry_date'])) {
-                $syncController->syncQualificationExpiry($id, $course['member_id']);
-            } else {
-                // Se la scadenza è stata rimossa, rimuovi l'item dallo scadenziario
-                $syncController->removeSchedulerItem('qualification', $id);
+        try {
+            $data = $this->uppercaseFields($data, 'course');
+            // Get member_id before update for sync
+            $course = $this->db->fetchOne("SELECT member_id FROM member_courses WHERE id = ?", [$id]);
+            if (!$course) {
+                return false;
             }
+            
+            $result = $this->db->update('member_courses', $data, 'id = ?', [$id]);
+            
+            // Sincronizza con lo scadenziario
+            if ($result) {
+                $syncController = $this->getSyncController();
+                
+                if (!empty($data['expiry_date'])) {
+                    $syncController->syncQualificationExpiry($id, $course['member_id']);
+                } else {
+                    // Se la scadenza è stata rimossa, rimuovi l'item dallo scadenziario
+                    $syncController->removeSchedulerItem('qualification', $id);
+                }
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            // Handle missing table gracefully
+            if ($this->isMissingTableException($e)) {
+                throw new \Exception("La tabella member_courses non esiste. Contattare l'amministratore per applicare le migrazioni del database.");
+            }
+            // Re-throw other exceptions
+            throw $e;
         }
-        
-        return $result;
     }
     
     public function deleteCourse($id) {
-        // Check if course is linked to training module
-        $course = $this->db->fetchOne("SELECT training_course_id FROM member_courses WHERE id = ?", [$id]);
-        
-        if ($course && !empty($course['training_course_id'])) {
-            // Cannot delete courses that come from training module
-            return false;
+        try {
+            // Check if course is linked to training module
+            $course = $this->db->fetchOne("SELECT training_course_id FROM member_courses WHERE id = ?", [$id]);
+            
+            if ($course && !empty($course['training_course_id'])) {
+                // Cannot delete courses that come from training module
+                return false;
+            }
+            
+            // Remove from scheduler when deleting
+            $syncController = $this->getSyncController();
+            $syncController->removeSchedulerItem('qualification', $id);
+            
+            return $this->db->delete('member_courses', 'id = ?', [$id]);
+        } catch (\Exception $e) {
+            // Handle missing table gracefully
+            if ($this->isMissingTableException($e)) {
+                throw new \Exception("La tabella member_courses non esiste. Contattare l'amministratore per applicare le migrazioni del database.");
+            }
+            // Re-throw other exceptions
+            throw $e;
         }
-        
-        // Remove from scheduler when deleting
-        $syncController = $this->getSyncController();
-        $syncController->removeSchedulerItem('qualification', $id);
-        
-        return $this->db->delete('member_courses', 'id = ?', [$id]);
     }
     
     // Roles

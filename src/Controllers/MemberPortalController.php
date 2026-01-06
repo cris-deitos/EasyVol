@@ -34,6 +34,22 @@ class MemberPortalController {
     }
     
     /**
+     * Check if an exception is due to a missing database table
+     * Helper method to reduce code duplication
+     * 
+     * @param \Exception $e The exception to check
+     * @return bool True if the exception is due to a missing table
+     */
+    private function isMissingTableException(\Exception $e) {
+        $message = $e->getMessage();
+        // Check for SQLSTATE 42S02 (Base table or view not found) or text patterns
+        return strpos($message, "42S02") !== false ||
+               strpos($message, "Base table or view not found") !== false || 
+               strpos($message, "doesn't exist") !== false ||
+               strpos($message, "Table") !== false && strpos($message, "doesn't exist") !== false;
+    }
+    
+    /**
      * Verify member by registration number and last name
      * Returns member data if active adult member found
      * 
@@ -226,7 +242,18 @@ class MemberPortalController {
         // Get all related data
         $member['contacts'] = $this->db->fetchAll("SELECT * FROM member_contacts WHERE member_id = ?", [$memberId]);
         $member['addresses'] = $this->db->fetchAll("SELECT * FROM member_addresses WHERE member_id = ?", [$memberId]);
-        $member['courses'] = $this->db->fetchAll("SELECT * FROM member_courses WHERE member_id = ?", [$memberId]);
+        
+        // Handle member_courses gracefully if table doesn't exist
+        try {
+            $member['courses'] = $this->db->fetchAll("SELECT * FROM member_courses WHERE member_id = ?", [$memberId]);
+        } catch (\Exception $e) {
+            if ($this->isMissingTableException($e)) {
+                $member['courses'] = [];
+            } else {
+                throw $e;
+            }
+        }
+        
         $member['licenses'] = $this->db->fetchAll("SELECT * FROM member_licenses WHERE member_id = ?", [$memberId]);
         $member['health'] = $this->db->fetchAll("SELECT * FROM member_health WHERE member_id = ?", [$memberId]);
         $member['availability'] = $this->db->fetchAll("SELECT * FROM member_availability WHERE member_id = ?", [$memberId]);
@@ -346,23 +373,33 @@ class MemberPortalController {
      * Update member courses
      */
     private function updateCourses($memberId, $courses, &$changes) {
-        // Delete existing courses
-        $this->db->execute("DELETE FROM member_courses WHERE member_id = ?", [$memberId]);
-        
-        // Insert new courses
-        foreach ($courses as $course) {
-            if (!empty($course['course_name'])) {
-                $sql = "INSERT INTO member_courses (member_id, course_name, completion_date, expiry_date, notes) 
-                        VALUES (?, ?, ?, ?, ?)";
-                $this->db->execute($sql, [
-                    $memberId,
-                    $course['course_name'],
-                    $course['completion_date'] ?? null,
-                    $course['expiry_date'] ?? null,
-                    $course['notes'] ?? ''
-                ]);
-                $changes[] = "Corso aggiunto: " . $course['course_name'];
+        try {
+            // Delete existing courses
+            $this->db->execute("DELETE FROM member_courses WHERE member_id = ?", [$memberId]);
+            
+            // Insert new courses
+            foreach ($courses as $course) {
+                if (!empty($course['course_name'])) {
+                    $sql = "INSERT INTO member_courses (member_id, course_name, completion_date, expiry_date, notes) 
+                            VALUES (?, ?, ?, ?, ?)";
+                    $this->db->execute($sql, [
+                        $memberId,
+                        $course['course_name'],
+                        $course['completion_date'] ?? null,
+                        $course['expiry_date'] ?? null,
+                        $course['notes'] ?? ''
+                    ]);
+                    $changes[] = "Corso aggiunto: " . $course['course_name'];
+                }
             }
+        } catch (\Exception $e) {
+            // Handle missing table gracefully - skip course updates
+            if ($this->isMissingTableException($e)) {
+                // Silently skip - table doesn't exist yet
+                return;
+            }
+            // Re-throw other exceptions
+            throw $e;
         }
     }
     
