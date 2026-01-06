@@ -203,9 +203,19 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             $stmt = $this->db->getConnection()->prepare($sql);
             $stmt->bindValue(':username', $data['username'], \PDO::PARAM_STR);
             $stmt->bindValue(':email', $data['email'], \PDO::PARAM_STR);
-            $stmt->bindValue(':full_name', $data['full_name'] ?? null, \PDO::PARAM_STR);
-            $stmt->bindValue(':member_id', $data['member_id'] ?? null, \PDO::PARAM_INT);
-            $stmt->bindValue(':role_id', $data['role_id'] ?? null, \PDO::PARAM_INT);
+            
+            // Bind full_name with appropriate type
+            $fullName = $data['full_name'] ?? null;
+            $stmt->bindValue(':full_name', $fullName, $fullName === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
+            
+            // Bind member_id with appropriate type
+            $memberId = $data['member_id'] ?? null;
+            $stmt->bindValue(':member_id', $memberId, $memberId === null ? \PDO::PARAM_NULL : \PDO::PARAM_INT);
+            
+            // Bind role_id with appropriate type
+            $roleId = $data['role_id'] ?? null;
+            $stmt->bindValue(':role_id', $roleId, $roleId === null ? \PDO::PARAM_NULL : \PDO::PARAM_INT);
+            
             $stmt->bindValue(':is_active', isset($data['is_active']) ? (int)$data['is_active'] : 1, \PDO::PARAM_INT);
             $stmt->bindValue(':is_operations_center_user', isset($data['is_operations_center_user']) ? (int)$data['is_operations_center_user'] : 0, \PDO::PARAM_INT);
             $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
