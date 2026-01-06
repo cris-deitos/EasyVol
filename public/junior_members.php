@@ -49,7 +49,9 @@ try {
 // Gestione filtri
 $filters = [
     'status' => $_GET['status'] ?? '',
-    'search' => $_GET['search'] ?? ''
+    'search' => $_GET['search'] ?? '',
+    'hide_dismissed' => isset($_GET['hide_dismissed']) ? $_GET['hide_dismissed'] : '1',
+    'sort_by' => $_GET['sort_by'] ?? 'alphabetical'
 ];
 
 // Paginazione
@@ -151,13 +153,13 @@ $pageTitle = 'Gestione Soci Minorenni';
                 <div class="card mb-4">
                     <div class="card-body">
                         <form method="GET" action="" class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="search" class="form-label">Cerca</label>
                                 <input type="text" class="form-control" id="search" name="search" 
                                        value="<?php echo htmlspecialchars($filters['search']); ?>" 
                                        placeholder="Nome, cognome, matricola...">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="status" class="form-label">Stato</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="">Tutti</option>
@@ -168,7 +170,14 @@ $pageTitle = 'Gestione Soci Minorenni';
                                     <option value="escluso" <?php echo $filters['status'] === 'escluso' ? 'selected' : ''; ?>>Escluso</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label for="sort_by" class="form-label">Ordina per</label>
+                                <select class="form-select" id="sort_by" name="sort_by">
+                                    <option value="alphabetical" <?php echo $filters['sort_by'] === 'alphabetical' ? 'selected' : ''; ?>>Alfabetico</option>
+                                    <option value="registration_number" <?php echo $filters['sort_by'] === 'registration_number' ? 'selected' : ''; ?>>Matricola</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="d-grid gap-2">
                                     <button type="submit" class="btn btn-primary">
@@ -177,6 +186,18 @@ $pageTitle = 'Gestione Soci Minorenni';
                                 </div>
                             </div>
                         </form>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="hide_dismissed" 
+                                           <?php echo $filters['hide_dismissed'] === '1' ? 'checked' : ''; ?> 
+                                           onchange="toggleDismissed()">
+                                    <label class="form-check-label" for="hide_dismissed">
+                                        Nascondi dimessi/decaduti/esclusi
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -305,6 +326,19 @@ $pageTitle = 'Gestione Soci Minorenni';
             if (confirm('Sei sicuro di voler eliminare questo socio minorenne?')) {
                 window.location.href = 'junior_member_delete.php?id=' + memberId;
             }
+        }
+        
+        function toggleDismissed() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isChecked = document.getElementById('hide_dismissed').checked;
+            
+            if (isChecked) {
+                urlParams.set('hide_dismissed', '1');
+            } else {
+                urlParams.set('hide_dismissed', '0');
+            }
+            
+            window.location.search = urlParams.toString();
         }
         
         // Print list functionality

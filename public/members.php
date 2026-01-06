@@ -210,7 +210,7 @@ $pageTitle = 'Gestione Soci';
                                            <?php echo $filters['hide_dismissed'] === '1' ? 'checked' : ''; ?> 
                                            onchange="toggleDismissed()">
                                     <label class="form-check-label" for="hide_dismissed">
-                                        Nascondi dimessi/decaduti
+                                        Nascondi dimessi/decaduti/esclusi
                                     </label>
                                 </div>
                             </div>
