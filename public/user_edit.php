@@ -137,7 +137,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $finalUserId = $isEdit ? $userId : $result;
                 
                 // Rimuovi tutti i permessi esistenti
-                $db->query("DELETE FROM user_permissions WHERE user_id = ?", [$finalUserId]);
+                $stmt = $db->getConnection()->prepare("DELETE FROM user_permissions WHERE user_id = :user_id");
+                $stmt->bindValue(':user_id', $finalUserId, \PDO::PARAM_INT);
+                $stmt->execute();
                 
                 // Aggiungi i nuovi permessi selezionati
                 if (isset($_POST['user_permissions']) && is_array($_POST['user_permissions'])) {
