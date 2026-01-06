@@ -488,8 +488,8 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
     let convocatorSearchTimeout = null;
     let participantSearchTimeouts = {};
     
-    const activeMembersData = <?= json_encode($activeMembers, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
-    const activeJuniorMembersData = <?= json_encode($activeJuniorMembers, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+    const activeMembersData = <?= json_encode($activeMembers, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS) ?>;
+    const activeJuniorMembersData = <?= json_encode($activeJuniorMembers, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS) ?>;
     
     // Autocomplete for convocator member search
     document.getElementById('convocator_member_search').addEventListener('input', function() {
@@ -616,7 +616,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('participant-type')) {
             const row = e.target.closest('.participant-row');
-            const searchInput = row.querySelector('.participant-search, .participant-search-new');
+            const searchInput = row.querySelector('.participant-search');
             const hiddenInput = row.querySelector('.participant-id');
             
             // Clear the current selection when type changes
@@ -638,7 +638,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                     </select>
                 </div>
                 <div class="col-md-4 position-relative">
-                    <input type="text" class="form-control participant-search-new" 
+                    <input type="text" class="form-control participant-search" 
                            placeholder="Digita nome, cognome o matricola..." 
                            autocomplete="off"
                            data-index="${index}">
@@ -667,7 +667,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         
         // Attach event listener to the new search input
         const newRow = container.lastElementChild;
-        const newSearchInput = newRow.querySelector('.participant-search-new');
+        const newSearchInput = newRow.querySelector('.participant-search');
         newSearchInput.addEventListener('input', function() {
             const idx = this.getAttribute('data-index');
             clearTimeout(participantSearchTimeouts[idx]);
