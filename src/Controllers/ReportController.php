@@ -548,4 +548,541 @@ class ReportController {
         $writer->save('php://output');
         exit;
     }
+    
+    /**
+     * Raccoglie tutti i dati per il Report Annuale Associativo
+     * 
+     * @param int $year Anno da analizzare
+     * @return array Dati completi del report
+     */
+    public function getAnnualAssociationReportData($year) {
+        $data = [];
+        
+        // Date per l'anno
+        $yearStart = "{$year}-01-01";
+        $yearEnd = "{$year}-12-31";
+        
+        // ===== SITUAZIONE AL 01.01.XXXX =====
+        $data['year_start'] = [
+            'date' => $yearStart,
+            'members_active' => $this->getMembersCountByStatusAndDate('attivo', $yearStart),
+            'members_suspended' => $this->getMembersCountByStatusAndDate(['sospeso', 'in_aspettativa', 'in_congedo'], $yearStart),
+            'junior_members_active' => $this->getJuniorMembersCountByStatusAndDate('attivo', $yearStart),
+            'junior_members_suspended' => $this->getJuniorMembersCountByStatusAndDate(['sospeso', 'in_aspettativa', 'in_congedo'], $yearStart),
+            'vehicles_total' => $this->getVehiclesCountByDate($yearStart),
+            'vehicles_veicoli' => $this->getVehiclesCountByTypeAndDate('veicolo', $yearStart),
+            'vehicles_rimorchi' => $this->getVehiclesCountByTypeAndDate('rimorchio', $yearStart),
+            'vehicles_natanti' => $this->getVehiclesCountByTypeAndDate('natante', $yearStart),
+        ];
+        
+        // ===== SITUAZIONE AL 31.12.XXXX =====
+        $data['year_end'] = [
+            'date' => $yearEnd,
+            'members_active' => $this->getMembersCountByStatusAndDate('attivo', $yearEnd),
+            'members_suspended' => $this->getMembersCountByStatusAndDate(['sospeso', 'in_aspettativa', 'in_congedo'], $yearEnd),
+            'junior_members_active' => $this->getJuniorMembersCountByStatusAndDate('attivo', $yearEnd),
+            'junior_members_suspended' => $this->getJuniorMembersCountByStatusAndDate(['sospeso', 'in_aspettativa', 'in_congedo'], $yearEnd),
+            'vehicles_total' => $this->getVehiclesCountByDate($yearEnd),
+            'vehicles_veicoli' => $this->getVehiclesCountByTypeAndDate('veicolo', $yearEnd),
+            'vehicles_rimorchi' => $this->getVehiclesCountByTypeAndDate('rimorchio', $yearEnd),
+            'vehicles_natanti' => $this->getVehiclesCountByTypeAndDate('natante', $yearEnd),
+        ];
+        
+        // ===== ATTIVITÀ ANNUALE =====
+        $data['annual_activity'] = [
+            'new_members' => $this->getNewMembersCountByYear($year),
+            'new_junior_members' => $this->getNewJuniorMembersCountByYear($year),
+            'events_total' => $this->getEventsCountByYear($year),
+            'events_emergenza' => $this->getEventsCountByTypeAndYear('emergenza', $year),
+            'events_esercitazione' => $this->getEventsCountByTypeAndYear('esercitazione', $year),
+            'events_attivita' => $this->getEventsCountByTypeAndYear('attivita', $year),
+            'events_servizio' => $this->getEventsCountByTypeAndYear('servizio', $year),
+            'meetings_total' => $this->getMeetingsCountByYear($year),
+            'meetings_consiglio' => $this->getMeetingsCountByTypeAndYear('consiglio_direttivo', $year),
+            'meetings_assemblea_ordinaria' => $this->getMeetingsCountByTypeAndYear('assemblea_ordinaria', $year),
+            'meetings_assemblea_straordinaria' => $this->getMeetingsCountByTypeAndYear('assemblea_straordinaria', $year),
+            'training_courses' => $this->getTrainingCoursesCountByYear($year),
+            'vehicle_km_total' => $this->getVehicleKilometersByYear($year),
+            'vehicle_hours_total' => $this->getVehicleHoursByYear($year),
+        ];
+        
+        // ===== SEZIONE CONVENZIONE =====
+        $data['convention_section'] = $this->getEventsByMunicipalityAndYear($year);
+        
+        return $data;
+    }
+    
+    /**
+     * Conta i soci per stato a una certa data
+     */
+    private function getMembersCountByStatusAndDate($status, $date) {
+        if (is_array($status)) {
+            $placeholders = implode(',', array_fill(0, count($status), '?'));
+            $sql = "SELECT COUNT(*) as count
+                    FROM members
+                    WHERE member_status IN ($placeholders)
+                    AND registration_date <= ?";
+            $params = array_merge($status, [$date]);
+        } else {
+            $sql = "SELECT COUNT(*) as count
+                    FROM members
+                    WHERE member_status = ?
+                    AND registration_date <= ?";
+            $params = [$status, $date];
+        }
+        
+        $result = $this->db->fetchOne($sql, $params);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta i cadetti per stato a una certa data
+     */
+    private function getJuniorMembersCountByStatusAndDate($status, $date) {
+        if (is_array($status)) {
+            $placeholders = implode(',', array_fill(0, count($status), '?'));
+            $sql = "SELECT COUNT(*) as count
+                    FROM junior_members
+                    WHERE member_status IN ($placeholders)
+                    AND registration_date <= ?";
+            $params = array_merge($status, [$date]);
+        } else {
+            $sql = "SELECT COUNT(*) as count
+                    FROM junior_members
+                    WHERE member_status = ?
+                    AND registration_date <= ?";
+            $params = [$status, $date];
+        }
+        
+        $result = $this->db->fetchOne($sql, $params);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta i mezzi totali a una certa data
+     */
+    private function getVehiclesCountByDate($date) {
+        $sql = "SELECT COUNT(*) as count
+                FROM vehicles
+                WHERE created_at <= ?";
+        
+        $result = $this->db->fetchOne($sql, [$date]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta i mezzi per tipo a una certa data
+     */
+    private function getVehiclesCountByTypeAndDate($type, $date) {
+        $sql = "SELECT COUNT(*) as count
+                FROM vehicles
+                WHERE vehicle_type = ?
+                AND created_at <= ?";
+        
+        $result = $this->db->fetchOne($sql, [$type, $date]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta nuovi soci iscritti nell'anno
+     */
+    private function getNewMembersCountByYear($year) {
+        $sql = "SELECT COUNT(*) as count
+                FROM members
+                WHERE YEAR(registration_date) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$year]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta nuovi cadetti iscritti nell'anno
+     */
+    private function getNewJuniorMembersCountByYear($year) {
+        $sql = "SELECT COUNT(*) as count
+                FROM junior_members
+                WHERE YEAR(registration_date) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$year]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta eventi totali nell'anno
+     */
+    private function getEventsCountByYear($year) {
+        $sql = "SELECT COUNT(*) as count
+                FROM events
+                WHERE YEAR(start_date) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$year]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta eventi per tipo nell'anno
+     */
+    private function getEventsCountByTypeAndYear($type, $year) {
+        $sql = "SELECT COUNT(*) as count
+                FROM events
+                WHERE event_type = ?
+                AND YEAR(start_date) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$type, $year]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta riunioni totali nell'anno
+     */
+    private function getMeetingsCountByYear($year) {
+        $sql = "SELECT COUNT(*) as count
+                FROM meetings
+                WHERE YEAR(meeting_date) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$year]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta riunioni per tipo nell'anno
+     */
+    private function getMeetingsCountByTypeAndYear($type, $year) {
+        $sql = "SELECT COUNT(*) as count
+                FROM meetings
+                WHERE meeting_type = ?
+                AND YEAR(meeting_date) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$type, $year]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Conta corsi di formazione organizzati nell'anno
+     */
+    private function getTrainingCoursesCountByYear($year) {
+        $sql = "SELECT COUNT(*) as count
+                FROM training_courses
+                WHERE YEAR(start_date) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$year]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Calcola chilometri totali dei mezzi nell'anno
+     */
+    private function getVehicleKilometersByYear($year) {
+        $sql = "SELECT SUM(CASE 
+                    WHEN return_km IS NOT NULL AND departure_km IS NOT NULL 
+                    THEN (return_km - departure_km)
+                    ELSE 0 
+                END) as total_km
+                FROM vehicle_movements
+                WHERE YEAR(departure_datetime) = ?";
+        
+        $result = $this->db->fetchOne($sql, [$year]);
+        return $result['total_km'] ?? 0;
+    }
+    
+    /**
+     * Calcola ore totali di viaggio dei mezzi nell'anno
+     */
+    private function getVehicleHoursByYear($year) {
+        $sql = "SELECT SUM(
+                    TIMESTAMPDIFF(HOUR, departure_datetime, return_datetime)
+                ) as total_hours
+                FROM vehicle_movements
+                WHERE YEAR(departure_datetime) = ?
+                AND return_datetime IS NOT NULL";
+        
+        $result = $this->db->fetchOne($sql, [$year]);
+        return $result['total_hours'] ?? 0;
+    }
+    
+    /**
+     * Ottiene eventi raggruppati per comune con dettagli per sezione convenzione
+     */
+    private function getEventsByMunicipalityAndYear($year) {
+        $sql = "SELECT 
+                    e.municipality as comune,
+                    e.title as titolo,
+                    e.start_date as data_inizio,
+                    e.end_date as data_fine,
+                    COUNT(DISTINCT i.id) as numero_interventi
+                FROM events e
+                LEFT JOIN interventions i ON e.id = i.event_id
+                WHERE YEAR(e.start_date) = ?
+                AND e.municipality IS NOT NULL
+                AND e.municipality != ''
+                GROUP BY e.id, e.municipality, e.title, e.start_date, e.end_date
+                ORDER BY e.municipality, e.start_date";
+        
+        return $this->db->fetchAll($sql, [$year]);
+    }
+    
+    /**
+     * Genera PDF del Report Annuale Associativo
+     * 
+     * @param int $year Anno del report
+     * @param array $associationData Dati dell'associazione
+     * @return void (genera download)
+     */
+    public function generateAnnualAssociationReportPDF($year, $associationData) {
+        // Raccogli i dati
+        $data = $this->getAnnualAssociationReportData($year);
+        
+        // Inizializza mPDF
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_left' => 15,
+            'margin_right' => 15,
+            'margin_top' => 20,
+            'margin_bottom' => 20,
+            'margin_header' => 10,
+            'margin_footer' => 10,
+        ]);
+        
+        // Genera HTML
+        $html = $this->generateAnnualReportHTML($year, $data, $associationData);
+        
+        // Scrivi HTML nel PDF
+        $mpdf->WriteHTML($html);
+        
+        // Output
+        $filename = "report_annuale_associativo_{$year}.pdf";
+        $mpdf->Output($filename, \Mpdf\Output\Destination::DOWNLOAD);
+        exit;
+    }
+    
+    /**
+     * Genera HTML per il Report Annuale Associativo
+     */
+    private function generateAnnualReportHTML($year, $data, $associationData) {
+        $html = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: "DejaVu Sans", Arial, sans-serif;
+                    font-size: 10pt;
+                    line-height: 1.5;
+                }
+                h1 {
+                    color: #003366;
+                    text-align: center;
+                    font-size: 18pt;
+                    margin-bottom: 5px;
+                }
+                h2 {
+                    color: #003366;
+                    font-size: 14pt;
+                    margin-top: 20px;
+                    margin-bottom: 10px;
+                    border-bottom: 2px solid #003366;
+                    padding-bottom: 5px;
+                }
+                h3 {
+                    color: #0066cc;
+                    font-size: 12pt;
+                    margin-top: 15px;
+                    margin-bottom: 8px;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 3px solid #003366;
+                    padding-bottom: 15px;
+                }
+                .association-name {
+                    font-size: 16pt;
+                    font-weight: bold;
+                    color: #003366;
+                    margin-bottom: 5px;
+                }
+                .association-details {
+                    font-size: 9pt;
+                    color: #666;
+                }
+                .stat-label {
+                    font-weight: bold;
+                    display: inline-block;
+                    width: 250px;
+                }
+                .stat-value {
+                    display: inline-block;
+                    text-align: right;
+                    width: 100px;
+                    font-weight: bold;
+                    color: #003366;
+                }
+                .indent {
+                    margin-left: 30px;
+                }
+                .section {
+                    margin-bottom: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                    font-size: 9pt;
+                }
+                table th {
+                    background-color: #003366;
+                    color: white;
+                    padding: 8px;
+                    text-align: left;
+                    font-weight: bold;
+                }
+                table td {
+                    padding: 6px 8px;
+                    border-bottom: 1px solid #ddd;
+                }
+                table tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                .footer {
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 8pt;
+                    color: #666;
+                }
+            </style>
+        </head>
+        <body>';
+        
+        // Header con informazioni associazione
+        $html .= '<div class="header">';
+        $html .= '<div class="association-name">' . htmlspecialchars($associationData['name'] ?? 'Associazione di Volontariato') . '</div>';
+        
+        $addressParts = [];
+        if (!empty($associationData['address_street'])) {
+            $addressParts[] = htmlspecialchars($associationData['address_street'] . ' ' . ($associationData['address_number'] ?? ''));
+        }
+        if (!empty($associationData['address_city'])) {
+            $addressParts[] = htmlspecialchars($associationData['address_cap'] . ' ' . $associationData['address_city'] . ' (' . $associationData['address_province'] . ')');
+        }
+        if (!empty($addressParts)) {
+            $html .= '<div class="association-details">' . implode(' - ', $addressParts) . '</div>';
+        }
+        
+        if (!empty($associationData['email'])) {
+            $html .= '<div class="association-details">Email: ' . htmlspecialchars($associationData['email']) . '</div>';
+        }
+        if (!empty($associationData['phone'])) {
+            $html .= '<div class="association-details">Tel: ' . htmlspecialchars($associationData['phone']) . '</div>';
+        }
+        
+        $html .= '</div>';
+        
+        // Titolo Report
+        $html .= '<h1>Report Annuale Associativo ' . $year . '</h1>';
+        
+        // SITUAZIONE AL 01.01.XXXX
+        $html .= '<h2>Situazione al 01.01.' . $year . '</h2>';
+        $html .= '<div class="section">';
+        $html .= '<div><span class="stat-label">Nr. Soci Attivi:</span><span class="stat-value">' . number_format($data['year_start']['members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Soci Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_start']['members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Attivi:</span><span class="stat-value">' . number_format($data['year_start']['junior_members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_start']['junior_members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Mezzi:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Veicoli:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_veicoli']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Rimorchi:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_rimorchi']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Natanti:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_natanti']) . '</span></div>';
+        $html .= '</div>';
+        
+        // SITUAZIONE AL 31.12.XXXX
+        $html .= '<h2>Situazione al 31.12.' . $year . '</h2>';
+        $html .= '<div class="section">';
+        $html .= '<div><span class="stat-label">Nr. Soci Attivi:</span><span class="stat-value">' . number_format($data['year_end']['members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Soci Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_end']['members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Attivi:</span><span class="stat-value">' . number_format($data['year_end']['junior_members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_end']['junior_members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Mezzi:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Veicoli:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_veicoli']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Rimorchi:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_rimorchi']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Natanti:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_natanti']) . '</span></div>';
+        $html .= '</div>';
+        
+        // ATTIVITÀ ANNUALE
+        $html .= '<h2>Attività Annuale</h2>';
+        $html .= '<div class="section">';
+        $html .= '<div><span class="stat-label">Nr. Nuovi Soci Iscritti:</span><span class="stat-value">' . number_format($data['annual_activity']['new_members']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Nuovi Cadetti Iscritti:</span><span class="stat-value">' . number_format($data['annual_activity']['new_junior_members']) . '</span></div>';
+        $html .= '<br>';
+        $html .= '<div><span class="stat-label">Nr. Eventi:</span><span class="stat-value">' . number_format($data['annual_activity']['events_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Emergenze:</span><span class="stat-value">' . number_format($data['annual_activity']['events_emergenza']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Esercitazioni:</span><span class="stat-value">' . number_format($data['annual_activity']['events_esercitazione']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Attività:</span><span class="stat-value">' . number_format($data['annual_activity']['events_attivita']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Servizi:</span><span class="stat-value">' . number_format($data['annual_activity']['events_servizio']) . '</span></div>';
+        $html .= '<br>';
+        $html .= '<div><span class="stat-label">Nr. Riunioni ed Assemblee:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Consigli Direttivi:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_consiglio']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Assemblee Ordinarie dei Soci:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_assemblea_ordinaria']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Assemblee Straordinarie dei Soci:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_assemblea_straordinaria']) . '</span></div>';
+        $html .= '<br>';
+        $html .= '<div><span class="stat-label">Nr. Corsi di Formazione organizzati:</span><span class="stat-value">' . number_format($data['annual_activity']['training_courses']) . '</span></div>';
+        $html .= '<br>';
+        $html .= '<div><span class="stat-label">Km di viaggio con i mezzi dell\'Associazione:</span><span class="stat-value">' . number_format($data['annual_activity']['vehicle_km_total']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Ore di viaggio con i mezzi dell\'Associazione:</span><span class="stat-value">' . number_format($data['annual_activity']['vehicle_hours_total']) . '</span></div>';
+        $html .= '</div>';
+        
+        // SEZIONE CONVENZIONE
+        $html .= '<h2>Sezione Convenzione</h2>';
+        $html .= '<div class="section">';
+        $html .= '<p>Eventi raggruppati per Comune con data inizio e fine, titolo e numero di interventi:</p>';
+        
+        if (!empty($data['convention_section'])) {
+            // Raggruppa per comune
+            $eventsByMunicipality = [];
+            foreach ($data['convention_section'] as $event) {
+                $comune = $event['comune'];
+                if (!isset($eventsByMunicipality[$comune])) {
+                    $eventsByMunicipality[$comune] = [];
+                }
+                $eventsByMunicipality[$comune][] = $event;
+            }
+            
+            // Genera tabelle per ogni comune
+            foreach ($eventsByMunicipality as $comune => $events) {
+                $html .= '<h3>Comune: ' . htmlspecialchars($comune) . '</h3>';
+                $html .= '<table>';
+                $html .= '<thead><tr>';
+                $html .= '<th>Titolo Evento</th>';
+                $html .= '<th>Data Inizio</th>';
+                $html .= '<th>Data Fine</th>';
+                $html .= '<th style="text-align: center;">Nr. Interventi</th>';
+                $html .= '</tr></thead>';
+                $html .= '<tbody>';
+                
+                foreach ($events as $event) {
+                    $html .= '<tr>';
+                    $html .= '<td>' . htmlspecialchars($event['titolo']) . '</td>';
+                    $html .= '<td>' . date('d/m/Y H:i', strtotime($event['data_inizio'])) . '</td>';
+                    $html .= '<td>' . ($event['data_fine'] ? date('d/m/Y H:i', strtotime($event['data_fine'])) : '-') . '</td>';
+                    $html .= '<td style="text-align: center;">' . number_format($event['numero_interventi']) . '</td>';
+                    $html .= '</tr>';
+                }
+                
+                $html .= '</tbody></table>';
+            }
+        } else {
+            $html .= '<p><em>Nessun evento con comune specificato per l\'anno ' . $year . '</em></p>';
+        }
+        
+        $html .= '</div>';
+        
+        // Footer
+        $html .= '<div class="footer">';
+        $html .= 'Report generato il ' . date('d/m/Y H:i') . ' da EasyVol';
+        $html .= '</div>';
+        
+        $html .= '</body></html>';
+        
+        return $html;
+    }
 }

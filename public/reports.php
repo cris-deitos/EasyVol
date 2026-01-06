@@ -187,6 +187,27 @@ $pageTitle = 'Report e Statistiche';
                                         
                                         <!-- Report Cards -->
                                         <div class="row g-3">
+                                            <!-- Report Annuale Associativo PDF -->
+                                            <div class="col-md-12">
+                                                <div class="card h-100 border-danger">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">
+                                                            <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                                            Report Annuale Associativo
+                                                        </h5>
+                                                        <p class="card-text text-muted">
+                                                            Report completo in formato PDF con intestazione dell'Associazione.
+                                                            Include situazione al 01.01 e 31.12, attività annuale (soci, cadetti, mezzi, eventi, 
+                                                            riunioni, corsi di formazione, km e ore di viaggio), e sezione convenzione con 
+                                                            eventi raggruppati per comune.
+                                                        </p>
+                                                        <button class="btn btn-danger" onclick="downloadReport('annual_association_report')">
+                                                            <i class="bi bi-file-earmark-pdf"></i> Scarica PDF
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
                                             <!-- Report 1: Ore volontariato per tipo di evento -->
                                             <div class="col-md-6">
                                                 <div class="card h-100 border-primary">
