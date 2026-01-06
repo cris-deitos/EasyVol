@@ -27,18 +27,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Handle completion date - either full date or year only
         $completionDate = null;
         if (!empty($_POST['completion_type'])) {
-            if ($_POST['completion_type'] === 'year' && !empty($_POST['completion_year'])) {
-                $year = intval($_POST['completion_year']);
-                // Validate year is within acceptable range
-                $minYear = COURSE_MIN_YEAR;
-                $maxYear = date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE;
-                if ($year >= $minYear && $year <= $maxYear) {
-                    $completionDate = $year . '-01-01';
-                } else {
-                    $errors[] = "L'anno deve essere compreso tra {$minYear} e {$maxYear}";
+            if ($_POST['completion_type'] === 'year') {
+                // Check if year field has a value (including '0')
+                if (isset($_POST['completion_year']) && $_POST['completion_year'] !== '') {
+                    // Validate year input using filter_var for safer validation
+                    $year = filter_var($_POST['completion_year'], FILTER_VALIDATE_INT, [
+                        'options' => [
+                            'min_range' => COURSE_MIN_YEAR,
+                            'max_range' => date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE
+                        ]
+                    ]);
+                    
+                    if ($year === false) {
+                        $errors[] = "L'anno deve essere un numero intero compreso tra " . COURSE_MIN_YEAR . " e " . (date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE);
+                    } else {
+                        $completionDate = $year . '-01-01';
+                    }
                 }
-            } elseif ($_POST['completion_type'] === 'date' && !empty($_POST['completion_date'])) {
-                $completionDate = $_POST['completion_date'];
+            } elseif ($_POST['completion_type'] === 'date') {
+                // Check if date field has a value
+                if (isset($_POST['completion_date']) && $_POST['completion_date'] !== '') {
+                    // Validate date format
+                    $date = $_POST['completion_date'];
+                    $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+                    if ($dateObj && $dateObj->format('Y-m-d') === $date) {
+                        $completionDate = $date;
+                    } else {
+                        $errors[] = "La data inserita non è valida. Utilizzare il formato gg/mm/aaaa";
+                    }
+                }
             }
         }
         
