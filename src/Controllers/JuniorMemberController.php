@@ -108,7 +108,7 @@ class JuniorMemberController {
                 CONCAT(jm.first_name, ' ', jm.last_name) as full_name,
                 TIMESTAMPDIFF(YEAR, jm.birth_date, CURDATE()) as age
                 FROM junior_members jm
-                WHERE jm.id = ? AND jm.member_status != 'decaduto'";
+                WHERE jm.id = ?";
         
         $member = $this->db->fetchOne($sql, [$id]);
         
