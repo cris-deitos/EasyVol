@@ -504,7 +504,12 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         
         convocatorSearchTimeout = setTimeout(function() {
             fetch('members_search_ajax.php?q=' + encodeURIComponent(search))
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Errore nella ricerca: ' + response.status);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.length === 0) {
                         resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
@@ -521,6 +526,8 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    resultsDiv.innerHTML = '<div class="list-group-item text-danger">Errore durante la ricerca</div>';
+                    resultsDiv.style.display = 'block';
                 });
         }, 300);
     });

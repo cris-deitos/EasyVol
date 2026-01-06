@@ -238,9 +238,9 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                                         <input type="text" class="form-control" id="member_search" 
                                                placeholder="Digita nome, cognome o matricola..." 
                                                autocomplete="off" required>
-                                        <input type="hidden" name="member_id" id="selected_member_id">
+                                        <input type="hidden" name="member_id" id="selected_member_id" required>
                                         <div id="member_search_results" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none; width: calc(100% - 30px);"></div>
-                                        <small class="form-text text-muted">Inizia a digitare per cercare</small>
+                                        <small class="form-text text-muted">Inizia a digitare e seleziona un socio dalla lista</small>
                                     </div>
                                     
                                     <div class="mb-3">
