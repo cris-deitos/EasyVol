@@ -124,7 +124,8 @@ class EventController {
                     $eventTypes = [
                         'emergenza' => '🚨 Emergenza',
                         'esercitazione' => '🎯 Esercitazione',
-                        'attivita' => '📅 Attività'
+                        'attivita' => '📅 Attività',
+                        'servizio' => '🛠️ Servizio'
                     ];
                     
                     $message = "📢 <b>NUOVO EVENTO CREATO</b>\n\n";
@@ -756,6 +757,13 @@ class EventController {
                 throw new \Exception('Evento non trovato');
             }
             
+            // Check if email should be sent for this event type
+            // Do NOT send email for Attività and Servizio
+            if (in_array($event['event_type'], ['attivita', 'servizio'])) {
+                error_log("Email non inviata alla Provincia: evento di tipo " . $event['event_type']);
+                return false;
+            }
+            
             // Get association data including province email
             $association = $this->db->fetchOne("SELECT * FROM association ORDER BY id ASC LIMIT 1");
             $provinceEmail = $association['provincial_civil_protection_email'] ?? null;
@@ -775,8 +783,17 @@ class EventController {
                     WHERE id = ?";
             $this->db->execute($sql, [$accessToken, $accessCode, $eventId]);
             
-            // Prepare email content
-            $emailSubject = "Notifica Nuovo Evento - " . $event['title'];
+            // Prepare email subject with proper prefix
+            $eventTypeLabels = [
+                'emergenza' => 'Emergenza',
+                'esercitazione' => 'Esercitazione (Prova di Soccorso)',
+                'attivita' => 'Attività',
+                'servizio' => 'Servizio'
+            ];
+            $eventTypeLabel = $eventTypeLabels[$event['event_type']] ?? $event['event_type'];
+            
+            // Add event type prefix to subject for Emergenza and Esercitazione
+            $emailSubject = $eventTypeLabel . " - " . $event['title'];
             
             // Get base URL from config
             $baseUrl = $this->config['email']['base_url'] ?? '';
@@ -788,13 +805,6 @@ class EventController {
                 error_log('Warning: Using HTTP instead of HTTPS for province access URL');
             }
             $accessUrl = rtrim($baseUrl, '/') . '/public/province_event_view.php?token=' . $accessToken;
-            
-            $eventTypeLabels = [
-                'emergenza' => 'Emergenza',
-                'esercitazione' => 'Esercitazione',
-                'attivita' => 'Attività'
-            ];
-            $eventTypeLabel = $eventTypeLabels[$event['event_type']] ?? $event['event_type'];
             
             // Build email body
             $emailBody = $this->buildProvinceEmailTemplate(

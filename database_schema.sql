@@ -1012,7 +1012,7 @@ CREATE TABLE IF NOT EXISTS `training_attendance` (
 
 CREATE TABLE IF NOT EXISTS `events` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `event_type` enum('emergenza', 'esercitazione', 'attivita') NOT NULL,
+  `event_type` enum('emergenza', 'esercitazione', 'attivita', 'servizio') NOT NULL,
   `title` varchar(255) NOT NULL,
   `description` text,
   `start_date` datetime NOT NULL,

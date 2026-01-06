@@ -334,7 +334,8 @@ $pageTitle = 'Mappa Eventi e Interventi';
             const typeLabels = {
                 'emergenza': '🚨 Emergenza',
                 'esercitazione': '🎯 Esercitazione',
-                'attivita': '📅 Attività'
+                'attivita': '📅 Attività',
+                'servizio': '🛠️ Servizio'
             };
             
             return `

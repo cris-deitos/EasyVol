@@ -113,6 +113,7 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                     <option value="emergenza" <?php echo $filters['type'] === 'emergenza' ? 'selected' : ''; ?>>Emergenza</option>
                                     <option value="esercitazione" <?php echo $filters['type'] === 'esercitazione' ? 'selected' : ''; ?>>Esercitazione</option>
                                     <option value="attivita" <?php echo $filters['type'] === 'attivita' ? 'selected' : ''; ?>>Attività</option>
+                                    <option value="servizio" <?php echo $filters['type'] === 'servizio' ? 'selected' : ''; ?>>Servizio</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -169,7 +170,8 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                                     $typeIcons = [
                                                         'emergenza' => 'exclamation-triangle-fill text-danger',
                                                         'esercitazione' => 'shield-check text-primary',
-                                                        'attivita' => 'calendar-event text-success'
+                                                        'attivita' => 'calendar-event text-success',
+                                                        'servizio' => 'briefcase text-info'
                                                     ];
                                                     $icon = $typeIcons[$event['event_type']] ?? 'calendar';
                                                     ?>

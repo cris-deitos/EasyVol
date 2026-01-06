@@ -156,6 +156,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                         <option value="emergenza" <?php echo ($event['event_type'] ?? '') === 'emergenza' ? 'selected' : ''; ?>>Emergenza</option>
                                         <option value="esercitazione" <?php echo ($event['event_type'] ?? '') === 'esercitazione' ? 'selected' : ''; ?>>Esercitazione</option>
                                         <option value="attivita" <?php echo ($event['event_type'] ?? 'attivita') === 'attivita' ? 'selected' : ''; ?>>Attività</option>
+                                        <option value="servizio" <?php echo ($event['event_type'] ?? '') === 'servizio' ? 'selected' : ''; ?>>Servizio</option>
                                     </select>
                                 </div>
                             </div>
