@@ -25,24 +25,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['completion_type'])) {
             if ($_POST['completion_type'] === 'year' && !empty($_POST['completion_year'])) {
                 $year = intval($_POST['completion_year']);
-                $completionDate = $year . '-01-01';
+                // Validate year is within acceptable range
+                $minYear = 1900;
+                $maxYear = date('Y') + 1;
+                if ($year >= $minYear && $year <= $maxYear) {
+                    $completionDate = $year . '-01-01';
+                } else {
+                    $errors[] = "L'anno deve essere compreso tra {$minYear} e {$maxYear}";
+                }
             } elseif ($_POST['completion_type'] === 'date' && !empty($_POST['completion_date'])) {
                 $completionDate = $_POST['completion_date'];
             }
         }
         
-        $data = [
-            'course_name' => trim($_POST['course_name'] ?? ''),
-            'course_type' => trim($_POST['course_type'] ?? ''),
-            'completion_date' => $completionDate,
-            'expiry_date' => $_POST['expiry_date'] ?? null
-        ];
-        try {
-            $memberModel->addCourse($memberId, $data);
-            header('Location: member_view.php?id=' . $memberId . '&tab=courses&success=1');
-            exit;
-        } catch (\Exception $e) {
-            $errors[] = $e->getMessage();
+        if (empty($errors)) {
+            $data = [
+                'course_name' => trim($_POST['course_name'] ?? ''),
+                'course_type' => trim($_POST['course_type'] ?? ''),
+                'completion_date' => $completionDate,
+                'expiry_date' => $_POST['expiry_date'] ?? null
+            ];
+            try {
+                $memberModel->addCourse($memberId, $data);
+                header('Location: member_view.php?id=' . $memberId . '&tab=courses&success=1');
+                exit;
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
         }
     }
 }
