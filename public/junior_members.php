@@ -338,6 +338,9 @@ $pageTitle = 'Gestione Soci Minorenni';
                 urlParams.set('hide_dismissed', '0');
             }
             
+            // Reset pagination when filter changes
+            urlParams.set('page', '1');
+            
             window.location.search = urlParams.toString();
         }
         
@@ -376,6 +379,8 @@ $pageTitle = 'Gestione Soci Minorenni';
             
             if (urlParams.has('status')) filters.member_status = urlParams.get('status');
             if (urlParams.has('search')) filters.search = urlParams.get('search');
+            if (urlParams.has('hide_dismissed')) filters.hide_dismissed = urlParams.get('hide_dismissed');
+            if (urlParams.has('sort_by')) filters.sort_by = urlParams.get('sort_by');
             
             return filters;
         }
