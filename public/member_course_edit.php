@@ -13,6 +13,9 @@ if (!$app->checkPermission('members', 'edit')) { die('Accesso negato'); }
 define('COURSE_MIN_YEAR', 1900);
 define('COURSE_FUTURE_YEAR_ALLOWANCE', 1);
 
+// Calculate max year once to avoid repetition
+$maxCourseYear = date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE;
+
 // Log page access
 AutoLogger::logPageAccess();
 $db = $app->getDb();
@@ -34,12 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $year = filter_var($_POST['completion_year'], FILTER_VALIDATE_INT, [
                         'options' => [
                             'min_range' => COURSE_MIN_YEAR,
-                            'max_range' => date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE
+                            'max_range' => $maxCourseYear
                         ]
                     ]);
                     
                     if ($year === false) {
-                        $errors[] = "L'anno deve essere un numero intero compreso tra " . COURSE_MIN_YEAR . " e " . (date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE);
+                        $errors[] = "L'anno deve essere un numero intero compreso tra " . COURSE_MIN_YEAR . " e " . $maxCourseYear;
                     } else {
                         $completionDate = $year . '-01-01';
                     }
@@ -132,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                aria-label="Data completa di completamento">
                                         <input type="number" class="form-control d-none" id="completion_year" name="completion_year" 
                                                min="<?php echo COURSE_MIN_YEAR; ?>" 
-                                               max="<?php echo date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE; ?>" 
+                                               max="<?php echo $maxCourseYear; ?>" 
                                                placeholder="es: 2024" 
                                                aria-label="Anno di completamento">
                                     </fieldset>
@@ -177,14 +180,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const completionYearField = document.getElementById('completion_year');
             
             function toggleCompletionFields() {
-                if (completionTypeYear.checked) {
-                    completionDateField.classList.add('d-none');
+                const showYear = completionTypeYear.checked;
+                
+                // Toggle visibility
+                completionDateField.classList.toggle('d-none', showYear);
+                completionYearField.classList.toggle('d-none', !showYear);
+                
+                // Clear hidden field
+                if (showYear) {
                     completionDateField.value = '';
-                    completionYearField.classList.remove('d-none');
                 } else {
-                    completionYearField.classList.add('d-none');
                     completionYearField.value = '';
-                    completionDateField.classList.remove('d-none');
                 }
             }
             
