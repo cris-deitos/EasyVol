@@ -57,6 +57,16 @@ class MemberController {
     }
     
     /**
+     * Conta totale soci con filtri
+     * 
+     * @param array $filters Filtri
+     * @return int
+     */
+    public function count($filters = []) {
+        return $this->memberModel->getCount($filters);
+    }
+    
+    /**
      * Ottieni singolo socio con tutti i dettagli
      * 
      * @param int $id ID socio

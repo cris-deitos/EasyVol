@@ -730,6 +730,40 @@ class VehicleMovementController {
     }
     
     /**
+     * Count vehicle movements with filters
+     */
+    public function countMovementHistory($filters = []) {
+        $where = ["1=1"];
+        $params = [];
+        
+        if (!empty($filters['vehicle_id'])) {
+            $where[] = "vm.vehicle_id = ?";
+            $params[] = $filters['vehicle_id'];
+        }
+        
+        if (!empty($filters['status'])) {
+            $where[] = "vm.status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        if (!empty($filters['date_from'])) {
+            $where[] = "vm.departure_datetime >= ?";
+            $params[] = $filters['date_from'] . ' 00:00:00';
+        }
+        
+        if (!empty($filters['date_to'])) {
+            $where[] = "vm.departure_datetime <= ?";
+            $params[] = $filters['date_to'] . ' 23:59:59';
+        }
+        
+        $whereClause = implode(' AND ', $where);
+        
+        $sql = "SELECT COUNT(*) as total FROM vehicle_movements vm WHERE $whereClause";
+        $result = $this->db->fetchOne($sql, $params);
+        return $result['total'] ?? 0;
+    }
+    
+    /**
      * Get single movement with all details
      */
     public function getMovement($id) {

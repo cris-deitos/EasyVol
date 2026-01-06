@@ -40,6 +40,10 @@ $perPage = 20;
 
 $items = $controller->index($filters, $page, $perPage);
 
+// Get total count for pagination
+$totalResults = $controller->count($filters);
+$totalPages = max(1, ceil($totalResults / $perPage));
+
 // Conteggi
 $totalItems = $db->fetchOne("SELECT COUNT(*) as count FROM warehouse_items")['count'] ?? 0;
 $lowStock = $db->fetchOne("SELECT COUNT(*) as count FROM warehouse_items WHERE quantity <= minimum_quantity")['count'] ?? 0;
@@ -216,6 +220,12 @@ $pageTitle = 'Gestione Magazzino';
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <?php
+                        // Include pagination component
+                        $showInfo = true;
+                        include __DIR__ . '/../src/Views/includes/pagination.php';
+                        ?>
                     </div>
                 </div>
             </main>

@@ -54,6 +54,38 @@ class EventController {
     }
     
     /**
+     * Conta totale eventi con filtri
+     */
+    public function count($filters = []) {
+        $where = ["1=1"];
+        $params = [];
+        
+        if (!empty($filters['type'])) {
+            $where[] = "event_type = ?";
+            $params[] = $filters['type'];
+        }
+        
+        if (!empty($filters['status'])) {
+            $where[] = "status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $where[] = "(title LIKE ? OR description LIKE ? OR location LIKE ?)";
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        $whereClause = implode(' AND ', $where);
+        
+        $sql = "SELECT COUNT(*) as total FROM events WHERE $whereClause";
+        $result = $this->db->fetchOne($sql, $params);
+        return $result['total'] ?? 0;
+    }
+    
+    /**
      * Ottieni singolo evento
      */
     public function get($id) {

@@ -63,6 +63,39 @@ class VehicleController {
     }
     
     /**
+     * Conta totale mezzi con filtri
+     */
+    public function count($filters = []) {
+        $where = ["1=1"];
+        $params = [];
+        
+        if (!empty($filters['type'])) {
+            $where[] = "vehicle_type = ?";
+            $params[] = $filters['type'];
+        }
+        
+        if (!empty($filters['status'])) {
+            $where[] = "status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $where[] = "(license_plate LIKE ? OR serial_number LIKE ? OR brand LIKE ? OR model LIKE ?)";
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        $whereClause = implode(' AND ', $where);
+        
+        $sql = "SELECT COUNT(*) as total FROM vehicles WHERE $whereClause";
+        $result = $this->db->fetchOne($sql, $params);
+        return $result['total'] ?? 0;
+    }
+    
+    /**
      * Ottieni singolo mezzo con dettagli
      */
     public function get($id) {

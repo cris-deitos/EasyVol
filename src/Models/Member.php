@@ -98,17 +98,41 @@ class Member {
      * Get total count for pagination
      */
     public function getCount($filters = []) {
-        $sql = "SELECT COUNT(*) as total FROM members WHERE 1=1";
+        $sql = "SELECT COUNT(DISTINCT m.id) as total FROM members m";
         $params = [];
         
+        // Add JOIN for role filter if needed
+        if (!empty($filters['role'])) {
+            $sql .= " INNER JOIN member_roles mr ON m.id = mr.member_id";
+        }
+        
+        $sql .= " WHERE 1=1";
+        
+        // Add role filter
+        if (!empty($filters['role'])) {
+            $sql .= " AND mr.role_name = ?";
+            $params[] = $filters['role'];
+        }
+        
         if (!empty($filters['status'])) {
-            $sql .= " AND member_status = ?";
+            $sql .= " AND m.member_status = ?";
             $params[] = $filters['status'];
         }
         
+        // Hide dismissed/lapsed filter
+        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
+            $sql .= " AND m.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
+        }
+        
+        if (!empty($filters['volunteer_status'])) {
+            $sql .= " AND m.volunteer_status = ?";
+            $params[] = $filters['volunteer_status'];
+        }
+        
         if (!empty($filters['search'])) {
-            $sql .= " AND (last_name LIKE ? OR first_name LIKE ? OR registration_number LIKE ?)";
+            $sql .= " AND (m.last_name LIKE ? OR m.first_name LIKE ? OR m.registration_number LIKE ? OR m.tax_code LIKE ?)";
             $search = "%{$filters['search']}%";
+            $params[] = $search;
             $params[] = $search;
             $params[] = $search;
             $params[] = $search;

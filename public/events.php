@@ -39,6 +39,10 @@ $perPage = 20;
 
 $events = $controller->index($filters, $page, $perPage);
 
+// Get total count for pagination
+$totalResults = $controller->count($filters);
+$totalPages = max(1, ceil($totalResults / $perPage));
+
 // Conteggi per status
 $statusCounts = [
     'in_corso' => $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status = 'in_corso'")['count'] ?? 0,
@@ -237,6 +241,12 @@ $pageTitle = 'Gestione Eventi e Interventi';
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <?php
+                        // Include pagination component
+                        $showInfo = true;
+                        include __DIR__ . '/../src/Views/includes/pagination.php';
+                        ?>
                     </div>
                 </div>
             </main>

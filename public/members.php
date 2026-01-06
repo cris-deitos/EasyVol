@@ -47,6 +47,10 @@ $perPage = 20;
 // Ottieni membri
 $members = $controller->index($filters, $page, $perPage);
 
+// Get total count for pagination
+$totalResults = $controller->count($filters);
+$totalPages = max(1, ceil($totalResults / $perPage));
+
 // Get available roles for filter dropdown
 $availableRoles = $db->fetchAll("SELECT DISTINCT role_name FROM member_roles ORDER BY role_name");
 
@@ -321,6 +325,12 @@ $pageTitle = 'Gestione Soci';
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <?php
+                        // Include pagination component
+                        $showInfo = true;
+                        include __DIR__ . '/../src/Views/includes/pagination.php';
+                        ?>
                     </div>
                 </div>
             </main>
