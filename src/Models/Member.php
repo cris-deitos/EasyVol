@@ -25,6 +25,19 @@ class Member {
     }
     
     /**
+     * Check if an exception is due to a missing database table
+     * Helper method to reduce code duplication
+     * 
+     * @param \Exception $e The exception to check
+     * @return bool True if the exception is due to a missing table
+     */
+    private function isMissingTableException(\Exception $e) {
+        $message = $e->getMessage();
+        return strpos($message, "Base table or view not found") !== false || 
+               strpos($message, "doesn't exist") !== false;
+    }
+    
+    /**
      * Get all members with optional filters
      */
     public function getAll($filters = [], $page = 1, $perPage = 20) {
@@ -327,8 +340,7 @@ class Member {
             return $this->db->fetchAll("SELECT * FROM member_courses WHERE member_id = ?", [$memberId]);
         } catch (\Exception $e) {
             // Handle missing table gracefully - return empty array if table doesn't exist
-            if (strpos($e->getMessage(), "Base table or view not found") !== false || 
-                strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($this->isMissingTableException($e)) {
                 return [];
             }
             // Re-throw other exceptions
@@ -351,8 +363,7 @@ class Member {
             return $courseId;
         } catch (\Exception $e) {
             // Handle missing table gracefully
-            if (strpos($e->getMessage(), "Base table or view not found") !== false || 
-                strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($this->isMissingTableException($e)) {
                 throw new \Exception("La tabella member_courses non esiste. Contattare l'amministratore per applicare le migrazioni del database.");
             }
             // Re-throw other exceptions
@@ -386,8 +397,7 @@ class Member {
             return $result;
         } catch (\Exception $e) {
             // Handle missing table gracefully
-            if (strpos($e->getMessage(), "Base table or view not found") !== false || 
-                strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($this->isMissingTableException($e)) {
                 throw new \Exception("La tabella member_courses non esiste. Contattare l'amministratore per applicare le migrazioni del database.");
             }
             // Re-throw other exceptions
@@ -412,8 +422,7 @@ class Member {
             return $this->db->delete('member_courses', 'id = ?', [$id]);
         } catch (\Exception $e) {
             // Handle missing table gracefully
-            if (strpos($e->getMessage(), "Base table or view not found") !== false || 
-                strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($this->isMissingTableException($e)) {
                 throw new \Exception("La tabella member_courses non esiste. Contattare l'amministratore per applicare le migrazioni del database.");
             }
             // Re-throw other exceptions
