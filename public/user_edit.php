@@ -57,10 +57,9 @@ $allPermissions = $db->fetchAll("SELECT * FROM permissions ORDER BY module, acti
 // Ottieni i permessi specifici dell'utente (se in modifica)
 $userPermissions = [];
 if ($isEdit) {
-    // Use named parameters for clarity and to ensure correct binding
+    // Pass parameter directly to execute() to ensure proper binding
     $stmt = $db->getConnection()->prepare("SELECT permission_id FROM user_permissions WHERE user_id = :user_id");
-    $stmt->bindValue(':user_id', $userId, \PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute([':user_id' => $userId]);
     $userPermissions = array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'permission_id');
 }
 
@@ -138,8 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Rimuovi tutti i permessi esistenti
                 $stmt = $db->getConnection()->prepare("DELETE FROM user_permissions WHERE user_id = :user_id");
-                $stmt->bindValue(':user_id', $finalUserId, \PDO::PARAM_INT);
-                $stmt->execute();
+                $stmt->execute([':user_id' => $finalUserId]);
                 
                 // Aggiungi i nuovi permessi selezionati
                 if (isset($_POST['user_permissions']) && is_array($_POST['user_permissions'])) {
