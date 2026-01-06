@@ -9,6 +9,10 @@ $app = App::getInstance();
 if (!$app->isLoggedIn()) { header('Location: login.php'); exit; }
 if (!$app->checkPermission('members', 'edit')) { die('Accesso negato'); }
 
+// Constants for course completion year validation
+define('COURSE_MIN_YEAR', 1900);
+define('COURSE_FUTURE_YEAR_ALLOWANCE', 1);
+
 // Log page access
 AutoLogger::logPageAccess();
 $db = $app->getDb();
@@ -26,8 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($_POST['completion_type'] === 'year' && !empty($_POST['completion_year'])) {
                 $year = intval($_POST['completion_year']);
                 // Validate year is within acceptable range
-                $minYear = 1900;
-                $maxYear = date('Y') + 1;
+                $minYear = COURSE_MIN_YEAR;
+                $maxYear = date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE;
                 if ($year >= $minYear && $year <= $maxYear) {
                     $completionDate = $year . '-01-01';
                 } else {
@@ -93,21 +97,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label">Data Completamento</label>
-                                    
-                                    <div class="mb-2">
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="completion_type" id="completion_type_date" value="date" checked>
-                                            <label class="form-check-label" for="completion_type_date">Data completa</label>
+                                    <fieldset>
+                                        <legend class="form-label">Data Completamento</legend>
+                                        
+                                        <div class="mb-2">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="completion_type" id="completion_type_date" value="date" checked>
+                                                <label class="form-check-label" for="completion_type_date">Data completa</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="completion_type" id="completion_type_year" value="year">
+                                                <label class="form-check-label" for="completion_type_year">Solo anno</label>
+                                            </div>
                                         </div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="completion_type" id="completion_type_year" value="year">
-                                            <label class="form-check-label" for="completion_type_year">Solo anno</label>
-                                        </div>
-                                    </div>
-                                    
-                                    <input type="date" class="form-control" id="completion_date" name="completion_date">
-                                    <input type="number" class="form-control d-none" id="completion_year" name="completion_year" min="1900" max="<?php echo date('Y') + 1; ?>" placeholder="es: 2024">
+                                        
+                                        <input type="date" class="form-control" id="completion_date" name="completion_date" aria-label="Data completa di completamento">
+                                        <input type="number" class="form-control d-none" id="completion_year" name="completion_year" min="<?php echo COURSE_MIN_YEAR; ?>" max="<?php echo date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE; ?>" placeholder="es: 2024" aria-label="Anno di completamento">
+                                    </fieldset>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="expiry_date" class="form-label">Data Scadenza</label>
