@@ -816,6 +816,12 @@ class TrainingController {
             return true;
             
         } catch (\Exception $e) {
+            // Handle missing table gracefully
+            if (strpos($e->getMessage(), "Base table or view not found") !== false || 
+                strpos($e->getMessage(), "doesn't exist") !== false) {
+                error_log("Tabella member_courses non esiste - impossibile aggiornare il registro corsi del socio");
+                return false;
+            }
             error_log("Errore aggiunta corso a registro socio: " . $e->getMessage());
             return false;
         }

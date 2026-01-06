@@ -226,7 +226,19 @@ class MemberPortalController {
         // Get all related data
         $member['contacts'] = $this->db->fetchAll("SELECT * FROM member_contacts WHERE member_id = ?", [$memberId]);
         $member['addresses'] = $this->db->fetchAll("SELECT * FROM member_addresses WHERE member_id = ?", [$memberId]);
-        $member['courses'] = $this->db->fetchAll("SELECT * FROM member_courses WHERE member_id = ?", [$memberId]);
+        
+        // Handle member_courses gracefully if table doesn't exist
+        try {
+            $member['courses'] = $this->db->fetchAll("SELECT * FROM member_courses WHERE member_id = ?", [$memberId]);
+        } catch (\Exception $e) {
+            if (strpos($e->getMessage(), "Base table or view not found") !== false || 
+                strpos($e->getMessage(), "doesn't exist") !== false) {
+                $member['courses'] = [];
+            } else {
+                throw $e;
+            }
+        }
+        
         $member['licenses'] = $this->db->fetchAll("SELECT * FROM member_licenses WHERE member_id = ?", [$memberId]);
         $member['health'] = $this->db->fetchAll("SELECT * FROM member_health WHERE member_id = ?", [$memberId]);
         $member['availability'] = $this->db->fetchAll("SELECT * FROM member_availability WHERE member_id = ?", [$memberId]);
@@ -346,23 +358,34 @@ class MemberPortalController {
      * Update member courses
      */
     private function updateCourses($memberId, $courses, &$changes) {
-        // Delete existing courses
-        $this->db->execute("DELETE FROM member_courses WHERE member_id = ?", [$memberId]);
-        
-        // Insert new courses
-        foreach ($courses as $course) {
-            if (!empty($course['course_name'])) {
-                $sql = "INSERT INTO member_courses (member_id, course_name, completion_date, expiry_date, notes) 
-                        VALUES (?, ?, ?, ?, ?)";
-                $this->db->execute($sql, [
-                    $memberId,
-                    $course['course_name'],
-                    $course['completion_date'] ?? null,
-                    $course['expiry_date'] ?? null,
-                    $course['notes'] ?? ''
-                ]);
-                $changes[] = "Corso aggiunto: " . $course['course_name'];
+        try {
+            // Delete existing courses
+            $this->db->execute("DELETE FROM member_courses WHERE member_id = ?", [$memberId]);
+            
+            // Insert new courses
+            foreach ($courses as $course) {
+                if (!empty($course['course_name'])) {
+                    $sql = "INSERT INTO member_courses (member_id, course_name, completion_date, expiry_date, notes) 
+                            VALUES (?, ?, ?, ?, ?)";
+                    $this->db->execute($sql, [
+                        $memberId,
+                        $course['course_name'],
+                        $course['completion_date'] ?? null,
+                        $course['expiry_date'] ?? null,
+                        $course['notes'] ?? ''
+                    ]);
+                    $changes[] = "Corso aggiunto: " . $course['course_name'];
+                }
             }
+        } catch (\Exception $e) {
+            // Handle missing table gracefully - skip course updates
+            if (strpos($e->getMessage(), "Base table or view not found") !== false || 
+                strpos($e->getMessage(), "doesn't exist") !== false) {
+                // Silently skip - table doesn't exist yet
+                return;
+            }
+            // Re-throw other exceptions
+            throw $e;
         }
     }
     
