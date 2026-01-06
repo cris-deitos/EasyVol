@@ -312,6 +312,35 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
             });
         }
         
+        // Listen to event type changes to show/hide province email section
+        const eventTypeSelect = document.getElementById('event_type');
+        const provinceEmailCard = document.querySelector('.card.mb-3 .card-header.bg-info');
+        
+        if (eventTypeSelect && provinceEmailCard) {
+            const provinceCard = provinceEmailCard.closest('.card');
+            
+            function updateProvinceEmailVisibility() {
+                const eventType = eventTypeSelect.value;
+                const sendProvinceCheckbox = document.getElementById('send_province_email');
+                
+                // Hide for Attività and Servizio, show for Emergenza and Esercitazione
+                if (eventType === 'attivita' || eventType === 'servizio') {
+                    provinceCard.style.display = 'none';
+                    if (sendProvinceCheckbox) {
+                        sendProvinceCheckbox.checked = false;
+                    }
+                } else {
+                    provinceCard.style.display = 'block';
+                }
+            }
+            
+            // Initial check
+            updateProvinceEmailVisibility();
+            
+            // Listen to changes
+            eventTypeSelect.addEventListener('change', updateProvinceEmailVisibility);
+        }
+        
         // Helper function to build warning message
         function buildActiveInterventionsMessage(interventions) {
             let message = 'NON è possibile chiudere l\'evento perché ci sono ancora interventi in corso o sospesi:\n\n';
