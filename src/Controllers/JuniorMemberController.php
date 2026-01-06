@@ -60,7 +60,7 @@ class JuniorMemberController {
         }
         
         // Build WHERE clause
-        $whereClause = !empty($where) ? implode(' AND ', $where) : '1=1';
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
         
         // Ensure pagination parameters are safe integers
         $page = max(1, (int)$page);
@@ -70,6 +70,8 @@ class JuniorMemberController {
         // Determine sort order
         $sortBy = $filters['sort_by'] ?? 'alphabetical';
         if ($sortBy === 'registration_number') {
+            // Junior members have registration numbers prefixed with "C-" (e.g., C-1, C-23)
+            // SUBSTRING(jm.registration_number, 3) removes the "C-" prefix for numeric sorting
             $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) ASC";
         } else {
             $orderBy = "ORDER BY jm.last_name, jm.first_name";
@@ -88,7 +90,7 @@ class JuniorMemberController {
                  ORDER BY FIELD(jmg.guardian_type, 'padre', 'madre', 'tutore'), jmg.id 
                  LIMIT 1) as guardian_last_name
                 FROM junior_members jm
-                WHERE $whereClause
+                $whereClause
                 $orderBy
                 LIMIT $perPage OFFSET $offset";
         
