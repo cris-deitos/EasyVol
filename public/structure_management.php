@@ -529,6 +529,11 @@ $pageTitle = 'Gestione Strutture';
             new bootstrap.Modal(document.getElementById('structureModal')).show();
         }
 
+        // Helper function to normalize coordinate values
+        function normalizeCoordinate(value) {
+            return value === '' ? null : value;
+        }
+
         // Save structure
         function saveStructure() {
             const form = document.getElementById('structureForm');
@@ -540,8 +545,8 @@ $pageTitle = 'Gestione Strutture';
             
             // Convert empty coordinate strings to null to avoid database errors
             // Note: We explicitly check for empty string to preserve 0 as valid value
-            data.latitude = data.latitude === '' ? null : data.latitude;
-            data.longitude = data.longitude === '' ? null : data.longitude;
+            data.latitude = normalizeCoordinate(data.latitude);
+            data.longitude = normalizeCoordinate(data.longitude);
             
             fetch('api/structures.php', {
                 method: 'POST',

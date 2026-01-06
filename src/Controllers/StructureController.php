@@ -23,7 +23,7 @@ class StructureController
      */
     private function normalizeCoordinate($value)
     {
-        return (isset($value) && $value !== '') ? (float)$value : null;
+        return ($value !== '' && $value !== null) ? (float)$value : null;
     }
 
     /**
