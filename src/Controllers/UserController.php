@@ -77,16 +77,22 @@ public function index($filters = [], $page = 1, $perPage = 20) {
         $sql = "SELECT u.*, r.name as role_name, r.description as role_description
                 FROM users u
                 LEFT JOIN roles r ON u.role_id = r.id
-                WHERE u.id = ?";
-        return $this->db->fetchOne($sql, [$id]);
+                WHERE u.id = :id";
+        // Use named parameters instead of positional ones for clarity
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
     
     /**
      * Ottieni utente per username
      */
     public function getByUsername($username) {
-        $sql = "SELECT * FROM users WHERE username = ?";
-        return $this->db->fetchOne($sql, [$username]);
+        $stmt = $this->db->getConnection()->prepare("SELECT * FROM users WHERE username = :username");
+        $stmt->bindValue(':username', $username, \PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
     
     /**
@@ -170,36 +176,50 @@ public function index($filters = [], $page = 1, $perPage = 20) {
     public function update($id, $data, $updaterId) {
         try {
             // Verifica username univoco (escludi utente corrente)
-            $sql = "SELECT id FROM users WHERE username = ? AND id != ?";
-            $existing = $this->db->fetchOne($sql, [$data['username'], $id]);
+            $stmt = $this->db->getConnection()->prepare("SELECT id FROM users WHERE username = :username AND id != :id");
+            $stmt->bindValue(':username', $data['username'], \PDO::PARAM_STR);
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            $stmt->execute();
+            $existing = $stmt->fetch(\PDO::FETCH_ASSOC);
             if ($existing) {
                 return ['error' => 'Username già utilizzato'];
             }
             
             // Verifica email univoca (escludi utente corrente)
-            $sql = "SELECT id FROM users WHERE email = ? AND id != ?";
-            $existing = $this->db->fetchOne($sql, [$data['email'], $id]);
+            $stmt = $this->db->getConnection()->prepare("SELECT id FROM users WHERE email = :email AND id != :id");
+            $stmt->bindValue(':email', $data['email'], \PDO::PARAM_STR);
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            $stmt->execute();
+            $existing = $stmt->fetch(\PDO::FETCH_ASSOC);
             if ($existing) {
                 return ['error' => 'Email già utilizzata'];
             }
             
             $sql = "UPDATE users SET
-                username = ?, email = ?, full_name = ?, member_id = ?,
-                role_id = ?, is_active = ?, is_operations_center_user = ?, updated_at = NOW()
-                WHERE id = ?";
+                username = :username, email = :email, full_name = :full_name, member_id = :member_id,
+                role_id = :role_id, is_active = :is_active, is_operations_center_user = :is_operations_center_user, updated_at = NOW()
+                WHERE id = :id";
             
-            $params = [
-                $data['username'],
-                $data['email'],
-                $data['full_name'] ?? null,
-                $data['member_id'] ?? null,
-                $data['role_id'] ?? null,
-                isset($data['is_active']) ? (int)$data['is_active'] : 1,
-                isset($data['is_operations_center_user']) ? (int)$data['is_operations_center_user'] : 0,
-                $id
-            ];
+            $stmt = $this->db->getConnection()->prepare($sql);
+            $stmt->bindValue(':username', $data['username'], \PDO::PARAM_STR);
+            $stmt->bindValue(':email', $data['email'], \PDO::PARAM_STR);
             
-            $this->db->execute($sql, $params);
+            // Bind full_name with appropriate type
+            $fullName = $data['full_name'] ?? null;
+            $stmt->bindValue(':full_name', $fullName, $fullName === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
+            
+            // Bind member_id with appropriate type
+            $memberId = $data['member_id'] ?? null;
+            $stmt->bindValue(':member_id', $memberId, $memberId === null ? \PDO::PARAM_NULL : \PDO::PARAM_INT);
+            
+            // Bind role_id with appropriate type
+            $roleId = $data['role_id'] ?? null;
+            $stmt->bindValue(':role_id', $roleId, $roleId === null ? \PDO::PARAM_NULL : \PDO::PARAM_INT);
+            
+            $stmt->bindValue(':is_active', isset($data['is_active']) ? (int)$data['is_active'] : 1, \PDO::PARAM_INT);
+            $stmt->bindValue(':is_operations_center_user', isset($data['is_operations_center_user']) ? (int)$data['is_operations_center_user'] : 0, \PDO::PARAM_INT);
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            $stmt->execute();
             
             $this->logActivity($updaterId, 'users', 'update', $id, 'Aggiornato utente');
             
