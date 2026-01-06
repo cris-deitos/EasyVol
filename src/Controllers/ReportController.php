@@ -791,7 +791,7 @@ class ReportController {
                 WHERE YEAR(departure_datetime) = ?";
         
         $result = $this->db->fetchOne($sql, [$year]);
-        return $result['total_km'] ?? 0;
+        return (int)($result['total_km'] ?? 0);
     }
     
     /**
@@ -806,7 +806,7 @@ class ReportController {
                 AND return_datetime IS NOT NULL";
         
         $result = $this->db->fetchOne($sql, [$year]);
-        return $result['total_hours'] ?? 0;
+        return (int)($result['total_hours'] ?? 0);
     }
     
     /**
