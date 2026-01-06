@@ -42,6 +42,10 @@ $perPage = 20;
 
 $movements = $controller->getMovementHistory($filters, $page, $perPage);
 
+// Get total count for pagination
+$totalResults = $controller->countMovementHistory($filters);
+$totalPages = max(1, ceil($totalResults / $perPage));
+
 // Get vehicles list for filter
 $vehiclesSql = "SELECT id, license_plate, serial_number, brand, model 
                 FROM vehicles 
@@ -316,6 +320,12 @@ $pageTitle = 'Gestione Movimentazione Mezzi';
                                     </tbody>
                                 </table>
                             </div>
+                            
+                            <?php
+                            // Include pagination component
+                            $showInfo = true;
+                            include __DIR__ . '/../src/Views/includes/pagination.php';
+                            ?>
                         <?php endif; ?>
                     </div>
                 </div>

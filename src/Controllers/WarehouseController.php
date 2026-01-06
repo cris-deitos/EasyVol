@@ -58,6 +58,42 @@ class WarehouseController {
     }
     
     /**
+     * Conta totale articoli con filtri
+     */
+    public function count($filters = []) {
+        $where = ["1=1"];
+        $params = [];
+        
+        if (!empty($filters['category'])) {
+            $where[] = "category = ?";
+            $params[] = $filters['category'];
+        }
+        
+        if (!empty($filters['status'])) {
+            $where[] = "status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        if (!empty($filters['low_stock'])) {
+            $where[] = "quantity <= minimum_quantity";
+        }
+        
+        if (!empty($filters['search'])) {
+            $where[] = "(name LIKE ? OR code LIKE ? OR description LIKE ?)";
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        $whereClause = implode(' AND ', $where);
+        
+        $sql = "SELECT COUNT(*) as total FROM warehouse_items WHERE $whereClause";
+        $result = $this->db->fetchOne($sql, $params);
+        return $result['total'] ?? 0;
+    }
+    
+    /**
      * Ottieni singolo articolo
      */
     public function get($id) {
