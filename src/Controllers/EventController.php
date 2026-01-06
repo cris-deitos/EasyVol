@@ -735,13 +735,9 @@ class EventController {
             
             $this->logActivity($userId, 'event', 'quick_close', $id, 'Chiuso rapidamente evento ID: ' . $id);
             
-            $this->db->commit();
             return true;
             
         } catch (\Exception $e) {
-            if ($this->db->getConnection()->inTransaction()) {
-                $this->db->rollBack();
-            }
             throw $e;
         }
     }
