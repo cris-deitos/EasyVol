@@ -37,13 +37,13 @@ if (!$isEdit && !$app->checkPermission('users', 'create')) {
 // Log page access
 AutoLogger::logPageAccess();
 
-$user = null;
+$editUser = null;
 $errors = [];
 $success = false;
 
 if ($isEdit) {
-    $user = $controller->get($userId);
-    if (!$user) {
+    $editUser = $controller->get($userId);
+    if (!$editUser) {
         header('Location: users.php?error=not_found');
         exit;
     }
@@ -219,14 +219,14 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                 <div class="col-md-6">
                                     <label for="username" class="form-label">Username *</label>
                                     <input type="text" class="form-control" id="username" name="username" 
-                                           value="<?php echo htmlspecialchars($user['username'] ?? $_POST['username'] ?? ''); ?>" 
+                                           value="<?php echo htmlspecialchars($editUser['username'] ?? $_POST['username'] ?? ''); ?>" 
                                            required pattern="[a-zA-Z0-9_.]{3,}">
                                     <div class="form-text">Almeno 3 caratteri, solo lettere, numeri, underscore e punto</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="email" class="form-label">Email *</label>
                                     <input type="email" class="form-control" id="email" name="email" 
-                                           value="<?php echo htmlspecialchars($user['email'] ?? $_POST['email'] ?? ''); ?>" 
+                                           value="<?php echo htmlspecialchars($editUser['email'] ?? $_POST['email'] ?? ''); ?>" 
                                            required>
                                 </div>
                             </div>
@@ -234,7 +234,7 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                             <div class="mb-3">
                                 <label for="full_name" class="form-label">Nome Completo</label>
                                 <input type="text" class="form-control" id="full_name" name="full_name" 
-                                       value="<?php echo htmlspecialchars($user['full_name'] ?? $_POST['full_name'] ?? ''); ?>">
+                                       value="<?php echo htmlspecialchars($editUser['full_name'] ?? $_POST['full_name'] ?? ''); ?>">
                             </div>
                             
                             <div class="row mb-3">
@@ -243,7 +243,7 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                     <select class="form-select" id="role_id" name="role_id">
                                         <option value="">Nessun ruolo</option>
                                         <?php
-                                        $selectedRole = $user['role_id'] ?? $_POST['role_id'] ?? '';
+                                        $selectedRole = $editUser['role_id'] ?? $_POST['role_id'] ?? '';
                                         foreach ($roles as $role):
                                         ?>
                                             <option value="<?php echo $role['id']; ?>" 
@@ -258,7 +258,7 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                     <select class="form-select" id="member_id" name="member_id">
                                         <option value="">Nessun collegamento</option>
                                         <?php
-                                        $selectedMember = $user['member_id'] ?? $_POST['member_id'] ?? '';
+                                        $selectedMember = $editUser['member_id'] ?? $_POST['member_id'] ?? '';
                                         foreach ($members as $member):
                                         ?>
                                             <option value="<?php echo $member['id']; ?>" 
@@ -298,7 +298,7 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                             
                             <div class="form-check mb-3">
                                 <input type="checkbox" class="form-check-input" id="is_active" name="is_active" 
-                                       <?php echo (isset($user) ? $user['is_active'] : 1) ? 'checked' : ''; ?>>
+                                       <?php echo (isset($editUser) ? $editUser['is_active'] : 1) ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="is_active">
                                     Utente Attivo
                                 </label>
@@ -306,7 +306,7 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                             
                             <div class="form-check mb-3">
                                 <input type="checkbox" class="form-check-input" id="is_operations_center_user" name="is_operations_center_user" 
-                                       <?php echo (isset($user) && isset($user['is_operations_center_user']) && $user['is_operations_center_user']) ? 'checked' : ''; ?>>
+                                       <?php echo (isset($editUser) && isset($editUser['is_operations_center_user']) && $editUser['is_operations_center_user']) ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="is_operations_center_user">
                                     <i class="bi bi-broadcast"></i> Utente Centrale Operativa (EasyCO)
                                 </label>
