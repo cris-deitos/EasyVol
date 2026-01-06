@@ -42,7 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     
                     if ($year === false) {
-                        $errors[] = "L'anno deve essere un numero intero compreso tra " . COURSE_MIN_YEAR . " e " . $maxCourseYear;
+                        $errors[] = sprintf(
+                            "L'anno deve essere un numero intero compreso tra %d e %d",
+                            COURSE_MIN_YEAR,
+                            $maxCourseYear
+                        );
                     } else {
                         $completionDate = $year . '-01-01';
                     }
