@@ -42,6 +42,31 @@ if ($year < $minYear || $year > $maxYear) {
 
 try {
     switch ($reportType) {
+        case 'annual_association_report':
+            // Ottieni dati dell'associazione
+            $associationSql = "SELECT * FROM association LIMIT 1";
+            $associationData = $db->fetchOne($associationSql);
+            
+            if (empty($associationData)) {
+                $associationData = [
+                    'name' => 'Associazione di Volontariato',
+                    'address_street' => '',
+                    'address_number' => '',
+                    'address_city' => '',
+                    'address_province' => '',
+                    'address_cap' => '',
+                    'email' => '',
+                    'phone' => '',
+                ];
+            }
+            
+            // Log activity
+            AutoLogger::logActivity('reports', 'export', null, "Export Report Annuale Associativo - Anno {$year}");
+            
+            // Genera PDF
+            $controller->generateAnnualAssociationReportPDF($year, $associationData);
+            break;
+            
         case 'volunteer_hours_by_event_type':
             $data = $controller->volunteerHoursByEventType($year);
             $sheetName = 'Ore Volontariato';
@@ -83,14 +108,16 @@ try {
             die('Tipo di report non valido');
     }
     
-    // Verifica che ci siano dati
-    if (empty($data)) {
-        http_response_code(404);
-        die('Nessun dato disponibile per il periodo selezionato');
+    // Per i report Excel, verifica che ci siano dati
+    if ($reportType !== 'annual_association_report') {
+        if (empty($data)) {
+            http_response_code(404);
+            die('Nessun dato disponibile per il periodo selezionato');
+        }
+        
+        // Genera Excel
+        $controller->exportToExcel($data, $sheetName, $filename);
     }
-    
-    // Genera Excel
-    $controller->exportToExcel($data, $sheetName, $filename);
     
 } catch (\Exception $e) {
     error_log("Errore generazione report: " . $e->getMessage());
