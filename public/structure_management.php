@@ -197,11 +197,11 @@ $pageTitle = 'Gestione Strutture';
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="structure-latitude" class="form-label">Latitudine GPS</label>
-                                <input type="number" step="0.00000001" class="form-control" id="structure-latitude" name="latitude" readonly>
+                                <input type="number" step="0.00000001" class="form-control" id="structure-latitude" name="latitude">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="structure-longitude" class="form-label">Longitudine GPS</label>
-                                <input type="number" step="0.00000001" class="form-control" id="structure-longitude" name="longitude" readonly>
+                                <input type="number" step="0.00000001" class="form-control" id="structure-longitude" name="longitude">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -529,6 +529,11 @@ $pageTitle = 'Gestione Strutture';
             new bootstrap.Modal(document.getElementById('structureModal')).show();
         }
 
+        // Helper function to normalize coordinate values
+        function normalizeCoordinate(value) {
+            return value === '' ? null : value;
+        }
+
         // Save structure
         function saveStructure() {
             const form = document.getElementById('structureForm');
@@ -537,6 +542,11 @@ $pageTitle = 'Gestione Strutture';
             const structureId = data.id;
             
             data.action = structureId ? 'update' : 'create';
+            
+            // Convert empty coordinate strings to null to avoid database errors
+            // Note: We explicitly check for empty string to preserve 0 as valid value
+            data.latitude = normalizeCoordinate(data.latitude);
+            data.longitude = normalizeCoordinate(data.longitude);
             
             fetch('api/structures.php', {
                 method: 'POST',

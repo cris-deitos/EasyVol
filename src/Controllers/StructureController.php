@@ -17,6 +17,29 @@ class StructureController
     }
 
     /**
+     * Convert empty string to null for coordinate field
+     * @param mixed $value The value to normalize
+     * @return float|null
+     */
+    private function normalizeCoordinate($value)
+    {
+        return ($value !== '' && $value !== null) ? (float)$value : null;
+    }
+
+    /**
+     * Validate coordinate value
+     * @param mixed $value The coordinate value to validate
+     * @param string $fieldName The field name for error message
+     * @throws \InvalidArgumentException If coordinate is not numeric
+     */
+    private function validateCoordinate($value, $fieldName)
+    {
+        if ($value !== null && !is_numeric($value)) {
+            throw new \InvalidArgumentException("{$fieldName} deve essere un numero valido");
+        }
+    }
+
+    /**
      * Get all structures
      */
     public function getAllStructures()
@@ -51,14 +74,13 @@ class StructureController
             throw new \InvalidArgumentException('Il campo Nome è obbligatorio');
         }
 
-        // Validate data types for numeric fields
-        if (isset($data['latitude']) && $data['latitude'] !== '' && !is_numeric($data['latitude'])) {
-            throw new \InvalidArgumentException('Latitudine deve essere un numero valido');
-        }
+        // Convert empty strings to null for coordinate fields
+        $latitude = $this->normalizeCoordinate($data['latitude'] ?? null);
+        $longitude = $this->normalizeCoordinate($data['longitude'] ?? null);
 
-        if (isset($data['longitude']) && $data['longitude'] !== '' && !is_numeric($data['longitude'])) {
-            throw new \InvalidArgumentException('Longitudine deve essere un numero valido');
-        }
+        // Validate data types for numeric fields
+        $this->validateCoordinate($latitude, 'Latitudine');
+        $this->validateCoordinate($longitude, 'Longitudine');
 
         $stmt = $this->db->getConnection()->prepare("
             INSERT INTO structures (
@@ -72,8 +94,8 @@ class StructureController
             $data['name'],
             $data['type'] ?? null,
             $data['full_address'] ?? null,
-            $data['latitude'] ?? null,
-            $data['longitude'] ?? null,
+            $latitude,
+            $longitude,
             $data['owner'] ?? null,
             $data['owner_contacts'] ?? null,
             $data['contracts_deadlines'] ?? null,
@@ -106,14 +128,13 @@ class StructureController
             throw new \InvalidArgumentException('Il campo Nome è obbligatorio');
         }
 
-        // Validate data types for numeric fields
-        if (isset($data['latitude']) && $data['latitude'] !== '' && !is_numeric($data['latitude'])) {
-            throw new \InvalidArgumentException('Latitudine deve essere un numero valido');
-        }
+        // Convert empty strings to null for coordinate fields
+        $latitude = $this->normalizeCoordinate($data['latitude'] ?? null);
+        $longitude = $this->normalizeCoordinate($data['longitude'] ?? null);
 
-        if (isset($data['longitude']) && $data['longitude'] !== '' && !is_numeric($data['longitude'])) {
-            throw new \InvalidArgumentException('Longitudine deve essere un numero valido');
-        }
+        // Validate data types for numeric fields
+        $this->validateCoordinate($latitude, 'Latitudine');
+        $this->validateCoordinate($longitude, 'Longitudine');
 
         $stmt = $this->db->getConnection()->prepare("
             UPDATE structures 
@@ -127,8 +148,8 @@ class StructureController
             $data['name'],
             $data['type'] ?? null,
             $data['full_address'] ?? null,
-            $data['latitude'] ?? null,
-            $data['longitude'] ?? null,
+            $latitude,
+            $longitude,
             $data['owner'] ?? null,
             $data['owner_contacts'] ?? null,
             $data['contracts_deadlines'] ?? null,
