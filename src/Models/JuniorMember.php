@@ -64,6 +64,11 @@ class JuniorMember {
             $params[] = $filters['status'];
         }
         
+        // Hide dismissed/lapsed filter
+        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
+            $sql .= " AND member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
+        }
+        
         if (!empty($filters['search'])) {
             $sql .= " AND (last_name LIKE ? OR first_name LIKE ? OR registration_number LIKE ?)";
             $search = "%{$filters['search']}%";

@@ -61,6 +61,10 @@ $perPage = 20;
 // Ottieni membri minorenni
 $members = $controller->index($filters, $page, $perPage);
 
+// Get total count for pagination
+$totalResults = $controller->count($filters);
+$totalPages = max(1, ceil($totalResults / $perPage));
+
 // Conteggi per status
 // Note: in_aspettativa and in_congedo are counted as sospeso
 $statusCounts = [
@@ -311,6 +315,12 @@ $pageTitle = 'Gestione Soci Minorenni';
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <?php
+                        // Include pagination component
+                        $showInfo = true;
+                        include __DIR__ . '/../src/Views/includes/pagination.php';
+                        ?>
                     </div>
                 </div>
             </main>

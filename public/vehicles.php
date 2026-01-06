@@ -39,6 +39,10 @@ $perPage = 20;
 
 $vehicles = $controller->index($filters, $page, $perPage);
 
+// Get total count for pagination
+$totalResults = $controller->count($filters);
+$totalPages = max(1, ceil($totalResults / $perPage));
+
 // Conteggi per status
 $statusCounts = [
     'operativo' => $db->fetchOne("SELECT COUNT(*) as count FROM vehicles WHERE status = 'operativo'")['count'] ?? 0,
@@ -271,6 +275,12 @@ $pageTitle = 'Gestione Mezzi';
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <?php
+                        // Include pagination component
+                        $showInfo = true;
+                        include __DIR__ . '/../src/Views/includes/pagination.php';
+                        ?>
                     </div>
                 </div>
             </main>

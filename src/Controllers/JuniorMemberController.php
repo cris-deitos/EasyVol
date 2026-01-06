@@ -98,6 +98,44 @@ class JuniorMemberController {
     }
     
     /**
+     * Conta totale soci minorenni con filtri
+     * 
+     * @param array $filters Filtri
+     * @return int
+     */
+    public function count($filters = []) {
+        $where = [];
+        $params = [];
+        
+        // Filtro status
+        if (!empty($filters['status'])) {
+            $where[] = "member_status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        // Hide dismissed/lapsed filter
+        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
+            $where[] = "member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
+        }
+        
+        // Filtro ricerca
+        if (!empty($filters['search'])) {
+            $where[] = "(first_name LIKE ? OR last_name LIKE ? OR registration_number LIKE ?)";
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        // Build WHERE clause
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        
+        $sql = "SELECT COUNT(*) as total FROM junior_members $whereClause";
+        $result = $this->db->fetchOne($sql, $params);
+        return $result['total'] ?? 0;
+    }
+    
+    /**
      * Ottieni singolo socio minorenne con tutti i dettagli
      * 
      * @param int $id ID socio minorenne
