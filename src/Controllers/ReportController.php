@@ -556,6 +556,14 @@ class ReportController {
      * @return array Dati completi del report
      */
     public function getAnnualAssociationReportData($year) {
+        // Validazione anno
+        $year = intval($year);
+        $minYear = 2000;
+        $maxYear = date('Y') + 1;
+        if ($year < $minYear || $year > $maxYear) {
+            throw new \InvalidArgumentException("Anno non valido. Deve essere tra {$minYear} e {$maxYear}");
+        }
+        
         $data = [];
         
         // Date per l'anno
@@ -775,6 +783,7 @@ class ReportController {
     private function getVehicleKilometersByYear($year) {
         $sql = "SELECT SUM(CASE 
                     WHEN return_km IS NOT NULL AND departure_km IS NOT NULL 
+                         AND return_km >= departure_km
                     THEN (return_km - departure_km)
                     ELSE 0 
                 END) as total_km
@@ -829,6 +838,18 @@ class ReportController {
      * @return void (genera download)
      */
     public function generateAnnualAssociationReportPDF($year, $associationData) {
+        // Validazione parametri
+        $year = intval($year);
+        $minYear = 2000;
+        $maxYear = date('Y') + 1;
+        if ($year < $minYear || $year > $maxYear) {
+            throw new \InvalidArgumentException("Anno non valido. Deve essere tra {$minYear} e {$maxYear}");
+        }
+        
+        if (!is_array($associationData)) {
+            throw new \InvalidArgumentException("I dati dell'associazione devono essere un array");
+        }
+        
         // Raccogli i dati
         $data = $this->getAnnualAssociationReportData($year);
         
@@ -961,10 +982,22 @@ class ReportController {
         
         $addressParts = [];
         if (!empty($associationData['address_street'])) {
-            $addressParts[] = htmlspecialchars($associationData['address_street'] . ' ' . ($associationData['address_number'] ?? ''));
+            $addressStr = htmlspecialchars($associationData['address_street']);
+            if (!empty($associationData['address_number'])) {
+                $addressStr .= ' ' . htmlspecialchars($associationData['address_number']);
+            }
+            $addressParts[] = $addressStr;
         }
         if (!empty($associationData['address_city'])) {
-            $addressParts[] = htmlspecialchars($associationData['address_cap'] . ' ' . $associationData['address_city'] . ' (' . $associationData['address_province'] . ')');
+            $cityStr = '';
+            if (!empty($associationData['address_cap'])) {
+                $cityStr .= htmlspecialchars($associationData['address_cap']) . ' ';
+            }
+            $cityStr .= htmlspecialchars($associationData['address_city']);
+            if (!empty($associationData['address_province'])) {
+                $cityStr .= ' (' . htmlspecialchars($associationData['address_province']) . ')';
+            }
+            $addressParts[] = $cityStr;
         }
         if (!empty($addressParts)) {
             $html .= '<div class="association-details">' . implode(' - ', $addressParts) . '</div>';
