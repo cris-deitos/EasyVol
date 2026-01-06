@@ -211,7 +211,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Data di Nascita</label>
-                                                <p class="mb-0"><?php echo date('d/m/Y', strtotime($member['birth_date'])); ?></p>
+                                                <p class="mb-0"><?php echo $member['birth_date'] ? date('d/m/Y', strtotime($member['birth_date'])) : 'N/D'; ?></p>
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Luogo di Nascita</label>
@@ -235,7 +235,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="text-muted small">Data Iscrizione</label>
-                                                <p class="mb-0"><?php echo date('d/m/Y', strtotime($member['registration_date'])); ?></p>
+                                                <p class="mb-0"><?php echo $member['registration_date'] ? date('d/m/Y', strtotime($member['registration_date'])) : 'N/D'; ?></p>
                                             </div>
                                         </div>
                                     </div>
