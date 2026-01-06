@@ -468,8 +468,8 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const activeMembersData = <?= json_encode($activeMembers) ?>;
-        const activeJuniorsData = <?= json_encode($activeJuniors) ?>;
+        const activeMembersData = <?= json_encode($activeMembers, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+        const activeJuniorsData = <?= json_encode($activeJuniors, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
         let memberSearchTimeout = null;
         
         // Member search autocomplete

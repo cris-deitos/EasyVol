@@ -335,7 +335,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                                     ?>
                                         <div class="row mb-2 participant-row">
                                             <div class="col-md-4">
-                                                <select class="form-select participant-type" name="participants[<?= $index ?>][type]" onchange="updateParticipantType(this)">
+                                                <select class="form-select participant-type" name="participants[<?= $index ?>][type]">
                                                     <option value="adult" <?= ($participant['member_type'] ?? 'adult') === 'adult' ? 'selected' : '' ?>>Socio Maggiorenne</option>
                                                     <option value="junior" <?= ($participant['member_type'] ?? '') === 'junior' ? 'selected' : '' ?>>Socio Minorenne (Cadetto)</option>
                                                 </select>
@@ -488,8 +488,8 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
     let convocatorSearchTimeout = null;
     let participantSearchTimeouts = {};
     
-    const activeMembersData = <?= json_encode($activeMembers) ?>;
-    const activeJuniorMembersData = <?= json_encode($activeJuniorMembers) ?>;
+    const activeMembersData = <?= json_encode($activeMembers, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+    const activeJuniorMembersData = <?= json_encode($activeJuniorMembers, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
     
     // Autocomplete for convocator member search
     document.getElementById('convocator_member_search').addEventListener('input', function() {
@@ -560,8 +560,9 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
             const index = this.getAttribute('data-index');
             clearTimeout(participantSearchTimeouts[index]);
             const search = this.value.trim();
-            const resultsDiv = this.nextElementSibling.nextElementSibling; // Skip hidden input
-            const typeSelect = this.closest('.participant-row').querySelector('.participant-type');
+            const row = this.closest('.participant-row');
+            const resultsDiv = row.querySelector('.participant-search-results');
+            const typeSelect = row.querySelector('.participant-type');
             const memberType = typeSelect.value;
             
             if (search.length < 1) {
@@ -611,15 +612,18 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         }
     });
     
-    function updateParticipantType(select) {
-        const row = select.closest('.participant-row');
-        const searchInput = row.querySelector('.participant-search');
-        const hiddenInput = row.querySelector('.participant-id');
-        
-        // Clear the current selection when type changes
-        searchInput.value = '';
-        hiddenInput.value = '';
-    }
+    // Event delegation for participant type changes
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('participant-type')) {
+            const row = e.target.closest('.participant-row');
+            const searchInput = row.querySelector('.participant-search, .participant-search-new');
+            const hiddenInput = row.querySelector('.participant-id');
+            
+            // Clear the current selection when type changes
+            if (searchInput) searchInput.value = '';
+            if (hiddenInput) hiddenInput.value = '';
+        }
+    });
     
     function addParticipant() {
         const container = document.getElementById('participants-container');
@@ -628,7 +632,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         const html = `
             <div class="row mb-2 participant-row">
                 <div class="col-md-4">
-                    <select class="form-select participant-type" name="participants[${index}][type]" onchange="updateParticipantType(this)">
+                    <select class="form-select participant-type" name="participants[${index}][type]">
                         <option value="adult">Socio Maggiorenne</option>
                         <option value="junior">Socio Minorenne (Cadetto)</option>
                     </select>
@@ -668,8 +672,9 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
             const idx = this.getAttribute('data-index');
             clearTimeout(participantSearchTimeouts[idx]);
             const search = this.value.trim();
-            const resultsDiv = this.nextElementSibling.nextElementSibling; // Skip hidden input
-            const typeSelect = this.closest('.participant-row').querySelector('.participant-type');
+            const row = this.closest('.participant-row');
+            const resultsDiv = row.querySelector('.participant-search-results');
+            const typeSelect = row.querySelector('.participant-type');
             const memberType = typeSelect.value;
             
             if (search.length < 1) {
