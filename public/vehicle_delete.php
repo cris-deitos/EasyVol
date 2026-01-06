@@ -35,6 +35,13 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new VehicleController($db, $config);
 
+// Check if vehicle exists
+$vehicle = $controller->get($vehicleId);
+if (!$vehicle) {
+    header('Location: vehicles.php?error=not_found');
+    exit;
+}
+
 $userId = $app->getUserId();
 
 // Delete (set status to 'dismesso')
