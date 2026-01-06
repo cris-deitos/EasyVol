@@ -9,6 +9,13 @@ $app = App::getInstance();
 if (!$app->isLoggedIn()) { header('Location: login.php'); exit; }
 if (!$app->checkPermission('members', 'edit')) { die('Accesso negato'); }
 
+// Constants for course completion year validation
+define('COURSE_MIN_YEAR', 1900);
+define('COURSE_FUTURE_YEAR_ALLOWANCE', 1);
+
+// Calculate max year once to avoid repetition
+$maxCourseYear = date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE;
+
 // Log page access
 AutoLogger::logPageAccess();
 $db = $app->getDb();
@@ -20,18 +27,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token non valido';
     } else {
-        $data = [
-            'course_name' => trim($_POST['course_name'] ?? ''),
-            'course_type' => trim($_POST['course_type'] ?? ''),
-            'completion_date' => $_POST['completion_date'] ?? null,
-            'expiry_date' => $_POST['expiry_date'] ?? null
-        ];
-        try {
-            $memberModel->addCourse($memberId, $data);
-            header('Location: member_view.php?id=' . $memberId . '&tab=courses&success=1');
-            exit;
-        } catch (\Exception $e) {
-            $errors[] = $e->getMessage();
+        // Handle completion date - either full date or year only
+        $completionDate = null;
+        if (!empty($_POST['completion_type'])) {
+            if ($_POST['completion_type'] === 'year') {
+                // Check if year field has a value (including '0')
+                if (isset($_POST['completion_year']) && $_POST['completion_year'] !== '') {
+                    // Validate year input using filter_var for safer validation
+                    $year = filter_var($_POST['completion_year'], FILTER_VALIDATE_INT, [
+                        'options' => [
+                            'min_range' => COURSE_MIN_YEAR,
+                            'max_range' => $maxCourseYear
+                        ]
+                    ]);
+                    
+                    if ($year === false) {
+                        $errors[] = sprintf(
+                            "L'anno deve essere un numero intero compreso tra %d e %d",
+                            COURSE_MIN_YEAR,
+                            $maxCourseYear
+                        );
+                    } else {
+                        $completionDate = $year . '-01-01';
+                    }
+                }
+            } elseif ($_POST['completion_type'] === 'date') {
+                // Check if date field has a value
+                if (isset($_POST['completion_date']) && $_POST['completion_date'] !== '') {
+                    // Validate date format
+                    $date = $_POST['completion_date'];
+                    $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+                    if ($dateObj && $dateObj->format('Y-m-d') === $date) {
+                        $completionDate = $date;
+                    } else {
+                        $errors[] = "La data inserita non è valida. Utilizzare il selettore di data del browser";
+                    }
+                }
+            }
+        }
+        
+        if (empty($errors)) {
+            $data = [
+                'course_name' => trim($_POST['course_name'] ?? ''),
+                'course_type' => trim($_POST['course_type'] ?? ''),
+                'completion_date' => $completionDate,
+                'expiry_date' => $_POST['expiry_date'] ?? null
+            ];
+            try {
+                $memberModel->addCourse($memberId, $data);
+                header('Location: member_view.php?id=' . $memberId . '&tab=courses&success=1');
+                exit;
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
         }
     }
 }
@@ -73,8 +121,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="completion_date" class="form-label">Data Completamento</label>
-                                    <input type="date" class="form-control" id="completion_date" name="completion_date">
+                                    <fieldset>
+                                        <legend class="form-label">Data Completamento</legend>
+                                        
+                                        <div class="mb-2">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="completion_type" id="completion_type_date" value="date" checked>
+                                                <label class="form-check-label" for="completion_type_date">Data completa</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="completion_type" id="completion_type_year" value="year">
+                                                <label class="form-check-label" for="completion_type_year">Solo anno</label>
+                                            </div>
+                                        </div>
+                                        
+                                        <input type="date" class="form-control" id="completion_date" name="completion_date" 
+                                               aria-label="Data completa di completamento">
+                                        <input type="number" class="form-control d-none" id="completion_year" name="completion_year" 
+                                               min="<?php echo COURSE_MIN_YEAR; ?>" 
+                                               max="<?php echo $maxCourseYear; ?>" 
+                                               placeholder="es: 2024" 
+                                               aria-label="Anno di completamento">
+                                    </fieldset>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="expiry_date" class="form-label">Data Scadenza</label>
@@ -108,6 +176,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     });
                 }
             });
+            
+            // Handle completion date/year toggle
+            const completionTypeDate = document.getElementById('completion_type_date');
+            const completionTypeYear = document.getElementById('completion_type_year');
+            const completionDateField = document.getElementById('completion_date');
+            const completionYearField = document.getElementById('completion_year');
+            
+            function toggleCompletionFields() {
+                const showYear = completionTypeYear.checked;
+                
+                // Toggle visibility
+                completionDateField.classList.toggle('d-none', showYear);
+                completionYearField.classList.toggle('d-none', !showYear);
+                
+                // Clear hidden field
+                if (showYear) {
+                    completionDateField.value = '';
+                } else {
+                    completionYearField.value = '';
+                }
+            }
+            
+            completionTypeDate.addEventListener('change', toggleCompletionFields);
+            completionTypeYear.addEventListener('change', toggleCompletionFields);
         });
     </script>
 </body>
