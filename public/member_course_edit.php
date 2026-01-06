@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($dateObj && $dateObj->format('Y-m-d') === $date) {
                         $completionDate = $date;
                     } else {
-                        $errors[] = "La data inserita non è valida. Utilizzare il formato gg/mm/aaaa";
+                        $errors[] = "La data inserita non è valida. Utilizzare il selettore di data del browser";
                     }
                 }
             }
@@ -128,8 +128,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             </div>
                                         </div>
                                         
-                                        <input type="date" class="form-control" id="completion_date" name="completion_date" aria-label="Data completa di completamento">
-                                        <input type="number" class="form-control d-none" id="completion_year" name="completion_year" min="<?php echo COURSE_MIN_YEAR; ?>" max="<?php echo date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE; ?>" placeholder="es: 2024" aria-label="Anno di completamento">
+                                        <input type="date" class="form-control" id="completion_date" name="completion_date" 
+                                               aria-label="Data completa di completamento">
+                                        <input type="number" class="form-control d-none" id="completion_year" name="completion_year" 
+                                               min="<?php echo COURSE_MIN_YEAR; ?>" 
+                                               max="<?php echo date('Y') + COURSE_FUTURE_YEAR_ALLOWANCE; ?>" 
+                                               placeholder="es: 2024" 
+                                               aria-label="Anno di completamento">
                                     </fieldset>
                                 </div>
                                 <div class="col-md-6">
