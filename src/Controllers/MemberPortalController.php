@@ -42,8 +42,11 @@ class MemberPortalController {
      */
     private function isMissingTableException(\Exception $e) {
         $message = $e->getMessage();
-        return strpos($message, "Base table or view not found") !== false || 
-               strpos($message, "doesn't exist") !== false;
+        // Check for SQLSTATE 42S02 (Base table or view not found) or text patterns
+        return strpos($message, "42S02") !== false ||
+               strpos($message, "Base table or view not found") !== false || 
+               strpos($message, "doesn't exist") !== false ||
+               strpos($message, "Table") !== false && strpos($message, "doesn't exist") !== false;
     }
     
     /**
