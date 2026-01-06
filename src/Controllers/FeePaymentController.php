@@ -584,9 +584,10 @@ class FeePaymentController {
      * @param int $year Anno di riferimento
      * @param int $page Pagina corrente
      * @param int $perPage Risultati per pagina
+     * @param string $search Termine di ricerca per matricola, nome o cognome
      * @return array
      */
-    public function getUnpaidMembers($year = null, $page = 1, $perPage = 20) {
+    public function getUnpaidMembers($year = null, $page = 1, $perPage = 20, $search = '') {
         if ($year === null) {
             $year = date('Y');
         }
@@ -594,6 +595,22 @@ class FeePaymentController {
         // Ensure page and perPage are integers to prevent SQL injection
         $page = max(1, intval($page));
         $perPage = max(1, min(100, intval($perPage))); // Max 100 per page
+        
+        // Build search parameters
+        $searchCondition = '';
+        $searchParams = [];
+        
+        if (!empty($search)) {
+            $searchPattern = "%{$search}%";
+            $searchParams = [$searchPattern, $searchPattern, $searchPattern];
+            $searchCondition = " AND (m.registration_number LIKE ? OR m.first_name LIKE ? OR m.last_name LIKE ?)";
+        }
+        
+        // Build search condition for junior members (replace 'm.' with 'jm.')
+        $searchConditionJunior = '';
+        if (!empty($search)) {
+            $searchConditionJunior = " AND (jm.registration_number LIKE ? OR jm.first_name LIKE ? OR jm.last_name LIKE ?)";
+        }
         
         // Get adult members without payment for the specified year
         $sqlAdult = "SELECT m.id, m.registration_number, m.first_name, m.last_name, 
@@ -604,7 +621,7 @@ class FeePaymentController {
                         SELECT 1 FROM member_fees mf 
                         WHERE mf.member_id = m.id 
                         AND mf.year = ?
-                    )";
+                    )" . $searchCondition;
         
         // Get junior members without payment for the specified year
         $sqlJunior = "SELECT jm.id, jm.registration_number, jm.first_name, jm.last_name, 
@@ -615,13 +632,20 @@ class FeePaymentController {
                          SELECT 1 FROM junior_member_fees jmf 
                          WHERE jmf.junior_member_id = jm.id 
                          AND jmf.year = ?
-                     )";
+                     )" . $searchConditionJunior;
+        
+        // Prepare parameters for queries
+        $paramsAdult = array_merge([$year], $searchParams);
+        $paramsJunior = array_merge([$year], $searchParams);
         
         // Get total count first (without pagination)
         $countSql = "SELECT COUNT(*) as total FROM (
                         ($sqlAdult) UNION ALL ($sqlJunior)
                      ) as combined";
-        $countStmt = $this->db->query($countSql, [$year, $year]);
+        
+        // Merge parameters for count query
+        $mergedCountParams = array_merge($paramsAdult, $paramsJunior);
+        $countStmt = $this->db->query($countSql, $mergedCountParams);
         $total = $countStmt->fetch()['total'];
         
         // Get paginated results - safe integer interpolation after validation
@@ -632,7 +656,9 @@ class FeePaymentController {
                 ORDER BY registration_number
                 LIMIT $perPage OFFSET $offset";
         
-        $stmt = $this->db->query($sql, [$year, $year]);
+        // Merge parameters for main query (same as count query)
+        $mergedParams = array_merge($paramsAdult, $paramsJunior);
+        $stmt = $this->db->query($sql, $mergedParams);
         $members = $stmt->fetchAll();
         
         return [

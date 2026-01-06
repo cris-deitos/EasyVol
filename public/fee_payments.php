@@ -83,7 +83,8 @@ $perPage = 20;
 if ($activeTab === 'unpaid') {
     // Get unpaid members
     $unpaidYear = isset($_GET['unpaid_year']) && !empty($_GET['unpaid_year']) ? intval($_GET['unpaid_year']) : date('Y');
-    $unpaidResult = $controller->getUnpaidMembers($unpaidYear, $page, $perPage);
+    $unpaidSearch = $_GET['unpaid_search'] ?? '';
+    $unpaidResult = $controller->getUnpaidMembers($unpaidYear, $page, $perPage, $unpaidSearch);
     $unpaidMembers = $unpaidResult['members'];
     $unpaidTotal = $unpaidResult['total'];
     $totalPages = $unpaidResult['totalPages'];
@@ -96,6 +97,7 @@ if ($activeTab === 'unpaid') {
     $unpaidMembers = [];
     $unpaidTotal = 0;
     $unpaidYear = date('Y');
+    $unpaidSearch = '';
 }
 
 $pageTitle = 'Gestione Pagamento Quote';
@@ -372,15 +374,15 @@ $pageTitle = 'Gestione Pagamento Quote';
                     <div class="tab-pane fade <?php echo $activeTab === 'unpaid' ? 'show active' : ''; ?>" 
                          id="unpaid" 
                          role="tabpanel">
-                        
-                        <!-- Year Filter -->
+                         
+                        <!-- Year Filter and Search -->
                         <div class="card mb-4">
                             <div class="card-body">
                                 <form method="GET" class="row g-3">
                                     <input type="hidden" name="tab" value="unpaid">
                                     <div class="col-md-3">
                                         <label for="unpaid_year" class="form-label">Anno</label>
-                                        <select class="form-select" id="unpaid_year" name="unpaid_year" onchange="this.form.submit()">
+                                        <select class="form-select" id="unpaid_year" name="unpaid_year">
                                             <?php
                                             $currentYear = date('Y');
                                             for ($year = $currentYear + 1; $year >= $currentYear - 5; $year--) {
@@ -390,7 +392,16 @@ $pageTitle = 'Gestione Pagamento Quote';
                                             ?>
                                         </select>
                                     </div>
-                                    <div class="col-md-9 d-flex align-items-end">
+                                    <div class="col-md-5">
+                                        <label for="unpaid_search" class="form-label">Cerca</label>
+                                        <input type="text" class="form-control" id="unpaid_search" name="unpaid_search" 
+                                               placeholder="Matricola, nome o cognome..."
+                                               value="<?php echo htmlspecialchars($unpaidSearch); ?>">
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-primary me-2">
+                                            <i class="bi bi-search"></i> Filtra
+                                        </button>
                                         <a href="fee_payments.php?tab=unpaid" class="btn btn-secondary">
                                             <i class="bi bi-x"></i> Reset
                                         </a>
@@ -463,7 +474,7 @@ $pageTitle = 'Gestione Pagamento Quote';
                                     <ul class="pagination justify-content-center mb-0">
                                         <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                                         <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
-                                            <a class="page-link" href="?tab=unpaid&unpaid_year=<?php echo $unpaidYear; ?>&page=<?php echo $i; ?>">
+                                            <a class="page-link" href="?tab=unpaid&unpaid_year=<?php echo $unpaidYear; ?>&unpaid_search=<?php echo urlencode($unpaidSearch); ?>&page=<?php echo $i; ?>">
                                                 <?php echo $i; ?>
                                             </a>
                                         </li>
