@@ -554,6 +554,22 @@ CREATE TABLE IF NOT EXISTS `member_applications` (
   KEY `idx_pdf_download_token` (`pdf_download_token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `member_application_guardians` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `application_id` int(11) NOT NULL,
+  `guardian_type` enum('padre', 'madre', 'tutore') NOT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `birth_date` date DEFAULT NULL,
+  `birth_place` varchar(255) DEFAULT NULL,
+  `tax_code` varchar(50),
+  `phone` varchar(50),
+  `email` varchar(255),
+  PRIMARY KEY (`id`),
+  KEY `application_id` (`application_id`),
+  FOREIGN KEY (`application_id`) REFERENCES `member_applications`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `fee_payment_requests` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `registration_number` varchar(50),
