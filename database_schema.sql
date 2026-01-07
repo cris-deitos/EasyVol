@@ -1151,6 +1151,8 @@ CREATE TABLE IF NOT EXISTS `radio_assignments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `radio_id` int(11) NOT NULL,
   `member_id` int(11) NULL COMMENT 'Foreign key to members table for volunteer assignments',
+  `junior_member_id` int(11) NULL COMMENT 'Foreign key to junior_members table for cadet assignments',
+  `assignee_type` enum('member', 'cadet', 'external') DEFAULT 'member' COMMENT 'Type of assignee: member, cadet, or external personnel',
   `assignee_first_name` varchar(100) NOT NULL,
   `assignee_last_name` varchar(100) NOT NULL,
   `assignee_phone` varchar(50),
@@ -1164,8 +1166,10 @@ CREATE TABLE IF NOT EXISTS `radio_assignments` (
   PRIMARY KEY (`id`),
   KEY `radio_id` (`radio_id`),
   KEY `member_id` (`member_id`),
+  KEY `junior_member_id` (`junior_member_id`),
   FOREIGN KEY (`radio_id`) REFERENCES `radio_directory`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE SET NULL
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`junior_member_id`) REFERENCES `junior_members`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
