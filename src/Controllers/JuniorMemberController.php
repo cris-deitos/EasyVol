@@ -512,14 +512,21 @@ class JuniorMemberController {
      * 
      * @param int $memberId ID socio
      * @return array
+     * 
+     * NOTA: Funzionalità non ancora implementata - richiede tabelle junior_groups e junior_member_groups
      */
     private function getGroups($memberId) {
+        // Funzionalità temporaneamente disabilitata - tabelle non presenti nello schema
+        return [];
+        
+        /* Codice originale - da riabilitare quando le tabelle saranno implementate
         $sql = "SELECT g.*, jmg.joined_date, jmg.role
                 FROM junior_member_groups jmg
                 JOIN junior_groups g ON jmg.group_id = g.id
                 WHERE jmg.junior_member_id = ?
                 ORDER BY jmg.joined_date DESC";
         return $this->db->fetchAll($sql, [$memberId]);
+        */
     }
     
     /**

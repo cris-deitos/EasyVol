@@ -819,7 +819,7 @@ class PrintTemplateController {
                 'meeting_attachments' => 'Allegati',
             ],
             'member_applications' => [
-                'member_application_guardians' => 'Genitori/Tutori',
+                // Guardian data is stored in application_data JSON field, not in a separate table
             ],
             'events' => [
                 'interventions' => 'Interventi',
