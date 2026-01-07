@@ -687,7 +687,7 @@ class TemplateEngine {
                 'event_vehicles'
             ],
             'applications' => [
-                'member_application_guardians'
+                // Guardian data is stored in application_data JSON field, not in a separate table
             ]
         ];
         

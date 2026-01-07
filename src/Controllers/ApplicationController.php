@@ -68,10 +68,8 @@ class ApplicationController {
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
             
-            // Se minorenne, inserisci dati tutore
-            if ($isJunior && !empty($data['guardian_data'])) {
-                $this->saveGuardianData($applicationId, $data['guardian_data']);
-            }
+            // Guardian data for junior members is already stored in application_data JSON
+            // It will be extracted and saved to junior_member_guardians table upon approval
             
             // Genera PDF
             $pdfPath = $this->generateApplicationPdf($applicationId, $data, $isJunior);
@@ -480,34 +478,6 @@ class ApplicationController {
         } while ($existing);
         
         return $code;
-    }
-    
-    /**
-     * Salva dati tutore
-     * 
-     * @param int $applicationId ID domanda
-     * @param array $guardianData Dati tutore
-     */
-    private function saveGuardianData($applicationId, $guardianData) {
-        $sql = "INSERT INTO member_application_guardians (
-            application_id, guardian_type,
-            last_name, first_name, birth_date, birth_place,
-            tax_code, phone, email
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $params = [
-            $applicationId,
-            $guardianData['type'] ?? 'parent',
-            $guardianData['last_name'],
-            $guardianData['first_name'],
-            $guardianData['birth_date'] ?? null,
-            $guardianData['birth_place'] ?? null,
-            $guardianData['tax_code'] ?? null,
-            $guardianData['phone'] ?? null,
-            $guardianData['email'] ?? null
-        ];
-        
-        $this->db->execute($sql, $params);
     }
     
     /**
@@ -1394,13 +1364,11 @@ class ApplicationController {
         $this->db->execute($sql, $params);
         $juniorMemberId = $this->db->lastInsertId();
         
-        // Add guardian data if exists
-        $guardian = $this->db->fetchOne(
-            "SELECT * FROM member_application_guardians WHERE application_id = ?",
-            [$application['id']]
-        );
-        
-        if ($guardian) {
+        // Extract and add guardian data from application_data JSON
+        $applicationData = json_decode($application['application_data'], true);
+        if (!empty($applicationData['guardian_data'])) {
+            $guardianData = $applicationData['guardian_data'];
+            
             $sql = "INSERT INTO junior_member_guardians (
                 junior_member_id, guardian_type,
                 last_name, first_name, birth_date, birth_place,
@@ -1409,14 +1377,14 @@ class ApplicationController {
             
             $params = [
                 $juniorMemberId,
-                $guardian['guardian_type'] ?? 'parent',
-                $guardian['last_name'],
-                $guardian['first_name'],
-                $guardian['birth_date'],
-                $guardian['birth_place'],
-                $guardian['tax_code'],
-                $guardian['phone'],
-                $guardian['email']
+                $guardianData['type'] ?? 'tutore',
+                $guardianData['last_name'],
+                $guardianData['first_name'],
+                $guardianData['birth_date'] ?? null,
+                $guardianData['birth_place'] ?? null,
+                $guardianData['tax_code'] ?? null,
+                $guardianData['phone'] ?? null,
+                $guardianData['email'] ?? null
             ];
             
             $this->db->execute($sql, $params);
