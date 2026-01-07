@@ -269,8 +269,7 @@ CREATE TABLE IF NOT EXISTS `member_courses` (
   PRIMARY KEY (`id`),
   KEY `member_id` (`member_id`),
   KEY `training_course_id` (`training_course_id`),
-  CONSTRAINT `fk_member_courses_member` FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_member_courses_training` FOREIGN KEY (`training_course_id`) REFERENCES `training_courses`(`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_member_courses_member` FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `member_roles` (
@@ -1006,6 +1005,11 @@ CREATE TABLE IF NOT EXISTS `training_attendance` (
   FOREIGN KEY (`session_id`) REFERENCES `training_sessions`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add foreign key constraint from member_courses to training_courses
+-- (added after training_courses table creation to avoid forward reference)
+ALTER TABLE `member_courses`
+  ADD CONSTRAINT `fk_member_courses_training` FOREIGN KEY (`training_course_id`) REFERENCES `training_courses`(`id`) ON DELETE SET NULL;
 
 -- =============================================
 -- EVENTS AND INTERVENTIONS
