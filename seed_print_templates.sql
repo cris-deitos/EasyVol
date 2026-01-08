@@ -116,24 +116,40 @@ INSERT INTO `print_templates` (
         <h2>Informazioni Associative</h2>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 1cm;">
             <tr>
-                <td style="width: 30%; padding: 0.2cm; font-weight: bold;">Tipo Socio:</td>
-                <td style="padding: 0.2cm;">{{member_type}}</td>
+                <td style="width: 30%; padding: 0.2cm; font-weight: bold;">Matricola Tesserino:</td>
+                <td style="padding: 0.2cm;">{{badge_number}}</td>
             </tr>
             <tr style="background: #f5f5f5;">
+                <td style="padding: 0.2cm; font-weight: bold;">Tipo Socio:</td>
+                <td style="padding: 0.2cm;">{{member_type}}</td>
+            </tr>
+            <tr>
                 <td style="padding: 0.2cm; font-weight: bold;">Stato:</td>
                 <td style="padding: 0.2cm;">{{member_status}}</td>
             </tr>
-            <tr>
+            <tr style="background: #f5f5f5;">
                 <td style="padding: 0.2cm; font-weight: bold;">Stato Volontario:</td>
                 <td style="padding: 0.2cm;">{{volunteer_status}}</td>
             </tr>
+            <tr>
+                <td style="padding: 0.2cm; font-weight: bold;">Tipo Lavoratore:</td>
+                <td style="padding: 0.2cm;">{{worker_type}}</td>
+            </tr>
             <tr style="background: #f5f5f5;">
+                <td style="padding: 0.2cm; font-weight: bold;">Livello Istruzione:</td>
+                <td style="padding: 0.2cm;">{{education_level}}</td>
+            </tr>
+            <tr>
                 <td style="padding: 0.2cm; font-weight: bold;">Data Iscrizione:</td>
                 <td style="padding: 0.2cm;">{{registration_date}}</td>
             </tr>
-            <tr>
+            <tr style="background: #f5f5f5;">
                 <td style="padding: 0.2cm; font-weight: bold;">Data Approvazione:</td>
                 <td style="padding: 0.2cm;">{{approval_date}}</td>
+            </tr>
+            <tr>
+                <td style="padding: 0.2cm; font-weight: bold;">Data Cessazione:</td>
+                <td style="padding: 0.2cm;">{{termination_date}}</td>
             </tr>
         </table>
 
@@ -185,13 +201,14 @@ INSERT INTO `print_templates` (
         </table>
 
         <h2>Corsi e Formazione</h2>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc;">
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc; margin-bottom: 1cm;">
             <thead>
                 <tr style="background: #333; color: white;">
                     <th style="padding: 0.3cm; text-align: left;">Corso</th>
                     <th style="padding: 0.3cm; text-align: left;">Tipo</th>
                     <th style="padding: 0.3cm; text-align: left;">Completamento</th>
                     <th style="padding: 0.3cm; text-align: left;">Scadenza</th>
+                    <th style="padding: 0.3cm; text-align: left;">Numero Certificato</th>
                 </tr>
             </thead>
             <tbody>
@@ -201,6 +218,114 @@ INSERT INTO `print_templates` (
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">{{course_type}}</td>
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">{{completion_date}}</td>
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">{{expiry_date}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{certification_number}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+
+        <h2>Titoli di Studio</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc; margin-bottom: 1cm;">
+            <thead>
+                <tr style="background: #333; color: white;">
+                    <th style="padding: 0.3cm; text-align: left;">Tipo Titolo</th>
+                    <th style="padding: 0.3cm; text-align: left;">Istituto</th>
+                    <th style="padding: 0.3cm; text-align: left;">Anno</th>
+                    <th style="padding: 0.3cm; text-align: left;">Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each member_education}}
+                <tr>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{degree_type}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{institution}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{year}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{notes}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+
+        <h2>Datore di Lavoro</h2>
+        {{#each member_employment}}
+        <div style="border: 1px solid #ccc; padding: 0.5cm; margin-bottom: 0.5cm; background: #f9f9f9;">
+            <p><strong>Datore:</strong> {{employer_name}}</p>
+            <p><strong>Indirizzo:</strong> {{employer_address}}, {{employer_city}}</p>
+            <p><strong>Telefono:</strong> {{employer_phone}}</p>
+        </div>
+        {{/each}}
+
+        <h2>Mansioni e Ruoli</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc; margin-bottom: 1cm;">
+            <thead>
+                <tr style="background: #333; color: white;">
+                    <th style="padding: 0.3cm; text-align: left;">Ruolo</th>
+                    <th style="padding: 0.3cm; text-align: left;">Data Assegnazione</th>
+                    <th style="padding: 0.3cm; text-align: left;">Data Fine</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each member_roles}}
+                <tr>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{role_name}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{assigned_date}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{end_date}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+
+        <h2>Disponibilità Territoriale</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc; margin-bottom: 1cm;">
+            <thead>
+                <tr style="background: #333; color: white;">
+                    <th style="padding: 0.3cm; text-align: left;">Tipo Disponibilità</th>
+                    <th style="padding: 0.3cm; text-align: left;">Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each member_availability}}
+                <tr>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{availability_type}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{notes}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+
+        <h2>Informazioni Sanitarie</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc; margin-bottom: 1cm;">
+            <thead>
+                <tr style="background: #333; color: white;">
+                    <th style="padding: 0.3cm; text-align: left;">Tipo</th>
+                    <th style="padding: 0.3cm; text-align: left;">Descrizione</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each member_health}}
+                <tr>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{health_type}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{description}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+
+        <h2>Provvedimenti</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc;">
+            <thead>
+                <tr style="background: #333; color: white;">
+                    <th style="padding: 0.3cm; text-align: left;">Data</th>
+                    <th style="padding: 0.3cm; text-align: left;">Tipo Provvedimento</th>
+                    <th style="padding: 0.3cm; text-align: left;">Motivazione</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each member_sanctions}}
+                <tr>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{sanction_date}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{sanction_type}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{reason}}</td>
                 </tr>
                 {{/each}}
             </tbody>
@@ -213,7 +338,7 @@ INSERT INTO `print_templates` (
     @media print { 
         .page-break { page-break-after: always; }
     }',
-    '["member_contacts", "member_addresses", "member_licenses", "member_courses"]',
+    '["member_contacts", "member_addresses", "member_licenses", "member_courses", "member_education", "member_employment", "member_roles", "member_availability", "member_health", "member_sanctions"]',
     'A4', 'portrait', 1, 1,
     '<div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 0.3cm; margin-bottom: 0.5cm;">
         <h2 style="margin: 0;">{{association_name}}</h2>

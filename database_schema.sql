@@ -181,6 +181,7 @@ CREATE TABLE IF NOT EXISTS `members` (
   `education_level` enum('licenza_media', 'diploma_maturita', 'laurea_triennale', 'laurea_magistrale', 'dottorato') DEFAULT NULL COMMENT 'Titolo di studio',
   `registration_date` date,
   `approval_date` date,
+  `termination_date` date DEFAULT NULL COMMENT 'Data di cessazione (esclusione, dimissioni, decadenza)',
   `photo` varchar(255),
   `photo_path` varchar(255),
   `notes` text,
@@ -404,6 +405,7 @@ CREATE TABLE IF NOT EXISTS `junior_members` (
   `nationality` varchar(100) DEFAULT 'Italiana',
   `registration_date` date,
   `approval_date` date,
+  `termination_date` date DEFAULT NULL COMMENT 'Data di cessazione (esclusione, dimissioni, decadenza)',
   `photo` varchar(255),
   `photo_path` varchar(255),
   `notes` text,
@@ -2180,6 +2182,8 @@ INSERT INTO `print_templates` (
                     <th style="padding: 0.3cm; border: 1px solid #000;">Tutore</th>
                     <th style="padding: 0.3cm; border: 1px solid #000;">Stato</th>
                     <th style="padding: 0.3cm; border: 1px solid #000;">Iscr.</th>
+                    <th style="padding: 0.3cm; border: 1px solid #000;">Appr.</th>
+                    <th style="padding: 0.3cm; border: 1px solid #000;">Cess.</th>
                 </tr>
             </thead>
             <tbody>
@@ -2192,6 +2196,8 @@ INSERT INTO `print_templates` (
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">{{guardian_last_name}} {{guardian_first_name}}</td>
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">{{member_status}}</td>
                     <td style="padding: 0.2cm; border: 1px solid #ccc;">{{registration_date}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{approval_date}}</td>
+                    <td style="padding: 0.2cm; border: 1px solid #ccc;">{{termination_date}}</td>
                 </tr>
                 {{/each}}
             </tbody>

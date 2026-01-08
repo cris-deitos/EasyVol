@@ -122,8 +122,21 @@ class SanctionService {
                 $allSanctions
             );
             
-            // Update member status
-            $memberModel->update($memberId, ['member_status' => $newStatus]);
+            // Prepare update data with the new status
+            $updateData = ['member_status' => $newStatus];
+            
+            // Update approval_date if sanction type is 'approvazione_consiglio_direttivo'
+            if ($data['sanction_type'] === 'approvazione_consiglio_direttivo') {
+                $updateData['approval_date'] = $data['sanction_date'];
+            }
+            
+            // Update termination_date if sanction type is 'escluso', 'dimesso', or 'decaduto'
+            if (in_array($data['sanction_type'], ['escluso', 'dimesso', 'decaduto'])) {
+                $updateData['termination_date'] = $data['sanction_date'];
+            }
+            
+            // Update member status and dates
+            $memberModel->update($memberId, $updateData);
             
             return ['success' => true, 'new_status' => $newStatus];
             
