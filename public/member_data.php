@@ -145,6 +145,13 @@ try {
             }
             break;
             
+        case 'delete_health_surveillance':
+            $id = intval($_GET['id'] ?? 0);
+            if ($id > 0) {
+                $db->delete('member_health_surveillance', ['id' => $id]);
+            }
+            break;
+            
         case 'delete_attachment':
             $id = intval($_GET['id'] ?? 0);
             if ($id > 0) {

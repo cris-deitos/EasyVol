@@ -31,7 +31,25 @@ Questo documento descrive i cron jobs necessari per il funzionamento automatico 
 0 8 * * * php /percorso/easyvol/cron/scheduler_alerts.php >> /var/log/easyvol/scheduler_alerts.log 2>&1
 ```
 
-### 4. Annual Member Verification
+### 4. Member Expiry Alerts
+**File**: `member_expiry_alerts.php`
+**Frequenza**: Giornaliero alle 8:00
+**Descrizione**: Controlla scadenze patenti, qualifiche e corsi dei soci e invia alert
+
+```bash
+0 8 * * * php /percorso/easyvol/cron/member_expiry_alerts.php >> /var/log/easyvol/member_expiry_alerts.log 2>&1
+```
+
+### 5. Health Surveillance Alerts
+**File**: `health_surveillance_alerts.php`
+**Frequenza**: Giornaliero alle 8:00
+**Descrizione**: Controlla scadenze visite mediche di sorveglianza sanitaria e invia alert
+
+```bash
+0 8 * * * php /percorso/easyvol/cron/health_surveillance_alerts.php >> /var/log/easyvol/health_surveillance_alerts.log 2>&1
+```
+
+### 6. Annual Member Verification
 **File**: `annual_member_verification.php`
 **Frequenza**: Annuale, 7 gennaio alle 9:00
 **Descrizione**: Invia email di verifica dati anagrafici a tutti i soci attivi
@@ -40,7 +58,7 @@ Questo documento descrive i cron jobs necessari per il funzionamento automatico 
 0 9 7 1 * php /percorso/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
 ```
 
-### 5. Database Backup
+### 7. Database Backup
 **File**: `backup.php`
 **Frequenza**: Giornaliero alle 2:00
 **Descrizione**: Crea backup automatico del database (mantiene ultimi 30 giorni)
@@ -68,6 +86,12 @@ crontab -e
 
 # EasyVol - Scheduler Alerts
 0 8 * * * php /var/www/easyvol/cron/scheduler_alerts.php >> /var/log/easyvol/scheduler_alerts.log 2>&1
+
+# EasyVol - Member Expiry Alerts
+0 8 * * * php /var/www/easyvol/cron/member_expiry_alerts.php >> /var/log/easyvol/member_expiry_alerts.log 2>&1
+
+# EasyVol - Health Surveillance Alerts
+0 8 * * * php /var/www/easyvol/cron/health_surveillance_alerts.php >> /var/log/easyvol/health_surveillance_alerts.log 2>&1
 
 # EasyVol - Annual Member Verification (January 7th)
 0 9 7 1 * php /var/www/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
@@ -99,6 +123,12 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Scheduler Alerts - Giornaliero alle 8:00
 0 8 * * * www-data php /var/www/easyvol/cron/scheduler_alerts.php >> /var/log/easyvol/scheduler_alerts.log 2>&1
+
+# Member Expiry Alerts - Giornaliero alle 8:00
+0 8 * * * www-data php /var/www/easyvol/cron/member_expiry_alerts.php >> /var/log/easyvol/member_expiry_alerts.log 2>&1
+
+# Health Surveillance Alerts - Giornaliero alle 8:00
+0 8 * * * www-data php /var/www/easyvol/cron/health_surveillance_alerts.php >> /var/log/easyvol/health_surveillance_alerts.log 2>&1
 
 # Annual Member Verification - 7 gennaio alle 9:00
 0 9 7 1 * www-data php /var/www/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
