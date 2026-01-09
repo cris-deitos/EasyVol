@@ -169,6 +169,11 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="health-surveillance-tab" data-bs-toggle="tab" data-bs-target="#health-surveillance" type="button" role="tab">
+                                    <i class="bi bi-clipboard2-pulse"></i> Sorveglianza Sanitaria
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="sanctions-tab" data-bs-toggle="tab" data-bs-target="#sanctions" type="button" role="tab">
                                     <i class="bi bi-exclamation-triangle"></i> Provvedimenti
                                 </button>
@@ -406,6 +411,93 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                             </div>
                                         <?php else: ?>
                                             <p class="text-muted">Nessuna informazione sanitaria inserita</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Sorveglianza Sanitaria -->
+                            <div class="tab-pane fade" id="health-surveillance" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Sorveglianza Sanitaria</h5>
+                                            <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                <a href="junior_member_health_surveillance_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-plus"></i> Aggiungi Visita
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php
+                                        // Fetch health surveillance records
+                                        $sql = "SELECT * FROM junior_member_health_surveillance 
+                                                WHERE junior_member_id = :member_id 
+                                                ORDER BY visit_date DESC";
+                                        $healthSurveillance = $db->fetchAll($sql, ['member_id' => $member['id']]);
+                                        ?>
+                                        <?php if (!empty($healthSurveillance)): ?>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Data Visita</th>
+                                                            <th>Esito</th>
+                                                            <th>Data Scadenza</th>
+                                                            <th>Note</th>
+                                                            <th>Azioni</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($healthSurveillance as $surveillance): ?>
+                                                            <?php
+                                                            $resultColors = [
+                                                                'Regolare' => 'success',
+                                                                'Con Limitazioni' => 'warning',
+                                                                'Da Ripetere' => 'danger'
+                                                            ];
+                                                            $color = $resultColors[$surveillance['result']] ?? 'secondary';
+                                                            
+                                                            // Check if expiring soon (within 30 days)
+                                                            $expiryDate = strtotime($surveillance['expiry_date']);
+                                                            $today = strtotime(date('Y-m-d'));
+                                                            $daysUntilExpiry = ($expiryDate - $today) / (60 * 60 * 24);
+                                                            $isExpiring = $daysUntilExpiry <= 30 && $daysUntilExpiry > 0;
+                                                            $isExpired = $daysUntilExpiry <= 0;
+                                                            ?>
+                                                            <tr class="<?php echo $isExpired ? 'table-danger' : ($isExpiring ? 'table-warning' : ''); ?>">
+                                                                <td><?php echo date('d/m/Y', strtotime($surveillance['visit_date'])); ?></td>
+                                                                <td>
+                                                                    <span class="badge bg-<?php echo $color; ?>">
+                                                                        <?php echo htmlspecialchars($surveillance['result']); ?>
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <?php echo date('d/m/Y', strtotime($surveillance['expiry_date'])); ?>
+                                                                    <?php if ($isExpired): ?>
+                                                                        <span class="badge bg-danger ms-1">Scaduta</span>
+                                                                    <?php elseif ($isExpiring): ?>
+                                                                        <span class="badge bg-warning ms-1">In scadenza</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td><?php echo htmlspecialchars($surveillance['notes'] ?? 'N/D'); ?></td>
+                                                                <td>
+                                                                    <?php if ($app->checkPermission('junior_members', 'edit')): ?>
+                                                                        <a href="junior_member_health_surveillance_edit.php?member_id=<?php echo $member['id']; ?>&id=<?php echo $surveillance['id']; ?>" 
+                                                                           class="btn btn-sm btn-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </a>
+                                                                        <button class="btn btn-sm btn-danger" onclick="deleteHealthSurveillance(<?php echo $surveillance['id']; ?>)">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Nessuna visita di sorveglianza sanitaria registrata</p>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -695,6 +787,12 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
         function deleteNote(id) {
             if (confirm('Sei sicuro di voler eliminare questa nota?')) {
                 window.location.href = 'junior_member_data.php?action=delete_note&id=' + id + '&member_id=' + memberId;
+            }
+        }
+        
+        function deleteHealthSurveillance(id) {
+            if (confirm('Sei sicuro di voler eliminare questa visita di sorveglianza sanitaria?')) {
+                window.location.href = 'junior_member_data.php?action=delete_health_surveillance&id=' + id + '&member_id=' + memberId;
             }
         }
         
