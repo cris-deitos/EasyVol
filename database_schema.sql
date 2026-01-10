@@ -2362,7 +2362,7 @@ INSERT INTO `print_templates` (
 -- Telegram notification configuration
 CREATE TABLE IF NOT EXISTS `telegram_notification_config` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `action_type` varchar(100) NOT NULL COMMENT 'Type of action: member_application, junior_application, fee_payment, vehicle_departure, vehicle_return, event_created, scheduler_expiry, vehicle_expiry, license_expiry, qualification_expiry, course_expiry, user_login',
+  `action_type` varchar(100) NOT NULL COMMENT 'Type of action: member_application, junior_application, fee_payment, vehicle_departure, vehicle_return, event_created, scheduler_expiry, vehicle_expiry, license_expiry, qualification_expiry, course_expiry, user_login, health_surveillance_expiry',
   `is_enabled` tinyint(1) DEFAULT 1 COMMENT 'Whether notifications are enabled for this action',
   `message_template` text COMMENT 'Custom message template with placeholders',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2405,7 +2405,8 @@ INSERT INTO `telegram_notification_config` (`action_type`, `is_enabled`, `messag
 ('license_expiry', 1, NULL),
 ('qualification_expiry', 1, NULL),
 ('course_expiry', 1, NULL),
-('user_login', 1, NULL);
+('user_login', 1, NULL),
+('health_surveillance_expiry', 1, NULL);
 
 -- =============================================
 -- DISPATCH SYSTEM TABLES
