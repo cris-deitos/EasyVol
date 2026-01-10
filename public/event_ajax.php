@@ -263,6 +263,90 @@ try {
             }
             break;
             
+        case 'remove_participant':
+            // Remove participant from event
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $eventId = intval($input['event_id'] ?? 0);
+            $memberId = intval($input['member_id'] ?? 0);
+            
+            if ($eventId <= 0 || $memberId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            $result = $controller->removeParticipant($eventId, $memberId, $app->getUserId());
+            
+            if ($result === true) {
+                echo json_encode(['success' => true, 'message' => 'Partecipante rimosso con successo']);
+            } elseif (is_array($result) && isset($result['error'])) {
+                echo json_encode(['error' => $result['error']]);
+            } else {
+                echo json_encode(['error' => 'Errore durante la rimozione del partecipante']);
+            }
+            break;
+            
+        case 'remove_vehicle':
+            // Remove vehicle from event
+            if (!$app->checkPermission('events', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Permesso negato']);
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['error' => 'Metodo non consentito']);
+                exit;
+            }
+            
+            // Use already parsed JSON input or fallback to $_POST
+            $input = $jsonInput ?? $_POST;
+            
+            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Token di sicurezza non valido']);
+                exit;
+            }
+            
+            $eventId = intval($input['event_id'] ?? 0);
+            $vehicleId = intval($input['vehicle_id'] ?? 0);
+            
+            if ($eventId <= 0 || $vehicleId <= 0) {
+                echo json_encode(['error' => 'Parametri non validi']);
+                exit;
+            }
+            
+            $result = $controller->removeVehicle($eventId, $vehicleId, $app->getUserId());
+            
+            if ($result === true) {
+                echo json_encode(['success' => true, 'message' => 'Veicolo rimosso con successo']);
+            } elseif (is_array($result) && isset($result['error'])) {
+                echo json_encode(['error' => $result['error']]);
+            } else {
+                echo json_encode(['error' => 'Errore durante la rimozione del veicolo']);
+            }
+            break;
+            
         case 'add_intervention_participant':
             // Add participant to intervention
             if (!$app->checkPermission('events', 'edit')) {

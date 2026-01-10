@@ -884,6 +884,46 @@ class EventController {
     }
     
     /**
+     * Rimuovi partecipante da un evento
+     */
+    public function removeParticipant($eventId, $memberId, $userId) {
+        try {
+            $sql = "DELETE FROM event_participants WHERE event_id = ? AND member_id = ?";
+            $result = $this->db->execute($sql, [$eventId, $memberId]);
+            
+            if ($result) {
+                $this->logActivity($userId, 'event_participants', 'delete', $eventId, 'Rimosso partecipante da evento');
+                return true;
+            }
+            
+            return ['error' => 'Partecipante non trovato'];
+        } catch (\Exception $e) {
+            error_log("Errore rimozione partecipante: " . $e->getMessage());
+            return ['error' => 'Errore durante la rimozione del partecipante'];
+        }
+    }
+    
+    /**
+     * Rimuovi veicolo da un evento
+     */
+    public function removeVehicle($eventId, $vehicleId, $userId) {
+        try {
+            $sql = "DELETE FROM event_vehicles WHERE event_id = ? AND vehicle_id = ?";
+            $result = $this->db->execute($sql, [$eventId, $vehicleId]);
+            
+            if ($result) {
+                $this->logActivity($userId, 'event_vehicles', 'delete', $eventId, 'Rimosso veicolo da evento');
+                return true;
+            }
+            
+            return ['error' => 'Veicolo non trovato'];
+        } catch (\Exception $e) {
+            error_log("Errore rimozione veicolo: " . $e->getMessage());
+            return ['error' => 'Errore durante la rimozione del veicolo'];
+        }
+    }
+    
+    /**
      * Generate random 8-character alphanumeric access code
      */
     private function generateAccessCode() {
