@@ -513,7 +513,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         <?php if ($app->checkPermission('events', 'edit')): ?>
                                                             <td>
                                                                 <button type="button" class="btn btn-sm btn-danger" 
-                                                                        onclick="removeParticipant(<?php echo $participant['member_id']; ?>, <?php echo htmlspecialchars(json_encode($participant['first_name'] . ' ' . $participant['last_name']), ENT_QUOTES, 'UTF-8'); ?>)"
+                                                                        onclick="removeParticipant(<?php echo $participant['member_id']; ?>, <?php echo json_encode($participant['first_name'] . ' ' . $participant['last_name']); ?>)"
                                                                         title="Rimuovi partecipante">
                                                                     <i class="bi bi-trash"></i>
                                                                 </button>
@@ -570,7 +570,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         <?php if ($app->checkPermission('events', 'edit')): ?>
                                                             <td>
                                                                 <button type="button" class="btn btn-sm btn-danger" 
-                                                                        onclick="removeVehicle(<?php echo $vehicle['vehicle_id']; ?>, <?php echo htmlspecialchars(json_encode($vehicle['license_plate'] ?? $vehicle['serial_number'] ?? 'Mezzo'), ENT_QUOTES, 'UTF-8'); ?>)"
+                                                                        onclick="removeVehicle(<?php echo $vehicle['vehicle_id']; ?>, <?php echo json_encode($vehicle['license_plate'] ?? $vehicle['serial_number'] ?? 'Mezzo'); ?>)"
                                                                         title="Rimuovi mezzo">
                                                                     <i class="bi bi-trash"></i>
                                                                 </button>
