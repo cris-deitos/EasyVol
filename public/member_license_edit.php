@@ -21,8 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Token non valido';
     } else {
         // Convert empty dates to null
-        $issueDate = !empty($_POST['issue_date']) ? $_POST['issue_date'] : null;
-        $expiryDate = !empty($_POST['expiry_date']) ? $_POST['expiry_date'] : null;
+        $issueDate = trim($_POST['issue_date'] ?? '');
+        $issueDate = !empty($issueDate) ? $issueDate : null;
+        
+        $expiryDate = trim($_POST['expiry_date'] ?? '');
+        $expiryDate = !empty($expiryDate) ? $expiryDate : null;
         
         $data = [
             'license_type' => trim($_POST['license_type'] ?? ''),

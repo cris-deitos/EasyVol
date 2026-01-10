@@ -68,7 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (empty($errors)) {
             // Convert empty expiry_date to null
-            $expiryDate = !empty($_POST['expiry_date']) ? $_POST['expiry_date'] : null;
+            $expiryDateInput = trim($_POST['expiry_date'] ?? '');
+            $expiryDate = !empty($expiryDateInput) ? $expiryDateInput : null;
             
             $data = [
                 'course_name' => trim($_POST['course_name'] ?? ''),
