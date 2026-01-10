@@ -20,11 +20,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token non valido';
     } else {
+        // Convert empty dates to null
+        $issueDate = trim($_POST['issue_date'] ?? '');
+        $issueDate = !empty($issueDate) ? $issueDate : null;
+        
+        $expiryDate = trim($_POST['expiry_date'] ?? '');
+        $expiryDate = !empty($expiryDate) ? $expiryDate : null;
+        
         $data = [
             'license_type' => trim($_POST['license_type'] ?? ''),
             'license_number' => trim($_POST['license_number'] ?? ''),
-            'issue_date' => $_POST['issue_date'] ?? null,
-            'expiry_date' => $_POST['expiry_date'] ?? null
+            'issue_date' => $issueDate,
+            'expiry_date' => $expiryDate
         ];
         try {
             $memberModel->addLicense($memberId, $data);
@@ -73,11 +80,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="issue_date" class="form-label">Data Rilascio</label>
+                                    <label for="issue_date" class="form-label">Data Rilascio (opzionale)</label>
                                     <input type="date" class="form-control" id="issue_date" name="issue_date">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="expiry_date" class="form-label">Data Scadenza</label>
+                                    <label for="expiry_date" class="form-label">Data Scadenza (opzionale)</label>
                                     <input type="date" class="form-control" id="expiry_date" name="expiry_date">
                                 </div>
                             </div>
