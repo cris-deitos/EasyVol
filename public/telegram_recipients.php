@@ -153,11 +153,13 @@ $actionLabels = [
     'vehicle_departure' => 'Uscita mezzo',
     'vehicle_return' => 'Rientro mezzo',
     'event_created' => 'Nuovo evento/intervento',
+    'user_login' => 'Accesso utente al gestionale',
     'scheduler_expiry' => 'Scadenze scadenzario',
     'vehicle_expiry' => 'Scadenze revisioni/assicurazioni mezzi',
     'license_expiry' => 'Scadenze patenti soci',
     'qualification_expiry' => 'Scadenze qualifiche soci',
-    'course_expiry' => 'Scadenze corsi soci'
+    'course_expiry' => 'Scadenze corsi soci',
+    'health_surveillance_expiry' => 'Scadenze sorveglianza sanitaria'
 ];
 
 $pageTitle = 'Gestione Destinatari Notifiche Telegram';
