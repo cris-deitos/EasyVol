@@ -534,9 +534,6 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                 <tr>
                                                     <th>Targa/Matricola</th>
                                                     <th>Marca/Modello</th>
-                                                    <th>Conducente</th>
-                                                    <th>Ore di Utilizzo</th>
-                                                    <th>Km Percorsi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -549,9 +546,6 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                             echo htmlspecialchars($brandModel ?: '-'); 
                                                             ?>
                                                         </td>
-                                                        <td><?php echo htmlspecialchars($vehicle['driver_name'] ?? '-'); ?></td>
-                                                        <td><?php echo htmlspecialchars($vehicle['hours'] ?? 0); ?></td>
-                                                        <td><?php echo htmlspecialchars($vehicle['km_traveled'] ?? 0); ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
