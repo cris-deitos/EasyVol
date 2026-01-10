@@ -67,11 +67,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if (empty($errors)) {
+            // Convert empty expiry_date to null
+            $expiryDate = !empty($_POST['expiry_date']) ? $_POST['expiry_date'] : null;
+            
             $data = [
                 'course_name' => trim($_POST['course_name'] ?? ''),
                 'course_type' => trim($_POST['course_type'] ?? ''),
                 'completion_date' => $completionDate,
-                'expiry_date' => $_POST['expiry_date'] ?? null
+                'expiry_date' => $expiryDate
             ];
             try {
                 $memberModel->addCourse($memberId, $data);
@@ -145,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </fieldset>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="expiry_date" class="form-label">Data Scadenza</label>
+                                    <label for="expiry_date" class="form-label">Data Scadenza (opzionale)</label>
                                     <input type="date" class="form-control" id="expiry_date" name="expiry_date">
                                 </div>
                             </div>
