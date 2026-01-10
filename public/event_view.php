@@ -493,14 +493,32 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                             <thead>
                                                 <tr>
                                                     <th>Volontario</th>
+                                                    <th>Matricola</th>
                                                     <th>Codice Fiscale</th>
+                                                    <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                        <th width="100">Azioni</th>
+                                                    <?php endif; ?>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php foreach ($event['participants'] as $participant): ?>
                                                     <tr>
-                                                        <td><?php echo htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']); ?></td>
+                                                        <td>
+                                                            <a href="member_view.php?id=<?php echo $participant['member_id']; ?>" class="text-decoration-none">
+                                                                <?php echo htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']); ?>
+                                                            </a>
+                                                        </td>
+                                                        <td><code><?php echo htmlspecialchars($participant['registration_number'] ?? 'N/D'); ?></code></td>
                                                         <td><code><?php echo htmlspecialchars($participant['tax_code'] ?? 'N/D'); ?></code></td>
+                                                        <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                            <td>
+                                                                <button type="button" class="btn btn-sm btn-danger" 
+                                                                        onclick="removeParticipant(<?php echo $participant['member_id']; ?>, <?php echo json_encode($participant['first_name'] . ' ' . $participant['last_name']); ?>)"
+                                                                        title="Rimuovi partecipante">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        <?php endif; ?>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
@@ -534,6 +552,9 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                 <tr>
                                                     <th>Targa/Matricola</th>
                                                     <th>Marca/Modello</th>
+                                                    <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                        <th width="100">Azioni</th>
+                                                    <?php endif; ?>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -546,6 +567,15 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                             echo htmlspecialchars($brandModel ?: '-'); 
                                                             ?>
                                                         </td>
+                                                        <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                            <td>
+                                                                <button type="button" class="btn btn-sm btn-danger" 
+                                                                        onclick="removeVehicle(<?php echo $vehicle['vehicle_id']; ?>, <?php echo json_encode($vehicle['license_plate'] ?? $vehicle['serial_number'] ?? 'Mezzo'); ?>)"
+                                                                        title="Rimuovi mezzo">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        <?php endif; ?>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
@@ -1173,6 +1203,72 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             });
         }
         
+        // Remove participant from event
+        function removeParticipant(memberId, memberName) {
+            if (!confirm('Sei sicuro di voler rimuovere ' + memberName + ' dall\'evento?')) {
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'remove_participant',
+                    event_id: eventId,
+                    member_id: memberId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else {
+                    alert(data.message);
+                    reloadWithActiveTab();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante la rimozione');
+            });
+        }
+        
+        // Remove vehicle from event
+        function removeVehicle(vehicleId, vehicleName) {
+            if (!confirm('Sei sicuro di voler rimuovere ' + vehicleName + ' dall\'evento?')) {
+                return;
+            }
+            
+            fetch('event_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'remove_vehicle',
+                    event_id: eventId,
+                    vehicle_id: vehicleId,
+                    csrf_token: csrfToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Errore: ' + data.error);
+                } else {
+                    alert(data.message);
+                    reloadWithActiveTab();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante la rimozione');
+            });
+        }
+        
         function printReport() {
             // Implementare generazione e stampa report
             alert('Funzionalità in sviluppo');
@@ -1546,7 +1642,9 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     list.innerHTML = data.members.map(member => `
                         <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
                             <div>
-                                <strong>${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</strong>
+                                <a href="member_view.php?id=${member.member_id}" class="text-decoration-none" target="_blank">
+                                    <strong>${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</strong>
+                                </a>
                                 ${member.registration_number ? `<br><small class="text-muted">Matricola: ${escapeHtml(member.registration_number)}</small>` : ''}
                             </div>
                             <button class="btn btn-sm btn-danger" onclick="removeInterventionMember(${interventionId}, ${member.member_id})">
