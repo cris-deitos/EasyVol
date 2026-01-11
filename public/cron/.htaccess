@@ -1,0 +1,34 @@
+# Security for EasyVol Cron Jobs
+# This file adds an extra layer of protection for web-accessible cron endpoints
+
+# Enable rewrite engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Block direct access to _cron_base.php
+    RewriteRule ^_cron_base\.php$ - [F,L]
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Allow GET and POST requests (POST needed for alternative authentication methods)
+<LimitExcept GET POST>
+    Order Allow,Deny
+    Deny from all
+</LimitExcept>
+
+# Optional: Block access if no token parameter is present
+# Uncomment the following lines for stricter security
+# <IfModule mod_rewrite.c>
+#     RewriteCond %{QUERY_STRING} !token=
+#     RewriteCond %{REQUEST_METHOD} !POST
+#     RewriteRule \.php$ - [F,L]
+# </IfModule>
+
+# Optional: Whitelist specific IP addresses
+# Uncomment and modify to restrict access to specific IPs only
+# <RequireAll>
+#     Require ip 127.0.0.1
+#     Require ip YOUR_SERVER_IP_HERE
+# </RequireAll>
