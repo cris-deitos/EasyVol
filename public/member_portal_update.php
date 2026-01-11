@@ -47,6 +47,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // Prepare data for update
         $updateData = [];
         
+        // Update worker_type and education_level in members table
+        if (isset($_POST['worker_type']) || isset($_POST['education_level'])) {
+            $updateData['member_fields'] = [];
+            if (isset($_POST['worker_type'])) {
+                $updateData['member_fields']['worker_type'] = $_POST['worker_type'];
+            }
+            if (isset($_POST['education_level'])) {
+                $updateData['member_fields']['education_level'] = $_POST['education_level'];
+            }
+        }
+        
         // Contacts
         if (isset($_POST['contacts'])) {
             $contacts = [];
@@ -468,12 +479,57 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                             <div class="info-value"><?= htmlspecialchars(ucfirst($memberData['member_type'] ?? 'N/D')) ?></div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">Tipo Lavoratore:</div>
-                            <div class="info-value"><?= htmlspecialchars(str_replace('_', ' ', ucfirst($memberData['worker_type'] ?? 'N/D'))) ?></div>
+                            <div class="info-label">Data Iscrizione:</div>
+                            <div class="info-value"><?= $memberData['registration_date'] ? date('d/m/Y', strtotime($memberData['registration_date'])) : 'N/D' ?></div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">Titolo di Studio:</div>
-                            <div class="info-value"><?= htmlspecialchars(str_replace('_', ' ', ucfirst($memberData['education_level'] ?? 'N/D'))) ?></div>
+                            <div class="info-label">Data Approvazione:</div>
+                            <div class="info-value"><?= $memberData['approval_date'] ? date('d/m/Y', strtotime($memberData['approval_date'])) : 'N/D' ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Corso Base:</div>
+                            <div class="info-value">
+                                <?php if ($memberData['corso_base_completato'] == 1): ?>
+                                    <span class="badge bg-success">Completato</span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary">Non Completato</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Anno Corso Base:</div>
+                            <div class="info-value"><?= htmlspecialchars($memberData['corso_base_anno'] ?? 'N/D') ?></div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mt-4"><i class="bi bi-pencil-square"></i> Dati Modificabili</h6>
+                    <p class="text-muted" style="font-size: 14px; margin-bottom: 15px;">
+                        Puoi aggiornare le seguenti informazioni:
+                    </p>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="worker_type" class="form-label">Tipo Lavoratore</label>
+                            <select name="worker_type" id="worker_type" class="form-select">
+                                <option value="">Seleziona...</option>
+                                <option value="studente" <?= ($memberData['worker_type'] ?? '') == 'studente' ? 'selected' : '' ?>>Studente</option>
+                                <option value="dipendente_privato" <?= ($memberData['worker_type'] ?? '') == 'dipendente_privato' ? 'selected' : '' ?>>Dipendente Privato</option>
+                                <option value="dipendente_pubblico" <?= ($memberData['worker_type'] ?? '') == 'dipendente_pubblico' ? 'selected' : '' ?>>Dipendente Pubblico</option>
+                                <option value="lavoratore_autonomo" <?= ($memberData['worker_type'] ?? '') == 'lavoratore_autonomo' ? 'selected' : '' ?>>Lavoratore Autonomo</option>
+                                <option value="disoccupato" <?= ($memberData['worker_type'] ?? '') == 'disoccupato' ? 'selected' : '' ?>>Disoccupato</option>
+                                <option value="pensionato" <?= ($memberData['worker_type'] ?? '') == 'pensionato' ? 'selected' : '' ?>>Pensionato</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="education_level" class="form-label">Titolo di Studio</label>
+                            <select name="education_level" id="education_level" class="form-select">
+                                <option value="">Seleziona...</option>
+                                <option value="licenza_media" <?= ($memberData['education_level'] ?? '') == 'licenza_media' ? 'selected' : '' ?>>Licenza Media</option>
+                                <option value="diploma_maturita" <?= ($memberData['education_level'] ?? '') == 'diploma_maturita' ? 'selected' : '' ?>>Diploma di Maturità</option>
+                                <option value="laurea_triennale" <?= ($memberData['education_level'] ?? '') == 'laurea_triennale' ? 'selected' : '' ?>>Laurea Triennale</option>
+                                <option value="laurea_magistrale" <?= ($memberData['education_level'] ?? '') == 'laurea_magistrale' ? 'selected' : '' ?>>Laurea Magistrale</option>
+                                <option value="dottorato" <?= ($memberData['education_level'] ?? '') == 'dottorato' ? 'selected' : '' ?>>Dottorato</option>
+                            </select>
                         </div>
                     </div>
                 </div>

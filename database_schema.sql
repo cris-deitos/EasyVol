@@ -254,6 +254,7 @@ CREATE TABLE IF NOT EXISTS `member_licenses` (
   `license_number` varchar(100),
   `issue_date` date,
   `expiry_date` date,
+  `notes` text COMMENT 'Note aggiuntive sulla patente',
   PRIMARY KEY (`id`),
   KEY `member_id` (`member_id`),
   FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE
@@ -268,6 +269,7 @@ CREATE TABLE IF NOT EXISTS `member_courses` (
   `expiry_date` date,
   `certificate_file` varchar(255),
   `certification_number` varchar(100) DEFAULT NULL COMMENT 'Numero certificato',
+  `notes` text COMMENT 'Note aggiuntive sul corso',
   `training_course_id` int(11) DEFAULT NULL COMMENT 'Reference to training_courses if from organized training',
   PRIMARY KEY (`id`),
   KEY `member_id` (`member_id`),
