@@ -10,6 +10,10 @@ use EasyVol\Database;
 class Member {
     private $db;
     
+    // Course name constants
+    const CORSO_BASE_A1_NAME = 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE';
+    const CORSO_BASE_A1_CODE = 'A1';
+    
     public function __construct(Database $db) {
         $this->db = $db;
     }
@@ -48,9 +52,8 @@ class Member {
      * @param string|null $completionDate Course completion date (YYYY-MM-DD)
      */
     private function updateCorsoBaseFields($memberId, $courseName, $completionDate = null) {
-        // Check if this is the A1 base course
-        if (empty($courseName) || 
-            stripos($courseName, 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE') === false) {
+        // Check if this is the A1 base course using class constant
+        if (empty($courseName) || stripos($courseName, self::CORSO_BASE_A1_NAME) === false) {
             return;
         }
         
@@ -60,11 +63,18 @@ class Member {
             try {
                 $dateObj = \DateTime::createFromFormat('Y-m-d', $completionDate);
                 if ($dateObj !== false) {
-                    $anno = intval($dateObj->format('Y'));
+                    $year = intval($dateObj->format('Y'));
+                    // Validate year is reasonable (1900 to current year + 1)
+                    if ($year >= 1900 && $year <= date('Y') + 1) {
+                        $anno = $year;
+                    } else {
+                        error_log("Warning: Invalid corso base year extracted: $year for member $memberId");
+                    }
+                } else {
+                    error_log("Warning: Failed to parse corso base completion date: $completionDate for member $memberId");
                 }
             } catch (\Exception $e) {
-                // Fallback to substr if date parsing fails
-                $anno = intval(substr($completionDate, 0, 4));
+                error_log("Exception parsing corso base completion date: " . $e->getMessage());
             }
         }
         

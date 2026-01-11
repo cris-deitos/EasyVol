@@ -4,6 +4,7 @@ namespace EasyVol\Controllers;
 use EasyVol\Database;
 use EasyVol\Utils\PdfGenerator;
 use EasyVol\Utils\EmailSender;
+use EasyVol\Models\Member;
 
 /**
  * Application Controller
@@ -1090,8 +1091,8 @@ class ApplicationController {
         
         // Inserisci Corso Base Protezione Civile (se presente)
         if (!empty($data['corso_base_pc'])) {
-            $courseName = 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE';
-            $courseType = 'A1';
+            $courseName = Member::CORSO_BASE_A1_NAME;
+            $courseType = Member::CORSO_BASE_A1_CODE;
             $completionDate = null;
             
             // If year is provided, validate and use January 1st as completion date
