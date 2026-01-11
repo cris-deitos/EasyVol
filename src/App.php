@@ -222,7 +222,10 @@ private function loadEmailConfigFromDatabase() {
             // Session timeout (2 hours by default)
             $sessionLifetime = $this->config['security']['session_lifetime'] ?? 7200;
             ini_set('session.gc_maxlifetime', $sessionLifetime);
-            ini_set('session.cookie_lifetime', $sessionLifetime);
+            
+            // Set cookie to expire with browser close (0) for better security
+            // This prevents session cookies from persisting after browser closes
+            ini_set('session.cookie_lifetime', 0);
             
             session_start();
             

@@ -20,7 +20,7 @@ class RateLimiter {
      * 
      * @param \EasyVol\Database $db Database instance
      */
-    public function __construct($db) {
+    public function __construct(\EasyVol\Database $db) {
         $this->db = $db;
     }
     
@@ -153,15 +153,24 @@ class RateLimiter {
      * Get current client IP address
      * Handles proxy scenarios with X-Forwarded-For header
      * 
-     * SECURITY NOTE: In production environments behind trusted proxies/load balancers,
-     * configure your web server to only pass X-Forwarded-For from trusted sources.
-     * Consider implementing a whitelist of trusted proxy IPs if needed.
+     * SECURITY WARNING: X-Forwarded-For header can be spoofed by attackers!
+     * 
+     * For production environments:
+     * 1. Configure web server (nginx/Apache) to only set X-Forwarded-For from trusted IPs
+     * 2. Or use getTrustedClientIp() with a whitelist of proxy IPs
+     * 3. Or simply rely on REMOTE_ADDR if not behind a proxy
+     * 
+     * Example nginx config:
+     * ```
+     * set_real_ip_from 10.0.0.0/8;  # Internal network
+     * real_ip_header X-Forwarded-For;
+     * ```
      * 
      * @return string IP address
      */
     public static function getClientIp() {
         // Check for proxy headers
-        // Note: X-Forwarded-For can be spoofed. Only use if behind a trusted proxy.
+        // WARNING: These can be spoofed! Use only behind trusted proxies.
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             // X-Forwarded-For can contain multiple IPs, take the first one
             $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
@@ -169,7 +178,7 @@ class RateLimiter {
         } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
             $ip = $_SERVER['HTTP_CLIENT_IP'];
         } else {
-            // Most reliable - direct connection IP
+            // Most reliable - direct connection IP (cannot be spoofed)
             $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         }
         
@@ -180,5 +189,33 @@ class RateLimiter {
         
         // Fallback to safe default if invalid
         return '0.0.0.0';
+    }
+    
+    /**
+     * Get client IP from trusted proxies only
+     * Use this method if you have a whitelist of trusted proxy IPs
+     * 
+     * @param array $trustedProxies Array of trusted proxy IP addresses
+     * @return string IP address
+     */
+    public static function getTrustedClientIp(array $trustedProxies = []) {
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        
+        // If not from a trusted proxy, use REMOTE_ADDR directly
+        if (empty($trustedProxies) || !in_array($remoteAddr, $trustedProxies)) {
+            return $remoteAddr;
+        }
+        
+        // From trusted proxy - check X-Forwarded-For
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            $ip = trim($ips[0]);
+            
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+        
+        return $remoteAddr;
     }
 }
