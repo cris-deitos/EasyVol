@@ -12,6 +12,10 @@ class SchedulerController {
     private $db;
     private $config;
     
+    // Constants for recurring deadlines
+    const MAX_RECURRENCE_ITERATIONS = 100;
+    const DEFAULT_LOOKAHEAD_DAYS = 90;
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -123,8 +127,9 @@ class SchedulerController {
             
             $sql = "INSERT INTO scheduler_items (
                 title, description, due_date, category, priority, 
-                status, reminder_days, assigned_to, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                status, reminder_days, is_recurring, recurrence_type, 
+                recurrence_end_date, parent_recurrence_id, assigned_to, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['title'],
@@ -134,6 +139,10 @@ class SchedulerController {
                 $data['priority'] ?? 'media',
                 $data['status'] ?? 'in_attesa',
                 $data['reminder_days'] ?? 7,
+                isset($data['is_recurring']) ? (int)$data['is_recurring'] : 0,
+                $data['recurrence_type'] ?? null,
+                $data['recurrence_end_date'] ?? null,
+                $data['parent_recurrence_id'] ?? null,
                 $data['assigned_to'] ?? null
             ];
             
@@ -146,8 +155,12 @@ class SchedulerController {
             }
             
             // Log activity
+            $recurrenceInfo = '';
+            if (!empty($data['is_recurring'])) {
+                $recurrenceInfo = ' (Ricorrente: ' . $data['recurrence_type'] . ')';
+            }
             $this->logActivity($userId, 'scheduler', 'create', $itemId, 
-                "Creata scadenza: {$data['title']}");
+                "Creata scadenza: {$data['title']}{$recurrenceInfo}");
             
             $this->db->commit();
             return $itemId;
@@ -207,7 +220,10 @@ class SchedulerController {
                 category = ?, 
                 priority = ?, 
                 status = ?, 
-                reminder_days = ?, 
+                reminder_days = ?,
+                is_recurring = ?,
+                recurrence_type = ?,
+                recurrence_end_date = ?,
                 assigned_to = ?,
                 completed_at = ?,
                 updated_at = NOW()
@@ -221,6 +237,9 @@ class SchedulerController {
                 $data['priority'] ?? 'media',
                 $data['status'] ?? 'in_attesa',
                 $data['reminder_days'] ?? 7,
+                isset($data['is_recurring']) ? (int)$data['is_recurring'] : 0,
+                $data['recurrence_type'] ?? null,
+                $data['recurrence_end_date'] ?? null,
                 $data['assigned_to'] ?? null,
                 $completedAt,
                 $id
@@ -237,8 +256,12 @@ class SchedulerController {
             }
             
             // Log activity
+            $recurrenceInfo = '';
+            if (!empty($data['is_recurring'])) {
+                $recurrenceInfo = ' (Ricorrente: ' . $data['recurrence_type'] . ')';
+            }
             $this->logActivity($userId, 'scheduler', 'update', $id, 
-                "Aggiornata scadenza: {$data['title']}");
+                "Aggiornata scadenza: {$data['title']}{$recurrenceInfo}");
             
             $this->db->commit();
             return true;
@@ -506,5 +529,223 @@ class SchedulerController {
         $sql = "INSERT INTO activity_logs (user_id, module, action, record_id, description, created_at) 
                 VALUES (?, ?, ?, ?, ?, NOW())";
         $this->db->execute($sql, [$userId, $module, $action, $recordId, $details]);
+    }
+    
+    /**
+     * Ottieni tutte le scadenze ricorrenti attive (master records)
+     */
+    public function getRecurringSchedules() {
+        $sql = "SELECT * FROM scheduler_items 
+                WHERE is_recurring = 1 
+                AND parent_recurrence_id IS NULL
+                AND status != 'completato'
+                ORDER BY due_date";
+        
+        return $this->db->fetchAll($sql);
+    }
+    
+    /**
+     * Genera prossima occorrenza per una scadenza ricorrente
+     * 
+     * @param int $parentId ID della scadenza ricorrente principale
+     * @param string $baseDate Data base da cui calcolare la prossima occorrenza
+     * @return int|false ID della nuova occorrenza o false in caso di errore
+     */
+    public function generateNextRecurrence($parentId, $baseDate = null) {
+        try {
+            // Get parent item
+            $parent = $this->get($parentId);
+            if (!$parent || !$parent['is_recurring']) {
+                error_log("Parent item not found or not recurring: $parentId");
+                return false;
+            }
+            
+            // Calculate next occurrence date
+            if ($baseDate === null) {
+                $baseDate = $parent['due_date'];
+            }
+            
+            $nextDate = $this->calculateNextOccurrence($baseDate, $parent['recurrence_type']);
+            
+            // Check if we should generate (not past end date)
+            if ($parent['recurrence_end_date'] && $nextDate > $parent['recurrence_end_date']) {
+                return false; // Past end date, don't generate
+            }
+            
+            // Check if this occurrence already exists
+            $sql = "SELECT id FROM scheduler_items 
+                    WHERE parent_recurrence_id = ? 
+                    AND due_date = ?";
+            $existing = $this->db->fetchOne($sql, [$parentId, $nextDate]);
+            
+            if ($existing) {
+                return $existing['id']; // Already exists
+            }
+            
+            // Create new occurrence
+            $this->db->beginTransaction();
+            
+            $sql = "INSERT INTO scheduler_items (
+                title, description, due_date, category, priority, 
+                status, reminder_days, is_recurring, recurrence_type, 
+                recurrence_end_date, parent_recurrence_id, assigned_to, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            
+            $params = [
+                $parent['title'],
+                $parent['description'],
+                $nextDate,
+                $parent['category'],
+                $parent['priority'],
+                'in_attesa', // Always start as pending
+                $parent['reminder_days'],
+                0, // Not recurring itself (it's an instance)
+                null,
+                null,
+                $parentId,
+                $parent['assigned_to']
+            ];
+            
+            $this->db->execute($sql, $params);
+            $newItemId = $this->db->lastInsertId();
+            
+            // Copy recipients from parent
+            $recipients = $this->getRecipients($parentId);
+            if (!empty($recipients)) {
+                $recipientData = [];
+                foreach ($recipients as $recipient) {
+                    $recipientData[] = [
+                        'type' => $recipient['recipient_type'],
+                        'user_id' => $recipient['user_id'],
+                        'member_id' => $recipient['member_id'],
+                        'external_email' => $recipient['external_email']
+                    ];
+                }
+                $this->addRecipients($newItemId, $recipientData);
+            }
+            
+            $this->db->commit();
+            return $newItemId;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Error generating next recurrence: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Calcola la prossima data di occorrenza basata sul tipo di ricorrenza
+     * 
+     * @param string $currentDate Data corrente
+     * @param string $recurrenceType Tipo di ricorrenza (yearly, monthly, weekly)
+     * @return string Prossima data in formato Y-m-d
+     */
+    private function calculateNextOccurrence($currentDate, $recurrenceType) {
+        $date = new \DateTime($currentDate);
+        
+        switch ($recurrenceType) {
+            case 'weekly':
+                $date->modify('+1 week');
+                break;
+            case 'monthly':
+                $date->modify('+1 month');
+                break;
+            case 'yearly':
+                $date->modify('+1 year');
+                break;
+            default:
+                error_log("Unknown recurrence type: $recurrenceType");
+                return $currentDate;
+        }
+        
+        return $date->format('Y-m-d');
+    }
+    
+    /**
+     * Genera tutte le occorrenze future per tutte le scadenze ricorrenti attive
+     * Questo metodo dovrebbe essere chiamato da un cron job periodicamente
+     * 
+     * @param int $daysAhead Numero di giorni in avanti per cui generare occorrenze
+     * @return int Numero di occorrenze generate
+     */
+    public function generateAllRecurrences($daysAhead = 90) {
+        $count = 0;
+        $recurringItems = $this->getRecurringSchedules();
+        
+        foreach ($recurringItems as $item) {
+            $currentDate = $item['due_date'];
+            $endDate = new \DateTime();
+            $endDate->modify("+{$daysAhead} days");
+            $endDateStr = $endDate->format('Y-m-d');
+            
+            // Generate occurrences until we reach the end date or recurrence end date
+            $iteration = 0;
+            
+            while ($iteration < self::MAX_RECURRENCE_ITERATIONS) {
+                $nextDate = $this->calculateNextOccurrence($currentDate, $item['recurrence_type']);
+                
+                // Stop if next date is beyond our look-ahead period
+                if ($nextDate > $endDateStr) {
+                    break;
+                }
+                
+                // Stop if next date is beyond recurrence end date
+                if ($item['recurrence_end_date'] && $nextDate > $item['recurrence_end_date']) {
+                    break;
+                }
+                
+                // Try to generate the occurrence
+                $result = $this->generateNextRecurrence($item['id'], $currentDate);
+                if ($result !== false) {
+                    $count++;
+                }
+                
+                $currentDate = $nextDate;
+                $iteration++;
+            }
+        }
+        
+        return $count;
+    }
+    
+    /**
+     * Elimina una scadenza ricorrente e tutte le sue occorrenze future
+     * 
+     * @param int $id ID della scadenza ricorrente principale
+     * @param int $userId ID dell'utente che esegue l'operazione
+     * @param bool $deleteAllOccurrences Se true, elimina anche tutte le occorrenze generate
+     * @return array Risultato dell'operazione
+     */
+    public function deleteRecurringSchedule($id, $userId, $deleteAllOccurrences = true) {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get item for log
+            $item = $this->get($id);
+            if (!$item) {
+                return ['success' => false, 'message' => 'Scadenza non trovata'];
+            }
+            
+            if ($deleteAllOccurrences) {
+                // Delete all generated occurrences
+                $sql = "DELETE FROM scheduler_items WHERE parent_recurrence_id = ?";
+                $this->db->execute($sql, [$id]);
+            }
+            
+            // Delete the parent item
+            $sql = "DELETE FROM scheduler_items WHERE id = ?";
+            $this->db->execute($sql, [$id]);
+            
+            // Log activity
+            $this->logActivity($userId, 'scheduler', 'delete', $id, 
+                "Eliminata scadenza ricorrente: {$item['title']}");
+            
+            $this->db->commit();
+            return ['success' => true];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Error deleting recurring schedule: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
     }
 }

@@ -112,7 +112,22 @@ wget -q -O /dev/null "https://tuosito.com/public/cron/email_queue.php?token=IL_T
 0 9 7 1 * wget -q -O /dev/null "https://tuosito.com/public/cron/annual_member_verification.php?token=IL_TUO_TOKEN"
 ```
 
-### 7. Database Backup
+### 7. Generate Recurring Deadlines
+**File**: `generate_recurring_deadlines.php`
+**Frequenza**: Giornaliero alle 2:00
+**Descrizione**: Genera automaticamente le occorrenze future per tutte le scadenze ricorrenti attive (settimanali, mensili, annuali)
+
+**Esecuzione CLI (metodo tradizionale):**
+```bash
+0 2 * * * php /percorso/easyvol/cron/generate_recurring_deadlines.php >> /var/log/easyvol/recurring_deadlines.log 2>&1
+```
+
+**Esecuzione HTTPS (consigliato per Aruba):**
+```bash
+0 2 * * * wget -q -O /dev/null "https://tuosito.com/public/cron/generate_recurring_deadlines.php?token=IL_TUO_TOKEN"
+```
+
+### 8. Database Backup
 **File**: `backup.php`
 **Frequenza**: Giornaliero alle 2:00
 **Descrizione**: Crea backup automatico del database (mantiene ultimi 30 giorni)
@@ -155,6 +170,9 @@ crontab -e
 
 # EasyVol - Annual Member Verification (January 7th)
 0 9 7 1 * php /var/www/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
+
+# EasyVol - Generate Recurring Deadlines
+0 2 * * * php /var/www/easyvol/cron/generate_recurring_deadlines.php >> /var/log/easyvol/recurring_deadlines.log 2>&1
 
 # EasyVol - Database Backup
 0 2 * * * php /var/www/easyvol/cron/backup.php >> /var/log/easyvol/backup.log 2>&1

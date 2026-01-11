@@ -230,6 +230,16 @@ $pageTitle = 'Scadenzario';
                                                     <?php else: ?>
                                                         <strong><?php echo htmlspecialchars($item['title']); ?></strong>
                                                     <?php endif; ?>
+                                                    <?php if ($item['is_recurring'] && empty($item['parent_recurrence_id'])): ?>
+                                                        <span class="badge bg-primary ms-1" title="Scadenza ricorrente">
+                                                            <i class="bi bi-arrow-repeat"></i> Ricorrente
+                                                        </span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($item['parent_recurrence_id'])): ?>
+                                                        <span class="badge bg-info ms-1" title="Occorrenza di scadenza ricorrente">
+                                                            <i class="bi bi-calendar-event"></i> Occorrenza
+                                                        </span>
+                                                    <?php endif; ?>
                                                     <?php if ($item['description']): ?>
                                                         <br><small class="text-muted">
                                                             <?php echo htmlspecialchars(substr($item['description'], 0, 60)); ?>

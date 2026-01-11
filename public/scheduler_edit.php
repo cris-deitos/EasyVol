@@ -54,7 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'priority' => $_POST['priority'] ?? 'media',
             'status' => $_POST['status'] ?? 'in_attesa',
             'reminder_days' => (int)($_POST['reminder_days'] ?? 7),
-            'assigned_to' => !empty($_POST['assigned_to']) ? (int)$_POST['assigned_to'] : null
+            'assigned_to' => !empty($_POST['assigned_to']) ? (int)$_POST['assigned_to'] : null,
+            'is_recurring' => (int)(bool)isset($_POST['is_recurring']),
+            'recurrence_type' => !empty($_POST['recurrence_type']) ? $_POST['recurrence_type'] : null,
+            'recurrence_end_date' => !empty($_POST['recurrence_end_date']) ? $_POST['recurrence_end_date'] : null
         ];
         
         // Process recipients
@@ -104,6 +107,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if (empty($data['due_date'])) {
             $errors[] = 'La data di scadenza è obbligatoria';
+        }
+        
+        // Validate recurring deadline fields
+        if ($data['is_recurring']) {
+            if (empty($data['recurrence_type'])) {
+                $errors[] = 'Il tipo di ricorrenza è obbligatorio per le scadenze ricorrenti';
+            }
         }
         
         if (empty($errors)) {
@@ -254,6 +264,70 @@ $pageTitle = $isEdit ? 'Modifica Scadenza' : 'Nuova Scadenza';
                                 </div>
                             </div>
                             
+                            <hr class="my-4">
+                            
+                            <h5 class="mb-3"><i class="bi bi-arrow-repeat"></i> Ricorrenza Scadenza</h5>
+                            <p class="text-muted small">Configura la scadenza per ripetersi automaticamente nel tempo.</p>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring" 
+                                               value="1" <?php echo (!empty($item['is_recurring']) || !empty($_POST['is_recurring'])) ? 'checked' : ''; ?>
+                                               onchange="toggleRecurrenceFields()">
+                                        <label class="form-check-label" for="is_recurring">
+                                            <strong>Abilita ricorrenza automatica</strong>
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">Se abilitata, la scadenza si ripeterà automaticamente secondo le impostazioni sotto.</small>
+                                </div>
+                            </div>
+                            
+                            <div id="recurrence_fields" style="<?php echo (empty($item['is_recurring']) && empty($_POST['is_recurring'])) ? 'display: none;' : ''; ?>">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_type" class="form-label">Tipo Ricorrenza *</label>
+                                        <select class="form-select" id="recurrence_type" name="recurrence_type">
+                                            <option value="">Seleziona tipo ricorrenza</option>
+                                            <?php
+                                            $currentRecurrenceType = $item['recurrence_type'] ?? $_POST['recurrence_type'] ?? '';
+                                            $recurrenceTypes = [
+                                                'weekly' => 'Settimanale - Stesso giorno ogni settimana',
+                                                'monthly' => 'Mensile - Stesso giorno ogni mese',
+                                                'yearly' => 'Annuale - Una volta l\'anno nello stesso giorno'
+                                            ];
+                                            foreach ($recurrenceTypes as $value => $label):
+                                            ?>
+                                                <option value="<?php echo $value; ?>" <?php echo $currentRecurrenceType === $value ? 'selected' : ''; ?>>
+                                                    <?php echo $label; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <small class="form-text text-muted">Frequenza con cui la scadenza si ripete</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_end_date" class="form-label">Data Fine Ricorrenza</label>
+                                        <input type="date" class="form-control" id="recurrence_end_date" name="recurrence_end_date" 
+                                               value="<?php echo htmlspecialchars($item['recurrence_end_date'] ?? $_POST['recurrence_end_date'] ?? ''); ?>">
+                                        <small class="form-text text-muted">Opzionale. Se non specificata, la ricorrenza continua a tempo indeterminato</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> 
+                                    <strong>Come funziona la ricorrenza:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Le nuove scadenze verranno generate automaticamente in base alla data iniziale e al tipo di ricorrenza</li>
+                                        <li>Ogni occorrenza eredita le stesse impostazioni (priorità, categoria, destinatari, etc.)</li>
+                                        <li>Se imposti una data di fine, non verranno generate scadenze oltre quella data</li>
+                                        <li>Se non imposti una data di fine, la ricorrenza continua finché non elimini la scadenza principale</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
                             <div class="mb-3">
                                 <label for="assigned_to" class="form-label">Assegnato a</label>
                                 <select class="form-select" id="assigned_to" name="assigned_to">
@@ -358,5 +432,27 @@ $pageTitle = $isEdit ? 'Modifica Scadenza' : 'Nuova Scadenza';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleRecurrenceFields() {
+            const isRecurring = document.getElementById('is_recurring').checked;
+            const recurrenceFields = document.getElementById('recurrence_fields');
+            
+            if (isRecurring) {
+                recurrenceFields.style.display = 'block';
+                document.getElementById('recurrence_type').required = true;
+            } else {
+                recurrenceFields.style.display = 'none';
+                document.getElementById('recurrence_type').required = false;
+                // Clear values when disabled
+                document.getElementById('recurrence_type').value = '';
+                document.getElementById('recurrence_end_date').value = '';
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleRecurrenceFields();
+        });
+    </script>
 </body>
 </html>
