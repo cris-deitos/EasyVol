@@ -12,12 +12,20 @@ Su alcuni servizi di hosting condiviso (come **Aruba**), l'esecuzione diretta di
 
 Prima di tutto, devi generare un token segreto per autenticare le richieste ai cron job.
 
+**Metodo 1: Script automatico (consigliato)**
+```bash
+# Dalla directory root del progetto
+php cron/generate_token.php
+```
+Questo script genera un token sicuro e mostra la configurazione completa da copiare in config.php.
+
+**Metodo 2: Comando PHP**
 ```php
 // Genera un token casuale sicuro (64 caratteri)
 echo bin2hex(random_bytes(32));
 ```
 
-Oppure usa un generatore online affidabile o questo comando bash:
+**Metodo 3: Comando OpenSSL**
 ```bash
 openssl rand -hex 32
 ```
