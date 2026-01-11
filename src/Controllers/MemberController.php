@@ -423,6 +423,9 @@ class MemberController {
             // Data di completamento: primo giorno dell'anno specificato
             $completionDate = sprintf('%04d-01-01', $anno);
             
+            // Corso base non ha scadenza
+            $expiryDate = null;
+            
             // Verifica se esiste già un corso base per questo socio
             $sql = "SELECT id FROM member_courses 
                     WHERE member_id = ? AND course_type = ?";
@@ -439,7 +442,7 @@ class MemberController {
                 $this->db->execute($sql, [
                     $courseName,
                     $completionDate,
-                    null,
+                    $expiryDate,
                     $existing['id']
                 ]);
                 
@@ -456,7 +459,7 @@ class MemberController {
                     $courseName,
                     $courseType,
                     $completionDate,
-                    null
+                    $expiryDate
                 ]);
                 
                 $courseId = $this->db->lastInsertId();
