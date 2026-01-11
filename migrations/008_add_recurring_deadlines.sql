@@ -30,7 +30,7 @@ SET @col_exists = (
 );
 
 SET @sql = IF(@col_exists = 0, 
-    'ALTER TABLE scheduler_items ADD COLUMN recurrence_type ENUM(''yearly'', ''monthly'', ''weekly'') DEFAULT NULL COMMENT ''Tipo ricorrenza: yearly (1 volta l''anno), monthly (stesso giorno ogni mese), weekly (stesso giorno ogni settimana)'' AFTER is_recurring',
+    'ALTER TABLE scheduler_items ADD COLUMN recurrence_type ENUM(''yearly'', ''monthly'', ''weekly'') DEFAULT NULL COMMENT ''Tipo ricorrenza: yearly (1 volta anno), monthly (stesso giorno ogni mese), weekly (stesso giorno ogni settimana)'' AFTER is_recurring',
     'SELECT ''Column recurrence_type already exists'' AS message'
 );
 
