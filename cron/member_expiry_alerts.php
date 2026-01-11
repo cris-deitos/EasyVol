@@ -43,22 +43,7 @@ try {
     
     echo "Found " . count($expiringLicenses) . " expiring licenses\n";
     
-    // Get members with expiring qualifications (next 30 days)
-    $sql = "SELECT mq.*, m.first_name, m.last_name, m.registration_number,
-                   mc.value as email, mct.value as telegram_id
-            FROM member_qualifications mq
-            JOIN members m ON mq.member_id = m.id
-            LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'email'
-            LEFT JOIN member_contacts mct ON m.id = mct.member_id AND mct.contact_type = 'telegram_id'
-            WHERE mq.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-            AND m.member_status = 'attivo'
-            ORDER BY mq.expiry_date ASC";
-    
-    $expiringQualifications = $db->fetchAll($sql);
-    
-    echo "Found " . count($expiringQualifications) . " expiring qualifications\n";
-    
-    // Get members with expiring courses (next 30 days)
+    // Get members with expiring courses/qualifications (next 30 days)
     $sql = "SELECT mc.*, m.first_name, m.last_name, m.registration_number,
                    mce.value as email, mct.value as telegram_id
             FROM member_courses mc
@@ -71,7 +56,7 @@ try {
     
     $expiringCourses = $db->fetchAll($sql);
     
-    echo "Found " . count($expiringCourses) . " expiring courses\n";
+    echo "Found " . count($expiringCourses) . " expiring courses/qualifications\n";
     
     // Send email and Telegram notifications for licenses
     if (!empty($expiringLicenses)) {
@@ -152,84 +137,6 @@ try {
         }
     }
     
-    // Send email and Telegram notifications for qualifications
-    if (!empty($expiringQualifications)) {
-        $groupedQualifications = [];
-        foreach ($expiringQualifications as $qualification) {
-            $memberId = $qualification['member_id'];
-            if (!isset($groupedQualifications[$memberId])) {
-                $groupedQualifications[$memberId] = [
-                    'member' => [
-                        'first_name' => $qualification['first_name'],
-                        'last_name' => $qualification['last_name'],
-                        'email' => $qualification['email'],
-                        'telegram_id' => $qualification['telegram_id']
-                    ],
-                    'qualifications' => []
-                ];
-            }
-            $groupedQualifications[$memberId]['qualifications'][] = $qualification;
-        }
-        
-        foreach ($groupedQualifications as $memberId => $data) {
-            // Email notification
-            if (!empty($data['member']['email'])) {
-                $subject = 'Alert Scadenza Qualifiche';
-                $body = '<p>Gentile ' . htmlspecialchars($data['member']['first_name']) . ',</p>';
-                $body .= '<p>Le seguenti qualifiche stanno per scadere:</p><ul>';
-                
-                foreach ($data['qualifications'] as $qual) {
-                    $body .= '<li>' . htmlspecialchars($qual['qualification_type']) . ' - ';
-                    $body .= 'Scadenza: ' . date('d/m/Y', strtotime($qual['expiry_date'])) . '</li>';
-                }
-                
-                $body .= '</ul><p>Si prega di rinnovare le qualifiche in scadenza.</p>';
-                
-                $emailSender->queue($data['member']['email'], $subject, $body);
-            }
-            
-            // Telegram notification
-            if (!empty($data['member']['telegram_id'])) {
-                try {
-                    require_once __DIR__ . '/../src/Services/TelegramService.php';
-                    $telegramService = new \EasyVol\Services\TelegramService($db, $config);
-                    
-                    if ($telegramService->isEnabled()) {
-                        $message = "⚠️ <b>Alert Scadenza Qualifiche</b>\n\n";
-                        $message .= "Gentile " . htmlspecialchars($data['member']['first_name']) . ",\n\n";
-                        $message .= "Le seguenti <b>qualifiche</b> stanno per scadere:\n\n";
-                        
-                        foreach ($data['qualifications'] as $qual) {
-                            $message .= "🎓 <b>" . htmlspecialchars($qual['qualification_type']) . "</b>\n";
-                            $message .= "   📅 Scadenza: " . date('d/m/Y', strtotime($qual['expiry_date'])) . "\n\n";
-                        }
-                        
-                        $message .= "Si prega di rinnovare le qualifiche in scadenza.";
-                        
-                        $telegramService->sendMessage($data['member']['telegram_id'], $message);
-                    }
-                } catch (\Exception $e) {
-                    error_log("Telegram notification error for qualification expiry: " . $e->getMessage());
-                }
-            }
-        }
-        
-        // Send summary to configured recipients
-        try {
-            require_once __DIR__ . '/../src/Services/TelegramService.php';
-            $telegramService = new \EasyVol\Services\TelegramService($db, $config);
-            
-            if ($telegramService->isEnabled()) {
-                $message = "🎓 <b>Riepilogo Scadenze Qualifiche</b>\n\n";
-                $message .= "Ci sono <b>" . count($expiringQualifications) . " qualifiche</b> in scadenza nei prossimi 30 giorni.\n\n";
-                $message .= "Controlla il sistema per i dettagli.";
-                
-                $telegramService->sendNotification('qualification_expiry', $message);
-            }
-        } catch (\Exception $e) {
-            error_log("Telegram notification error: " . $e->getMessage());
-        }
-    }
     
     // Send email and Telegram notifications for courses
     if (!empty($expiringCourses)) {
@@ -315,7 +222,7 @@ try {
             VALUES (NULL, 'cron', 'member_expiry_alerts', ?, NOW())";
     $db->execute($sql, [
         "Checked member expirations: " . count($expiringLicenses) . " licenses, " . 
-        count($expiringQualifications) . " qualifications, " . count($expiringCourses) . " courses"
+        count($expiringCourses) . " courses"
     ]);
     
     echo "[" . date('Y-m-d H:i:s') . "] Member expiry alerts job completed successfully\n";

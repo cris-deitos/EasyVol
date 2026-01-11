@@ -1433,15 +1433,18 @@ CREATE TABLE IF NOT EXISTS `email_queue` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `recipient` varchar(255) NOT NULL,
   `subject` varchar(255) NOT NULL,
-  `body_html` longtext NOT NULL,
+  `body` longtext NOT NULL,
   `attachments` text COMMENT 'JSON array of attachment paths',
-  `status` enum('pending', 'sent', 'failed') DEFAULT 'pending',
+  `priority` int(11) DEFAULT 3 COMMENT 'Priority level 1-5, 1 is highest',
+  `status` enum('pending', 'processing', 'sent', 'failed') DEFAULT 'pending',
   `attempts` int(11) DEFAULT 0,
   `error_message` text,
+  `scheduled_at` timestamp NULL COMMENT 'When the email should be sent',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `sent_at` timestamp NULL,
   PRIMARY KEY (`id`),
-  KEY `status` (`status`)
+  KEY `status` (`status`),
+  KEY `scheduled_at` (`scheduled_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `email_logs` (
