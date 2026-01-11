@@ -592,6 +592,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                                                 <option value="telefono_fisso" <?= ($contact['contact_type'] ?? '') == 'telefono_fisso' ? 'selected' : '' ?>>Telefono Fisso</option>
                                                 <option value="email" <?= ($contact['contact_type'] ?? '') == 'email' ? 'selected' : '' ?>>Email</option>
                                                 <option value="pec" <?= ($contact['contact_type'] ?? '') == 'pec' ? 'selected' : '' ?>>PEC</option>
+                                                <option value="telegram_id" <?= ($contact['contact_type'] ?? '') == 'telegram_id' ? 'selected' : '' ?>>ID Telegram</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">
@@ -878,6 +879,7 @@ $associationName = $config['association']['name'] ?? 'Associazione';
                                 <option value="telefono_fisso">Telefono Fisso</option>
                                 <option value="email">Email</option>
                                 <option value="pec">PEC</option>
+                                <option value="telegram_id">ID Telegram</option>
                             </select>
                         </div>
                         <div class="col-md-6">
