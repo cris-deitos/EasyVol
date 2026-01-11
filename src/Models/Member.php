@@ -56,8 +56,20 @@ class Member {
      * @param string|null $completionDate Course completion date (YYYY-MM-DD)
      */
     private function updateCorsoBaseFields($memberId, $courseName, $completionDate = null) {
-        // Check if this is the A1 base course using class constant
-        if (empty($courseName) || stripos($courseName, self::CORSO_BASE_A1_NAME) === false) {
+        // Check if this is the A1 base course using flexible matching
+        // Match full constant name, or patterns like "A1", "CORSO BASE", etc.
+        if (empty($courseName)) {
+            return;
+        }
+        
+        $courseNameUpper = mb_strtoupper($courseName, 'UTF-8');
+        $isCorsoBase = (
+            stripos($courseName, self::CORSO_BASE_A1_NAME) !== false || // Exact match
+            stripos($courseNameUpper, 'A1') !== false && stripos($courseNameUpper, 'CORSO BASE') !== false || // A1 + CORSO BASE
+            stripos($courseNameUpper, 'CORSO BASE') !== false && stripos($courseNameUpper, 'PROTEZIONE CIVILE') !== false // CORSO BASE + PROTEZIONE CIVILE
+        );
+        
+        if (!$isCorsoBase) {
             return;
         }
         
