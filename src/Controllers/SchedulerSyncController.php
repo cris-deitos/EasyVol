@@ -39,7 +39,12 @@ class SchedulerSyncController {
                     WHERE mc.id = ?";
             $course = $this->db->fetchOne($sql, [$courseId]);
             
-            if (!$course || !$course['expiry_date']) {
+            if (!$course) {
+                error_log("Errore sincronizzazione qualifica: corso ID $courseId non trovato");
+                return false;
+            }
+            
+            if (!$course['expiry_date']) {
                 return true; // Nessuna scadenza da sincronizzare
             }
             
@@ -76,7 +81,7 @@ class SchedulerSyncController {
             }
             
         } catch (\Exception $e) {
-            error_log("Errore sincronizzazione qualifica: " . $e->getMessage());
+            error_log("Errore sincronizzazione qualifica corso ID $courseId: " . $e->getMessage());
             return false;
         }
     }
@@ -98,7 +103,12 @@ class SchedulerSyncController {
                     WHERE ml.id = ?";
             $license = $this->db->fetchOne($sql, [$licenseId]);
             
-            if (!$license || !$license['expiry_date']) {
+            if (!$license) {
+                error_log("Errore sincronizzazione patente: patente ID $licenseId non trovata");
+                return false;
+            }
+            
+            if (!$license['expiry_date']) {
                 return true; // Nessuna scadenza da sincronizzare
             }
             
@@ -135,7 +145,7 @@ class SchedulerSyncController {
             }
             
         } catch (\Exception $e) {
-            error_log("Errore sincronizzazione patente: " . $e->getMessage());
+            error_log("Errore sincronizzazione patente ID $licenseId: " . $e->getMessage());
             return false;
         }
     }
@@ -152,7 +162,12 @@ class SchedulerSyncController {
             $sql = "SELECT * FROM vehicles WHERE id = ?";
             $vehicle = $this->db->fetchOne($sql, [$vehicleId]);
             
-            if (!$vehicle || !$vehicle['insurance_expiry']) {
+            if (!$vehicle) {
+                error_log("Errore sincronizzazione assicurazione: veicolo ID $vehicleId non trovato");
+                return false;
+            }
+            
+            if (!$vehicle['insurance_expiry']) {
                 return true; // Nessuna scadenza da sincronizzare
             }
             
@@ -190,7 +205,7 @@ class SchedulerSyncController {
             }
             
         } catch (\Exception $e) {
-            error_log("Errore sincronizzazione assicurazione: " . $e->getMessage());
+            error_log("Errore sincronizzazione assicurazione veicolo ID $vehicleId: " . $e->getMessage());
             return false;
         }
     }
@@ -207,7 +222,12 @@ class SchedulerSyncController {
             $sql = "SELECT * FROM vehicles WHERE id = ?";
             $vehicle = $this->db->fetchOne($sql, [$vehicleId]);
             
-            if (!$vehicle || !$vehicle['inspection_expiry']) {
+            if (!$vehicle) {
+                error_log("Errore sincronizzazione revisione: veicolo ID $vehicleId non trovato");
+                return false;
+            }
+            
+            if (!$vehicle['inspection_expiry']) {
                 return true; // Nessuna scadenza da sincronizzare
             }
             
@@ -245,7 +265,7 @@ class SchedulerSyncController {
             }
             
         } catch (\Exception $e) {
-            error_log("Errore sincronizzazione revisione: " . $e->getMessage());
+            error_log("Errore sincronizzazione revisione veicolo ID $vehicleId: " . $e->getMessage());
             return false;
         }
     }
@@ -266,7 +286,12 @@ class SchedulerSyncController {
                     WHERE vd.id = ?";
             $document = $this->db->fetchOne($sql, [$documentId]);
             
-            if (!$document || !$document['expiry_date']) {
+            if (!$document) {
+                error_log("Errore sincronizzazione documento veicolo: documento ID $documentId non trovato");
+                return false;
+            }
+            
+            if (!$document['expiry_date']) {
                 return true; // Nessuna scadenza da sincronizzare
             }
             
@@ -305,7 +330,7 @@ class SchedulerSyncController {
             }
             
         } catch (\Exception $e) {
-            error_log("Errore sincronizzazione documento veicolo: " . $e->getMessage());
+            error_log("Errore sincronizzazione documento veicolo ID $documentId: " . $e->getMessage());
             return false;
         }
     }
