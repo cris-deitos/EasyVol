@@ -12,6 +12,10 @@ class SchedulerController {
     private $db;
     private $config;
     
+    // Constants for recurring deadlines
+    const MAX_RECURRENCE_ITERATIONS = 100;
+    const DEFAULT_LOOKAHEAD_DAYS = 90;
+    
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
@@ -675,10 +679,9 @@ class SchedulerController {
             $endDateStr = $endDate->format('Y-m-d');
             
             // Generate occurrences until we reach the end date or recurrence end date
-            $maxIterations = 100; // Safety limit
             $iteration = 0;
             
-            while ($iteration < $maxIterations) {
+            while ($iteration < self::MAX_RECURRENCE_ITERATIONS) {
                 $nextDate = $this->calculateNextOccurrence($currentDate, $item['recurrence_type']);
                 
                 // Stop if next date is beyond our look-ahead period

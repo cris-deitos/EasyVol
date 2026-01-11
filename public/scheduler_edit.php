@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'status' => $_POST['status'] ?? 'in_attesa',
             'reminder_days' => (int)($_POST['reminder_days'] ?? 7),
             'assigned_to' => !empty($_POST['assigned_to']) ? (int)$_POST['assigned_to'] : null,
-            'is_recurring' => isset($_POST['is_recurring']) ? 1 : 0,
+            'is_recurring' => (int)(bool)isset($_POST['is_recurring']),
             'recurrence_type' => !empty($_POST['recurrence_type']) ? $_POST['recurrence_type'] : null,
             'recurrence_end_date' => !empty($_POST['recurrence_end_date']) ? $_POST['recurrence_end_date'] : null
         ];
