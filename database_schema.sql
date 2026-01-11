@@ -924,11 +924,14 @@ CREATE TABLE IF NOT EXISTS `scheduler_items` (
   `reminder_days` int(11) DEFAULT 7,
   `assigned_to` int(11),
   `completed_at` timestamp NULL,
+  `reference_type` varchar(50) DEFAULT NULL COMMENT 'Type of source record (qualification, license, insurance, inspection, vehicle_document)',
+  `reference_id` int(11) DEFAULT NULL COMMENT 'ID of source record for automatic sync',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `due_date` (`due_date`),
-  KEY `status` (`status`)
+  KEY `status` (`status`),
+  KEY `idx_reference` (`reference_type`, `reference_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table for scheduler item email recipients

@@ -18,31 +18,30 @@ try {
     $config = $app->getConfig();
     
     // Get vehicles with upcoming expirations (next 30 days)
+    // Note: vehicle_maintenance table doesn't have scheduled_date, only tracks past maintenance
     $sql = "SELECT v.*, 
-            vm.maintenance_type, vm.scheduled_date, vm.status,
-            'maintenance' as alert_type
-            FROM vehicles v
-            JOIN vehicle_maintenance vm ON v.id = vm.vehicle_id
-            WHERE vm.status = 'scheduled'
-            AND vm.scheduled_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-            
-            UNION
-            
-            SELECT v.*, 
-            NULL as maintenance_type, v.insurance_expiry as scheduled_date, 'active' as status,
+            v.insurance_expiry as scheduled_date,
             'insurance' as alert_type
             FROM vehicles v
-            WHERE v.insurance_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            WHERE v.insurance_expiry IS NOT NULL
+            AND v.insurance_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND v.status != 'dismesso'
             
             UNION
             
             SELECT v.*, 
-            NULL as maintenance_type, v.inspection_expiry as scheduled_date, 'active' as status,
+            v.inspection_expiry as scheduled_date,
             'inspection' as alert_type
             FROM vehicles v
-            WHERE v.inspection_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
+            WHERE v.inspection_expiry IS NOT NULL
+            AND v.inspection_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND v.status != 'dismesso'";
     
     $expiringItems = $db->fetchAll($sql);
+    
+    if ($expiringItems === false) {
+        throw new \Exception("Query failed: Unable to fetch expiring vehicles");
+    }
     
     if (!empty($expiringItems)) {
         $emailSender = new EmailSender($config, $db);
@@ -59,7 +58,6 @@ try {
         
         foreach ($grouped as $type => $items) {
             $typeLabels = [
-                'maintenance' => 'Manutenzioni',
                 'insurance' => 'Assicurazioni',
                 'inspection' => 'Revisioni'
             ];
@@ -98,7 +96,6 @@ try {
                 
                 foreach ($grouped as $type => $items) {
                     $typeLabels = [
-                        'maintenance' => '🔧 Manutenzioni',
                         'insurance' => '🛡️ Assicurazioni',
                         'inspection' => '🔍 Revisioni'
                     ];
