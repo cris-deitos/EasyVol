@@ -39,6 +39,10 @@ try {
     
     $expiringItems = $db->fetchAll($sql);
     
+    if ($expiringItems === false) {
+        throw new \Exception("Query failed: Unable to fetch expiring vehicles");
+    }
+    
     if (!empty($expiringItems)) {
         $emailSender = new EmailSender($config, $db);
         
