@@ -103,8 +103,9 @@ class MemberController {
                 registration_number, member_type, member_status, volunteer_status,
                 last_name, first_name, birth_date, birth_place, birth_province,
                 tax_code, gender, nationality, worker_type, education_level, registration_date,
+                corso_base_completato, corso_base_anno,
                 created_at, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
             
             $params = [
                 $data['registration_number'],
@@ -122,11 +123,18 @@ class MemberController {
                 $data['worker_type'] ?? null,
                 $data['education_level'] ?? null,
                 $data['registration_date'] ?? date('Y-m-d'),
+                $data['corso_base_completato'] ?? 0,
+                $data['corso_base_anno'] ?? null,
                 $userId
             ];
             
             $this->db->execute($sql, $params);
             $memberId = $this->db->lastInsertId();
+            
+            // Se corso base completato, aggiungi corso al registro del socio
+            if (!empty($data['corso_base_completato']) && !empty($data['corso_base_anno'])) {
+                $this->addCorsoBaseToMemberCourses($memberId, $data['corso_base_anno'], $userId);
+            }
             
             // Log attività
             $this->logActivity($userId, 'member', 'create', $memberId, 'Creato nuovo socio: ' . $data['first_name'] . ' ' . $data['last_name']);
@@ -172,6 +180,7 @@ class MemberController {
                 last_name = ?, first_name = ?, birth_date = ?,
                 birth_place = ?, birth_province = ?, tax_code = ?,
                 gender = ?, nationality = ?, worker_type = ?, education_level = ?,
+                corso_base_completato = ?, corso_base_anno = ?,
                 updated_at = NOW(), updated_by = ?
                 WHERE id = ?";
             
@@ -189,11 +198,18 @@ class MemberController {
                 $data['nationality'] ?? 'Italiana',
                 $data['worker_type'] ?? null,
                 $data['education_level'] ?? null,
+                $data['corso_base_completato'] ?? 0,
+                $data['corso_base_anno'] ?? null,
                 $userId,
                 $id
             ];
             
             $this->db->execute($sql, $params);
+            
+            // Se corso base completato, aggiungi/aggiorna corso nel registro del socio
+            if (!empty($data['corso_base_completato']) && !empty($data['corso_base_anno'])) {
+                $this->addCorsoBaseToMemberCourses($id, $data['corso_base_anno'], $userId);
+            }
             
             // Gestisci sincronizzazione scadenze in base allo stato del membro
             if ($previousStatus !== $newStatus) {
@@ -378,6 +394,71 @@ class MemberController {
             if ($existing) {
                 throw new \Exception("Codice fiscale già esistente");
             }
+        }
+    }
+    
+    /**
+     * Aggiungi corso base A1 al registro corsi del socio
+     * Questo metodo crea o aggiorna un'entry nella tabella member_courses
+     * per il corso base di protezione civile
+     * 
+     * @param int $memberId ID del socio
+     * @param int $anno Anno di completamento del corso
+     * @param int $userId ID utente che esegue l'operazione
+     * @return bool True se successo, false altrimenti
+     */
+    private function addCorsoBaseToMemberCourses($memberId, $anno, $userId) {
+        try {
+            // Nome e tipo corso secondo le costanti del modello Member
+            $courseName = Member::CORSO_BASE_A1_NAME;
+            $courseType = Member::CORSO_BASE_A1_CODE;
+            
+            // Data di completamento: primo giorno dell'anno specificato
+            $completionDate = $anno . '-01-01';
+            
+            // Verifica se esiste già un corso base per questo socio
+            $sql = "SELECT id FROM member_courses 
+                    WHERE member_id = ? AND course_type = ?";
+            $existing = $this->db->fetchOne($sql, [$memberId, $courseType]);
+            
+            if ($existing) {
+                // Aggiorna record esistente
+                $sql = "UPDATE member_courses SET
+                        course_name = ?,
+                        completion_date = ?,
+                        expiry_date = NULL
+                        WHERE id = ?";
+                
+                $this->db->execute($sql, [
+                    $courseName,
+                    $completionDate,
+                    $existing['id']
+                ]);
+                
+                $this->logActivity($userId, 'member', 'update_corso_base', $memberId, 
+                    "Aggiornato corso base A1 anno $anno per socio ID: $memberId");
+            } else {
+                // Crea nuovo record
+                $sql = "INSERT INTO member_courses 
+                        (member_id, course_name, course_type, completion_date, expiry_date)
+                        VALUES (?, ?, ?, ?, NULL)";
+                
+                $this->db->execute($sql, [
+                    $memberId,
+                    $courseName,
+                    $courseType,
+                    $completionDate
+                ]);
+                
+                $this->logActivity($userId, 'member', 'add_corso_base', $this->db->lastInsertId(), 
+                    "Aggiunto corso base A1 anno $anno per socio ID: $memberId");
+            }
+            
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta corso base a member_courses: " . $e->getMessage());
+            return false;
         }
     }
     
