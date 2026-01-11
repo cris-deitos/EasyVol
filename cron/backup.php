@@ -7,11 +7,12 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 
 try {
-    $app = new App(false);
+    $app = App::getInstance();
     $config = $app->getConfig();
     
     $dbConfig = $config['database'];
@@ -60,7 +61,7 @@ try {
         }
         
         // Log activity
-        $db = $app->getDatabase();
+        $db = $app->getDb();
         $sql = "INSERT INTO activity_logs (user_id, module, action, description, created_at) 
                 VALUES (NULL, 'cron', 'backup', ?, NOW())";
         $db->execute($sql, ["Database backup created: $filename.gz"]);

@@ -10,18 +10,20 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
-require_once __DIR__ . '/../config/config.php';
+EasyVol\Autoloader::register();
 
-use EasyVol\Database;
+use EasyVol\App;
 use EasyVol\Utils\EmailSender;
 
-// Initialize
-$db = new Database($config);
-$emailSender = new EmailSender($config, $db);
-
-echo "[" . date('Y-m-d H:i:s') . "] Starting health surveillance expiry alerts job...\n";
-
 try {
+    // Initialize
+    $app = App::getInstance();
+    $db = $app->getDb();
+    $config = $app->getConfig();
+    
+    $emailSender = new EmailSender($config, $db);
+    
+    echo "[" . date('Y-m-d H:i:s') . "] Starting health surveillance expiry alerts job...\n";
     // Get adult members with expiring health surveillance visits (next 30 days)
     $sql = "SELECT mhs.*, m.first_name, m.last_name, m.registration_number,
                    mc.value as email, mct.value as telegram_id

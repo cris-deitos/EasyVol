@@ -10,20 +10,22 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
-require_once __DIR__ . '/../config/config.php';
+EasyVol\Autoloader::register();
 
-use EasyVol\Database;
+use EasyVol\App;
 use EasyVol\Controllers\SchedulerController;
 use EasyVol\Utils\EmailSender;
 
-// Initialize
-$db = new Database($config);
-$controller = new SchedulerController($db, $config);
-$emailSender = new EmailSender($config, $db);
-
-echo "[" . date('Y-m-d H:i:s') . "] Starting scheduler alerts job...\n";
-
 try {
+    // Initialize
+    $app = App::getInstance();
+    $db = $app->getDb();
+    $config = $app->getConfig();
+    
+    $controller = new SchedulerController($db, $config);
+    $emailSender = new EmailSender($config, $db);
+    
+    echo "[" . date('Y-m-d H:i:s') . "] Starting scheduler alerts job...\n";
     // 1. Update overdue status
     echo "Updating overdue items...\n";
     $overdueCount = $controller->updateOverdueStatus();
