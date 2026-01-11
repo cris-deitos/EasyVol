@@ -3,6 +3,8 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\RateLimiter;
 
 $app = App::getInstance();
 
@@ -27,27 +29,42 @@ if ($app->isLoggedIn()) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($username) || empty($password)) {
-        $error = 'Per favore inserisci username e password.';
+    // Verify CSRF token
+    if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Token di sicurezza non valido. Ricarica la pagina e riprova.';
     } else {
-        try {
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        if (empty($username) || empty($password)) {
+            $error = 'Per favore inserisci username e password.';
+        } else {
+            // Check rate limiting by IP address
             $db = $app->getDb();
+            $rateLimiter = new RateLimiter($db);
+            $clientIp = RateLimiter::getClientIp();
+            $rateCheck = $rateLimiter->check($clientIp, 'login_co');
             
-            // Get user with role - MUST be operations center user
-            $stmt = $db->query(
-                "SELECT u.*, r.name as role_name 
-                FROM users u 
-                LEFT JOIN roles r ON u.role_id = r.id 
-                WHERE u.username = ? AND u.is_active = 1 AND u.is_operations_center_user = 1",
-                [$username]
-            );
-            
-            $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password'])) {
+            if (!$rateCheck['allowed']) {
+                $error = 'Troppi tentativi di accesso. Riprova tra qualche minuto.';
+                $app->logActivity('login_co_rate_limited', 'auth', null, "Rate limited EasyCO login attempt from IP: $clientIp");
+            } else {
+                try {
+                    // Get user with role - MUST be operations center user
+                    $stmt = $db->query(
+                        "SELECT u.*, r.name as role_name 
+                        FROM users u 
+                        LEFT JOIN roles r ON u.role_id = r.id 
+                        WHERE u.username = ? AND u.is_active = 1 AND u.is_operations_center_user = 1",
+                        [$username]
+                    );
+                    
+                    $user = $stmt->fetch();
+                    
+                    if ($user && password_verify($password, $user['password'])) {
+                        // Record successful attempt and reset rate limit
+                        $rateLimiter->recordAttempt($clientIp, 'login_co', true);
+                        $rateLimiter->reset($clientIp, 'login_co');
                 // Check if password change is required
                 if ($user['must_change_password']) {
                     // Store user id in session for password change
@@ -139,15 +156,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Don't fail login if notification fails
                 }
                 
-                header("Location: operations_center.php");
-                exit;
-            } else {
-                $error = 'Username o password non corretti, oppure non hai accesso a EasyCO.';
-                $app->logActivity('login_co_failed', 'auth', null, "Failed EasyCO login attempt for username: $username");
+                    header("Location: operations_center.php");
+                    exit;
+                } else {
+                    // Record failed attempt
+                    $rateLimiter->recordAttempt($clientIp, 'login_co', false);
+                    
+                    $error = 'Username o password non corretti, oppure non hai accesso a EasyCO.';
+                    $app->logActivity('login_co_failed', 'auth', null, "Failed EasyCO login attempt for username: $username");
+                }
+            } catch (Exception $e) {
+                $error = 'Errore di sistema. Riprova più tardi.';
+                error_log($e->getMessage());
             }
-        } catch (Exception $e) {
-            $error = 'Errore di sistema. Riprova più tardi.';
-            error_log($e->getMessage());
+            }
         }
     }
 }
@@ -345,6 +367,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= CsrfProtection::generateToken() ?>">
+                
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-person"></i></span>
                     <input type="text" class="form-control" name="username" placeholder="Username" required autofocus>

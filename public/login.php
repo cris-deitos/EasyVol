@@ -3,6 +3,8 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\RateLimiter;
 
 $app = App::getInstance();
 
@@ -21,28 +23,44 @@ if ($app->isLoggedIn()) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($username) || empty($password)) {
-        $error = 'Per favore inserisci username e password.';
+    // Verify CSRF token
+    if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Token di sicurezza non valido. Ricarica la pagina e riprova.';
     } else {
-        try {
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        if (empty($username) || empty($password)) {
+            $error = 'Per favore inserisci username e password.';
+        } else {
+            // Check rate limiting by IP address
             $db = $app->getDb();
+            $rateLimiter = new RateLimiter($db);
+            $clientIp = RateLimiter::getClientIp();
+            $rateCheck = $rateLimiter->check($clientIp, 'login');
             
-            // Get user with role
-            $stmt = $db->query(
-                "SELECT u.*, r.name as role_name 
-                FROM users u 
-                LEFT JOIN roles r ON u.role_id = r.id 
-                WHERE u.username = ? AND u.is_active = 1",
-                [$username]
-            );
-            
-            $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password'])) {
-                // Check if user is operations center only user (no other permissions)
+            if (!$rateCheck['allowed']) {
+                $error = 'Troppi tentativi di accesso. Riprova tra qualche minuto.';
+                $app->logActivity('login_rate_limited', 'auth', null, "Rate limited login attempt from IP: $clientIp");
+            } else {
+                try {
+                    // Get user with role
+                    $stmt = $db->query(
+                        "SELECT u.*, r.name as role_name 
+                        FROM users u 
+                        LEFT JOIN roles r ON u.role_id = r.id 
+                        WHERE u.username = ? AND u.is_active = 1",
+                        [$username]
+                    );
+                    
+                    $user = $stmt->fetch();
+                    
+                    if ($user && password_verify($password, $user['password'])) {
+                        // Record successful attempt and reset rate limit
+                        $rateLimiter->recordAttempt($clientIp, 'login', true);
+                        $rateLimiter->reset($clientIp, 'login');
+                        
+                        // Check if user is operations center only user (no other permissions)
                 if (isset($user['is_operations_center_user']) && $user['is_operations_center_user']) {
                     // CO users should use login_co.php
                     $error = 'Gli utenti della Centrale Operativa devono accedere tramite il login dedicato EasyCO.';
@@ -143,12 +161,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
             } else {
+                // Record failed attempt
+                $rateLimiter->recordAttempt($clientIp, 'login', false);
+                
                 $error = 'Username o password non corretti.';
                 $app->logActivity('login_failed', 'auth', null, "Failed login attempt for username: $username");
             }
         } catch (Exception $e) {
             $error = 'Errore di sistema. Riprova più tardi.';
             error_log($e->getMessage());
+        }
+            }
         }
     }
 }
@@ -363,6 +386,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= CsrfProtection::generateToken() ?>">
+                
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-person"></i></span>
                     <input type="text" class="form-control" name="username" placeholder="Username" required autofocus>
