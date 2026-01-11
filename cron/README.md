@@ -280,13 +280,21 @@ wget -O - "https://tuosito.com/public/cron/email_queue.php?token=IL_TUO_TOKEN"
 
 ### Passo 1: Configurare il Token Segreto
 
-1. Genera un token sicuro:
+1. Genera un token sicuro usando lo script fornito:
    ```bash
-   # Su Linux/Mac, esegui:
+   # Dalla directory root del progetto
+   php cron/generate_token.php
+   ```
+   
+   Lo script genererà un token e mostrerà la configurazione completa da copiare.
+   
+   Oppure genera manualmente con:
+   ```bash
+   # Su Linux/Mac
    openssl rand -hex 32
    
-   # Oppure in PHP:
-   echo bin2hex(random_bytes(32));
+   # Oppure in PHP
+   php -r "echo bin2hex(random_bytes(32));"
    ```
 
 2. Aggiungi il token in `config/config.php`:
