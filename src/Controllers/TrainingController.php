@@ -794,38 +794,34 @@ class TrainingController {
                     WHERE member_id = ? AND training_course_id = ?";
             $existing = $this->db->fetchOne($sql, [$participant['member_id'], $course['id']]);
             
+            // Use Member model to ensure corso_base flags are updated correctly
+            require_once __DIR__ . '/../Models/Member.php';
+            $memberModel = new \EasyVol\Models\Member($this->db);
+            
             if ($existing) {
-                // Update existing record
-                $sql = "UPDATE member_courses SET
-                        course_name = ?,
-                        course_type = ?,
-                        completion_date = ?
-                        WHERE id = ?";
+                // Update existing record using Member model
+                $courseData = [
+                    'course_name' => $course['course_name'],
+                    'course_type' => $course['course_type'],
+                    'completion_date' => $completionDate
+                ];
                 
-                $this->db->execute($sql, [
-                    $course['course_name'],
-                    $course['course_type'],
-                    $completionDate,
-                    $existing['id']
-                ]);
+                $memberModel->updateCourse($existing['id'], $courseData);
                 
                 $this->logActivity($userId, 'training', 'update_member_course', $existing['id'], 
                     "Aggiornato corso nel registro del socio ID: {$participant['member_id']}");
             } else {
-                // Insert new record
-                $sql = "INSERT INTO member_courses 
-                        (member_id, course_name, course_type, completion_date, training_course_id)
-                        VALUES (?, ?, ?, ?, ?)";
+                // Insert new record using Member model
+                $courseData = [
+                    'course_name' => $course['course_name'],
+                    'course_type' => $course['course_type'],
+                    'completion_date' => $completionDate,
+                    'training_course_id' => $course['id']
+                ];
                 
-                $this->db->execute($sql, [
-                    $participant['member_id'],
-                    $course['course_name'],
-                    $course['course_type'],
-                    $completionDate,
-                    $course['id']
-                ]);
+                $courseId = $memberModel->addCourse($participant['member_id'], $courseData);
                 
-                $this->logActivity($userId, 'training', 'add_member_course', $this->db->lastInsertId(), 
+                $this->logActivity($userId, 'training', 'add_member_course', $courseId, 
                     "Aggiunto corso '{$course['course_name']}' al registro del socio ID: {$participant['member_id']}");
             }
             
