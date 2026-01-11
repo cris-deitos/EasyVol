@@ -14,6 +14,10 @@ class Member {
     const CORSO_BASE_A1_NAME = 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE';
     const CORSO_BASE_A1_CODE = 'A1';
     
+    // Course year validation constants
+    const MIN_COURSE_YEAR = 1950; // Minimum acceptable year for courses
+    const MAX_COURSE_YEAR_OFFSET = 1; // How many years in the future are acceptable
+    
     public function __construct(Database $db) {
         $this->db = $db;
     }
@@ -64,8 +68,9 @@ class Member {
                 $dateObj = \DateTime::createFromFormat('Y-m-d', $completionDate);
                 if ($dateObj !== false) {
                     $year = intval($dateObj->format('Y'));
-                    // Validate year is reasonable (1900 to current year + 1)
-                    if ($year >= 1900 && $year <= date('Y') + 1) {
+                    // Validate year using class constants for consistency
+                    $maxYear = date('Y') + self::MAX_COURSE_YEAR_OFFSET;
+                    if ($year >= self::MIN_COURSE_YEAR && $year <= $maxYear) {
                         $anno = $year;
                     } else {
                         error_log("Warning: Invalid corso base year extracted: $year for member $memberId");

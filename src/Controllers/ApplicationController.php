@@ -15,9 +15,9 @@ class ApplicationController {
     private $db;
     private $config;
     
-    // Costanti per validazione
-    const MIN_COURSE_YEAR = 1950; // Anno minimo accettabile per corsi
-    const MAX_COURSE_YEAR_OFFSET = 1; // Offset anni futuri accettabili
+    // Kept for backward compatibility, but delegates to Member class constants
+    const MIN_COURSE_YEAR = Member::MIN_COURSE_YEAR; // Anno minimo accettabile per corsi
+    const MAX_COURSE_YEAR_OFFSET = Member::MAX_COURSE_YEAR_OFFSET; // Offset anni futuri accettabili
     
     public function __construct(Database $db, $config) {
         $this->db = $db;
