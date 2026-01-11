@@ -922,6 +922,10 @@ CREATE TABLE IF NOT EXISTS `scheduler_items` (
   `priority` enum('bassa', 'media', 'alta', 'urgente') DEFAULT 'media',
   `status` enum('in_attesa', 'in_corso', 'completato', 'scaduto') DEFAULT 'in_attesa',
   `reminder_days` int(11) DEFAULT 7,
+  `is_recurring` tinyint(1) DEFAULT 0 COMMENT 'Flag per scadenze ricorrenti',
+  `recurrence_type` enum('yearly', 'monthly', 'weekly') DEFAULT NULL COMMENT 'Tipo ricorrenza: yearly (1 volta l''anno), monthly (stesso giorno ogni mese), weekly (stesso giorno ogni settimana)',
+  `recurrence_end_date` date DEFAULT NULL COMMENT 'Data fine ricorrenza. NULL = ricorrenza a tempo indeterminato',
+  `parent_recurrence_id` int(11) DEFAULT NULL COMMENT 'ID della scadenza ricorrente principale (NULL se è la principale)',
   `assigned_to` int(11),
   `completed_at` timestamp NULL,
   `reference_type` varchar(50) DEFAULT NULL COMMENT 'Type of source record (qualification, license, insurance, inspection, vehicle_document)',
@@ -931,7 +935,9 @@ CREATE TABLE IF NOT EXISTS `scheduler_items` (
   PRIMARY KEY (`id`),
   KEY `due_date` (`due_date`),
   KEY `status` (`status`),
-  KEY `idx_reference` (`reference_type`, `reference_id`)
+  KEY `idx_reference` (`reference_type`, `reference_id`),
+  KEY `idx_parent_recurrence` (`parent_recurrence_id`),
+  KEY `idx_is_recurring` (`is_recurring`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table for scheduler item email recipients
