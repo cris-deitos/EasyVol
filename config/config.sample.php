@@ -55,4 +55,21 @@ return [
     'reports' => [
         'min_year' => 2020, // Minimum year for report generation
     ],
+    
+    'cron' => [
+        // Secret token for web-based cron job execution
+        // Generate a secure random token (e.g., using: bin2hex(random_bytes(32)))
+        // This is used to authenticate HTTP/HTTPS cron job requests
+        'secret_token' => '', // REQUIRED for web-based cron execution
+        
+        // Whether to allow CLI execution (direct php command)
+        'allow_cli' => true,
+        
+        // Whether to allow web execution (HTTP/HTTPS)
+        'allow_web' => true,
+        
+        // IP whitelist for web-based cron (empty array = allow all)
+        // Example: ['127.0.0.1', '::1', '192.168.1.100']
+        'allowed_ips' => [],
+    ],
 ];
