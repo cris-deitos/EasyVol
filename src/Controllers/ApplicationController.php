@@ -984,8 +984,9 @@ class ApplicationController {
             gender, nationality,
             worker_type, education_level,
             registration_date, approval_date,
+            corso_base_completato, corso_base_anno,
             created_at
-        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
         $params = [
             $regNumber,
@@ -1000,7 +1001,9 @@ class ApplicationController {
             $data['worker_type'] ?? null,
             $data['education_level'] ?? null,
             date('Y-m-d'),
-            date('Y-m-d')
+            date('Y-m-d'),
+            !empty($data['corso_base_pc']) ? 1 : 0,
+            !empty($data['corso_base_pc_anno']) ? intval($data['corso_base_pc_anno']) : null
         ];
         
         $this->db->execute($sql, $params);
@@ -1085,26 +1088,28 @@ class ApplicationController {
             }
         }
         
-        // Inserisci Corso Base Protezione Civile Regione Lombardia (se presente)
+        // Inserisci Corso Base Protezione Civile (se presente)
         if (!empty($data['corso_base_pc'])) {
-            $courseName = 'Corso Base Protezione Civile Regione Lombardia';
+            $courseName = 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE';
+            $courseType = 'A1';
             $completionDate = null;
             
-            // If year is provided, validate and use December 31st of that year as completion date
+            // If year is provided, validate and use year-01-01 as completion date
             if (!empty($data['corso_base_pc_anno'])) {
                 $year = intval($data['corso_base_pc_anno']);
                 // Validate year is reasonable (MIN_COURSE_YEAR to current year + MAX_COURSE_YEAR_OFFSET)
                 $maxYear = date('Y') + self::MAX_COURSE_YEAR_OFFSET;
                 if ($year >= self::MIN_COURSE_YEAR && $year <= $maxYear) {
-                    $completionDate = sprintf('%04d-12-31', $year);
+                    $completionDate = sprintf('%04d-01-01', $year);
                 }
             }
             
-            $sql = "INSERT INTO member_courses (member_id, course_name, completion_date) 
-                    VALUES (?, ?, ?)";
+            $sql = "INSERT INTO member_courses (member_id, course_name, course_type, completion_date, expiry_date) 
+                    VALUES (?, ?, ?, ?, NULL)";
             $this->db->execute($sql, [
                 $memberId,
                 $courseName,
+                $courseType,
                 $completionDate
             ]);
         }

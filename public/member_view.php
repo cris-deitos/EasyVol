@@ -308,6 +308,22 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                     ?>
                                                 </p>
                                             </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="text-muted small">Corso Base Protezione Civile</label>
+                                                <p class="mb-0">
+                                                    <?php 
+                                                    echo !empty($member['corso_base_completato']) ? 'Completato' : 'Non Completato';
+                                                    ?>
+                                                </p>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="text-muted small">Anno Corso Base</label>
+                                                <p class="mb-0">
+                                                    <?php 
+                                                    echo !empty($member['corso_base_anno']) ? htmlspecialchars($member['corso_base_anno']) : 'N/D';
+                                                    ?>
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

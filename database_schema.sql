@@ -182,6 +182,8 @@ CREATE TABLE IF NOT EXISTS `members` (
   `registration_date` date,
   `approval_date` date,
   `termination_date` date DEFAULT NULL COMMENT 'Data di cessazione (esclusione, dimissioni, decadenza)',
+  `corso_base_completato` tinyint(1) DEFAULT 0 COMMENT 'Flag corso base protezione civile completato',
+  `corso_base_anno` int(11) DEFAULT NULL COMMENT 'Anno completamento corso base protezione civile',
   `photo` varchar(255),
   `photo_path` varchar(255),
   `notes` text,

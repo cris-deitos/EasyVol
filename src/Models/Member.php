@@ -357,6 +357,23 @@ class Member {
             $data['member_id'] = $memberId;
             $courseId = $this->db->insert('member_courses', $data);
             
+            // Se il corso è A1 CORSO BASE, aggiorna anche i campi corso_base nel socio
+            if ($courseId && !empty($data['course_name']) && 
+                stripos($data['course_name'], 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE') !== false) {
+                
+                // Estrai l'anno dalla data di completamento
+                $anno = null;
+                if (!empty($data['completion_date'])) {
+                    $anno = intval(substr($data['completion_date'], 0, 4));
+                }
+                
+                // Aggiorna i campi corso_base del socio
+                $this->db->execute(
+                    "UPDATE members SET corso_base_completato = 1, corso_base_anno = ? WHERE id = ?",
+                    [$anno, $memberId]
+                );
+            }
+            
             // Sincronizza con lo scadenziario se c'è una data di scadenza
             if ($courseId && !empty($data['expiry_date'])) {
                 $syncController = $this->getSyncController();
@@ -377,13 +394,30 @@ class Member {
     public function updateCourse($id, $data) {
         try {
             $data = $this->uppercaseFields($data, 'course');
-            // Get member_id before update for sync
-            $course = $this->db->fetchOne("SELECT member_id FROM member_courses WHERE id = ?", [$id]);
+            // Get member_id and course info before update
+            $course = $this->db->fetchOne("SELECT member_id, course_name FROM member_courses WHERE id = ?", [$id]);
             if (!$course) {
                 return false;
             }
             
             $result = $this->db->update('member_courses', $data, 'id = ?', [$id]);
+            
+            // Se il corso è A1 CORSO BASE, aggiorna anche i campi corso_base nel socio
+            if ($result && !empty($data['course_name']) && 
+                stripos($data['course_name'], 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE') !== false) {
+                
+                // Estrai l'anno dalla data di completamento
+                $anno = null;
+                if (!empty($data['completion_date'])) {
+                    $anno = intval(substr($data['completion_date'], 0, 4));
+                }
+                
+                // Aggiorna i campi corso_base del socio
+                $this->db->execute(
+                    "UPDATE members SET corso_base_completato = 1, corso_base_anno = ? WHERE id = ?",
+                    [$anno, $course['member_id']]
+                );
+            }
             
             // Sincronizza con lo scadenziario
             if ($result) {

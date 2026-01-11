@@ -73,7 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'nationality' => trim($_POST['nationality'] ?? 'Italiana'),
             'worker_type' => !empty($_POST['worker_type']) ? $_POST['worker_type'] : null,
             'education_level' => !empty($_POST['education_level']) ? $_POST['education_level'] : null,
-            'registration_date' => $_POST['registration_date'] ?? date('Y-m-d')
+            'registration_date' => $_POST['registration_date'] ?? date('Y-m-d'),
+            'corso_base_completato' => !empty($_POST['corso_base_completato']) ? 1 : 0,
+            'corso_base_anno' => !empty($_POST['corso_base_anno']) ? intval($_POST['corso_base_anno']) : null
         ];
         
         try {
@@ -271,6 +273,25 @@ $pageTitle = $isEdit ? 'Modifica Socio' : 'Nuovo Socio';
                                         <option value="laurea_magistrale" <?php echo ($member['education_level'] ?? '') === 'laurea_magistrale' ? 'selected' : ''; ?>>Laurea Magistrale</option>
                                         <option value="dottorato" <?php echo ($member['education_level'] ?? '') === 'dottorato' ? 'selected' : ''; ?>>Dottorato</option>
                                     </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="corso_base_completato" name="corso_base_completato" 
+                                               <?php echo !empty($member['corso_base_completato']) ? 'checked' : ''; ?>>
+                                        <label class="form-check-label" for="corso_base_completato">
+                                            Corso Base di Protezione Civile Completato
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="corso_base_anno" class="form-label">Anno Corso Base</label>
+                                    <input type="number" class="form-control" id="corso_base_anno" name="corso_base_anno" 
+                                           value="<?php echo htmlspecialchars($member['corso_base_anno'] ?? ''); ?>" 
+                                           min="1900" max="<?php echo date('Y') + 1; ?>" placeholder="Es: 2023">
+                                    <small class="text-muted">Compilare solo se il Corso Base è stato completato</small>
                                 </div>
                             </div>
                             
