@@ -409,12 +409,19 @@ class MemberController {
      */
     private function addCorsoBaseToMemberCourses($memberId, $anno, $userId) {
         try {
+            // Validate year using Member model constants
+            $maxYear = date('Y') + Member::MAX_COURSE_YEAR_OFFSET;
+            if ($anno < Member::MIN_COURSE_YEAR || $anno > $maxYear) {
+                error_log("Invalid corso base year: $anno for member $memberId");
+                return false;
+            }
+            
             // Nome e tipo corso secondo le costanti del modello Member
             $courseName = Member::CORSO_BASE_A1_NAME;
             $courseType = Member::CORSO_BASE_A1_CODE;
             
             // Data di completamento: primo giorno dell'anno specificato
-            $completionDate = $anno . '-01-01';
+            $completionDate = sprintf('%04d-01-01', $anno);
             
             // Verifica se esiste già un corso base per questo socio
             $sql = "SELECT id FROM member_courses 
@@ -426,31 +433,34 @@ class MemberController {
                 $sql = "UPDATE member_courses SET
                         course_name = ?,
                         completion_date = ?,
-                        expiry_date = NULL
+                        expiry_date = ?
                         WHERE id = ?";
                 
                 $this->db->execute($sql, [
                     $courseName,
                     $completionDate,
+                    null,
                     $existing['id']
                 ]);
                 
-                $this->logActivity($userId, 'member', 'update_corso_base', $memberId, 
+                $this->logActivity($userId, 'member', 'update_corso_base', $existing['id'], 
                     "Aggiornato corso base A1 anno $anno per socio ID: $memberId");
             } else {
                 // Crea nuovo record
                 $sql = "INSERT INTO member_courses 
                         (member_id, course_name, course_type, completion_date, expiry_date)
-                        VALUES (?, ?, ?, ?, NULL)";
+                        VALUES (?, ?, ?, ?, ?)";
                 
                 $this->db->execute($sql, [
                     $memberId,
                     $courseName,
                     $courseType,
-                    $completionDate
+                    $completionDate,
+                    null
                 ]);
                 
-                $this->logActivity($userId, 'member', 'add_corso_base', $this->db->lastInsertId(), 
+                $courseId = $this->db->lastInsertId();
+                $this->logActivity($userId, 'member', 'add_corso_base', $courseId, 
                     "Aggiunto corso base A1 anno $anno per socio ID: $memberId");
             }
             
