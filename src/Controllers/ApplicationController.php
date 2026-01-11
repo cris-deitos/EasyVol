@@ -1094,7 +1094,10 @@ class ApplicationController {
             $courseType = 'A1';
             $completionDate = null;
             
-            // If year is provided, validate and use year-01-01 as completion date
+            // If year is provided, validate and use January 1st as completion date
+            // Note: We use January 1st because the application form only collects the year,
+            // not the exact completion date. This provides a consistent date representation
+            // while preserving the year information for display and filtering purposes.
             if (!empty($data['corso_base_pc_anno'])) {
                 $year = intval($data['corso_base_pc_anno']);
                 // Validate year is reasonable (MIN_COURSE_YEAR to current year + MAX_COURSE_YEAR_OFFSET)

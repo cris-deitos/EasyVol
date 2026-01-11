@@ -41,6 +41,41 @@ class Member {
     }
     
     /**
+     * Update corso_base fields in member record when A1 course is added/updated
+     * 
+     * @param int $memberId Member ID
+     * @param string $courseName Course name
+     * @param string|null $completionDate Course completion date (YYYY-MM-DD)
+     */
+    private function updateCorsoBaseFields($memberId, $courseName, $completionDate = null) {
+        // Check if this is the A1 base course
+        if (empty($courseName) || 
+            stripos($courseName, 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE') === false) {
+            return;
+        }
+        
+        // Extract year from completion date using robust date parsing
+        $anno = null;
+        if (!empty($completionDate)) {
+            try {
+                $dateObj = \DateTime::createFromFormat('Y-m-d', $completionDate);
+                if ($dateObj !== false) {
+                    $anno = intval($dateObj->format('Y'));
+                }
+            } catch (\Exception $e) {
+                // Fallback to substr if date parsing fails
+                $anno = intval(substr($completionDate, 0, 4));
+            }
+        }
+        
+        // Update corso_base fields in member record
+        $this->db->execute(
+            "UPDATE members SET corso_base_completato = 1, corso_base_anno = ? WHERE id = ?",
+            [$anno, $memberId]
+        );
+    }
+    
+    /**
      * Get all members with optional filters
      */
     public function getAll($filters = [], $page = 1, $perPage = 20) {
@@ -357,20 +392,12 @@ class Member {
             $data['member_id'] = $memberId;
             $courseId = $this->db->insert('member_courses', $data);
             
-            // Se il corso è A1 CORSO BASE, aggiorna anche i campi corso_base nel socio
-            if ($courseId && !empty($data['course_name']) && 
-                stripos($data['course_name'], 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE') !== false) {
-                
-                // Estrai l'anno dalla data di completamento
-                $anno = null;
-                if (!empty($data['completion_date'])) {
-                    $anno = intval(substr($data['completion_date'], 0, 4));
-                }
-                
-                // Aggiorna i campi corso_base del socio
-                $this->db->execute(
-                    "UPDATE members SET corso_base_completato = 1, corso_base_anno = ? WHERE id = ?",
-                    [$anno, $memberId]
+            // Update corso_base fields if this is an A1 base course
+            if ($courseId) {
+                $this->updateCorsoBaseFields(
+                    $memberId,
+                    $data['course_name'] ?? '',
+                    $data['completion_date'] ?? null
                 );
             }
             
@@ -402,20 +429,12 @@ class Member {
             
             $result = $this->db->update('member_courses', $data, 'id = ?', [$id]);
             
-            // Se il corso è A1 CORSO BASE, aggiorna anche i campi corso_base nel socio
-            if ($result && !empty($data['course_name']) && 
-                stripos($data['course_name'], 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE') !== false) {
-                
-                // Estrai l'anno dalla data di completamento
-                $anno = null;
-                if (!empty($data['completion_date'])) {
-                    $anno = intval(substr($data['completion_date'], 0, 4));
-                }
-                
-                // Aggiorna i campi corso_base del socio
-                $this->db->execute(
-                    "UPDATE members SET corso_base_completato = 1, corso_base_anno = ? WHERE id = ?",
-                    [$anno, $course['member_id']]
+            // Update corso_base fields if this is an A1 base course
+            if ($result) {
+                $this->updateCorsoBaseFields(
+                    $course['member_id'],
+                    $data['course_name'] ?? '',
+                    $data['completion_date'] ?? null
                 );
             }
             
