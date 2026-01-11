@@ -65,8 +65,8 @@ class Member {
         $courseNameUpper = mb_strtoupper($courseName, 'UTF-8');
         $isCorsoBase = (
             stripos($courseName, self::CORSO_BASE_A1_NAME) !== false || // Exact match
-            stripos($courseNameUpper, 'A1') !== false && stripos($courseNameUpper, 'CORSO BASE') !== false || // A1 + CORSO BASE
-            stripos($courseNameUpper, 'CORSO BASE') !== false && stripos($courseNameUpper, 'PROTEZIONE CIVILE') !== false // CORSO BASE + PROTEZIONE CIVILE
+            (stripos($courseNameUpper, 'A1') !== false && stripos($courseNameUpper, 'CORSO BASE') !== false) || // A1 + CORSO BASE
+            (stripos($courseNameUpper, 'CORSO BASE') !== false && stripos($courseNameUpper, 'PROTEZIONE CIVILE') !== false) // CORSO BASE + PROTEZIONE CIVILE
         );
         
         if (!$isCorsoBase) {
