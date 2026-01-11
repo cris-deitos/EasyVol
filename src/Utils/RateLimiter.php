@@ -153,10 +153,15 @@ class RateLimiter {
      * Get current client IP address
      * Handles proxy scenarios with X-Forwarded-For header
      * 
+     * SECURITY NOTE: In production environments behind trusted proxies/load balancers,
+     * configure your web server to only pass X-Forwarded-For from trusted sources.
+     * Consider implementing a whitelist of trusted proxy IPs if needed.
+     * 
      * @return string IP address
      */
     public static function getClientIp() {
         // Check for proxy headers
+        // Note: X-Forwarded-For can be spoofed. Only use if behind a trusted proxy.
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             // X-Forwarded-For can contain multiple IPs, take the first one
             $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
@@ -164,14 +169,16 @@ class RateLimiter {
         } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
             $ip = $_SERVER['HTTP_CLIENT_IP'];
         } else {
+            // Most reliable - direct connection IP
             $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         }
         
-        // Validate IP address
+        // Validate IP address format
         if (filter_var($ip, FILTER_VALIDATE_IP)) {
             return $ip;
         }
         
+        // Fallback to safe default if invalid
         return '0.0.0.0';
     }
 }

@@ -42,9 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$rateCheck['allowed']) {
                 $error = 'Troppi tentativi di accesso. Riprova tra qualche minuto.';
                 $app->logActivity('login_rate_limited', 'auth', null, "Rate limited login attempt from IP: $clientIp");
-                if (!$rateCheck['allowed']) {
-                $error = 'Troppi tentativi di accesso. Riprova tra qualche minuto.';
-                $app->logActivity('login_rate_limited', 'auth', null, "Rate limited login attempt from IP: $clientIp");
             } else {
                 try {
                     // Get user with role

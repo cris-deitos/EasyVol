@@ -216,10 +216,6 @@ private function loadEmailConfigFromDatabase() {
                 ini_set('session.cookie_secure', 1);
             }
             
-            // Use strong session ID
-            ini_set('session.entropy_length', 32);
-            ini_set('session.hash_function', 'sha256');
-            
             // Prevent session fixation
             ini_set('session.use_strict_mode', 1);
             
