@@ -27,9 +27,33 @@ try {
     $filename = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
     $filepath = $backupDir . '/' . $filename;
     
-    // Build mysqldump command
+    // Check if mysqldump is available
+    exec('which mysqldump 2>&1', $whichOutput, $whichReturnCode);
+    if ($whichReturnCode !== 0) {
+        // Try alternative paths
+        $mysqldumpPaths = [
+            '/usr/bin/mysqldump',
+            '/usr/local/bin/mysqldump',
+            '/usr/local/mysql/bin/mysqldump'
+        ];
+        
+        $mysqldumpPath = 'mysqldump'; // default
+        foreach ($mysqldumpPaths as $path) {
+            if (file_exists($path)) {
+                $mysqldumpPath = $path;
+                break;
+            }
+        }
+    } else {
+        $mysqldumpPath = trim($whichOutput[0]);
+    }
+    
+    echo "Using mysqldump: $mysqldumpPath\n";
+    
+    // Build mysqldump command with error output redirection
     $command = sprintf(
-        'mysqldump --host=%s --port=%d --user=%s --password=%s %s > %s',
+        '%s --host=%s --port=%d --user=%s --password=%s %s > %s 2>&1',
+        $mysqldumpPath,
         escapeshellarg($dbConfig['host']),
         $dbConfig['port'],
         escapeshellarg($dbConfig['username']),
@@ -43,11 +67,17 @@ try {
     
     if ($returnCode === 0 && file_exists($filepath)) {
         // Compress backup
-        exec("gzip " . escapeshellarg($filepath));
-        $filepath .= '.gz';
+        exec("gzip " . escapeshellarg($filepath), $gzipOutput, $gzipReturnCode);
         
-        $filesize = filesize($filepath);
-        echo "Backup created successfully: $filename.gz (" . round($filesize / 1024 / 1024, 2) . " MB)\n";
+        if ($gzipReturnCode === 0) {
+            $filepath .= '.gz';
+            
+            $filesize = filesize($filepath);
+            echo "Backup created successfully: $filename.gz (" . round($filesize / 1024 / 1024, 2) . " MB)\n";
+        } else {
+            echo "Warning: Backup created but compression failed. Keeping uncompressed file.\n";
+            echo "Gzip output: " . implode("\n", $gzipOutput) . "\n";
+        }
         
         // Delete old backups (keep last 30 days)
         $files = glob($backupDir . '/backup_*.sql.gz');
@@ -67,7 +97,14 @@ try {
         $db->execute($sql, ["Database backup created: $filename.gz"]);
         
     } else {
-        throw new \Exception("Backup failed with return code: $returnCode");
+        $errorMsg = "Backup failed with return code: $returnCode";
+        if (!empty($output)) {
+            $errorMsg .= "\nOutput: " . implode("\n", $output);
+        }
+        if (!file_exists($filepath)) {
+            $errorMsg .= "\nBackup file was not created at: $filepath";
+        }
+        throw new \Exception($errorMsg);
     }
     
 } catch (\Exception $e) {
