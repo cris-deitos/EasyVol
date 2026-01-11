@@ -10,6 +10,14 @@ use EasyVol\Database;
 class Member {
     private $db;
     
+    // Course name constants
+    const CORSO_BASE_A1_NAME = 'A1 CORSO BASE PER VOLONTARI OPERATIVI DI PROTEZIONE CIVILE';
+    const CORSO_BASE_A1_CODE = 'A1';
+    
+    // Course year validation constants
+    const MIN_COURSE_YEAR = 1950; // Minimum acceptable year for courses
+    const MAX_COURSE_YEAR_OFFSET = 1; // How many years in the future are acceptable
+    
     public function __construct(Database $db) {
         $this->db = $db;
     }
@@ -38,6 +46,48 @@ class Member {
                strpos($message, "Base table or view not found") !== false || 
                strpos($message, "doesn't exist") !== false ||
                strpos($message, "Table") !== false && strpos($message, "doesn't exist") !== false;
+    }
+    
+    /**
+     * Update corso_base fields in member record when A1 course is added/updated
+     * 
+     * @param int $memberId Member ID
+     * @param string $courseName Course name
+     * @param string|null $completionDate Course completion date (YYYY-MM-DD)
+     */
+    private function updateCorsoBaseFields($memberId, $courseName, $completionDate = null) {
+        // Check if this is the A1 base course using class constant
+        if (empty($courseName) || stripos($courseName, self::CORSO_BASE_A1_NAME) === false) {
+            return;
+        }
+        
+        // Extract year from completion date using robust date parsing
+        $anno = null;
+        if (!empty($completionDate)) {
+            try {
+                $dateObj = \DateTime::createFromFormat('Y-m-d', $completionDate);
+                if ($dateObj !== false) {
+                    $year = intval($dateObj->format('Y'));
+                    // Validate year using class constants for consistency
+                    $maxYear = date('Y') + self::MAX_COURSE_YEAR_OFFSET;
+                    if ($year >= self::MIN_COURSE_YEAR && $year <= $maxYear) {
+                        $anno = $year;
+                    } else {
+                        error_log("Warning: Invalid corso base year extracted: $year for member $memberId");
+                    }
+                } else {
+                    error_log("Warning: Failed to parse corso base completion date: $completionDate for member $memberId");
+                }
+            } catch (\Exception $e) {
+                error_log("Exception parsing corso base completion date: " . $e->getMessage());
+            }
+        }
+        
+        // Update corso_base fields in member record
+        $this->db->execute(
+            "UPDATE members SET corso_base_completato = 1, corso_base_anno = ? WHERE id = ?",
+            [$anno, $memberId]
+        );
     }
     
     /**
@@ -357,6 +407,15 @@ class Member {
             $data['member_id'] = $memberId;
             $courseId = $this->db->insert('member_courses', $data);
             
+            // Update corso_base fields if this is an A1 base course
+            if ($courseId) {
+                $this->updateCorsoBaseFields(
+                    $memberId,
+                    $data['course_name'] ?? '',
+                    $data['completion_date'] ?? null
+                );
+            }
+            
             // Sincronizza con lo scadenziario se c'è una data di scadenza
             if ($courseId && !empty($data['expiry_date'])) {
                 $syncController = $this->getSyncController();
@@ -377,13 +436,22 @@ class Member {
     public function updateCourse($id, $data) {
         try {
             $data = $this->uppercaseFields($data, 'course');
-            // Get member_id before update for sync
-            $course = $this->db->fetchOne("SELECT member_id FROM member_courses WHERE id = ?", [$id]);
+            // Get member_id and course info before update
+            $course = $this->db->fetchOne("SELECT member_id, course_name FROM member_courses WHERE id = ?", [$id]);
             if (!$course) {
                 return false;
             }
             
             $result = $this->db->update('member_courses', $data, 'id = ?', [$id]);
+            
+            // Update corso_base fields if this is an A1 base course
+            if ($result) {
+                $this->updateCorsoBaseFields(
+                    $course['member_id'],
+                    $data['course_name'] ?? '',
+                    $data['completion_date'] ?? null
+                );
+            }
             
             // Sincronizza con lo scadenziario
             if ($result) {

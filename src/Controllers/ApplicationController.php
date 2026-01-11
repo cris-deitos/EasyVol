@@ -4,6 +4,7 @@ namespace EasyVol\Controllers;
 use EasyVol\Database;
 use EasyVol\Utils\PdfGenerator;
 use EasyVol\Utils\EmailSender;
+use EasyVol\Models\Member;
 
 /**
  * Application Controller
@@ -14,9 +15,9 @@ class ApplicationController {
     private $db;
     private $config;
     
-    // Costanti per validazione
-    const MIN_COURSE_YEAR = 1950; // Anno minimo accettabile per corsi
-    const MAX_COURSE_YEAR_OFFSET = 1; // Offset anni futuri accettabili
+    // Kept for backward compatibility, but delegates to Member class constants
+    const MIN_COURSE_YEAR = Member::MIN_COURSE_YEAR; // Anno minimo accettabile per corsi
+    const MAX_COURSE_YEAR_OFFSET = Member::MAX_COURSE_YEAR_OFFSET; // Offset anni futuri accettabili
     
     public function __construct(Database $db, $config) {
         $this->db = $db;
@@ -984,8 +985,9 @@ class ApplicationController {
             gender, nationality,
             worker_type, education_level,
             registration_date, approval_date,
+            corso_base_completato, corso_base_anno,
             created_at
-        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
         $params = [
             $regNumber,
@@ -1000,7 +1002,9 @@ class ApplicationController {
             $data['worker_type'] ?? null,
             $data['education_level'] ?? null,
             date('Y-m-d'),
-            date('Y-m-d')
+            date('Y-m-d'),
+            !empty($data['corso_base_pc']) ? 1 : 0,
+            !empty($data['corso_base_pc_anno']) ? intval($data['corso_base_pc_anno']) : null
         ];
         
         $this->db->execute($sql, $params);
@@ -1085,26 +1089,31 @@ class ApplicationController {
             }
         }
         
-        // Inserisci Corso Base Protezione Civile Regione Lombardia (se presente)
+        // Inserisci Corso Base Protezione Civile (se presente)
         if (!empty($data['corso_base_pc'])) {
-            $courseName = 'Corso Base Protezione Civile Regione Lombardia';
+            $courseName = Member::CORSO_BASE_A1_NAME;
+            $courseType = Member::CORSO_BASE_A1_CODE;
             $completionDate = null;
             
-            // If year is provided, validate and use December 31st of that year as completion date
+            // If year is provided, validate and use January 1st as completion date
+            // Note: We use January 1st because the application form only collects the year,
+            // not the exact completion date. This provides a consistent date representation
+            // while preserving the year information for display and filtering purposes.
             if (!empty($data['corso_base_pc_anno'])) {
                 $year = intval($data['corso_base_pc_anno']);
                 // Validate year is reasonable (MIN_COURSE_YEAR to current year + MAX_COURSE_YEAR_OFFSET)
                 $maxYear = date('Y') + self::MAX_COURSE_YEAR_OFFSET;
                 if ($year >= self::MIN_COURSE_YEAR && $year <= $maxYear) {
-                    $completionDate = sprintf('%04d-12-31', $year);
+                    $completionDate = sprintf('%04d-01-01', $year);
                 }
             }
             
-            $sql = "INSERT INTO member_courses (member_id, course_name, completion_date) 
-                    VALUES (?, ?, ?)";
+            $sql = "INSERT INTO member_courses (member_id, course_name, course_type, completion_date, expiry_date) 
+                    VALUES (?, ?, ?, ?, NULL)";
             $this->db->execute($sql, [
                 $memberId,
                 $courseName,
+                $courseType,
                 $completionDate
             ]);
         }
