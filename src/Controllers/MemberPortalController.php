@@ -274,6 +274,11 @@ class MemberPortalController {
             
             $changes = [];
             
+            // Update main member fields (worker_type, education_level)
+            if (isset($data['member_fields']) && !empty($data['member_fields'])) {
+                $this->updateMemberFields($memberId, $data['member_fields'], $changes);
+            }
+            
             // Update contacts
             if (isset($data['contacts'])) {
                 $this->updateContacts($memberId, $data['contacts'], $changes);
@@ -323,6 +328,51 @@ class MemberPortalController {
                 'error' => $e->getMessage()
             ]);
             return false;
+        }
+    }
+    
+    /**
+     * Update main member fields (worker_type, education_level)
+     */
+    private function updateMemberFields($memberId, $fields, &$changes) {
+        $allowedFields = ['worker_type', 'education_level'];
+        $updateParts = [];
+        $params = [];
+        
+        foreach ($fields as $field => $value) {
+            if (in_array($field, $allowedFields)) {
+                $updateParts[] = "$field = ?";
+                $params[] = !empty($value) ? $value : null;
+                
+                // Add to changes log
+                $fieldLabels = [
+                    'worker_type' => 'Tipo Lavoratore',
+                    'education_level' => 'Titolo di Studio'
+                ];
+                $valueLabels = [
+                    'studente' => 'Studente',
+                    'dipendente_privato' => 'Dipendente Privato',
+                    'dipendente_pubblico' => 'Dipendente Pubblico',
+                    'lavoratore_autonomo' => 'Lavoratore Autonomo',
+                    'disoccupato' => 'Disoccupato',
+                    'pensionato' => 'Pensionato',
+                    'licenza_media' => 'Licenza Media',
+                    'diploma_maturita' => 'Diploma di Maturità',
+                    'laurea_triennale' => 'Laurea Triennale',
+                    'laurea_magistrale' => 'Laurea Magistrale',
+                    'dottorato' => 'Dottorato'
+                ];
+                
+                $fieldLabel = $fieldLabels[$field] ?? $field;
+                $valueLabel = $valueLabels[$value] ?? ($value ?: 'Non specificato');
+                $changes[] = "$fieldLabel aggiornato: $valueLabel";
+            }
+        }
+        
+        if (!empty($updateParts)) {
+            $params[] = $memberId;
+            $sql = "UPDATE members SET " . implode(', ', $updateParts) . " WHERE id = ?";
+            $this->db->execute($sql, $params);
         }
     }
     
