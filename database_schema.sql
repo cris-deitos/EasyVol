@@ -923,7 +923,7 @@ CREATE TABLE IF NOT EXISTS `scheduler_items` (
   `status` enum('in_attesa', 'in_corso', 'completato', 'scaduto') DEFAULT 'in_attesa',
   `reminder_days` int(11) DEFAULT 7,
   `is_recurring` tinyint(1) DEFAULT 0 COMMENT 'Flag per scadenze ricorrenti',
-  `recurrence_type` enum('yearly', 'monthly', 'weekly') DEFAULT NULL COMMENT 'Tipo ricorrenza: yearly (1 volta l''anno), monthly (stesso giorno ogni mese), weekly (stesso giorno ogni settimana)',
+  `recurrence_type` enum('yearly', 'monthly', 'weekly') DEFAULT NULL COMMENT 'Tipo ricorrenza: yearly (1 volta anno), monthly (stesso giorno ogni mese), weekly (stesso giorno ogni settimana)',
   `recurrence_end_date` date DEFAULT NULL COMMENT 'Data fine ricorrenza. NULL = ricorrenza a tempo indeterminato',
   `parent_recurrence_id` int(11) DEFAULT NULL COMMENT 'ID della scadenza ricorrente principale (NULL se è la principale)',
   `assigned_to` int(11),
