@@ -74,9 +74,22 @@ function validateCronRequest() {
         // Check IP whitelist if configured
         $allowedIps = $config['cron']['allowed_ips'] ?? [];
         if (!empty($allowedIps)) {
+            // Get client IP, considering proxies and CDNs
             $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+            
+            // Check X-Forwarded-For header (common with proxies/CDNs like Cloudflare)
+            if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                // X-Forwarded-For can contain multiple IPs, take the first (original client)
+                $forwardedIps = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $clientIp = trim($forwardedIps[0]);
+            } 
+            // Check X-Real-IP header (alternative used by some proxies)
+            elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+                $clientIp = $_SERVER['HTTP_X_REAL_IP'];
+            }
+            
             if (!in_array($clientIp, $allowedIps)) {
-                error_log('Cron access denied for IP: ' . $clientIp);
+                error_log('Cron access denied for IP: ' . $clientIp . ' (REMOTE_ADDR: ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . ')');
                 return [
                     'success' => false,
                     'message' => 'Access denied: IP not whitelisted'

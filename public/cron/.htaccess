@@ -12,8 +12,8 @@
 # Prevent directory listing
 Options -Indexes
 
-# Allow only GET requests
-<LimitExcept GET>
+# Allow GET and POST requests (POST needed for alternative authentication methods)
+<LimitExcept GET POST>
     Order Allow,Deny
     Deny from all
 </LimitExcept>
@@ -22,6 +22,7 @@ Options -Indexes
 # Uncomment the following lines for stricter security
 # <IfModule mod_rewrite.c>
 #     RewriteCond %{QUERY_STRING} !token=
+#     RewriteCond %{REQUEST_METHOD} !POST
 #     RewriteRule \.php$ - [F,L]
 # </IfModule>
 
