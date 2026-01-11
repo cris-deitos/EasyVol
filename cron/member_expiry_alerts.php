@@ -13,18 +13,21 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
-require_once __DIR__ . '/../config/config.php';
+EasyVol\Autoloader::register();
 
-use EasyVol\Database;
+use EasyVol\App;
 use EasyVol\Utils\EmailSender;
 
-// Initialize
-$db = new Database($config);
-$emailSender = new EmailSender($config, $db);
-
-echo "[" . date('Y-m-d H:i:s') . "] Starting member expiry alerts job...\n";
-
 try {
+    // Initialize app
+    $app = App::getInstance();
+    $db = $app->getDb();
+    $config = $app->getConfig();
+    
+    $emailSender = new EmailSender($config, $db);
+    
+    echo "[" . date('Y-m-d H:i:s') . "] Starting member expiry alerts job...\n";
+    
     // Get members with expiring licenses (next 30 days)
     $sql = "SELECT ml.*, m.first_name, m.last_name, m.registration_number,
                    mc.value as email, mct.value as telegram_id

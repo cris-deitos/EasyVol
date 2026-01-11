@@ -7,13 +7,14 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\EmailSender;
 
 try {
-    $app = new App(false);
-    $db = $app->getDatabase();
+    $app = App::getInstance();
+    $db = $app->getDb();
     $config = $app->getConfig();
     
     // Get vehicles with upcoming expirations (next 30 days)

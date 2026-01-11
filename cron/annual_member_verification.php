@@ -11,20 +11,22 @@
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
-require_once __DIR__ . '/../config/config.php';
+EasyVol\Autoloader::register();
 
-use EasyVol\Database;
+use EasyVol\App;
 use EasyVol\Utils\EmailSender;
 
-// Initialize
-$db = new Database($config);
-$emailSender = new EmailSender($config, $db);
-
-$currentYear = date('Y');
-
-echo "[" . date('Y-m-d H:i:s') . "] Starting annual member data verification job for year $currentYear...\n";
-
 try {
+    // Initialize
+    $app = App::getInstance();
+    $db = $app->getDb();
+    $config = $app->getConfig();
+    
+    $emailSender = new EmailSender($config, $db);
+    
+    $currentYear = date('Y');
+    
+    echo "[" . date('Y-m-d H:i:s') . "] Starting annual member data verification job for year $currentYear...\n";
     // Check if we already sent emails this year
     $sql = "SELECT COUNT(*) as count FROM annual_data_verification_emails WHERE year = ?";
     $result = $db->fetchOne($sql, [$currentYear]);
