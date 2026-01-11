@@ -206,15 +206,37 @@ private function loadEmailConfigFromDatabase() {
     
     private function initSession() {
         if (session_status() === PHP_SESSION_NONE) {
+            // Enhanced session security settings
             ini_set('session.cookie_httponly', 1);
             ini_set('session.use_only_cookies', 1);
             ini_set('session.cookie_samesite', 'Strict');
             
+            // Set secure flag if using HTTPS
             if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                 ini_set('session.cookie_secure', 1);
             }
             
+            // Use strong session ID
+            ini_set('session.entropy_length', 32);
+            ini_set('session.hash_function', 'sha256');
+            
+            // Prevent session fixation
+            ini_set('session.use_strict_mode', 1);
+            
+            // Session timeout (2 hours by default)
+            $sessionLifetime = $this->config['security']['session_lifetime'] ?? 7200;
+            ini_set('session.gc_maxlifetime', $sessionLifetime);
+            ini_set('session.cookie_lifetime', $sessionLifetime);
+            
             session_start();
+            
+            // Regenerate session ID periodically to prevent session fixation
+            if (!isset($_SESSION['session_started'])) {
+                $_SESSION['session_started'] = time();
+            } elseif (time() - $_SESSION['session_started'] > 1800) { // Regenerate every 30 minutes
+                session_regenerate_id(true);
+                $_SESSION['session_started'] = time();
+            }
         }
     }
     

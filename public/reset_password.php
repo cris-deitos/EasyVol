@@ -5,6 +5,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\UserController;
+use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
 
@@ -21,11 +22,15 @@ $success = false;
 AutoLogger::logPageAccess();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $usernameOrEmail = trim($_POST['username_or_email'] ?? '');
-    
-    if (empty($usernameOrEmail)) {
-        $error = 'Inserisci username o email.';
+    // Verify CSRF token
+    if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Token di sicurezza non valido. Ricarica la pagina e riprova.';
     } else {
+        $usernameOrEmail = trim($_POST['username_or_email'] ?? '');
+        
+        if (empty($usernameOrEmail)) {
+            $error = 'Inserisci username o email.';
+        } else {
         try {
             $db = $app->getDb();
             $config = $app->getConfig();
@@ -40,9 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = 'Errore durante il reset della password.';
             }
-        } catch (Exception $e) {
-            $error = 'Errore di sistema. Riprova più tardi.';
-            error_log($e->getMessage());
+            } catch (Exception $e) {
+                $error = 'Errore di sistema. Riprova più tardi.';
+                error_log($e->getMessage());
+            }
         }
     }
 }
@@ -285,6 +291,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php else: ?>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= CsrfProtection::generateToken() ?>">
+                    
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-person"></i></span>
                         <input type="text" class="form-control" name="username_or_email" 
