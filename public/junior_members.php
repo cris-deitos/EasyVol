@@ -51,7 +51,7 @@ $filters = [
     'status' => $_GET['status'] ?? '',
     'search' => $_GET['search'] ?? '',
     'hide_dismissed' => isset($_GET['hide_dismissed']) ? $_GET['hide_dismissed'] : '1',
-    'sort_by' => $_GET['sort_by'] ?? 'alphabetical'
+    'sort_by' => $_GET['sort_by'] ?? 'registration_number'
 ];
 
 // Paginazione
