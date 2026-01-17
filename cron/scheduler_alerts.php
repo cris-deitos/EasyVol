@@ -168,7 +168,7 @@ try {
             }
             
             // Build HTML email body
-            $body = $this->buildReminderEmailHtml($data['user']['name'], $data['items']);
+            $body = buildReminderEmailHtml($data['user']['name'], $data['items']);
             
             // Send email
             $subject = "Promemoria Scadenze - " . count($data['items']) . " scadenza/e in arrivo";
@@ -265,7 +265,7 @@ try {
                                 $message .= "   👤 <b>Assegnato a:</b> " . htmlspecialchars($item['assigned_name']) . "\n";
                             }
                             if ($item['description']) {
-                                $message .= "   📝 " . htmlspecialchars(substr($item['description'], 0, 80)) . (strlen($item['description']) > 80 ? '...' : '') . "\n";
+                                $message .= "   📝 " . htmlspecialchars(substr($item['description'], 0, 100)) . (strlen($item['description']) > 100 ? '...' : '') . "\n";
                             }
                             $message .= "\n";
                         }
