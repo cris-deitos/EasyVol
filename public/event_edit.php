@@ -260,7 +260,7 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                     <i class="bi bi-shield-check"></i> <strong>Invia email alla Provincia all'apertura dell'evento</strong>
                                 </label>
                                 <div class="form-text">
-                                    Se selezionato, verrà inviata una notifica all'Ufficio Provinciale di Protezione Civile 
+                                    Se selezionato, verrà inviata una notifica all'Ufficio di Protezione Civile della Provincia 
                                     con i dettagli dell'evento e un link per il monitoraggio degli interventi.
                                 </div>
                             </div>
