@@ -155,7 +155,7 @@ $pageTitle = $authenticated ? 'Visualizzazione Evento - Provincia' : 'Accesso Ri
                 <div class="card shadow-lg">
                     <div class="card-header card-header-province text-center py-4">
                         <h3 class="mb-0"><i class="bi bi-shield-lock"></i> Accesso Riservato</h3>
-                        <p class="mb-0 small">Ufficio Provinciale di Protezione Civile</p>
+                        <p class="mb-0 small">Ufficio di Protezione Civile della Provincia</p>
                     </div>
                     <div class="card-body p-4">
                         <?php if ($error): ?>

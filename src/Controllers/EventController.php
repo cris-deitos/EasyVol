@@ -792,7 +792,7 @@ class EventController {
             $provinceEmail = $association['provincial_civil_protection_email'] ?? null;
             
             if (empty($provinceEmail)) {
-                throw new \Exception('Email Ufficio Provinciale non configurata');
+                throw new \Exception('Email Ufficio di Protezione Civile della Provincia non configurata');
             }
             
             // Generate secure token and access code
@@ -972,10 +972,10 @@ class EventController {
     <div class="container">
         <div class="header">
             <h1>🚨 Notifica Nuovo Evento</h1>
-            <p>Ufficio Provinciale di Protezione Civile</p>
+            <p>Ufficio di Protezione Civile della Provincia</p>
         </div>
         <div class="content">
-            <p>Gentile Ufficio Provinciale,</p>
+            <p>Gentile Ufficio di Protezione Civile della Provincia,</p>
             <p>l'associazione <strong>{$associationName}</strong> ha creato un nuovo evento che richiede la vostra attenzione.</p>
             
             <div class="event-details">

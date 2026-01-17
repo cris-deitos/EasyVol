@@ -558,13 +558,13 @@ $pageTitle = 'Impostazioni Sistema';
                                     <!-- Provincial Civil Protection Email -->
                                     <div class="mb-3">
                                         <label for="provincial_civil_protection_email" class="form-label">
-                                            <i class="bi bi-shield-check"></i> Email Ufficio Provinciale di Protezione Civile
+                                            <i class="bi bi-shield-check"></i> Email Ufficio di Protezione Civile della Provincia
                                         </label>
                                         <input type="email" class="form-control" id="provincial_civil_protection_email" name="provincial_civil_protection_email" 
                                                value="<?php echo htmlspecialchars($associationData['provincial_civil_protection_email'] ?? ''); ?>"
                                                placeholder="es. provincia@protezionecivile.it"
                                                <?php echo !$app->checkPermission('settings', 'edit') ? 'readonly' : ''; ?>>
-                                        <small class="text-muted">Email per le notifiche degli eventi alla Provincia</small>
+                                        <small class="text-muted">Email per le notifiche degli eventi all'Ufficio di Protezione Civile della Provincia</small>
                                     </div>
                                     
                                     <?php if ($app->checkPermission('settings', 'edit')): ?>
