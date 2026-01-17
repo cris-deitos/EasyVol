@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `association` (
   `phone` varchar(50),
   `email` varchar(255),
   `pec` varchar(255),
-  `provincial_civil_protection_email` varchar(255) DEFAULT NULL COMMENT 'Email dell\'Ufficio Provinciale di Protezione Civile',
+  `provincial_civil_protection_email` varchar(255) DEFAULT NULL COMMENT 'Email dell\'Ufficio di Protezione Civile della Provincia',
   `tax_code` varchar(50),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
