@@ -75,6 +75,36 @@ $pageTitle = 'Gestione Utenti';
                     </div>
                 </div>
                 
+                <?php if (isset($_GET['success'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php if ($_GET['success'] == 'email_sent'): ?>
+                            <i class="bi bi-check-circle"></i> Email di benvenuto inviata con successo!
+                        <?php else: ?>
+                            <i class="bi bi-check-circle"></i> Operazione completata con successo!
+                        <?php endif; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($_GET['error'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <?php
+                        $errorMsg = $_GET['error'];
+                        if ($errorMsg == 'access_denied') {
+                            echo 'Accesso negato';
+                        } elseif ($errorMsg == 'not_found') {
+                            echo 'Utente non trovato';
+                        } elseif ($errorMsg == 'csrf') {
+                            echo 'Token di sicurezza non valido';
+                        } else {
+                            echo htmlspecialchars($errorMsg);
+                        }
+                        ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
                 <!-- Statistiche Rapide -->
                 <div class="row mb-4">
                     <div class="col-md-4">
@@ -201,6 +231,10 @@ $pageTitle = 'Gestione Utenti';
                                                             <a href="user_edit.php?id=<?php echo $user['id']; ?>" 
                                                                class="btn btn-outline-warning" title="Modifica">
                                                                 <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                            <a href="user_resend_email.php?id=<?php echo $user['id']; ?>" 
+                                                               class="btn btn-outline-primary" title="Reinvia Email di Benvenuto">
+                                                                <i class="bi bi-envelope"></i>
                                                             </a>
                                                         <?php endif; ?>
                                                         <?php if ($app->checkPermission('users', 'delete')): ?>
