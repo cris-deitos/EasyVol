@@ -118,7 +118,7 @@ $pageTitle = 'Centrale Operativa';
                         <div class="card card-stat danger">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Eventi Attivi</h6>
-                                <h2 class="card-title mb-0"><?php echo $counts['active_events']; ?></h2>
+                                <h2 class="card-title mb-0" data-stat="active_events"><?php echo $counts['active_events']; ?></h2>
                             </div>
                         </div>
                     </div>
@@ -126,7 +126,7 @@ $pageTitle = 'Centrale Operativa';
                         <div class="card card-stat success">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Volontari Disponibili</h6>
-                                <h2 class="card-title mb-0"><?php echo $counts['available_members']; ?></h2>
+                                <h2 class="card-title mb-0" data-stat="available_members"><?php echo $counts['available_members']; ?></h2>
                             </div>
                         </div>
                     </div>
@@ -134,7 +134,7 @@ $pageTitle = 'Centrale Operativa';
                         <div class="card card-stat info">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Mezzi Operativi</h6>
-                                <h2 class="card-title mb-0"><?php echo $counts['available_vehicles']; ?></h2>
+                                <h2 class="card-title mb-0" data-stat="available_vehicles"><?php echo $counts['available_vehicles']; ?></h2>
                             </div>
                         </div>
                     </div>
@@ -142,7 +142,7 @@ $pageTitle = 'Centrale Operativa';
                         <div class="card card-stat warning">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Radio Disponibili</h6>
-                                <h2 class="card-title mb-0"><?php echo $counts['available_radios']; ?></h2>
+                                <h2 class="card-title mb-0" data-stat="available_radios"><?php echo $counts['available_radios']; ?></h2>
                             </div>
                         </div>
                     </div>
@@ -690,5 +690,6 @@ $pageTitle = 'Centrale Operativa';
             }
         };
     </script>
+    <script src="../assets/js/notifications-auto-update.js"></script>
 </body>
 </html>

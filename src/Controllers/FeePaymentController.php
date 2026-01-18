@@ -223,6 +223,8 @@ class FeePaymentController {
                 "SELECT fpr.*, 
                  m.id as member_id,
                  jm.id as junior_member_id,
+                 COALESCE(m.first_name, jm.first_name) as first_name,
+                 COALESCE(m.last_name, jm.last_name) as last_name,
                  CASE 
                      WHEN m.id IS NOT NULL THEN '" . self::MEMBER_TYPE_ADULT . "'
                      WHEN jm.id IS NOT NULL THEN '" . self::MEMBER_TYPE_JUNIOR . "'
