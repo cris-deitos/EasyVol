@@ -155,14 +155,18 @@
             let dropdownHTML = '<li><h6 class="dropdown-header">Notifiche</h6></li>';
             
             notifications.items.forEach(function(item) {
-                const escapedLink = escapeHtml(item.link);
-                const escapedIcon = escapeHtml(item.icon);
+                // Validate icon - must be a valid Bootstrap icon class
+                const icon = item.icon && /^bi-[\w-]+$/.test(item.icon) ? item.icon : 'bi-bell';
+                
+                // Validate link - must be a relative path (no protocol, no //)
+                const link = item.link && /^[a-zA-Z0-9_\-\/\.]+\.php(\?[^<>"']*)?$/.test(item.link) ? item.link : '#';
+                
                 const escapedText = escapeHtml(item.text);
                 
                 dropdownHTML += `
                     <li>
-                        <a class="dropdown-item" href="${escapedLink}">
-                            <i class="bi ${escapedIcon}"></i>
+                        <a class="dropdown-item" href="${link}">
+                            <i class="bi ${icon}"></i>
                             ${escapedText}
                         </a>
                     </li>
