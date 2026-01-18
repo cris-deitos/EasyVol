@@ -25,5 +25,6 @@ if (!empty($params)) {
     $redirectUrl .= '?' . implode('&', $params);
 }
 
+// Safe relative redirect (URL is hardcoded to print_template_editor.php)
 header('Location: ' . $redirectUrl);
 exit;
