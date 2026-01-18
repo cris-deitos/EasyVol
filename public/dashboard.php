@@ -104,7 +104,7 @@ AutoLogger::logPageAccess();
                                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                             Soci Attivi
                                         </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['active_members'] ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" data-stat="active_members"><?= $stats['active_members'] ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="bi bi-people fs-2 text-gray-300"></i>
@@ -122,7 +122,7 @@ AutoLogger::logPageAccess();
                                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                             Cadetti
                                         </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['junior_members'] ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" data-stat="junior_members"><?= $stats['junior_members'] ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="bi bi-person-badge fs-2 text-gray-300"></i>
@@ -141,7 +141,7 @@ AutoLogger::logPageAccess();
                                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                             Domande in Sospeso
                                         </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['pending_applications'] ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" data-stat="pending_applications"><?= $stats['pending_applications'] ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="bi bi-hourglass-split fs-2 text-gray-300"></i>
@@ -161,7 +161,7 @@ AutoLogger::logPageAccess();
                                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                                 Richieste Quote in Sospeso
                                             </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['pending_fee_requests'] ?></div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" data-stat="pending_fee_requests"><?= $stats['pending_fee_requests'] ?></div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-clock-history fs-2 text-gray-300"></i>
@@ -319,5 +319,6 @@ AutoLogger::logPageAccess();
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/notifications-auto-update.js"></script>
 </body>
 </html>

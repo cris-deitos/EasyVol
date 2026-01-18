@@ -125,6 +125,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Set session
             $_SESSION['user'] = $user;
             
+            // Send Telegram notification for user login (first access after password change)
+            try {
+                require_once __DIR__ . '/../src/Services/TelegramService.php';
+                $telegramService = new \EasyVol\Services\TelegramService($db, $config);
+                
+                if ($telegramService->isEnabled()) {
+                    // Format login date and time in Italian format
+                    $loginDateTime = date('d/m/Y H:i:s');
+                    
+                    // Build notification message with user details
+                    $message = "🔐 <b>Nuovo Accesso al Gestionale</b>\n\n";
+                    $message .= "👤 <b>Username:</b> " . htmlspecialchars($user['username']) . "\n";
+                    
+                    if (!empty($user['full_name'])) {
+                        // Split full name into first name and last name
+                        $nameParts = explode(' ', trim($user['full_name']), 2);
+                        $firstName = $nameParts[0] ?? '';
+                        $lastName = $nameParts[1] ?? '';
+                        
+                        if (!empty($firstName)) {
+                            $message .= "📝 <b>Nome:</b> " . htmlspecialchars($firstName) . "\n";
+                        }
+                        if (!empty($lastName)) {
+                            $message .= "📝 <b>Cognome:</b> " . htmlspecialchars($lastName) . "\n";
+                        }
+                    }
+                    
+                    if (!empty($user['role_name'])) {
+                        $message .= "👔 <b>Profilo:</b> " . htmlspecialchars($user['role_name']) . "\n";
+                    }
+                    
+                    $message .= "📅 <b>Data e Ora:</b> " . $loginDateTime . "\n";
+                    $message .= "ℹ️ <b>Nota:</b> Primo accesso dopo cambio password\n";
+                    
+                    // Send notification to configured recipients
+                    $telegramService->sendNotification('user_login', $message);
+                }
+            } catch (\Exception $e) {
+                error_log("Errore invio notifica Telegram per primo login utente: " . $e->getMessage());
+                // Don't fail login if notification fails
+            }
+            
             // Redirect to dashboard
             header("Location: dashboard.php");
             exit;

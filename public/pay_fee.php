@@ -157,6 +157,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Send emails
                         $controller->sendSubmissionEmails($member, $requestData);
                         
+                        // Send Telegram notification for payment submission
+                        try {
+                            require_once __DIR__ . '/../src/Services/TelegramService.php';
+                            $telegramService = new \EasyVol\Services\TelegramService($db, $config);
+                            
+                            if ($telegramService->isEnabled()) {
+                                $message = "📤 <b>Nuova ricevuta pagamento quota caricata</b>\n\n";
+                                $message .= "👤 <b>Socio:</b> " . htmlspecialchars($member['first_name'] . ' ' . $member['last_name']) . "\n";
+                                $message .= "🔢 <b>Matricola:</b> " . htmlspecialchars($member['registration_number']) . "\n";
+                                $message .= "📅 <b>Anno:</b> " . $paymentYear . "\n";
+                                $message .= "💵 <b>Data pagamento:</b> " . date('d/m/Y', strtotime($paymentDate)) . "\n";
+                                if ($amount) {
+                                    $message .= "💸 <b>Importo:</b> €" . number_format(floatval($amount), 2, ',', '.') . "\n";
+                                }
+                                $message .= "\nℹ️ In attesa di verifica e approvazione";
+                                
+                                $telegramService->sendNotification('fee_payment', $message);
+                            }
+                        } catch (\Exception $e) {
+                            error_log("Errore invio notifica Telegram per caricamento pagamento: " . $e->getMessage());
+                            // Don't fail the submission if notification fails
+                        }
+                        
                         $success = true;
                         unset($_SESSION['fee_payment_member']);
                     } else {
