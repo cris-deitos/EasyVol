@@ -2719,4 +2719,9 @@ INSERT INTO `permissions` (`module`, `action`, `description`)
 SELECT 'structure_management', 'delete', 'Eliminare strutture'
 WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'structure_management' AND `action` = 'delete');
 
+-- Add permission for activity logs (if it doesn't exist)
+INSERT INTO `permissions` (`module`, `action`, `description`) 
+SELECT 'activity_logs', 'view', 'Visualizzare i log delle attività del sistema'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'activity_logs' AND `action` = 'view');
+
 COMMIT;
