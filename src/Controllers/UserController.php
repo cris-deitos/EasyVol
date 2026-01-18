@@ -399,6 +399,58 @@ public function index($filters = [], $page = 1, $perPage = 20) {
     }
     
     /**
+     * Reinvia email di benvenuto a utente esistente
+     * 
+     * @param int $userId ID utente
+     * @param int $senderId ID utente che richiede l'invio
+     * @return bool|array True se successo, array con errore altrimenti
+     */
+    public function resendWelcomeEmail($userId, $senderId) {
+        try {
+            // Get user data
+            $user = $this->get($userId);
+            if (!$user) {
+                return ['error' => 'Utente non trovato'];
+            }
+            
+            // Check if email is configured
+            if (!($this->config['email']['enabled'] ?? false)) {
+                return ['error' => 'L\'invio email è disabilitato nella configurazione'];
+            }
+            
+            // Reset password to default and set must_change_password flag
+            $newPassword = \EasyVol\App::DEFAULT_PASSWORD;
+            $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+            
+            $sql = "UPDATE users SET password = ?, must_change_password = 1, updated_at = NOW() WHERE id = ?";
+            $this->db->execute($sql, [$hashedPassword, $userId]);
+            
+            // Send welcome email with new credentials
+            require_once __DIR__ . '/../Utils/EmailSender.php';
+            $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
+            
+            $userData = [
+                'email' => $user['email'],
+                'username' => $user['username']
+            ];
+            
+            $result = $emailSender->sendNewUserEmail($userData, $newPassword);
+            
+            if ($result) {
+                $this->logActivity($senderId, 'users', 'resend_welcome_email', $userId, 
+                    'Email di benvenuto reinviata a: ' . $user['username']);
+                return true;
+            } else {
+                return ['error' => 'Errore durante l\'invio dell\'email'];
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Errore reinvio email benvenuto: " . $e->getMessage());
+            return ['error' => 'Errore durante l\'operazione'];
+        }
+    }
+    
+    /**
      * Invia email di benvenuto
      */
     private function sendWelcomeEmail($username, $email, $fullName, $password) {

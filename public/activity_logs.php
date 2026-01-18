@@ -8,11 +8,10 @@ use EasyVol\Utils\AutoLogger;
 $app = App::getInstance();
 $app->requireLogin();
 
-// Check if user is admin
-$user = $app->getCurrentUser();
-if (!isset($user['role_name']) || $user['role_name'] !== 'admin') {
+// Check permission for activity logs viewing
+if (!$app->checkPermission('activity_logs', 'view')) {
     header('HTTP/1.0 403 Forbidden');
-    die('Accesso negato. Solo gli amministratori possono accedere a questa pagina.');
+    die('Accesso negato. Non hai i permessi per visualizzare i log delle attività.');
 }
 
 $db = $app->getDb();
@@ -354,7 +353,7 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                                 'settings' => 'Impostazioni',
                                                 'profile' => 'Profilo',
                                                 'scheduler' => 'Scadenziario',
-                                                'operations_center' => 'Centro Operativo',
+                                                'operations_center' => 'Centrale Operativa',
                                                 'radio' => 'Radio',
                                                 'dispatch' => 'Dispatch',
                                                 'gate_management' => 'Gestione Varchi',

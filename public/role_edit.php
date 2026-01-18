@@ -196,7 +196,7 @@ $pageTitle = $isEdit ? 'Modifica Ruolo' : 'Nuovo Ruolo';
                                 // Traduzioni moduli
                                 $moduleLabels = [
                                     'members' => 'Soci',
-                                    'junior_members' => 'Soci Minorenni',
+                                    'junior_members' => 'Cadetti',
                                     'users' => 'Utenti',
                                     'meetings' => 'Riunioni',
                                     'vehicles' => 'Mezzi',
@@ -204,11 +204,12 @@ $pageTitle = $isEdit ? 'Modifica Ruolo' : 'Nuovo Ruolo';
                                     'training' => 'Corsi',
                                     'events' => 'Eventi',
                                     'documents' => 'Documenti',
-                                    'scheduler' => 'Scadenze',
+                                    'scheduler' => 'Scadenziario',
                                     'operations_center' => 'Centrale Operativa',
                                     'applications' => 'Domande Iscrizione',
                                     'reports' => 'Report',
-                                    'settings' => 'Impostazioni'
+                                    'settings' => 'Impostazioni',
+                                    'activity_logs' => 'Log Attività'
                                 ];
                                 
                                 $actionLabels = [
