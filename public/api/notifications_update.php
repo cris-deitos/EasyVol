@@ -60,8 +60,8 @@ try {
         $result = $db->fetchOne("SELECT COUNT(*) as count FROM member_applications WHERE status = 'pending'");
         $stats['pending_applications'] = $result['count'] ?? 0;
         
-        // Upcoming events
-        $result = $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status = 'in_corso' AND start_date >= NOW()");
+        // Upcoming events (scheduled/planned events)
+        $result = $db->fetchOne("SELECT COUNT(*) as count FROM events WHERE status IN ('pianificato', 'programmato') AND start_date >= NOW()");
         $stats['upcoming_events'] = $result['count'] ?? 0;
         
         // Pending fee payment requests

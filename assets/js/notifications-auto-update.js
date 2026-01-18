@@ -66,6 +66,7 @@
      * Fetch updates from API
      */
     function fetchUpdates() {
+        // Use relative path - works since all pages that include this script are in public/
         let url = 'api/notifications_update.php';
         const params = [];
         
@@ -154,11 +155,15 @@
             let dropdownHTML = '<li><h6 class="dropdown-header">Notifiche</h6></li>';
             
             notifications.items.forEach(function(item) {
+                const escapedLink = escapeHtml(item.link);
+                const escapedIcon = escapeHtml(item.icon);
+                const escapedText = escapeHtml(item.text);
+                
                 dropdownHTML += `
                     <li>
-                        <a class="dropdown-item" href="${escapeHtml(item.link)}">
-                            <i class="bi ${escapeHtml(item.icon)}"></i>
-                            ${escapeHtml(item.text)}
+                        <a class="dropdown-item" href="${escapedLink}">
+                            <i class="bi ${escapedIcon}"></i>
+                            ${escapedText}
                         </a>
                     </li>
                 `;
@@ -228,23 +233,8 @@
      * Update a single stat value with smooth animation
      */
     function updateStatValue(statKey, newValue) {
-        // Find the element by data attribute or by class
-        let element = document.querySelector(`[data-stat="${statKey}"]`);
-        
-        if (!element) {
-            // Fallback: try to find by position in dashboard cards
-            const cards = document.querySelectorAll('.h5.mb-0.font-weight-bold');
-            const index = {
-                'active_members': 0,
-                'junior_members': 1,
-                'pending_applications': 2,
-                'pending_fee_requests': 3
-            }[statKey];
-            
-            if (index !== undefined && cards[index]) {
-                element = cards[index];
-            }
-        }
+        // Find the element by data attribute
+        const element = document.querySelector(`[data-stat="${statKey}"]`);
         
         if (element) {
             const currentValue = parseInt(element.textContent) || 0;
