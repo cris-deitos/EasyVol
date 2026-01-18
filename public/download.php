@@ -68,8 +68,8 @@ switch ($type) {
         if ($file) {
             $filePath = $file['receipt_file'];
             
-            // Admin can access
-            $canAccess = $app->checkPermission('fees', 'view');
+            // Users with members edit permission can access (same as fee_payments.php)
+            $canAccess = $app->checkPermission('members', 'edit');
         }
         break;
         
