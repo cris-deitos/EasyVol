@@ -28,10 +28,7 @@ $user = $app->getCurrentUser();
 try {
     $response = [];
     
-    // Reset cache to get fresh data
-    NotificationHelper::resetCache();
-    
-    // Get notification counts
+    // Get notification counts (cache is per-request, so each API call gets fresh data)
     $notifications = NotificationHelper::getNotifications();
     $response['notifications'] = [
         'total' => NotificationHelper::getNotificationCount(),

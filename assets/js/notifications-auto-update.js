@@ -156,10 +156,10 @@
             
             notifications.items.forEach(function(item) {
                 // Validate icon - must be a valid Bootstrap icon class
-                const icon = item.icon && /^bi-[\w-]+$/.test(item.icon) ? item.icon : 'bi-bell';
+                const icon = item.icon && /^bi-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.icon) ? item.icon : 'bi-bell';
                 
-                // Validate link - must be a relative path (no protocol, no //)
-                const link = item.link && /^[a-zA-Z0-9_\-\/\.]+\.php(\?[^<>"']*)?$/.test(item.link) ? item.link : '#';
+                // Validate link - must be a relative PHP path with safe query params
+                const link = item.link && /^[a-zA-Z0-9_\-\/]+\.php(\?[a-zA-Z0-9_=&\-]+)?$/.test(item.link) ? item.link : '#';
                 
                 const escapedText = escapeHtml(item.text);
                 
