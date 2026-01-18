@@ -155,11 +155,11 @@
             let dropdownHTML = '<li><h6 class="dropdown-header">Notifiche</h6></li>';
             
             notifications.items.forEach(function(item) {
-                // Validate icon - must be a valid Bootstrap icon class
-                const icon = item.icon && /^bi-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.icon) ? item.icon : 'bi-bell';
+                // Validate icon - must be a valid Bootstrap icon class (reasonable length limit)
+                const icon = item.icon && /^bi-[a-z0-9]+(?:-[a-z0-9]+){0,5}$/.test(item.icon) && item.icon.length <= 50 ? item.icon : 'bi-bell';
                 
-                // Validate link - must be a relative PHP path with safe query params
-                const link = item.link && /^[a-zA-Z0-9_\-\/]+\.php(\?[a-zA-Z0-9_=&\-]+)?$/.test(item.link) ? item.link : '#';
+                // Validate link - must be a relative PHP path with safe query params (max 3 params)
+                const link = item.link && /^[a-zA-Z0-9_\-\/]+\.php(\?[a-zA-Z0-9_=&\-]{1,100})?$/.test(item.link) && item.link.length <= 200 ? item.link : '#';
                 
                 const escapedText = escapeHtml(item.text);
                 
@@ -241,7 +241,7 @@
         const element = document.querySelector(`[data-stat="${statKey}"]`);
         
         if (element) {
-            const currentValue = parseInt(element.textContent) || 0;
+            const currentValue = parseInt(element.textContent, 10) || 0;
             
             if (currentValue !== newValue) {
                 // Add animation class
