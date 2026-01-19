@@ -316,12 +316,8 @@ private function loadEmailConfigFromDatabase() {
         
         $user = $this->getCurrentUser();
         
-        // Admin has all permissions
-        if (isset($user['role_name']) && $user['role_name'] === 'admin') {
-            return true;
-        }
-        
-        // Check specific permission
+        // Check specific permission from database
+        // Note: Admin role no longer has automatic access - permissions must be explicitly granted
         if (!isset($user['permissions'])) {
             return false;
         }

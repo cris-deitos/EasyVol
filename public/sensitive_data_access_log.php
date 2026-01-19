@@ -37,12 +37,22 @@ $filters = [
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 20;
 
-$logs = $controller->indexAccessLogs($filters, $page, $perPage);
-$totalResults = $controller->countAccessLogs($filters);
-$totalPages = max(1, ceil($totalResults / $perPage));
-
-// Get users for filter
-$users = $controller->getUsers();
+// Get data with error handling
+try {
+    $logs = $controller->indexAccessLogs($filters, $page, $perPage);
+    $totalResults = $controller->countAccessLogs($filters);
+    $totalPages = max(1, ceil($totalResults / $perPage));
+    
+    // Get users for filter
+    $users = $controller->getUsers();
+} catch (Exception $e) {
+    error_log("Errore caricamento log accessi: " . $e->getMessage());
+    $logs = [];
+    $totalResults = 0;
+    $totalPages = 1;
+    $users = [];
+    $error_message = "Errore nel caricamento dei dati. Verificare la connessione al database.";
+}
 
 AutoLogger::logPageAccess();
 
@@ -72,6 +82,13 @@ $pageTitle = 'Log Accessi Dati Sensibili';
                         <i class="bi bi-info-circle"></i> Solo lettura - Log auditoria GDPR
                     </div>
                 </div>
+                
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($error_message); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
                 
                 <!-- Filtri -->
                 <div class="card mb-4">

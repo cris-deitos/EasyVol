@@ -191,7 +191,7 @@ class DashboardController {
         $sql = "SELECT 
                     event_type,
                     COUNT(*) as count,
-                    SUM(CASE WHEN status = 'completato' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN status = 'concluso' THEN 1 ELSE 0 END) as completed,
                     SUM(CASE WHEN status = 'in_corso' THEN 1 ELSE 0 END) as in_progress,
                     SUM(CASE WHEN status = 'annullato' THEN 1 ELSE 0 END) as cancelled
                 FROM events
@@ -283,7 +283,7 @@ class DashboardController {
         $sql = "SELECT 
                     course_type,
                     COUNT(*) as course_count,
-                    SUM(CASE WHEN status = 'completato' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN status = 'concluso' THEN 1 ELSE 0 END) as completed,
                     SUM(CASE WHEN status = 'in_corso' THEN 1 ELSE 0 END) as in_progress,
                     AVG(hours) as avg_hours
                 FROM training_courses

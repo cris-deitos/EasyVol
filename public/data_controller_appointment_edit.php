@@ -26,8 +26,12 @@ if (!$app->checkPermission('gdpr_compliance', 'manage_appointments')) {
 }
 
 // Handle delete
-if (isset($_GET['delete']) && $app->checkPermission('gdpr_compliance', 'manage_appointments')) {
-    $deleteId = intval($_GET['delete']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && $app->checkPermission('gdpr_compliance', 'manage_appointments')) {
+    if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+        header('Location: data_controller_appointments.php?error=csrf');
+        exit;
+    }
+    $deleteId = intval($_POST['delete_id']);
     $db = $app->getDb();
     $controller = new GdprController($db, $app->getConfig());
     if ($controller->deleteAppointment($deleteId, $app->getUserId())) {
@@ -281,11 +285,13 @@ $pageTitle = $isEdit ? 'Modifica Nomina Responsabile' : 'Nuova Nomina Responsabi
                         <?php endif; ?>
                         
                         <?php if ($app->checkPermission('gdpr_compliance', 'manage_appointments')): ?>
-                            <a href="?delete=<?php echo $appointmentId; ?>" 
-                               class="btn btn-danger"
-                               onclick="return confirm('Sei sicuro di voler eliminare questa nomina?')">
-                                <i class="bi bi-trash"></i> Elimina Nomina
-                            </a>
+                            <form method="POST" action="" style="display:inline;" onsubmit="return confirm('Sei sicuro di voler eliminare questa nomina?')">
+                                <?php echo CsrfProtection::getHiddenField(); ?>
+                                <input type="hidden" name="delete_id" value="<?php echo $appointmentId; ?>">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Elimina Nomina
+                                </button>
+                            </form>
                         <?php endif; ?>
                     </div>
                 </div>
