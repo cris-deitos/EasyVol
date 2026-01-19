@@ -223,7 +223,8 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 const data = await response.json();
                 
                 if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
-                    // Get past radar images (last 2 hours, approximately 24 frames at 5-minute intervals)
+                    // Get past radar images (up to 24 most recent frames, typically at ~5-minute intervals)
+                    // This usually represents approximately 2 hours of radar data
                     radarFrames = data.radar.past.slice(-24);
                     
                     // Show the most recent frame
@@ -298,7 +299,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 if (currentFrameIndex >= radarFrames.length) {
                     currentFrameIndex = 0;
                 }
-            }, 1000); // 1000ms per frame (24 seconds for full 2-hour loop)
+            }, 1000); // 1000ms per frame (total loop duration: radarFrames.length seconds)
         }
         
         // Stop animation
