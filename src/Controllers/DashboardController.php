@@ -29,49 +29,49 @@ class DashboardController {
         // Active members KPI
         $kpis['active_members'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM members WHERE member_status = 'attivo'"
-        );
+        ) ?: ['value' => 0];
         
         // Junior members KPI
         $kpis['junior_members'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM junior_members WHERE member_status = 'attivo'"
-        );
+        ) ?: ['value' => 0];
         
         // Active events KPI
         $kpis['active_events'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM events WHERE status = 'in_corso' AND start_date >= CURDATE()"
-        );
+        ) ?: ['value' => 0];
         
         // Operational vehicles KPI
         $kpis['operational_vehicles'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM vehicles WHERE status = 'operativo'"
-        );
+        ) ?: ['value' => 0];
         
         // Pending applications KPI
         $kpis['pending_applications'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM member_applications WHERE status = 'pending'"
-        );
+        ) ?: ['value' => 0];
         
         // Active training courses KPI
         $kpis['active_training'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM training_courses WHERE status = 'in_corso'"
-        );
+        ) ?: ['value' => 0];
         
         // Upcoming deadlines KPI
         $kpis['upcoming_deadlines'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM scheduler_items 
             WHERE status != 'completato' AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)"
-        );
+        ) ?: ['value' => 0];
         
         // Low stock items KPI
         $kpis['low_stock_items'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM warehouse_items WHERE quantity <= minimum_quantity"
-        );
+        ) ?: ['value' => 0];
         
         // Year to date interventions
         $kpis['ytd_interventions'] = $this->db->fetchOne(
             "SELECT COUNT(*) as value FROM interventions 
             WHERE YEAR(start_time) = YEAR(CURDATE())"
-        );
+        ) ?: ['value' => 0];
         
         // Year to date volunteer hours
         $kpis['ytd_volunteer_hours'] = $this->db->fetchOne(
@@ -79,7 +79,7 @@ class DashboardController {
             FROM intervention_members im
             INNER JOIN interventions i ON im.intervention_id = i.id
             WHERE YEAR(i.start_time) = YEAR(CURDATE())"
-        );
+        ) ?: ['value' => 0];
         
         return $kpis;
     }
