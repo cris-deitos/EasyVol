@@ -529,7 +529,7 @@ $pageTitle = 'Dashboard Statistiche Avanzate';
                         .addTo(map);
                     
                     marker.bindPopup(`
-                        <strong>${intervention.intervention_number}</strong><br>
+                        <strong>${intervention.title}</strong><br>
                         ${intervention.municipality || ''}, ${intervention.province || ''}<br>
                         Tipo: ${intervention.event_type || ''}<br>
                         Volontari: ${intervention.volunteer_count || 0}<br>
