@@ -239,20 +239,6 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             }
         }
 
-        // Add region markers
-        const regions = [
-            { name: 'Milano (Lombardia)', lat: 45.4642, lng: 9.1900 },
-            { name: 'Venezia (Veneto)', lat: 45.4408, lng: 12.3155 },
-            { name: 'Trento (Trentino)', lat: 46.0664, lng: 11.1257 },
-            { name: 'Bologna (Emilia Romagna)', lat: 44.4949, lng: 11.3426 }
-        ];
-
-        regions.forEach(region => {
-            L.marker([region.lat, region.lng])
-                .addTo(map)
-                .bindPopup(`<strong>${region.name}</strong>`);
-        });
-
         // Load weather radar on page load
         loadWeatherRadar();
 

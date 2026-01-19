@@ -105,10 +105,10 @@ $pageTitle = 'Centrale Operativa';
 		    <a href="dispatch.php" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-broadcast-pin"></i> Consolle Radio
             </a>
-        <a href="weather_radar.php" class="btn btn-sm btn-outline-info">
+        <a href="weather_radar_fullscreen.php" class="btn btn-sm btn-outline-info" target="_blank">
                 <i class="bi bi-cloud-rain"></i> Radar Meteo
             </a>
-        <a href="earthquakes.php" class="btn btn-sm btn-outline-danger">
+        <a href="earthquakes_fullscreen.php" class="btn btn-sm btn-outline-danger" target="_blank">
                 <i class="bi bi-globe"></i> Terremoti
             </a>
         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
