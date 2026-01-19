@@ -226,7 +226,7 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
                                     <div class="col-md-4">
                                         <label class="form-label"><small>Magnitudo minima:</small></label>
                                         <select class="form-select form-select-sm" id="magnitudeFilter" onchange="filterEarthquakes()">
-                                            <option value="0">Tutte</option>
+                                            <option value="1">M ≥ 1.0 (Tutte)</option>
                                             <option value="2">M ≥ 2.0</option>
                                             <option value="3">M ≥ 3.0</option>
                                             <option value="4">M ≥ 4.0</option>
@@ -367,7 +367,8 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
                 
                 // INGV Earthquake API
                 // Documentation: https://webservices.ingv.it/fdsnws/event/1/
-                const apiUrl = `https://webservices.ingv.it/fdsnws/event/1/query?starttime=${startTimeISO}&format=geojson&minmag=0&orderby=time-desc`;
+                // Using minmag=1.0 for better performance and to filter out micro-seismic events
+                const apiUrl = `https://webservices.ingv.it/fdsnws/event/1/query?starttime=${startTimeISO}&format=geojson&minmag=1.0&orderby=time-desc`;
                 
                 const response = await fetch(apiUrl);
                 
@@ -535,6 +536,7 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
             map.setView([lat, lon], 10);
             
             // Find and open the marker popup
+            // Using simple iteration - for large datasets, consider maintaining a coordinate-to-marker map
             markersLayer.eachLayer(layer => {
                 if (layer.getLatLng && 
                     Math.abs(layer.getLatLng().lat - lat) < 0.001 && 
