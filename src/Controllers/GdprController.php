@@ -908,26 +908,30 @@ class GdprController {
     /**
      * Ottieni nomina responsabile con dati anagrafici completi
      */
-    public function getAppointmentWithMemberData($id) {
-        $sql = "SELECT dca.*, 
-                    u.username, u.email, u.member_id,
-                    m.registration_number, m.first_name as member_first_name, m.last_name as member_last_name, m.tax_code,
-                    m.birth_date, m.birth_place, m.birth_province,
-                    m.gender, m.nationality,
-                    ma.address, ma.civic_number, ma.city, ma.province, ma.postal_code, ma.country,
-                    mc.phone, mc.mobile, mc.email as member_email,
-                    u1.username as created_by_username,
-                    u2.username as updated_by_username
-                FROM data_controller_appointments dca
-                LEFT JOIN users u ON dca.user_id = u.id
-                LEFT JOIN members m ON dca.member_id = m.id OR u.member_id = m.id
-                LEFT JOIN member_addresses ma ON m.id = ma.member_id AND ma.address_type = 'residence'
-                LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'personal'
-                LEFT JOIN users u1 ON dca.created_by = u1.id
-                LEFT JOIN users u2 ON dca.updated_by = u2.id
-                WHERE dca.id = ?";
-        return $this->db->fetchOne($sql, [$id]);
-    }
+public function getAppointmentWithMemberData($id) {
+    $sql = "SELECT dca.*, 
+                u.username, u.email, u.member_id,
+                m.registration_number, m. first_name as member_first_name, m.last_name as member_last_name, m. tax_code,
+                m. birth_date, m.birth_place, m.birth_province,
+                m.gender, m. nationality,
+                ma.street, ma.number, ma.city, ma.province, ma.cap,
+                mc_phone. value as phone,
+                mc_mobile.value as mobile,
+                mc_email.value as member_email,
+                u1.username as created_by_username,
+                u2.username as updated_by_username
+            FROM data_controller_appointments dca
+            LEFT JOIN users u ON dca. user_id = u.id
+            LEFT JOIN members m ON dca.member_id = m.id OR u.member_id = m.id
+            LEFT JOIN member_addresses ma ON m.id = ma.member_id AND ma.address_type = 'residenza'
+            LEFT JOIN member_contacts mc_phone ON m.id = mc_phone.member_id AND mc_phone.contact_type = 'telefono_fisso'
+            LEFT JOIN member_contacts mc_mobile ON m.id = mc_mobile.member_id AND mc_mobile.contact_type = 'cellulare'
+            LEFT JOIN member_contacts mc_email ON m. id = mc_email.member_id AND mc_email.contact_type = 'email'
+            LEFT JOIN users u1 ON dca.created_by = u1.id
+            LEFT JOIN users u2 ON dca. updated_by = u2.id
+            WHERE dca.id = ? ";
+    return $this->db->fetchOne($sql, [$id]);
+}
     
     /**
      * Crea nuova nomina responsabile
