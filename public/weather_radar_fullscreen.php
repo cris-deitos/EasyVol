@@ -188,7 +188,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         const map = L.map('weatherMap', {
             zoomControl: true,
             attributionControl: true
-        }).setView([45.5, 10.5], 7);
+        }).setView([45.4667, 10.5333], 11);
 
         // Add base map layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -197,11 +197,11 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         }).addTo(map);
 
         // Define bounds for North Italy
-        const northItalyBounds = [
-            [43.5, 8.5],  // Southwest corner
-            [47.0, 13.5]  // Northeast corner
-        ];
-        map.fitBounds(northItalyBounds);
+//        const northItalyBounds = [
+//            [43.5, 8.5],  // Southwest corner
+//            [47.0, 13.5]  // Northeast corner
+//        ];
+//        map.fitBounds(northItalyBounds);
 
         // Animation state
         let radarFrames = [];
