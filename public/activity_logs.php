@@ -320,9 +320,9 @@ function formatRecordInfo($log) {
                     'restituzione' => 'Restituzione',
                     'trasferimento' => 'Trasferimento'
                 ];
-                $typeLabel = $movementTypes[$log['movement_type']] ?? $log['movement_type'];
+                $typeLabel = $movementTypes[$log['movement_type']] ?? htmlspecialchars($log['movement_type']);
                 $output = '<strong>' . htmlspecialchars($log['movement_item_name']) . '</strong>';
-                $output .= '<br><small class="text-muted">' . $typeLabel . ': ' . $log['movement_quantity'] . '</small>';
+                $output .= '<br><small class="text-muted">' . htmlspecialchars($typeLabel) . ': ' . htmlspecialchars($log['movement_quantity']) . '</small>';
             }
             break;
             
