@@ -248,7 +248,7 @@ AutoLogger::logPageAccess();
                                                 'gate_management' => 'Gestione Varchi',
                                                 'structure_management' => 'Gestione Strutture',
                                                 'scheduler' => 'Scadenziario',
-                                                'applications' => 'Domande',
+                                                'applications' => 'Domande Iscrizione',
                                                 'activity_logs' => 'Log Attività'
                                             ];
                                             $moduleLabel = $moduleLabels[$log['module']] ?? $log['module'];
