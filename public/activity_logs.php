@@ -320,7 +320,7 @@ function formatRecordInfo($log) {
                     'restituzione' => 'Restituzione',
                     'trasferimento' => 'Trasferimento'
                 ];
-                $typeLabel = $movementTypes[$log['movement_type']] ?? htmlspecialchars($log['movement_type']);
+                $typeLabel = $movementTypes[$log['movement_type']] ?? $log['movement_type'];
                 $output = '<strong>' . htmlspecialchars($log['movement_item_name']) . '</strong>';
                 $output .= '<br><small class="text-muted">' . htmlspecialchars($typeLabel) . ': ' . htmlspecialchars($log['movement_quantity']) . '</small>';
             }
@@ -409,6 +409,10 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
     <style>
         .log-table {
             font-size: 0.9rem;
+        }
+        .log-table td {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .log-description {
             max-width: 300px;
