@@ -150,7 +150,7 @@ $pageTitle = $isEdit ? 'Modifica Richiesta Export' : 'Nuova Richiesta Export';
                             <div class="row mb-4">
                                 <div class="col-md-6">
                                     <label for="entity_type" class="form-label">Tipo Entità *</label>
-                                    <select class="form-select" id="entity_type" name="entity_type" required onchange="clearEntitySelection()">
+                                    <select class="form-select" id="entity_type" required onchange="clearEntitySelection()">
                                         <option value="member" <?php echo ($request['entity_type'] ?? 'member') === 'member' ? 'selected' : ''; ?>>Socio</option>
                                         <option value="junior_member" <?php echo ($request['entity_type'] ?? '') === 'junior_member' ? 'selected' : ''; ?>>Cadetto</option>
                                     </select>

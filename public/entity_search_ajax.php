@@ -101,7 +101,7 @@ try {
     // Format results for autocomplete
     $results = [];
     foreach ($entities as $entity) {
-        $displayNumber = $entity['badge_number'] ?? $entity['registration_number'];
+        $displayNumber = isset($entity['badge_number']) ? $entity['badge_number'] : $entity['registration_number'];
         $results[] = [
             'id' => $entity['id'],
             'label' => $entity['last_name'] . ' ' . $entity['first_name'] . ' (Mat. ' . $displayNumber . ')',

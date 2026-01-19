@@ -612,7 +612,6 @@ $csrfToken = $csrf->generateToken();
                     // Reload page and stay on Participants tab
                     setTimeout(function() {
                         window.location.href = 'training_view.php?id=' + courseId + '#participants';
-                        window.location.reload();
                     }, 1000);
                 } else {
                     showAlert('danger', data.error || 'Errore durante l\'aggiunta');
