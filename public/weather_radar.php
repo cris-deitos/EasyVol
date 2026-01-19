@@ -192,11 +192,15 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         const apiKey = 'YOUR_OPENWEATHERMAP_API_KEY'; // This should be configured in the system
         
         // Note: For production, you should use official Italian weather services APIs:
-        // - Aeronautica Militare Italiana
-        // - Dipartimento Protezione Civile
-        // - Arpae Emilia-Romagna DEXTER API
-        // - Arpa Lombardia
-        // - Arpav Veneto
+        // - Aeronautica Militare Italiana (http://www.meteoam.it)
+        // - Dipartimento Protezione Civile (http://www.protezionecivile.gov.it)
+        // - Arpae Emilia-Romagna DEXTER API (https://simc.arpae.it)
+        // - Arpa Lombardia (https://www.arpalombardia.it)
+        // - Arpav Veneto (https://www.arpa.veneto.it)
+        // - MeteoTrentino (https://www.meteotrentino.it)
+        //
+        // These services may require API keys or specific agreements.
+        // For now, using RainViewer which provides free global weather radar data.
         
         // Using RainViewer for free weather radar (no API key required)
         let radarLayer = null;

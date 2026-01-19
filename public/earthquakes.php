@@ -366,8 +366,8 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
                 const startTimeISO = startTime.toISOString();
                 
                 // INGV Earthquake API
-                // Documentation: http://webservices.ingv.it/fdsnws/event/1/
-                const apiUrl = `http://webservices.ingv.it/fdsnws/event/1/query?starttime=${startTimeISO}&format=geojson&minmag=0&orderby=time-desc`;
+                // Documentation: https://webservices.ingv.it/fdsnws/event/1/
+                const apiUrl = `https://webservices.ingv.it/fdsnws/event/1/query?starttime=${startTimeISO}&format=geojson&minmag=0&orderby=time-desc`;
                 
                 const response = await fetch(apiUrl);
                 
@@ -394,9 +394,15 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
                 console.error('Error loading earthquakes:', error);
                 document.getElementById('earthquakeListContent').innerHTML = 
                     '<div class="alert alert-danger">' +
-                    '<i class="bi bi-exclamation-triangle"></i> Errore nel caricamento dei dati INGV.<br>' +
-                    '<small>Verificare la connessione internet e riprovare.</small>' +
+                    '<i class="bi bi-exclamation-triangle"></i> <strong>Errore nel caricamento dei dati INGV.</strong><br>' +
+                    '<small>Verificare la connessione internet e riprovare.</small><br>' +
+                    '<small>Servizio INGV: <a href="https://webservices.ingv.it" target="_blank">https://webservices.ingv.it</a></small>' +
                     '</div>';
+                
+                // Update statistics to show error
+                document.getElementById('totalCount').textContent = '--';
+                document.getElementById('maxMagnitude').textContent = '--';
+                document.getElementById('significantCount').textContent = '--';
             } finally {
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
