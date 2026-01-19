@@ -35,6 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         try {
             $memberModel->addLicense($memberId, $data);
+            
+            // Log sensitive data modification
+            $app->logSensitiveDataAccess(
+                'member',
+                $memberId,
+                'edit',
+                'members',
+                ['licenses', 'driving_licenses'],
+                'Aggiunta patente socio'
+            );
+            
             header('Location: member_view.php?id=' . $memberId . '&tab=licenses&success=1');
             exit;
         } catch (\Exception $e) {

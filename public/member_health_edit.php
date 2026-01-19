@@ -39,8 +39,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($healthId > 0) {
                 $memberModel->updateHealth($healthId, $data);
+                
+                // Log sensitive data modification
+                $app->logSensitiveDataAccess(
+                    'member',
+                    $memberId,
+                    'edit',
+                    'members',
+                    ['health_info', 'allergies', 'intolerances'],
+                    'Modifica informazione alimentare socio'
+                );
             } else {
                 $memberModel->addHealth($memberId, $data);
+                
+                // Log sensitive data modification
+                $app->logSensitiveDataAccess(
+                    'member',
+                    $memberId,
+                    'edit',
+                    'members',
+                    ['health_info', 'allergies', 'intolerances'],
+                    'Aggiunta informazione alimentare socio'
+                );
             }
             header('Location: member_view.php?id=' . $memberId . '&tab=health&success=1');
             exit;

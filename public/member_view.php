@@ -44,6 +44,41 @@ if (!$member) {
     exit;
 }
 
+// Determine which sensitive data fields are being accessed based on active tab
+// Whitelist of allowed tab values
+$allowedTabs = ['personal', 'contacts', 'address', 'qualifications', 'courses', 'licenses', 
+                'health', 'health-surveillance', 'availability', 'fees', 'sanctions', 'notes', 'attachments'];
+$activeTab = isset($_GET['tab']) && in_array($_GET['tab'], $allowedTabs) ? $_GET['tab'] : 'personal';
+
+// Map tabs to sensitive data categories
+$tabDataMap = [
+    'personal' => ['personal_data', 'birth_info', 'tax_code'],
+    'contacts' => ['personal_data', 'contacts', 'email', 'phone'],
+    'address' => ['personal_data', 'addresses', 'residence'],
+    'qualifications' => ['personal_data', 'qualifications'],
+    'courses' => ['personal_data', 'courses', 'training'],
+    'licenses' => ['personal_data', 'licenses', 'driving_licenses'],
+    'health' => ['personal_data', 'health_info', 'allergies', 'intolerances'],
+    'health-surveillance' => ['personal_data', 'health_surveillance'],
+    'availability' => ['personal_data', 'availability'],
+    'fees' => ['personal_data', 'fees'],
+    'sanctions' => ['personal_data', 'sanctions'],
+    'notes' => ['personal_data', 'notes'],
+    'attachments' => ['personal_data', 'attachments']
+];
+
+$dataFields = $tabDataMap[$activeTab];
+
+// Log sensitive data access
+$app->logSensitiveDataAccess(
+    'member',
+    $memberId,
+    'view',
+    'members',
+    $dataFields,
+    'Visualizzazione scheda socio'
+);
+
 $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_name'];
 ?>
 <!DOCTYPE html>

@@ -44,6 +44,35 @@ if (!$member) {
     exit;
 }
 
+// Determine which sensitive data fields are being accessed based on active tab
+// Whitelist of allowed tab values for junior members
+$allowedTabs = ['personal', 'contacts', 'address', 'guardians', 'health', 'sanctions', 'notes', 'attachments'];
+$activeTab = isset($_GET['tab']) && in_array($_GET['tab'], $allowedTabs) ? $_GET['tab'] : 'personal';
+
+// Map tabs to sensitive data categories for junior members
+$tabDataMap = [
+    'personal' => ['personal_data', 'birth_info', 'tax_code'],
+    'contacts' => ['personal_data', 'contacts', 'email', 'phone'],
+    'address' => ['personal_data', 'addresses', 'residence'],
+    'guardians' => ['personal_data', 'guardian_info', 'parent_info'],
+    'health' => ['personal_data', 'health_info', 'allergies', 'intolerances'],
+    'sanctions' => ['personal_data', 'sanctions'],
+    'notes' => ['personal_data', 'notes'],
+    'attachments' => ['personal_data', 'attachments']
+];
+
+$dataFields = $tabDataMap[$activeTab];
+
+// Log sensitive data access
+$app->logSensitiveDataAccess(
+    'junior_member',
+    $memberId,
+    'view',
+    'junior_members',
+    $dataFields,
+    'Visualizzazione scheda cadetto'
+);
+
 $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $member['last_name'];
 ?>
 <!DOCTYPE html>

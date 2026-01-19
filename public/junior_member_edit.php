@@ -50,6 +50,16 @@ if ($isEdit) {
         header('Location: junior_members.php?error=not_found');
         exit;
     }
+    
+    // Log sensitive data access for editing
+    $app->logSensitiveDataAccess(
+        'junior_member',
+        $memberId,
+        'edit',
+        'junior_members',
+        ['personal_data', 'birth_info', 'tax_code', 'guardian_info'],
+        'Apertura form modifica cadetto'
+    );
 }
 
 // Gestione submit form
@@ -82,6 +92,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($isEdit) {
                 $result = $controller->update($memberId, $data, $app->getUserId());
+                
+                // Log sensitive data modification
+                if ($result) {
+                    $app->logSensitiveDataAccess(
+                        'junior_member',
+                        $memberId,
+                        'edit',
+                        'junior_members',
+                        ['personal_data', 'birth_info', 'tax_code', 'guardian_info'],
+                        'Modifica dati anagrafici cadetto'
+                    );
+                }
             } else {
                 $result = $controller->create($data, $app->getUserId());
                 $memberId = $result;

@@ -89,8 +89,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 if ($contactId > 0) {
                     $memberModel->updateContact($contactId, $data);
+                    
+                    // Log sensitive data modification
+                    $app->logSensitiveDataAccess(
+                        'member',
+                        $memberId,
+                        'edit',
+                        'members',
+                        ['contacts', 'email', 'phone'],
+                        'Modifica contatto socio'
+                    );
                 } else {
                     $memberModel->addContact($memberId, $data);
+                    
+                    // Log sensitive data modification
+                    $app->logSensitiveDataAccess(
+                        'member',
+                        $memberId,
+                        'edit',
+                        'members',
+                        ['contacts', 'email', 'phone'],
+                        'Aggiunta contatto socio'
+                    );
                 }
                 
                 header('Location: member_view.php?id=' . $memberId . '&tab=contacts&success=1');
