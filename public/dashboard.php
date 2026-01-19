@@ -243,7 +243,13 @@ AutoLogger::logPageAccess();
                                                 'meetings' => 'Riunioni',
                                                 'training' => 'Formazione',
                                                 'users' => 'Utenti',
-                                                'settings' => 'Impostazioni'
+                                                'settings' => 'Impostazioni',
+                                                'operations_center' => 'Centrale Operativa',
+                                                'gate_management' => 'Gestione Varchi',
+                                                'structure_management' => 'Gestione Strutture',
+                                                'scheduler' => 'Scadenziario',
+                                                'applications' => 'Domande Iscrizione',
+                                                'activity_logs' => 'Log Attività'
                                             ];
                                             $moduleLabel = $moduleLabels[$log['module']] ?? $log['module'];
                                         ?>

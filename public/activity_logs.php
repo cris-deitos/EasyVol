@@ -346,7 +346,7 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                                 'documents' => 'Documenti',
                                                 'meetings' => 'Riunioni',
                                                 'training' => 'Formazione',
-                                                'applications' => 'Domande',
+                                                'applications' => 'Domande Iscrizione',
                                                 'users' => 'Utenti',
                                                 'roles' => 'Ruoli',
                                                 'reports' => 'Report',
@@ -357,6 +357,7 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                                 'radio' => 'Radio',
                                                 'dispatch' => 'Dispatch',
                                                 'gate_management' => 'Gestione Varchi',
+                                                'structure_management' => 'Gestione Strutture',
                                                 'fee_payments' => 'Quote',
                                                 'activity_logs' => 'Log Attività'
                                             ];
