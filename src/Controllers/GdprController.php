@@ -875,6 +875,30 @@ class GdprController {
     }
     
     /**
+     * Ottieni nomina responsabile con dati anagrafici completi dal socio collegato
+     */
+    public function getAppointmentWithMemberData($id) {
+        $sql = "SELECT dca.*, 
+                    u.username, u.email, u.member_id,
+                    m.registration_number, m.first_name, m.last_name, m.tax_code,
+                    m.birth_date, m.birth_place, m.birth_province,
+                    m.gender, m.nationality,
+                    ma.address, ma.civic_number, ma.city, ma.province, ma.postal_code, ma.country,
+                    mc.phone, mc.mobile, mc.email as member_email,
+                    u1.username as created_by_username,
+                    u2.username as updated_by_username
+                FROM data_controller_appointments dca
+                INNER JOIN users u ON dca.user_id = u.id
+                LEFT JOIN members m ON u.member_id = m.id
+                LEFT JOIN member_addresses ma ON m.id = ma.member_id AND ma.address_type = 'residence'
+                LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'personal'
+                LEFT JOIN users u1 ON dca.created_by = u1.id
+                LEFT JOIN users u2 ON dca.updated_by = u2.id
+                WHERE dca.id = ?";
+        return $this->db->fetchOne($sql, [$id]);
+    }
+    
+    /**
      * Crea nuova nomina responsabile
      */
     public function createAppointment($data, $userId) {
