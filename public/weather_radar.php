@@ -205,8 +205,16 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         let radarLayer = null;
         let animationInterval = null;
         let isAnimating = false;
+        let isLoading = false;
         
         async function loadWeatherRadar() {
+            // Prevent concurrent loading
+            if (isLoading) {
+                console.log('Radar data is already being loaded, skipping...');
+                return;
+            }
+            
+            isLoading = true;
             document.getElementById('loadingIndicator').style.display = 'block';
             
             try {
@@ -242,12 +250,19 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                     '<i class="bi bi-x-circle text-danger"></i> Errore nel caricamento dei dati meteo';
             } finally {
                 document.getElementById('loadingIndicator').style.display = 'none';
+                isLoading = false;
             }
         }
         
         // Show specific radar frame
         function showRadarFrame(index) {
-            if (radarFrames.length === 0 || index < 0 || index >= radarFrames.length) {
+            if (radarFrames.length === 0) {
+                console.warn('No radar frames available');
+                return;
+            }
+            
+            if (index < 0 || index >= radarFrames.length) {
+                console.warn(`Invalid frame index: ${index}. Valid range: 0-${radarFrames.length - 1}`);
                 return;
             }
             
