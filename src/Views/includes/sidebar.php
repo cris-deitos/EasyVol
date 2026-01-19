@@ -144,6 +144,51 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <?php endif; ?>
         </ul>
 
+        <?php if ($app->checkPermission('gdpr_compliance', 'view')): ?>
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Gestione</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'privacy_consents.php' ? 'active' : '' ?>" href="privacy_consents.php">
+                    <i class="bi bi-shield-check"></i> Consensi Privacy
+                </a>
+            </li>
+            
+            <?php if ($app->checkPermission('gdpr_compliance', 'manage_appointments')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'data_controller_appointments.php' ? 'active' : '' ?>" href="data_controller_appointments.php">
+                    <i class="bi bi-person-badge"></i> Nomine Responsabili
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if ($app->checkPermission('gdpr_compliance', 'export_personal_data')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'personal_data_export_requests.php' ? 'active' : '' ?>" href="personal_data_export_requests.php">
+                    <i class="bi bi-download"></i> Richieste Export Dati
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if ($app->checkPermission('gdpr_compliance', 'view_access_logs')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'sensitive_data_access_log.php' ? 'active' : '' ?>" href="sensitive_data_access_log.php">
+                    <i class="bi bi-eye"></i> Log Accessi Dati
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if ($app->checkPermission('gdpr_compliance', 'manage_processing_registry')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'data_processing_registry.php' ? 'active' : '' ?>" href="data_processing_registry.php">
+                    <i class="bi bi-journal-text"></i> Registro Trattamenti
+                </a>
+            </li>
+            <?php endif; ?>
+        </ul>
+        <?php endif; ?>
+
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
             <span>Amministrazione</span>
         </h6>
