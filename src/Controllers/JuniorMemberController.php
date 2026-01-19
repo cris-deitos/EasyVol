@@ -824,7 +824,7 @@ class JuniorMemberController {
                     (SELECT COUNT(*) FROM junior_member_guardians jmg 
                      WHERE jmg.junior_member_id = jm.id) as guardian_count
                 FROM junior_members jm
-                WHERE jm.member_status IN ('attivo', 'in_formazione')
+                WHERE jm.member_status = 'attivo'
                 ORDER BY jm.last_name, jm.first_name";
         
         $members = $this->db->fetchAll($sql);

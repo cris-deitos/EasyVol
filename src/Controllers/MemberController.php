@@ -569,7 +569,7 @@ class MemberController {
                      ORDER BY mhs.expiry_date DESC 
                      LIMIT 1) as health_surveillance_expiry
                 FROM members m
-                WHERE m.member_status IN ('attivo', 'in_formazione')
+                WHERE m.member_status = 'attivo'
                 ORDER BY m.last_name, m.first_name";
         
         $members = $this->db->fetchAll($sql);
@@ -636,7 +636,7 @@ class MemberController {
                         ml.expiry_date
                     FROM members m
                     INNER JOIN member_licenses ml ON ml.member_id = m.id
-                    WHERE m.member_status IN ('attivo', 'in_formazione')
+                    WHERE m.member_status = 'attivo'
                         AND ml.expiry_date IS NOT NULL
                         AND ml.expiry_date < CURDATE()
                     ORDER BY m.last_name, m.first_name, ml.license_type";
@@ -662,7 +662,7 @@ class MemberController {
                         mc.expiry_date
                     FROM members m
                     INNER JOIN member_courses mc ON mc.member_id = m.id
-                    WHERE m.member_status IN ('attivo', 'in_formazione')
+                    WHERE m.member_status = 'attivo'
                         AND mc.expiry_date IS NOT NULL
                         AND mc.expiry_date < CURDATE()
                     ORDER BY m.last_name, m.first_name, mc.course_name";
