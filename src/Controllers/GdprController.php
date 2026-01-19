@@ -796,8 +796,12 @@ class GdprController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)";
+            $where[] = "(u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR m.first_name LIKE ? OR m.last_name LIKE ? OR dca.external_person_name LIKE ? OR dca.external_person_surname LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -807,12 +811,25 @@ class GdprController {
         $offset = ($page - 1) * $perPage;
         
         $sql = "SELECT dca.*, 
-                    u.username, u.first_name, u.last_name,
-                    CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+                    u.username, u.first_name as user_first_name, u.last_name as user_last_name,
+                    CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as user_full_name,
+                    m.registration_number, m.first_name as member_first_name, m.last_name as member_last_name,
+                    CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, '')) as member_full_name,
+                    CASE 
+                        WHEN dca.external_person_name IS NOT NULL THEN CONCAT(dca.external_person_name, ' ', dca.external_person_surname)
+                        WHEN dca.member_id IS NOT NULL THEN CONCAT(m.first_name, ' ', m.last_name)
+                        WHEN dca.user_id IS NOT NULL THEN CONCAT(u.first_name, ' ', u.last_name)
+                    END as appointee_name,
+                    CASE 
+                        WHEN dca.external_person_name IS NOT NULL THEN 'external'
+                        WHEN dca.member_id IS NOT NULL THEN 'member'
+                        WHEN dca.user_id IS NOT NULL THEN 'user'
+                    END as appointee_type,
                     u1.username as created_by_username,
                     u2.username as updated_by_username
                 FROM data_controller_appointments dca
                 LEFT JOIN users u ON dca.user_id = u.id
+                LEFT JOIN members m ON dca.member_id = m.id
                 LEFT JOIN users u1 ON dca.created_by = u1.id
                 LEFT JOIN users u2 ON dca.updated_by = u2.id
                 WHERE $whereClause 
@@ -840,8 +857,12 @@ class GdprController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)";
+            $where[] = "(u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR m.first_name LIKE ? OR m.last_name LIKE ? OR dca.external_person_name LIKE ? OR dca.external_person_surname LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -851,6 +872,7 @@ class GdprController {
         
         $sql = "SELECT COUNT(*) as total FROM data_controller_appointments dca
                 LEFT JOIN users u ON dca.user_id = u.id
+                LEFT JOIN members m ON dca.member_id = m.id
                 WHERE $whereClause";
         $result = $this->db->fetchOne($sql, $params);
         
@@ -862,12 +884,25 @@ class GdprController {
      */
     public function getAppointment($id) {
         $sql = "SELECT dca.*, 
-                    u.username, u.first_name, u.last_name,
-                    CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+                    u.username, u.first_name as user_first_name, u.last_name as user_last_name, u.email as user_email,
+                    CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as user_full_name,
+                    m.registration_number, m.first_name as member_first_name, m.last_name as member_last_name,
+                    CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, '')) as member_full_name,
+                    CASE 
+                        WHEN dca.external_person_name IS NOT NULL THEN CONCAT(dca.external_person_name, ' ', dca.external_person_surname)
+                        WHEN dca.member_id IS NOT NULL THEN CONCAT(m.first_name, ' ', m.last_name)
+                        WHEN dca.user_id IS NOT NULL THEN CONCAT(u.first_name, ' ', u.last_name)
+                    END as appointee_name,
+                    CASE 
+                        WHEN dca.external_person_name IS NOT NULL THEN 'external'
+                        WHEN dca.member_id IS NOT NULL THEN 'member'
+                        WHEN dca.user_id IS NOT NULL THEN 'user'
+                    END as appointee_type,
                     u1.username as created_by_username,
                     u2.username as updated_by_username
                 FROM data_controller_appointments dca
                 LEFT JOIN users u ON dca.user_id = u.id
+                LEFT JOIN members m ON dca.member_id = m.id
                 LEFT JOIN users u1 ON dca.created_by = u1.id
                 LEFT JOIN users u2 ON dca.updated_by = u2.id
                 WHERE dca.id = ?";
@@ -875,12 +910,12 @@ class GdprController {
     }
     
     /**
-     * Ottieni nomina responsabile con dati anagrafici completi dal socio collegato
+     * Ottieni nomina responsabile con dati anagrafici completi
      */
     public function getAppointmentWithMemberData($id) {
         $sql = "SELECT dca.*, 
                     u.username, u.email, u.member_id,
-                    m.registration_number, m.first_name, m.last_name, m.tax_code,
+                    m.registration_number, m.first_name as member_first_name, m.last_name as member_last_name, m.tax_code,
                     m.birth_date, m.birth_place, m.birth_province,
                     m.gender, m.nationality,
                     ma.address, ma.civic_number, ma.city, ma.province, ma.postal_code, ma.country,
@@ -888,8 +923,8 @@ class GdprController {
                     u1.username as created_by_username,
                     u2.username as updated_by_username
                 FROM data_controller_appointments dca
-                INNER JOIN users u ON dca.user_id = u.id
-                LEFT JOIN members m ON u.member_id = m.id
+                LEFT JOIN users u ON dca.user_id = u.id
+                LEFT JOIN members m ON dca.member_id = m.id OR u.member_id = m.id
                 LEFT JOIN member_addresses ma ON m.id = ma.member_id AND ma.address_type = 'residence'
                 LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'personal'
                 LEFT JOIN users u1 ON dca.created_by = u1.id
@@ -906,13 +941,31 @@ class GdprController {
             $this->db->beginTransaction();
             
             $sql = "INSERT INTO data_controller_appointments (
-                user_id, appointment_type, appointment_date, revocation_date, is_active,
+                user_id, member_id, external_person_name, external_person_surname, external_person_tax_code,
+                external_person_birth_date, external_person_birth_place, external_person_birth_province,
+                external_person_gender, external_person_address, external_person_city, external_person_province,
+                external_person_postal_code, external_person_phone, external_person_email,
+                appointment_type, appointment_date, revocation_date, is_active,
                 scope, responsibilities, data_categories_access, appointment_document_path,
                 training_completed, training_date, notes, created_by, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
-                $data['user_id'],
+                $data['user_id'] ?? null,
+                $data['member_id'] ?? null,
+                $data['external_person_name'] ?? null,
+                $data['external_person_surname'] ?? null,
+                $data['external_person_tax_code'] ?? null,
+                $data['external_person_birth_date'] ?? null,
+                $data['external_person_birth_place'] ?? null,
+                $data['external_person_birth_province'] ?? null,
+                $data['external_person_gender'] ?? null,
+                $data['external_person_address'] ?? null,
+                $data['external_person_city'] ?? null,
+                $data['external_person_province'] ?? null,
+                $data['external_person_postal_code'] ?? null,
+                $data['external_person_phone'] ?? null,
+                $data['external_person_email'] ?? null,
                 $data['appointment_type'],
                 $data['appointment_date'],
                 $data['revocation_date'] ?? null,
@@ -950,15 +1003,33 @@ class GdprController {
             $this->db->beginTransaction();
             
             $sql = "UPDATE data_controller_appointments SET
-                user_id = ?, appointment_type = ?, appointment_date = ?,
-                revocation_date = ?, is_active = ?, scope = ?, responsibilities = ?,
-                data_categories_access = ?, appointment_document_path = ?,
+                user_id = ?, member_id = ?, external_person_name = ?, external_person_surname = ?,
+                external_person_tax_code = ?, external_person_birth_date = ?, external_person_birth_place = ?,
+                external_person_birth_province = ?, external_person_gender = ?, external_person_address = ?,
+                external_person_city = ?, external_person_province = ?, external_person_postal_code = ?,
+                external_person_phone = ?, external_person_email = ?,
+                appointment_type = ?, appointment_date = ?, revocation_date = ?, is_active = ?,
+                scope = ?, responsibilities = ?, data_categories_access = ?, appointment_document_path = ?,
                 training_completed = ?, training_date = ?, notes = ?,
                 updated_by = ?, updated_at = NOW()
                 WHERE id = ?";
             
             $params = [
-                $data['user_id'],
+                $data['user_id'] ?? null,
+                $data['member_id'] ?? null,
+                $data['external_person_name'] ?? null,
+                $data['external_person_surname'] ?? null,
+                $data['external_person_tax_code'] ?? null,
+                $data['external_person_birth_date'] ?? null,
+                $data['external_person_birth_place'] ?? null,
+                $data['external_person_birth_province'] ?? null,
+                $data['external_person_gender'] ?? null,
+                $data['external_person_address'] ?? null,
+                $data['external_person_city'] ?? null,
+                $data['external_person_province'] ?? null,
+                $data['external_person_postal_code'] ?? null,
+                $data['external_person_phone'] ?? null,
+                $data['external_person_email'] ?? null,
                 $data['appointment_type'],
                 $data['appointment_date'],
                 $data['revocation_date'] ?? null,
