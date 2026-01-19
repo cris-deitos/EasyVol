@@ -6,6 +6,7 @@ use EasyVol\Utils\FileUploader;
 use EasyVol\Utils\ImageProcessor;
 use EasyVol\Utils\PdfGenerator;
 use EasyVol\Utils\PathHelper;
+use EasyVol\Utils\FiscalCodeValidator;
 
 /**
  * Junior Member Controller
@@ -779,5 +780,112 @@ class JuniorMemberController {
         ];
         
         return $mapping[$guardianType] ?? 'genitore';
+    }
+    
+    /**
+     * Get all anomalies for junior members
+     * 
+     * @return array Array of anomalies grouped by type
+     */
+    public function getAnomalies() {
+        $anomalies = [
+            'no_mobile' => [],
+            'no_email' => [],
+            'invalid_fiscal_code' => [],
+            'no_guardian_data' => [],
+            'no_health_surveillance' => [],
+            'expired_health_surveillance' => []
+        ];
+        
+        // Get all active junior members with their related data
+        $sql = "SELECT 
+                    jm.id, 
+                    jm.registration_number,
+                    jm.first_name, 
+                    jm.last_name,
+                    jm.tax_code,
+                    jm.birth_date,
+                    jm.gender,
+                    jm.member_status,
+                    -- Get mobile contact
+                    (SELECT jmc.value FROM junior_member_contacts jmc 
+                     WHERE jmc.junior_member_id = jm.id AND jmc.contact_type = 'cellulare' 
+                     LIMIT 1) as mobile,
+                    -- Get email contact
+                    (SELECT jmc.value FROM junior_member_contacts jmc 
+                     WHERE jmc.junior_member_id = jm.id AND jmc.contact_type = 'email' 
+                     LIMIT 1) as email,
+                    -- Get latest health surveillance
+                    (SELECT jmhs.expiry_date FROM junior_member_health_surveillance jmhs 
+                     WHERE jmhs.junior_member_id = jm.id 
+                     ORDER BY jmhs.expiry_date DESC 
+                     LIMIT 1) as health_surveillance_expiry,
+                    -- Count guardians
+                    (SELECT COUNT(*) FROM junior_member_guardians jmg 
+                     WHERE jmg.junior_member_id = jm.id) as guardian_count
+                FROM junior_members jm
+                WHERE jm.member_status IN ('attivo', 'in_formazione')
+                ORDER BY jm.last_name, jm.first_name";
+        
+        $members = $this->db->fetchAll($sql);
+        
+        foreach ($members as $member) {
+            $memberInfo = [
+                'id' => $member['id'],
+                'registration_number' => $member['registration_number'],
+                'name' => $member['first_name'] . ' ' . $member['last_name'],
+                'member_status' => $member['member_status']
+            ];
+            
+            // Check for missing mobile
+            if (empty($member['mobile'])) {
+                $anomalies['no_mobile'][] = $memberInfo;
+            }
+            
+            // Check for missing email
+            if (empty($member['email'])) {
+                $anomalies['no_email'][] = $memberInfo;
+            }
+            
+            // Check fiscal code validity
+            if (!empty($member['tax_code'])) {
+                $personalData = [
+                    'birth_date' => $member['birth_date'],
+                    'gender' => $member['gender']
+                ];
+                
+                $verification = FiscalCodeValidator::verifyAgainstPersonalData(
+                    $member['tax_code'], 
+                    $personalData
+                );
+                
+                if (!$verification['valid']) {
+                    $memberInfo['fiscal_code'] = $member['tax_code'];
+                    $memberInfo['errors'] = implode('; ', $verification['errors']);
+                    $anomalies['invalid_fiscal_code'][] = $memberInfo;
+                }
+            }
+            
+            // Check for missing guardian data
+            if ($member['guardian_count'] == 0) {
+                $anomalies['no_guardian_data'][] = $memberInfo;
+            }
+            
+            // Check for missing health surveillance
+            if (empty($member['health_surveillance_expiry'])) {
+                $anomalies['no_health_surveillance'][] = $memberInfo;
+            } else {
+                // Check for expired health surveillance
+                $expiryDate = new \DateTime($member['health_surveillance_expiry']);
+                $today = new \DateTime();
+                
+                if ($expiryDate < $today) {
+                    $memberInfo['expiry_date'] = $member['health_surveillance_expiry'];
+                    $anomalies['expired_health_surveillance'][] = $memberInfo;
+                }
+            }
+        }
+        
+        return $anomalies;
     }
 }

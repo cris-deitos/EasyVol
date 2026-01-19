@@ -2724,4 +2724,13 @@ INSERT INTO `permissions` (`module`, `action`, `description`)
 SELECT 'activity_logs', 'view', 'Visualizzare i log delle attività del sistema'
 WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'activity_logs' AND `action` = 'view');
 
+-- Add permissions for member anomalies viewing (if they don't exist)
+INSERT INTO `permissions` (`module`, `action`, `description`) 
+SELECT 'members', 'view_anomalies', 'Visualizza anomalie soci'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'members' AND `action` = 'view_anomalies');
+
+INSERT INTO `permissions` (`module`, `action`, `description`) 
+SELECT 'junior_members', 'view_anomalies', 'Visualizza anomalie cadetti'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'junior_members' AND `action` = 'view_anomalies');
+
 COMMIT;
