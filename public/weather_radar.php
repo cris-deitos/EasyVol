@@ -124,10 +124,17 @@ $pageTitle = 'Radar Meteo - Nord Italia';
 
                 <div class="weather-controls">
                     <div class="row align-items-center">
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <div class="radar-info">
                                 <strong><i class="bi bi-info-circle"></i> Info:</strong>
                                 <span id="lastUpdate">Caricamento dati meteo...</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-sm btn-primary" id="animationToggle" onclick="toggleAnimation()" disabled>
+                                    <i class="bi bi-play-fill"></i> Anima (2h)
+                                </button>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -193,8 +200,11 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         // For now, using RainViewer which provides free global weather radar data without API key.
         
         // Using RainViewer for free weather radar (no API key required)
+        let radarFrames = [];
+        let currentFrameIndex = 0;
         let radarLayer = null;
-        let currentTimestamp = null;
+        let animationInterval = null;
+        let isAnimating = false;
         
         async function loadWeatherRadar() {
             document.getElementById('loadingIndicator').style.display = 'block';
@@ -205,27 +215,23 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 const data = await response.json();
                 
                 if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
-                    // Get the most recent radar image
-                    const latestRadar = data.radar.past[data.radar.past.length - 1];
-                    currentTimestamp = latestRadar.time;
+                    // Get past radar images (last 2 hours, approximately 24 frames at 5-minute intervals)
+                    radarFrames = data.radar.past.slice(-24);
                     
-                    // Remove existing radar layer if present
-                    if (radarLayer) {
-                        map.removeLayer(radarLayer);
-                    }
-                    
-                    // Add new radar layer
-                    const radarUrl = `https://tilecache.rainviewer.com${latestRadar.path}/256/{z}/{x}/{y}/2/1_1.png`;
-                    radarLayer = L.tileLayer(radarUrl, {
-                        opacity: 0.7,
-                        maxZoom: 19,
-                        attribution: 'Weather data &copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
-                    }).addTo(map);
+                    // Show the most recent frame
+                    currentFrameIndex = radarFrames.length - 1;
+                    showRadarFrame(currentFrameIndex);
                     
                     // Update timestamp
-                    const date = new Date(currentTimestamp * 1000);
+                    const latestTime = new Date(radarFrames[radarFrames.length - 1].time * 1000);
                     document.getElementById('lastUpdate').innerHTML = 
-                        `<i class="bi bi-check-circle text-success"></i> Ultimo aggiornamento: ${date.toLocaleString('it-IT')} - Dati da RainViewer`;
+                        `<i class="bi bi-check-circle text-success"></i> Ultimo aggiornamento: ${latestTime.toLocaleString('it-IT')} - ` +
+                        `Dati da RainViewer (ultime 2 ore, ${radarFrames.length} frame)`;
+                    
+                    // Enable animation button if we have multiple frames
+                    if (radarFrames.length > 1) {
+                        document.getElementById('animationToggle').disabled = false;
+                    }
                 } else {
                     document.getElementById('lastUpdate').innerHTML = 
                         '<i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile al momento';
@@ -238,12 +244,89 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
         }
+        
+        // Show specific radar frame
+        function showRadarFrame(index) {
+            if (radarFrames.length === 0 || index < 0 || index >= radarFrames.length) {
+                return;
+            }
+            
+            const frame = radarFrames[index];
+            
+            // Remove existing radar layer if present
+            if (radarLayer) {
+                map.removeLayer(radarLayer);
+            }
+            
+            // Add new radar layer
+            const radarUrl = `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+            radarLayer = L.tileLayer(radarUrl, {
+                opacity: 0.7,
+                maxZoom: 19,
+                attribution: 'Weather data &copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
+            }).addTo(map);
+        }
+        
+        // Animate through frames
+        function startAnimation() {
+            if (radarFrames.length === 0) return;
+            
+            isAnimating = true;
+            currentFrameIndex = 0;
+            
+            const btn = document.getElementById('animationToggle');
+            btn.innerHTML = '<i class="bi bi-pause-fill"></i> Ferma';
+            
+            animationInterval = setInterval(() => {
+                showRadarFrame(currentFrameIndex);
+                currentFrameIndex++;
+                if (currentFrameIndex >= radarFrames.length) {
+                    currentFrameIndex = 0;
+                }
+            }, 500); // 500ms per frame
+        }
+        
+        // Stop animation
+        function stopAnimation() {
+            isAnimating = false;
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+            
+            const btn = document.getElementById('animationToggle');
+            btn.innerHTML = '<i class="bi bi-play-fill"></i> Anima (2h)';
+            
+            // Show latest frame
+            if (radarFrames.length > 0) {
+                currentFrameIndex = radarFrames.length - 1;
+                showRadarFrame(currentFrameIndex);
+            }
+        }
+        
+        // Toggle animation
+        function toggleAnimation() {
+            if (isAnimating) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        }
 
         // Load weather radar on page load
-        loadWeatherRadar();
+        (async () => {
+            await loadWeatherRadar();
+        })();
 
         // Auto-refresh every 5 minutes
-        setInterval(loadWeatherRadar, 5 * 60 * 1000);
+        setInterval(async () => {
+            const wasAnimating = isAnimating;
+            stopAnimation();
+            await loadWeatherRadar();
+            if (wasAnimating && radarFrames.length > 1) {
+                startAnimation();
+            }
+        }, 5 * 60 * 1000);
     </script>
     <script src="../assets/js/notifications-auto-update.js"></script>
 </body>
