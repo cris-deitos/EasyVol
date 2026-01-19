@@ -2861,7 +2861,6 @@ SELECT
     i.id as intervention_id,
     i.title,
     e.municipality,
-    e.province,
     e.start_date,
     e.event_type,
     i.latitude,
@@ -2872,6 +2871,6 @@ FROM interventions i
 LEFT JOIN events e ON i.event_id = e.id
 LEFT JOIN intervention_members im ON i.id = im.intervention_id
 WHERE i.latitude IS NOT NULL AND i.longitude IS NOT NULL
-GROUP BY i.id, i.title, e.municipality, e.province, e.start_date, e.event_type, i.latitude, i.longitude;
+GROUP BY i.id, i.title, e.municipality, e.start_date, e.event_type, i.latitude, i.longitude;
 
 COMMIT;
