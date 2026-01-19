@@ -2980,9 +2980,24 @@ CREATE TABLE IF NOT EXISTS `data_processing_registry` (
 -- DATA CONTROLLER APPOINTMENTS
 -- Tracks appointments of data controllers/processors
 -- Nomina responsabili del trattamento dati
+-- Updated by Migration 016: Extended to support member_id and external personnel
 CREATE TABLE IF NOT EXISTS `data_controller_appointments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL COMMENT 'Utente nominato come responsabile',
+  `user_id` int(11) DEFAULT NULL COMMENT 'Utente nominato come responsabile (opzionale se member_id o esterni)',
+  `member_id` int(11) DEFAULT NULL COMMENT 'Socio nominato (se non è utente)',
+  `external_person_name` varchar(255) DEFAULT NULL COMMENT 'Nome persona esterna',
+  `external_person_surname` varchar(255) DEFAULT NULL COMMENT 'Cognome persona esterna',
+  `external_person_tax_code` varchar(16) DEFAULT NULL COMMENT 'Codice fiscale persona esterna',
+  `external_person_birth_date` date DEFAULT NULL COMMENT 'Data di nascita persona esterna',
+  `external_person_birth_place` varchar(100) DEFAULT NULL COMMENT 'Luogo di nascita persona esterna',
+  `external_person_birth_province` varchar(2) DEFAULT NULL COMMENT 'Provincia di nascita persona esterna',
+  `external_person_gender` enum('M', 'F', 'other') DEFAULT NULL COMMENT 'Genere persona esterna',
+  `external_person_address` varchar(255) DEFAULT NULL COMMENT 'Indirizzo persona esterna',
+  `external_person_city` varchar(100) DEFAULT NULL COMMENT 'Città persona esterna',
+  `external_person_province` varchar(2) DEFAULT NULL COMMENT 'Provincia persona esterna',
+  `external_person_postal_code` varchar(10) DEFAULT NULL COMMENT 'CAP persona esterna',
+  `external_person_phone` varchar(20) DEFAULT NULL COMMENT 'Telefono persona esterna',
+  `external_person_email` varchar(100) DEFAULT NULL COMMENT 'Email persona esterna',
   `appointment_type` enum('data_controller', 'data_processor', 'dpo', 'authorized_person') NOT NULL COMMENT 'Tipo di nomina',
   `appointment_date` date NOT NULL COMMENT 'Data nomina',
   `revocation_date` date DEFAULT NULL COMMENT 'Data revoca',
@@ -3000,10 +3015,12 @@ CREATE TABLE IF NOT EXISTS `data_controller_appointments` (
   `updated_by` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_user` (`user_id`),
+  KEY `idx_member` (`member_id`),
   KEY `idx_appointment_type` (`appointment_type`),
   KEY `idx_is_active` (`is_active`),
   KEY `idx_appointment_date` (`appointment_date`),
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Nomine responsabili trattamento dati GDPR';
