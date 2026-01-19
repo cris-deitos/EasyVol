@@ -93,6 +93,9 @@ $sql = "SELECT
             e.title as event_title,
             e.start_date as event_start_date,
             e.event_type as event_type,
+            -- Interventions
+            i.title as intervention_title,
+            i.start_time as intervention_start_time,
             -- Training Courses
             tc.course_name,
             tc.start_date as course_start_date,
@@ -131,17 +134,18 @@ $sql = "SELECT
             dt.talkgroup_id as talkgroup_id
         FROM activity_logs al
         LEFT JOIN users u ON al.user_id = u.id
-        LEFT JOIN members m ON al.module IN ('member', 'members') AND al.record_id = m.id
+        LEFT JOIN members m ON al.module IN ('member', 'members', 'member_portal') AND al.record_id = m.id
         LEFT JOIN junior_members jm ON al.module IN ('junior_member', 'junior_members') AND al.record_id = jm.id
-        LEFT JOIN events e ON al.module IN ('event', 'events') AND al.record_id = e.id
+        LEFT JOIN events e ON al.module IN ('event', 'events', 'event_participants', 'event_vehicles') AND al.record_id = e.id
+        LEFT JOIN interventions i ON al.module IN ('interventions', 'intervention_members', 'intervention_vehicles') AND al.record_id = i.id
         LEFT JOIN training_courses tc ON al.module = 'training' AND al.record_id = tc.id
-        LEFT JOIN vehicles v ON al.module IN ('vehicle', 'vehicles') AND al.record_id = v.id
+        LEFT JOIN vehicles v ON al.module IN ('vehicle', 'vehicles', 'vehicle_maintenance') AND al.record_id = v.id
         LEFT JOIN documents d ON al.module = 'documents' AND al.record_id = d.id
         LEFT JOIN meetings mt ON al.module IN ('meeting', 'meetings') AND al.record_id = mt.id
         LEFT JOIN scheduler_items si ON al.module = 'scheduler' AND al.record_id = si.id
         LEFT JOIN users u2 ON al.module = 'users' AND al.record_id = u2.id
         LEFT JOIN roles r ON al.module = 'roles' AND al.record_id = r.id
-        LEFT JOIN warehouse_items wi ON al.module IN ('warehouse', 'warehouse_item', 'warehouse_items') AND al.record_id = wi.id
+        LEFT JOIN warehouse_items wi ON al.module IN ('warehouse', 'warehouse_item', 'warehouse_items', 'warehouse_movement') AND al.record_id = wi.id
         LEFT JOIN member_applications ma ON al.module = 'applications' AND al.record_id = ma.id
         LEFT JOIN gates g ON al.module = 'gate_management' AND al.record_id = g.id
         LEFT JOIN radio_directory rd ON al.module = 'radio' AND al.record_id = rd.id
@@ -199,10 +203,23 @@ function formatRecordInfo($log) {
             
         case 'event':
         case 'events':
+        case 'event_participants':
+        case 'event_vehicles':
             if ($log['event_title']) {
                 $output = '<strong>' . htmlspecialchars($log['event_title']) . '</strong>';
                 if ($log['event_start_date']) {
                     $output .= '<br><small class="text-muted">' . date('d/m/Y', strtotime($log['event_start_date'])) . '</small>';
+                }
+            }
+            break;
+            
+        case 'interventions':
+        case 'intervention_members':
+        case 'intervention_vehicles':
+            if ($log['intervention_title']) {
+                $output = '<strong>' . htmlspecialchars($log['intervention_title']) . '</strong>';
+                if ($log['intervention_start_time']) {
+                    $output .= '<br><small class="text-muted">' . date('d/m/Y H:i', strtotime($log['intervention_start_time'])) . '</small>';
                 }
             }
             break;
@@ -324,6 +341,18 @@ function formatRecordInfo($log) {
                 $output = '<strong>' . htmlspecialchars($log['talkgroup_name']) . '</strong>';
                 if ($log['talkgroup_id']) {
                     $output .= '<br><small class="text-muted">TG: ' . htmlspecialchars($log['talkgroup_id']) . '</small>';
+                }
+            }
+            break;
+            
+        case 'member_portal':
+            // Member portal activities related to members show member info
+            if ($log['member_reg_number'] || $log['member_badge_number']) {
+                $identifier = $log['member_badge_number'] ?: $log['member_reg_number'];
+                $name = trim(($log['member_first_name'] ?? '') . ' ' . ($log['member_last_name'] ?? ''));
+                $output = '<strong>' . htmlspecialchars($identifier) . '</strong>';
+                if ($name) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($name) . '</small>';
                 }
             }
             break;
