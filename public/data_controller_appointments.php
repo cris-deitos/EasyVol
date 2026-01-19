@@ -38,10 +38,18 @@ $filters = [
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 20;
 
-// Ottieni nomine
-$appointments = $controller->indexAppointments($filters, $page, $perPage);
-$totalResults = $controller->countAppointments($filters);
-$totalPages = max(1, ceil($totalResults / $perPage));
+// Ottieni nomine con error handling
+try {
+    $appointments = $controller->indexAppointments($filters, $page, $perPage);
+    $totalResults = $controller->countAppointments($filters);
+    $totalPages = max(1, ceil($totalResults / $perPage));
+} catch (Exception $e) {
+    error_log("Errore caricamento nomine: " . $e->getMessage());
+    $appointments = [];
+    $totalResults = 0;
+    $totalPages = 1;
+    $error_message = "Errore nel caricamento dei dati. Verificare la connessione al database.";
+}
 
 // Log search if performed
 if (!empty($filters['search'])) {
@@ -101,6 +109,13 @@ $pageTitle = 'Nomine Responsabili Trattamento';
                             echo 'Si è verificato un errore';
                         }
                         ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($error_message); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
