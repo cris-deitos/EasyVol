@@ -298,7 +298,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 if (currentFrameIndex >= radarFrames.length) {
                     currentFrameIndex = 0;
                 }
-            }, 500); // 500ms per frame
+            }, 1000); // 1000ms per frame (24 seconds for full 2-hour loop)
         }
         
         // Stop animation
