@@ -288,7 +288,11 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
                 startTime.setHours(startTime.getHours() - hours);
                 const startTimeISO = startTime.toISOString();
                 
-                // INGV Earthquake API - using format=geojson for better compatibility
+                // INGV Earthquake API - Official Open Data Service
+                // Documentation: https://webservices.ingv.it/fdsnws/event/1/
+                // This is the official INGV (Istituto Nazionale di Geofisica e Vulcanologia) 
+                // FDSN web service for earthquake data (data.ingv.it redirects here)
+                // Using format=geojson for better compatibility and minmag=1.0 to filter micro-seismic events
                 const apiUrl = `https://webservices.ingv.it/fdsnws/event/1/query?starttime=${startTimeISO}&format=geojson&minmag=1.0&orderby=time-desc`;
                 
                 const response = await fetch(apiUrl, {
