@@ -96,10 +96,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get members and junior members for dropdown
-$members = $controller->getMembers();
-$juniorMembers = $controller->getJuniorMembers();
-
 $pageTitle = $isEdit ? 'Modifica Richiesta Export' : 'Nuova Richiesta Export';
 ?>
 <!DOCTYPE html>
@@ -154,35 +150,34 @@ $pageTitle = $isEdit ? 'Modifica Richiesta Export' : 'Nuova Richiesta Export';
                             <div class="row mb-4">
                                 <div class="col-md-6">
                                     <label for="entity_type" class="form-label">Tipo Entità *</label>
-                                    <select class="form-select" id="entity_type" name="entity_type" required>
+                                    <select class="form-select" id="entity_type" required onchange="clearEntitySelection()">
                                         <option value="member" <?php echo ($request['entity_type'] ?? 'member') === 'member' ? 'selected' : ''; ?>>Socio</option>
                                         <option value="junior_member" <?php echo ($request['entity_type'] ?? '') === 'junior_member' ? 'selected' : ''; ?>>Cadetto</option>
                                     </select>
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label for="entity_id" class="form-label">Seleziona Persona *</label>
-                                    <select class="form-select" id="entity_id" name="entity_id" required>
-                                        <option value="">Seleziona...</option>
-                                        <optgroup label="Soci" id="members-group">
-                                            <?php foreach ($members as $member): ?>
-                                                <option value="<?php echo $member['id']; ?>" 
-                                                        data-type="member"
-                                                        <?php echo ($request['entity_type'] ?? '') === 'member' && ($request['entity_id'] ?? 0) == $member['id'] ? 'selected' : ''; ?>>
-                                                    <?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name'] . ' (' . $member['registration_number'] . ')'); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </optgroup>
-                                        <optgroup label="Cadetti" id="junior-members-group">
-                                            <?php foreach ($juniorMembers as $junior): ?>
-                                                <option value="<?php echo $junior['id']; ?>" 
-                                                        data-type="junior_member"
-                                                        <?php echo ($request['entity_type'] ?? '') === 'junior_member' && ($request['entity_id'] ?? 0) == $junior['id'] ? 'selected' : ''; ?>>
-                                                    <?php echo htmlspecialchars($junior['first_name'] . ' ' . $junior['last_name'] . ' (' . $junior['registration_number'] . ')'); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </optgroup>
-                                    </select>
+                                    <?php
+                                    $currentEntityName = '';
+                                    if (!empty($request['entity_id'])) {
+                                        if ($request['entity_type'] === 'member') {
+                                            $entity = $db->fetchOne("SELECT first_name, last_name, registration_number FROM members WHERE id = ?", [$request['entity_id']]);
+                                        } else {
+                                            $entity = $db->fetchOne("SELECT first_name, last_name, registration_number FROM junior_members WHERE id = ?", [$request['entity_id']]);
+                                        }
+                                        if ($entity) {
+                                            $currentEntityName = $entity['last_name'] . ' ' . $entity['first_name'] . ' (Mat. ' . $entity['registration_number'] . ')';
+                                        }
+                                    }
+                                    ?>
+                                    <label for="entity_search" class="form-label">Seleziona Persona *</label>
+                                    <input type="text" class="form-control" id="entity_search" 
+                                           placeholder="Cerca per nome, cognome, matricola o codice fiscale..." 
+                                           value="<?php echo htmlspecialchars($currentEntityName); ?>" 
+                                           autocomplete="off" required>
+                                    <input type="hidden" id="entity_id" name="entity_id" value="<?php echo htmlspecialchars($request['entity_id'] ?? ''); ?>" required>
+                                    <input type="hidden" id="entity_type_hidden" name="entity_type" value="<?php echo htmlspecialchars($request['entity_type'] ?? 'member'); ?>">
+                                    <div id="entity_search_results" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
                                 </div>
                             </div>
                             
@@ -279,36 +274,88 @@ $pageTitle = $isEdit ? 'Modifica Richiesta Export' : 'Nuova Richiesta Export';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Filter entity dropdown based on type selection
-        document.getElementById('entity_type').addEventListener('change', function() {
-            const entityType = this.value;
-            const entitySelect = document.getElementById('entity_id');
-            const options = entitySelect.querySelectorAll('option[data-type]');
-            
-            // Reset selection
-            entitySelect.value = '';
-            
-            // Show/hide options based on type
-            options.forEach(option => {
-                if (option.dataset.type === entityType) {
-                    option.style.display = '';
-                } else {
-                    option.style.display = 'none';
+        // Entity search autocomplete
+        let entitySearchTimeout = null;
+        const entitySearchInput = document.getElementById('entity_search');
+        const entityIdInput = document.getElementById('entity_id');
+        const entitySearchResults = document.getElementById('entity_search_results');
+        const entityTypeSelect = document.getElementById('entity_type');
+        const entityTypeHidden = document.getElementById('entity_type_hidden');
+        
+        function clearEntitySelection() {
+            // Clear the search when switching entity type
+            entitySearchInput.value = '';
+            entityIdInput.value = '';
+            entitySearchResults.style.display = 'none';
+            entitySearchResults.innerHTML = '';
+            entityTypeHidden.value = entityTypeSelect.value;
+        }
+        
+        if (entitySearchInput) {
+            entitySearchInput.addEventListener('input', function() {
+                clearTimeout(entitySearchTimeout);
+                const search = this.value.trim();
+                
+                if (search.length < 2) {
+                    entitySearchResults.style.display = 'none';
+                    entitySearchResults.innerHTML = '';
+                    if (search.length === 0) {
+                        entityIdInput.value = '';
+                    }
+                    return;
                 }
+                
+                const entityType = entityTypeSelect.value;
+                
+                entitySearchTimeout = setTimeout(function() {
+                    fetch('entity_search_ajax.php?q=' + encodeURIComponent(search) + '&type=' + entityType)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length === 0) {
+                                entitySearchResults.innerHTML = '<div class="list-group-item text-muted">Nessuna persona trovata</div>';
+                                entitySearchResults.style.display = 'block';
+                                return;
+                            }
+                            
+                            entitySearchResults.innerHTML = data.map(function(entity) {
+                                return '<button type="button" class="list-group-item list-group-item-action" data-entity-id="' + entity.id + '" data-entity-label="' + escapeHtml(entity.label) + '">' +
+                                    escapeHtml(entity.label) +
+                                    '</button>';
+                            }).join('');
+                            entitySearchResults.style.display = 'block';
+                            
+                            // Add click handlers
+                            entitySearchResults.querySelectorAll('button').forEach(function(btn) {
+                                btn.addEventListener('click', function() {
+                                    entityIdInput.value = this.dataset.entityId;
+                                    entitySearchInput.value = this.dataset.entityLabel;
+                                    entitySearchResults.style.display = 'none';
+                                    entityTypeHidden.value = entityTypeSelect.value;
+                                });
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            entitySearchResults.innerHTML = '<div class="list-group-item text-danger">Errore nella ricerca</div>';
+                            entitySearchResults.style.display = 'block';
+                        });
+                }, 300);
             });
             
-            // Show/hide optgroups
-            if (entityType === 'member') {
-                document.getElementById('members-group').style.display = '';
-                document.getElementById('junior-members-group').style.display = 'none';
-            } else {
-                document.getElementById('members-group').style.display = 'none';
-                document.getElementById('junior-members-group').style.display = '';
-            }
-        });
+            // Close results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!entitySearchInput.contains(e.target) && !entitySearchResults.contains(e.target)) {
+                    entitySearchResults.style.display = 'none';
+                }
+            });
+        }
         
-        // Trigger initial filtering
-        document.getElementById('entity_type').dispatchEvent(new Event('change'));
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>

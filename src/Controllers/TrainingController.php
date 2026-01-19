@@ -756,8 +756,9 @@ class TrainingController {
         $params = [$courseId];
         
         if (!empty($search)) {
-            $sql .= " AND (m.first_name LIKE ? OR m.last_name LIKE ? OR m.registration_number LIKE ?)";
+            $sql .= " AND (m.first_name LIKE ? OR m.last_name LIKE ? OR m.registration_number LIKE ? OR m.tax_code LIKE ?)";
             $searchTerm = '%' . $search . '%';
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;

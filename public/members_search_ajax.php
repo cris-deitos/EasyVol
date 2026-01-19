@@ -29,8 +29,8 @@ if (empty($query)) {
 }
 
 try {
-    // Search by badge number, registration number, first name, or last name
-    $sql = "SELECT id, first_name, last_name, registration_number, badge_number 
+    // Search by badge number, registration number, first name, last name, or tax code
+    $sql = "SELECT id, first_name, last_name, registration_number, badge_number, tax_code 
             FROM members 
             WHERE member_status = 'attivo' 
             AND (
@@ -38,6 +38,7 @@ try {
                 OR registration_number LIKE ? 
                 OR first_name LIKE ? 
                 OR last_name LIKE ?
+                OR tax_code LIKE ?
                 OR CONCAT(first_name, ' ', last_name) LIKE ?
                 OR CONCAT(last_name, ' ', first_name) LIKE ?
             )
@@ -45,9 +46,10 @@ try {
                 CASE 
                     WHEN badge_number LIKE ? THEN 1
                     WHEN registration_number LIKE ? THEN 2
-                    WHEN last_name LIKE ? THEN 3
-                    WHEN first_name LIKE ? THEN 4
-                    ELSE 5
+                    WHEN tax_code LIKE ? THEN 3
+                    WHEN last_name LIKE ? THEN 4
+                    WHEN first_name LIKE ? THEN 5
+                    ELSE 6
                 END,
                 last_name, first_name
             LIMIT 20";
@@ -56,8 +58,8 @@ try {
     $exactStart = $query . '%';
     
     $params = [
-        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm,
-        $exactStart, $exactStart, $exactStart, $exactStart
+        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm,
+        $exactStart, $exactStart, $exactStart, $exactStart, $exactStart
     ];
     
     $members = $db->fetchAll($sql, $params);

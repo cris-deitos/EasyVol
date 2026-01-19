@@ -155,13 +155,6 @@ $users = $db->fetchAll("SELECT u.id, u.username, u.email, u.member_id,
                         WHERE u.is_active = 1
                         ORDER BY display_name");
 
-// Get all active members
-$members = $db->fetchAll("SELECT id, registration_number, first_name, last_name,
-                          CONCAT(first_name, ' ', last_name, ' (', registration_number, ')') as display_name
-                          FROM members
-                          WHERE member_status = 'attivo'
-                          ORDER BY last_name, first_name");
-
 // Determine current appointee type for edit mode
 $current_appointee_type = 'user';
 if ($isEdit && $appointment) {
@@ -273,16 +266,22 @@ $pageTitle = $isEdit ? 'Modifica Nomina Responsabile' : 'Nuova Nomina Responsabi
                             <!-- Member Selection -->
                             <div id="member-section" class="row mb-4" style="display: <?php echo ($current_appointee_type === 'member') ? 'flex' : 'none'; ?>;">
                                 <div class="col-md-12">
-                                    <label for="member_id" class="form-label">Socio *</label>
-                                    <select class="form-select" id="member_id" name="member_id">
-                                        <option value="">Seleziona socio...</option>
-                                        <?php foreach ($members as $member): ?>
-                                            <option value="<?php echo $member['id']; ?>" 
-                                                <?php echo ($appointment['member_id'] ?? 0) == $member['id'] ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($member['display_name']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <?php
+                                    $currentMemberName = '';
+                                    if (!empty($appointment['member_id'])) {
+                                        $member = $db->fetchOne("SELECT first_name, last_name, registration_number FROM members WHERE id = ?", [$appointment['member_id']]);
+                                        if ($member) {
+                                            $currentMemberName = $member['registration_number'] . ' - ' . $member['last_name'] . ' ' . $member['first_name'];
+                                        }
+                                    }
+                                    ?>
+                                    <label for="member_search" class="form-label">Socio *</label>
+                                    <input type="text" class="form-control" id="member_search" 
+                                           placeholder="Cerca per nome, cognome, matricola o codice fiscale..." 
+                                           value="<?php echo htmlspecialchars($currentMemberName); ?>" 
+                                           autocomplete="off">
+                                    <input type="hidden" id="member_id" name="member_id" value="<?php echo htmlspecialchars($appointment['member_id'] ?? ''); ?>">
+                                    <div id="member_search_results" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
                                     <small class="form-text text-muted">
                                         <i class="bi bi-info-circle"></i> Seleziona un socio che non è già utente del sistema
                                     </small>
@@ -535,6 +534,75 @@ $pageTitle = $isEdit ? 'Modifica Nomina Responsabile' : 'Nuova Nomina Responsabi
                 }
             });
         });
+        
+        // Member search autocomplete
+        let memberSearchTimeout = null;
+        const memberSearchInput = document.getElementById('member_search');
+        const memberIdInput = document.getElementById('member_id');
+        const memberSearchResults = document.getElementById('member_search_results');
+        
+        if (memberSearchInput) {
+            memberSearchInput.addEventListener('input', function() {
+                clearTimeout(memberSearchTimeout);
+                const search = this.value.trim();
+                
+                if (search.length < 2) {
+                    memberSearchResults.style.display = 'none';
+                    memberSearchResults.innerHTML = '';
+                    if (search.length === 0) {
+                        memberIdInput.value = '';
+                    }
+                    return;
+                }
+                
+                memberSearchTimeout = setTimeout(function() {
+                    fetch('members_search_ajax.php?q=' + encodeURIComponent(search))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length === 0) {
+                                memberSearchResults.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                                memberSearchResults.style.display = 'block';
+                                return;
+                            }
+                            
+                            memberSearchResults.innerHTML = data.map(function(member) {
+                                return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(member.label) + '">' +
+                                    escapeHtml(member.label) +
+                                    '</button>';
+                            }).join('');
+                            memberSearchResults.style.display = 'block';
+                            
+                            // Add click handlers
+                            memberSearchResults.querySelectorAll('button').forEach(function(btn) {
+                                btn.addEventListener('click', function() {
+                                    memberIdInput.value = this.dataset.memberId;
+                                    memberSearchInput.value = this.dataset.memberLabel;
+                                    memberSearchResults.style.display = 'none';
+                                });
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            memberSearchResults.innerHTML = '<div class="list-group-item text-danger">Errore nella ricerca</div>';
+                            memberSearchResults.style.display = 'block';
+                        });
+                }, 300);
+            });
+            
+            // Close results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!memberSearchInput.contains(e.target) && !memberSearchResults.contains(e.target)) {
+                    memberSearchResults.style.display = 'none';
+                }
+            });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>
