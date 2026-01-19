@@ -21,7 +21,7 @@ if (!$app->checkPermission('operations_center', 'view')) {
 // Log page access
 AutoLogger::logPageAccess();
 
-$pageTitle = 'Monitoraggio Terremoti - Italia';
+$pageTitle = 'Monitoraggio Terremoti - Italia e Mondo';
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -218,7 +218,7 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
         <div class="spinner-border text-danger" role="status">
             <span class="visually-hidden">Caricamento...</span>
         </div>
-        <div class="mt-2">Caricamento dati sismici INGV...</div>
+        <div class="mt-2">Caricamento dati sismici INGV/USGS...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -236,12 +236,12 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
             maxZoom: 19
         }).addTo(map);
 
-        // Italy bounds
-        const italyBounds = [
-            [36.0, 6.5],  // Southwest corner (Sicily)
-            [47.5, 19.0]  // Northeast corner (Alps)
-        ];
-        map.fitBounds(italyBounds);
+        // Italy bounds - commented out to allow viewing worldwide earthquakes
+        // const italyBounds = [
+        //     [36.0, 6.5],  // Southwest corner (Sicily)
+        //     [47.5, 19.0]  // Northeast corner (Alps)
+        // ];
+        // map.fitBounds(italyBounds);
 
         let earthquakesData = [];
         let markersLayer = L.layerGroup().addTo(map);
@@ -278,36 +278,88 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
             });
         }
 
-        // Load earthquakes from INGV API
+        // Remove duplicates (events similar in time and location)
+        function removeDuplicates(earthquakes) {
+            const unique = [];
+            const seen = new Set();
+            
+            earthquakes.forEach(eq => {
+                // Create key based on time (approximated to 1 minute) and coordinates (approximated)
+                const time = new Date(eq.properties.time);
+                const timeKey = Math.floor(time.getTime() / 60000); // Round to minute
+                const latKey = Math.round(eq.geometry.coordinates[1] * 100) / 100;
+                const lonKey = Math.round(eq.geometry.coordinates[0] * 100) / 100;
+                const key = `${timeKey}-${latKey}-${lonKey}`;
+                
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    unique.push(eq);
+                }
+            });
+            
+            return unique;
+        }
+
+        // Load earthquakes from INGV and USGS APIs
         async function loadEarthquakes() {
             document.getElementById('loadingIndicator').style.display = 'block';
             
             try {
                 const hours = document.getElementById('timeFilter').value;
+                const endTime = new Date();
                 const startTime = new Date();
                 startTime.setHours(startTime.getHours() - hours);
-                const startTimeISO = startTime.toISOString();
                 
-                // INGV Earthquake API - Official Open Data Service
-                // Documentation: https://webservices.ingv.it/fdsnws/event/1/
-                // This is the official INGV (Istituto Nazionale di Geofisica e Vulcanologia) 
-                // FDSN web service for earthquake data (data.ingv.it redirects here)
-                // Using format=geojson for better compatibility and minmag=1.0 to filter micro-seismic events
-                const apiUrl = `https://webservices.ingv.it/fdsnws/event/1/query?starttime=${startTimeISO}&format=geojson&minmag=1.0&orderby=time-desc`;
+                // Format without milliseconds
+                const startTimeISO = startTime.toISOString().split('.')[0];
+                const endTimeISO = endTime.toISOString().split('.')[0];
                 
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
+                // API INGV (Italy and nearby areas)
+                const ingvUrl = `https://webservices.ingv.it/fdsnws/event/1/query?starttime=${startTimeISO}&endtime=${endTimeISO}&format=geojson&minmag=1.0&orderby=time`;
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // API USGS (Worldwide)
+                const usgsUrl = `https://earthquake.usgs.gov/fdsnws/event/1/query?starttime=${startTimeISO}&endtime=${endTimeISO}&format=geojson&minmagnitude=1.0&orderby=time`;
+                
+                // Parallel calls with independent error handling
+                const [ingvResponse, usgsResponse] = await Promise.all([
+                    fetch(ingvUrl).catch(err => {
+                        console.warn('INGV API error:', err);
+                        return null;
+                    }),
+                    fetch(usgsUrl).catch(err => {
+                        console.warn('USGS API error:', err);
+                        return null;
+                    })
+                ]);
+                
+                let allEarthquakes = [];
+                
+                // Load INGV data
+                if (ingvResponse && ingvResponse.ok) {
+                    const ingvData = await ingvResponse.json();
+                    const ingvEarthquakes = (ingvData.features || []).map(eq => {
+                        eq.source = 'INGV';
+                        return eq;
+                    });
+                    allEarthquakes = allEarthquakes.concat(ingvEarthquakes);
+                    console.log(`Loaded ${ingvEarthquakes.length} earthquakes from INGV`);
                 }
                 
-                const data = await response.json();
-                earthquakesData = data.features || [];
+                // Load USGS data
+                if (usgsResponse && usgsResponse.ok) {
+                    const usgsData = await usgsResponse.json();
+                    const usgsEarthquakes = (usgsData.features || []).map(eq => {
+                        eq.source = 'USGS';
+                        return eq;
+                    });
+                    allEarthquakes = allEarthquakes.concat(usgsEarthquakes);
+                    console.log(`Loaded ${usgsEarthquakes.length} earthquakes from USGS`);
+                }
+                
+                // Remove duplicates
+                earthquakesData = removeDuplicates(allEarthquakes);
+                
+                console.log(`Total earthquakes after deduplication: ${earthquakesData.length}`);
                 
                 // Update statistics
                 updateStatistics();
@@ -325,12 +377,11 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
                 console.error('Error loading earthquakes:', error);
                 document.getElementById('earthquakeListContent').innerHTML = 
                     '<div class="alert alert-danger alert-sm">' +
-                    '<small><i class="bi bi-exclamation-triangle"></i> <strong>Errore INGV</strong><br>' +
-                    'Impossibile caricare i dati.<br>' +
+                    '<small><i class="bi bi-exclamation-triangle"></i> <strong>Errore</strong><br>' +
+                    'Impossibile caricare i dati dai servizi INGV/USGS.<br>' +
                     'Verificare connessione.</small>' +
                     '</div>';
                 
-                // Update statistics to show error
                 document.getElementById('totalCount').textContent = '--';
                 document.getElementById('maxMagnitude').textContent = '--';
                 document.getElementById('significantCount').textContent = '--';
