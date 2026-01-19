@@ -59,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'sspc_edition_code' => trim($_POST['sspc_edition_code'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
             'location' => trim($_POST['location'] ?? ''),
-            'start_date' => $_POST['start_date'] ?? null,
-            'end_date' => $_POST['end_date'] ?? null,
+            'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
+            'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
             'instructor' => trim($_POST['instructor'] ?? ''),
             'max_participants' => !empty($_POST['max_participants']) ? intval($_POST['max_participants']) : null,
             'status' => $_POST['status'] ?? 'pianificato'
@@ -76,8 +76,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['course_name'] = TrainingCourseTypes::getName($data['course_type']) ?? $data['course_type'];
         }
         
-        if (!empty($data['start_date']) && !empty($data['end_date']) && $data['start_date'] > $data['end_date']) {
-            $errors[] = 'La data di fine non può essere precedente alla data di inizio';
+        // Valida che la data di fine non sia precedente alla data di inizio
+        if (!empty($data['start_date']) && !empty($data['end_date'])) {
+            $startDate = new \DateTime($data['start_date']);
+            $endDate = new \DateTime($data['end_date']);
+            if ($startDate > $endDate) {
+                $errors[] = 'La data di fine non può essere precedente alla data di inizio';
+            }
         }
         
         if (empty($errors)) {
