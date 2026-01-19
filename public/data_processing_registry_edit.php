@@ -26,8 +26,12 @@ if (!$app->checkPermission('gdpr_compliance', 'manage_processing_registry')) {
 }
 
 // Handle delete
-if (isset($_GET['delete']) && $app->checkPermission('gdpr_compliance', 'manage_processing_registry')) {
-    $deleteId = intval($_GET['delete']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && $app->checkPermission('gdpr_compliance', 'manage_processing_registry')) {
+    if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+        header('Location: data_processing_registry.php?error=csrf');
+        exit;
+    }
+    $deleteId = intval($_POST['delete_id']);
     $db = $app->getDb();
     $controller = new GdprController($db, $app->getConfig());
     if ($controller->deleteProcessingRegistry($deleteId, $app->getUserId())) {
@@ -141,11 +145,13 @@ $pageTitle = $isEdit ? 'Modifica Registro Trattamento' : 'Nuovo Registro Trattam
                             <i class="bi bi-arrow-left"></i> Torna all'elenco
                         </a>
                         <?php if ($isEdit && $app->checkPermission('gdpr_compliance', 'manage_processing_registry')): ?>
-                            <a href="?delete=<?php echo $registryId; ?>" 
-                               class="btn btn-outline-danger ms-2" 
-                               onclick="return confirm('Sei sicuro di voler eliminare questo registro?');">
-                                <i class="bi bi-trash"></i> Elimina
-                            </a>
+                            <form method="POST" action="" style="display:inline;" onsubmit="return confirm('Sei sicuro di voler eliminare questo registro?');">
+                                <?php echo CsrfProtection::getHiddenField(); ?>
+                                <input type="hidden" name="delete_id" value="<?php echo $registryId; ?>">
+                                <button type="submit" class="btn btn-outline-danger ms-2">
+                                    <i class="bi bi-trash"></i> Elimina
+                                </button>
+                            </form>
                         <?php endif; ?>
                     </div>
                 </div>

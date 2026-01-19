@@ -54,9 +54,11 @@
 - ✅ Aggiunto try-catch block per chiamate al controller
 - ✅ Aggiunta visualizzazione errore user-friendly in caso di problemi
 - ✅ Log degli errori nel file di log PHP per debugging
+- ✅ Fix CSRF vulnerability in delete operation (POST con token invece di GET)
 
 **File Modificati:**
 - `public/data_controller_appointments.php`
+- `public/data_controller_appointment_edit.php`
 
 ---
 
@@ -89,6 +91,7 @@
 - ✅ Aggiunta paginazione
 - ✅ Implementato completamente `data_processing_registry_edit.php` con form completo
 - ✅ Gestione creazione, modifica ed eliminazione registri
+- ✅ Fix CSRF vulnerability in delete operation (POST con token invece di GET)
 - ✅ Form include tutti i campi GDPR richiesti:
   - Nome e finalità trattamento
   - Base giuridica (consenso, contratto, obbligo legale, etc.)
@@ -376,6 +379,10 @@ TRUNCATE TABLE dashboard_stats_cache;
 6. **public/data_processing_registry_edit.php**
    - Completamente riscritto (da stub a form completo)
    - Form GDPR completo con validazione
+   - Fix CSRF vulnerability in delete
+
+7. **public/data_controller_appointment_edit.php**
+   - Fix CSRF vulnerability in delete operation
 
 ### Nessuna Modifica al Database Schema
 
