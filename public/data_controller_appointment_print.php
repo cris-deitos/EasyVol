@@ -44,9 +44,52 @@ if (!$appointment) {
     die('Nomina non trovata');
 }
 
-// Verifica che l'utente abbia un socio collegato
-if (!$appointment['member_id']) {
-    die('Errore: l\'utente nominato non è collegato a un socio. Collegare l\'utente a un socio per generare la nomina.');
+// Determine appointee type and get appropriate data
+$appointeeType = 'unknown';
+$appointeeData = [];
+
+if (!empty($appointment['external_person_name'])) {
+    // External person
+    $appointeeType = 'external';
+    $appointeeData = [
+        'first_name' => $appointment['external_person_name'],
+        'last_name' => $appointment['external_person_surname'],
+        'tax_code' => $appointment['external_person_tax_code'] ?? '',
+        'birth_date' => $appointment['external_person_birth_date'] ?? '',
+        'birth_place' => $appointment['external_person_birth_place'] ?? '',
+        'birth_province' => $appointment['external_person_birth_province'] ?? '',
+        'gender' => $appointment['external_person_gender'] ?? '',
+        'address' => $appointment['external_person_address'] ?? '',
+        'city' => $appointment['external_person_city'] ?? '',
+        'province' => $appointment['external_person_province'] ?? '',
+        'postal_code' => $appointment['external_person_postal_code'] ?? '',
+        'phone' => $appointment['external_person_phone'] ?? '',
+        'mobile' => '',
+        'email' => $appointment['external_person_email'] ?? '',
+        'civic_number' => '',
+    ];
+} elseif (!empty($appointment['member_id']) || !empty($appointment['member_first_name'])) {
+    // Member (either direct or via user)
+    $appointeeType = 'member';
+    $appointeeData = [
+        'first_name' => $appointment['member_first_name'] ?? '',
+        'last_name' => $appointment['member_last_name'] ?? '',
+        'tax_code' => $appointment['tax_code'] ?? '',
+        'birth_date' => $appointment['birth_date'] ?? '',
+        'birth_place' => $appointment['birth_place'] ?? '',
+        'birth_province' => $appointment['birth_province'] ?? '',
+        'gender' => $appointment['gender'] ?? '',
+        'address' => $appointment['address'] ?? '',
+        'civic_number' => $appointment['civic_number'] ?? '',
+        'city' => $appointment['city'] ?? '',
+        'province' => $appointment['province'] ?? '',
+        'postal_code' => $appointment['postal_code'] ?? '',
+        'phone' => $appointment['phone'] ?? '',
+        'mobile' => $appointment['mobile'] ?? '',
+        'email' => $appointment['member_email'] ?? $appointment['email'] ?? '',
+    ];
+} else {
+    die('Errore: impossibile determinare i dati anagrafici del nominato. Assicurarsi che sia collegato a un socio o che i dati della persona esterna siano compilati.');
 }
 
 // Prepara i dati per il template
@@ -63,21 +106,22 @@ $data = [
     'appointment_date' => date('d/m/Y', strtotime($appointment['appointment_date'])),
     'appointment_type' => $appointment['appointment_type'],
     'appointment_type_label' => getAppointmentTypeLabel($appointment['appointment_type']),
-    'member_first_name' => $appointment['first_name'] ?? '',
-    'member_last_name' => $appointment['last_name'] ?? '',
-    'member_full_name' => trim(($appointment['first_name'] ?? '') . ' ' . ($appointment['last_name'] ?? '')),
-    'member_tax_code' => $appointment['tax_code'] ?? '',
-    'member_birth_date' => $appointment['birth_date'] ? date('d/m/Y', strtotime($appointment['birth_date'])) : '',
-    'member_birth_place' => trim(($appointment['birth_place'] ?? '') . ' (' . ($appointment['birth_province'] ?? '') . ')'),
-    'member_address' => $appointment['address'] ?? '',
-    'member_civic_number' => $appointment['civic_number'] ?? '',
-    'member_city' => $appointment['city'] ?? '',
-    'member_province' => $appointment['province'] ?? '',
-    'member_postal_code' => $appointment['postal_code'] ?? '',
-    'member_full_address' => buildFullAddress($appointment),
-    'member_phone' => $appointment['phone'] ?? '',
-    'member_mobile' => $appointment['mobile'] ?? '',
-    'member_email' => $appointment['member_email'] ?? $appointment['email'] ?? '',
+    'appointee_type' => $appointeeType,
+    'member_first_name' => $appointeeData['first_name'],
+    'member_last_name' => $appointeeData['last_name'],
+    'member_full_name' => trim($appointeeData['first_name'] . ' ' . $appointeeData['last_name']),
+    'member_tax_code' => $appointeeData['tax_code'],
+    'member_birth_date' => $appointeeData['birth_date'] ? date('d/m/Y', strtotime($appointeeData['birth_date'])) : '',
+    'member_birth_place' => trim($appointeeData['birth_place'] . ($appointeeData['birth_province'] ? ' (' . $appointeeData['birth_province'] . ')' : '')),
+    'member_address' => $appointeeData['address'],
+    'member_civic_number' => $appointeeData['civic_number'],
+    'member_city' => $appointeeData['city'],
+    'member_province' => $appointeeData['province'],
+    'member_postal_code' => $appointeeData['postal_code'],
+    'member_full_address' => buildFullAddress($appointeeData),
+    'member_phone' => $appointeeData['phone'],
+    'member_mobile' => $appointeeData['mobile'],
+    'member_email' => $appointeeData['email'],
     'scope' => $appointment['scope'] ?? '',
     'responsibilities' => $appointment['responsibilities'] ?? '',
     'data_categories_access' => $appointment['data_categories_access'] ?? '',
