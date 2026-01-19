@@ -63,8 +63,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token di sicurezza non valido';
     } else {
+        $appointee_type = $_POST['appointee_type'] ?? 'user';
+        
         $data = [
-            'user_id' => intval($_POST['user_id'] ?? 0),
+            'user_id' => null,
+            'member_id' => null,
+            'external_person_name' => null,
+            'external_person_surname' => null,
+            'external_person_tax_code' => null,
+            'external_person_birth_date' => null,
+            'external_person_birth_place' => null,
+            'external_person_birth_province' => null,
+            'external_person_gender' => null,
+            'external_person_address' => null,
+            'external_person_city' => null,
+            'external_person_province' => null,
+            'external_person_postal_code' => null,
+            'external_person_phone' => null,
+            'external_person_email' => null,
             'appointment_type' => $_POST['appointment_type'] ?? 'authorized_person',
             'appointment_date' => $_POST['appointment_date'] ?? date('Y-m-d'),
             'revocation_date' => !empty($_POST['revocation_date']) ? $_POST['revocation_date'] : null,
@@ -78,22 +94,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'notes' => trim($_POST['notes'] ?? '')
         ];
         
-        try {
-            if ($isEdit) {
-                $result = $controller->updateAppointment($appointmentId, $data, $app->getUserId());
-            } else {
-                $result = $controller->createAppointment($data, $app->getUserId());
-                $appointmentId = $result;
+        // Set the appropriate ID based on appointee type
+        if ($appointee_type === 'user') {
+            $data['user_id'] = intval($_POST['user_id'] ?? 0);
+            if ($data['user_id'] == 0) {
+                $errors[] = 'Selezionare un utente';
             }
+        } elseif ($appointee_type === 'member') {
+            $data['member_id'] = intval($_POST['member_id'] ?? 0);
+            if ($data['member_id'] == 0) {
+                $errors[] = 'Selezionare un socio';
+            }
+        } elseif ($appointee_type === 'external') {
+            $data['external_person_name'] = trim($_POST['external_person_name'] ?? '');
+            $data['external_person_surname'] = trim($_POST['external_person_surname'] ?? '');
+            $data['external_person_tax_code'] = trim($_POST['external_person_tax_code'] ?? '');
+            $data['external_person_birth_date'] = !empty($_POST['external_person_birth_date']) ? $_POST['external_person_birth_date'] : null;
+            $data['external_person_birth_place'] = trim($_POST['external_person_birth_place'] ?? '');
+            $data['external_person_birth_province'] = trim($_POST['external_person_birth_province'] ?? '');
+            $data['external_person_gender'] = $_POST['external_person_gender'] ?? null;
+            $data['external_person_address'] = trim($_POST['external_person_address'] ?? '');
+            $data['external_person_city'] = trim($_POST['external_person_city'] ?? '');
+            $data['external_person_province'] = trim($_POST['external_person_province'] ?? '');
+            $data['external_person_postal_code'] = trim($_POST['external_person_postal_code'] ?? '');
+            $data['external_person_phone'] = trim($_POST['external_person_phone'] ?? '');
+            $data['external_person_email'] = trim($_POST['external_person_email'] ?? '');
             
-            if ($result) {
-                header('Location: data_controller_appointments.php?success=1');
-                exit;
-            } else {
-                $errors[] = 'Errore durante il salvataggio';
+            if (empty($data['external_person_name']) || empty($data['external_person_surname'])) {
+                $errors[] = 'Nome e cognome della persona esterna sono obbligatori';
             }
-        } catch (\Exception $e) {
-            $errors[] = $e->getMessage();
+        }
+        
+        if (empty($errors)) {
+            try {
+                if ($isEdit) {
+                    $result = $controller->updateAppointment($appointmentId, $data, $app->getUserId());
+                } else {
+                    $result = $controller->createAppointment($data, $app->getUserId());
+                    $appointmentId = $result;
+                }
+                
+                if ($result) {
+                    header('Location: data_controller_appointments.php?success=1');
+                    exit;
+                } else {
+                    $errors[] = 'Errore durante il salvataggio';
+                }
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
         }
     }
 }
@@ -105,6 +154,25 @@ $users = $db->fetchAll("SELECT u.id, u.username, u.email, u.member_id,
                         LEFT JOIN members m ON u.member_id = m.id
                         WHERE u.is_active = 1
                         ORDER BY display_name");
+
+// Get all active members
+$members = $db->fetchAll("SELECT id, registration_number, first_name, last_name,
+                          CONCAT(first_name, ' ', last_name, ' (', registration_number, ')') as display_name
+                          FROM members
+                          WHERE member_status = 'attivo'
+                          ORDER BY last_name, first_name");
+
+// Determine current appointee type for edit mode
+$current_appointee_type = 'user';
+if ($isEdit && $appointment) {
+    if (!empty($appointment['external_person_name'])) {
+        $current_appointee_type = 'external';
+    } elseif (!empty($appointment['member_id'])) {
+        $current_appointee_type = 'member';
+    } elseif (!empty($appointment['user_id'])) {
+        $current_appointee_type = 'user';
+    }
+}
 
 $pageTitle = $isEdit ? 'Modifica Nomina Responsabile' : 'Nuova Nomina Responsabile';
 ?>
@@ -152,9 +220,38 @@ $pageTitle = $isEdit ? 'Modifica Nomina Responsabile' : 'Nuova Nomina Responsabi
                             <?php echo CsrfProtection::getHiddenField(); ?>
                             
                             <div class="row mb-4">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
+                                    <label class="form-label">Tipo Nominato *</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="appointee_type" id="appointee_user" value="user" 
+                                               <?php echo ($current_appointee_type === 'user') ? 'checked' : ''; ?> autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="appointee_user">
+                                            <i class="bi bi-person-badge"></i> Utente
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="appointee_type" id="appointee_member" value="member" 
+                                               <?php echo ($current_appointee_type === 'member') ? 'checked' : ''; ?> autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="appointee_member">
+                                            <i class="bi bi-person"></i> Socio
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="appointee_type" id="appointee_external" value="external" 
+                                               <?php echo ($current_appointee_type === 'external') ? 'checked' : ''; ?> autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="appointee_external">
+                                            <i class="bi bi-person-check"></i> Persona Esterna
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Seleziona se nominare un utente, un socio o una persona esterna
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <!-- User Selection -->
+                            <div id="user-section" class="row mb-4" style="display: <?php echo ($current_appointee_type === 'user') ? 'flex' : 'none'; ?>;">
+                                <div class="col-md-12">
                                     <label for="user_id" class="form-label">Utente *</label>
-                                    <select class="form-select" id="user_id" name="user_id" required>
+                                    <select class="form-select" id="user_id" name="user_id">
                                         <option value="">Seleziona utente...</option>
                                         <?php foreach ($users as $user): ?>
                                             <option value="<?php echo $user['id']; ?>" 
@@ -171,7 +268,120 @@ $pageTitle = $isEdit ? 'Modifica Nomina Responsabile' : 'Nuova Nomina Responsabi
                                         <i class="bi bi-info-circle"></i> Per generare il documento di nomina, l'utente deve essere collegato a un socio
                                     </small>
                                 </div>
+                            </div>
+                            
+                            <!-- Member Selection -->
+                            <div id="member-section" class="row mb-4" style="display: <?php echo ($current_appointee_type === 'member') ? 'flex' : 'none'; ?>;">
+                                <div class="col-md-12">
+                                    <label for="member_id" class="form-label">Socio *</label>
+                                    <select class="form-select" id="member_id" name="member_id">
+                                        <option value="">Seleziona socio...</option>
+                                        <?php foreach ($members as $member): ?>
+                                            <option value="<?php echo $member['id']; ?>" 
+                                                <?php echo ($appointment['member_id'] ?? 0) == $member['id'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($member['display_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Seleziona un socio che non è già utente del sistema
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <!-- External Person Fields -->
+                            <div id="external-section" style="display: <?php echo ($current_appointee_type === 'external') ? 'block' : 'none'; ?>;">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="external_person_name" class="form-label">Nome *</label>
+                                        <input type="text" class="form-control" id="external_person_name" name="external_person_name" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_name'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="external_person_surname" class="form-label">Cognome *</label>
+                                        <input type="text" class="form-control" id="external_person_surname" name="external_person_surname" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_surname'] ?? ''); ?>">
+                                    </div>
+                                </div>
                                 
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="external_person_tax_code" class="form-label">Codice Fiscale</label>
+                                        <input type="text" class="form-control" id="external_person_tax_code" name="external_person_tax_code" 
+                                               maxlength="16" value="<?php echo htmlspecialchars($appointment['external_person_tax_code'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="external_person_birth_date" class="form-label">Data di Nascita</label>
+                                        <input type="date" class="form-control" id="external_person_birth_date" name="external_person_birth_date" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_birth_date'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="external_person_gender" class="form-label">Genere</label>
+                                        <select class="form-select" id="external_person_gender" name="external_person_gender">
+                                            <option value="">-</option>
+                                            <option value="M" <?php echo ($appointment['external_person_gender'] ?? '') === 'M' ? 'selected' : ''; ?>>M</option>
+                                            <option value="F" <?php echo ($appointment['external_person_gender'] ?? '') === 'F' ? 'selected' : ''; ?>>F</option>
+                                            <option value="other" <?php echo ($appointment['external_person_gender'] ?? '') === 'other' ? 'selected' : ''; ?>>Altro</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label for="external_person_birth_place" class="form-label">Luogo di Nascita</label>
+                                        <input type="text" class="form-control" id="external_person_birth_place" name="external_person_birth_place" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_birth_place'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="external_person_birth_province" class="form-label">Prov. Nascita</label>
+                                        <input type="text" class="form-control" id="external_person_birth_province" name="external_person_birth_province" 
+                                               maxlength="2" value="<?php echo htmlspecialchars($appointment['external_person_birth_province'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <label for="external_person_address" class="form-label">Indirizzo</label>
+                                        <input type="text" class="form-control" id="external_person_address" name="external_person_address" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_address'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="external_person_city" class="form-label">Città</label>
+                                        <input type="text" class="form-control" id="external_person_city" name="external_person_city" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_city'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="external_person_province" class="form-label">Provincia</label>
+                                        <input type="text" class="form-control" id="external_person_province" name="external_person_province" 
+                                               maxlength="2" value="<?php echo htmlspecialchars($appointment['external_person_province'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="external_person_postal_code" class="form-label">CAP</label>
+                                        <input type="text" class="form-control" id="external_person_postal_code" name="external_person_postal_code" 
+                                               maxlength="10" value="<?php echo htmlspecialchars($appointment['external_person_postal_code'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="external_person_phone" class="form-label">Telefono</label>
+                                        <input type="text" class="form-control" id="external_person_phone" name="external_person_phone" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_phone'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="external_person_email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="external_person_email" name="external_person_email" 
+                                               value="<?php echo htmlspecialchars($appointment['external_person_email'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <div class="row mb-4">
                                 <div class="col-md-6">
                                     <label for="appointment_type" class="form-label">Tipo Nomina *</label>
                                     <select class="form-select" id="appointment_type" name="appointment_type" required>
@@ -302,5 +512,29 @@ $pageTitle = $isEdit ? 'Modifica Nomina Responsabile' : 'Nuova Nomina Responsabi
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle appointee type switching
+        document.querySelectorAll('input[name="appointee_type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const userSection = document.getElementById('user-section');
+                const memberSection = document.getElementById('member-section');
+                const externalSection = document.getElementById('external-section');
+                
+                // Hide all sections
+                userSection.style.display = 'none';
+                memberSection.style.display = 'none';
+                externalSection.style.display = 'none';
+                
+                // Show the selected section
+                if (this.value === 'user') {
+                    userSection.style.display = 'flex';
+                } else if (this.value === 'member') {
+                    memberSection.style.display = 'flex';
+                } else if (this.value === 'external') {
+                    externalSection.style.display = 'block';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

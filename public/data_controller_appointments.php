@@ -188,8 +188,18 @@ $pageTitle = 'Nomine Responsabili Trattamento';
                                         <?php foreach ($appointments as $appointment): ?>
                                             <tr>
                                                 <td>
-                                                    <strong><?php echo htmlspecialchars($appointment['user_full_name'] ?? $appointment['username']); ?></strong><br>
-                                                    <small class="text-muted"><?php echo htmlspecialchars($appointment['username']); ?></small>
+                                                    <strong><?php echo htmlspecialchars($appointment['appointee_name'] ?? 'N/D'); ?></strong><br>
+                                                    <small class="text-muted">
+                                                        <?php 
+                                                        if ($appointment['appointee_type'] === 'user') {
+                                                            echo '<i class="bi bi-person-badge"></i> Utente: ' . htmlspecialchars($appointment['username']);
+                                                        } elseif ($appointment['appointee_type'] === 'member') {
+                                                            echo '<i class="bi bi-person"></i> Socio: ' . htmlspecialchars($appointment['registration_number']);
+                                                        } elseif ($appointment['appointee_type'] === 'external') {
+                                                            echo '<i class="bi bi-person-check"></i> Persona esterna';
+                                                        }
+                                                        ?>
+                                                    </small>
                                                 </td>
                                                 <td>
                                                     <?php
