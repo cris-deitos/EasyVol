@@ -149,11 +149,13 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <span>Gestione</span>
         </h6>
         <ul class="nav flex-column mb-2">
+            <?php if ($app->checkPermission('gdpr_compliance', 'view')): ?>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'privacy_consents.php' ? 'active' : '' ?>" href="privacy_consents.php">
                     <i class="bi bi-shield-check"></i> Consensi Privacy
                 </a>
             </li>
+            <?php endif; ?>
             
             <?php if ($app->checkPermission('gdpr_compliance', 'manage_appointments')): ?>
             <li class="nav-item">
