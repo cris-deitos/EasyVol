@@ -27,7 +27,8 @@ Create new database functions with user permissions. Add an "Anomalies" button n
 - Added two new permissions:
   - `members:view_anomalies` - View anomalies for adult members
   - `junior_members:view_anomalies` - View anomalies for junior members
-- Automatically granted permissions to admin role
+- Permissions are NOT automatically granted to any role
+- Administrators can assign these permissions to any role or user through the permission management interface
 
 #### Schema Update: `database_schema.sql`
 - Updated with the same permission entries to ensure fresh installations include the feature
@@ -218,25 +219,26 @@ mysql -u username -p database_name < migrations/012_add_anomalies_permissions.sq
 SELECT * FROM permissions 
 WHERE module IN ('members', 'junior_members') 
 AND action = 'view_anomalies';
-
--- Check admin has permissions
-SELECT p.* FROM permissions p
-INNER JOIN role_permissions rp ON p.id = rp.permission_id
-INNER JOIN roles r ON r.id = rp.role_id
-WHERE r.name = 'admin' 
-AND p.action = 'view_anomalies';
 ```
 
-### Step 4: Test Access
-1. Log in as admin
-2. Navigate to "Gestione Soci"
-3. Verify "Anomalie" button is visible
-4. Click button and verify page loads
-5. Repeat for "Gestione Soci Minorenni"
-
-### Step 5: Grant Permissions to Other Roles (Optional)
+### Step 4: Assign Permissions to Roles/Users
 ```sql
--- Example: Grant to a specific role
+-- Example: Grant to admin role
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.name = 'admin' 
+AND p.module = 'members' 
+AND p.action = 'view_anomalies';
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.name = 'admin' 
+AND p.module = 'junior_members' 
+AND p.action = 'view_anomalies';
+
+-- Example: Grant to another role (e.g., 'segreteria')
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r, permissions p
@@ -244,6 +246,13 @@ WHERE r.name = 'segreteria'
 AND p.module = 'members' 
 AND p.action = 'view_anomalies';
 ```
+
+### Step 5: Test Access
+1. Log in as a user with the assigned permissions
+2. Navigate to "Gestione Soci"
+3. Verify "Anomalie" button is visible
+4. Click button and verify page loads
+5. Repeat for "Gestione Soci Minorenni"
 
 ## Performance Considerations
 

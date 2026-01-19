@@ -43,7 +43,7 @@ Per accedere alla funzionalità di rilevamento anomalie, l'utente deve avere i s
 - **members:view_anomalies** - Per visualizzare le anomalie dei soci maggiorenni
 - **junior_members:view_anomalies** - Per visualizzare le anomalie dei soci minorenni
 
-Gli amministratori hanno automaticamente accesso a entrambe le funzionalità.
+Questi permessi possono essere assegnati a qualsiasi ruolo o utente attraverso l'interfaccia di gestione dei permessi. Gli amministratori possono gestire chi ha accesso a questa funzionalità assegnando i permessi appropriati ai ruoli o agli utenti specifici.
 
 ## Validazione Codice Fiscale
 
