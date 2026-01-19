@@ -46,23 +46,20 @@ if (!$member) {
 
 // Determine which sensitive data fields are being accessed based on active tab
 $activeTab = $_GET['tab'] ?? 'personal';
-$dataFields = ['personal_data']; // Always includes personal data on view
 
 // Map tabs to sensitive data categories for junior members
 $tabDataMap = [
     'personal' => ['personal_data', 'birth_info', 'tax_code'],
-    'contacts' => ['contacts', 'email', 'phone'],
-    'address' => ['addresses', 'residence'],
-    'guardians' => ['guardian_info', 'parent_info'],
-    'health' => ['health_info', 'allergies', 'intolerances'],
-    'sanctions' => ['sanctions'],
-    'notes' => ['notes'],
-    'attachments' => ['attachments']
+    'contacts' => ['personal_data', 'contacts', 'email', 'phone'],
+    'address' => ['personal_data', 'addresses', 'residence'],
+    'guardians' => ['personal_data', 'guardian_info', 'parent_info'],
+    'health' => ['personal_data', 'health_info', 'allergies', 'intolerances'],
+    'sanctions' => ['personal_data', 'sanctions'],
+    'notes' => ['personal_data', 'notes'],
+    'attachments' => ['personal_data', 'attachments']
 ];
 
-if (isset($tabDataMap[$activeTab])) {
-    $dataFields = array_merge($dataFields, $tabDataMap[$activeTab]);
-}
+$dataFields = $tabDataMap[$activeTab] ?? ['personal_data'];
 
 // Log sensitive data access
 $app->logSensitiveDataAccess(

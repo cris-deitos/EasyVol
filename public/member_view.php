@@ -46,28 +46,25 @@ if (!$member) {
 
 // Determine which sensitive data fields are being accessed based on active tab
 $activeTab = $_GET['tab'] ?? 'personal';
-$dataFields = ['personal_data']; // Always includes personal data on view
 
 // Map tabs to sensitive data categories
 $tabDataMap = [
     'personal' => ['personal_data', 'birth_info', 'tax_code'],
-    'contacts' => ['contacts', 'email', 'phone'],
-    'address' => ['addresses', 'residence'],
-    'qualifications' => ['qualifications'],
-    'courses' => ['courses', 'training'],
-    'licenses' => ['licenses', 'driving_licenses'],
-    'health' => ['health_info', 'allergies', 'intolerances'],
-    'health-surveillance' => ['health_surveillance'],
-    'availability' => ['availability'],
-    'fees' => ['fees'],
-    'sanctions' => ['sanctions'],
-    'notes' => ['notes'],
-    'attachments' => ['attachments']
+    'contacts' => ['personal_data', 'contacts', 'email', 'phone'],
+    'address' => ['personal_data', 'addresses', 'residence'],
+    'qualifications' => ['personal_data', 'qualifications'],
+    'courses' => ['personal_data', 'courses', 'training'],
+    'licenses' => ['personal_data', 'licenses', 'driving_licenses'],
+    'health' => ['personal_data', 'health_info', 'allergies', 'intolerances'],
+    'health-surveillance' => ['personal_data', 'health_surveillance'],
+    'availability' => ['personal_data', 'availability'],
+    'fees' => ['personal_data', 'fees'],
+    'sanctions' => ['personal_data', 'sanctions'],
+    'notes' => ['personal_data', 'notes'],
+    'attachments' => ['personal_data', 'attachments']
 ];
 
-if (isset($tabDataMap[$activeTab])) {
-    $dataFields = array_merge($dataFields, $tabDataMap[$activeTab]);
-}
+$dataFields = $tabDataMap[$activeTab] ?? ['personal_data'];
 
 // Log sensitive data access
 $app->logSensitiveDataAccess(
