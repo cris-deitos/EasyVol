@@ -2852,7 +2852,7 @@ SELECT
     event_type,
     COUNT(*) as event_count,
     COUNT(DISTINCT id) as unique_events,
-    SUM(CASE WHEN status = 'completato' THEN 1 ELSE 0 END) as completed_events,
+    SUM(CASE WHEN status = 'concluso' THEN 1 ELSE 0 END) as completed_events,
     SUM(CASE WHEN status = 'in_corso' THEN 1 ELSE 0 END) as in_progress_events
 FROM events
 GROUP BY YEAR(start_date), MONTH(start_date), event_type;
@@ -2873,6 +2873,7 @@ SELECT
     i.id as intervention_id,
     i.title,
     e.municipality,
+    NULL as province,
     e.start_date,
     e.event_type,
     i.latitude,
