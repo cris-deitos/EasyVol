@@ -796,9 +796,8 @@ class GdprController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR m.first_name LIKE ? OR m.last_name LIKE ? OR dca.external_person_name LIKE ? OR dca.external_person_surname LIKE ?)";
+            $where[] = "(u.username LIKE ? OR u.full_name LIKE ? OR m.first_name LIKE ? OR m.last_name LIKE ? OR dca.external_person_name LIKE ? OR dca.external_person_surname LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
-            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -811,14 +810,13 @@ class GdprController {
         $offset = ($page - 1) * $perPage;
         
         $sql = "SELECT dca.*, 
-                    u.username, u.first_name as user_first_name, u.last_name as user_last_name,
-                    CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as user_full_name,
+                    u.username, u.full_name as user_full_name,
                     m.registration_number, m.first_name as member_first_name, m.last_name as member_last_name,
                     CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, '')) as member_full_name,
                     CASE 
                         WHEN dca.external_person_name IS NOT NULL THEN CONCAT(dca.external_person_name, ' ', dca.external_person_surname)
                         WHEN dca.member_id IS NOT NULL THEN CONCAT(m.first_name, ' ', m.last_name)
-                        WHEN dca.user_id IS NOT NULL THEN CONCAT(u.first_name, ' ', u.last_name)
+                        WHEN dca.user_id IS NOT NULL THEN u.full_name
                     END as appointee_name,
                     CASE 
                         WHEN dca.external_person_name IS NOT NULL THEN 'external'
@@ -857,9 +855,8 @@ class GdprController {
         }
         
         if (!empty($filters['search'])) {
-            $where[] = "(u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR m.first_name LIKE ? OR m.last_name LIKE ? OR dca.external_person_name LIKE ? OR dca.external_person_surname LIKE ?)";
+            $where[] = "(u.username LIKE ? OR u.full_name LIKE ? OR m.first_name LIKE ? OR m.last_name LIKE ? OR dca.external_person_name LIKE ? OR dca.external_person_surname LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
-            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -884,14 +881,13 @@ class GdprController {
      */
     public function getAppointment($id) {
         $sql = "SELECT dca.*, 
-                    u.username, u.first_name as user_first_name, u.last_name as user_last_name, u.email as user_email,
-                    CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as user_full_name,
+                    u.username, u.full_name as user_full_name, u.email as user_email,
                     m.registration_number, m.first_name as member_first_name, m.last_name as member_last_name,
                     CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, '')) as member_full_name,
                     CASE 
                         WHEN dca.external_person_name IS NOT NULL THEN CONCAT(dca.external_person_name, ' ', dca.external_person_surname)
                         WHEN dca.member_id IS NOT NULL THEN CONCAT(m.first_name, ' ', m.last_name)
-                        WHEN dca.user_id IS NOT NULL THEN CONCAT(u.first_name, ' ', u.last_name)
+                        WHEN dca.user_id IS NOT NULL THEN u.full_name
                     END as appointee_name,
                     CASE 
                         WHEN dca.external_person_name IS NOT NULL THEN 'external'
@@ -1105,10 +1101,10 @@ class GdprController {
      * Ottieni tutti gli utenti per dropdown
      */
     public function getUsers() {
-        $sql = "SELECT id, username, first_name, last_name
+        $sql = "SELECT id, username, full_name
                 FROM users 
                 WHERE is_active = 1
-                ORDER BY last_name, first_name";
+                ORDER BY full_name";
         return $this->db->fetchAll($sql);
     }
     
