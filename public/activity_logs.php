@@ -67,7 +67,7 @@ $countResult = $db->fetchOne($countSql, $params);
 $totalRecords = $countResult['total'] ?? 0;
 $totalPages = ceil($totalRecords / $perPage);
 
-// Get logs
+// Get logs with meaningful record information
 $sql = "SELECT 
             al.id,
             al.user_id,
@@ -79,9 +79,84 @@ $sql = "SELECT
             al.user_agent,
             al.created_at,
             u.username,
-            u.full_name
+            u.full_name,
+            -- Members
+            m.registration_number as member_reg_number,
+            m.badge_number as member_badge_number,
+            m.first_name as member_first_name,
+            m.last_name as member_last_name,
+            -- Junior Members
+            jm.registration_number as junior_reg_number,
+            jm.first_name as junior_first_name,
+            jm.last_name as junior_last_name,
+            -- Events
+            e.title as event_title,
+            e.start_date as event_start_date,
+            e.event_type as event_type,
+            -- Interventions
+            i.title as intervention_title,
+            i.start_time as intervention_start_time,
+            -- Training Courses
+            tc.course_name,
+            tc.start_date as course_start_date,
+            -- Vehicles
+            v.name as vehicle_name,
+            v.license_plate as vehicle_license_plate,
+            -- Documents
+            d.title as document_title,
+            -- Meetings
+            mt.meeting_type,
+            mt.meeting_date,
+            mt.title as meeting_title,
+            -- Scheduler Items
+            si.title as scheduler_title,
+            si.due_date as scheduler_due_date,
+            -- Users (when record is a user)
+            u2.username as target_username,
+            u2.full_name as target_user_full_name,
+            -- Roles
+            r.name as role_name,
+            -- Warehouse Items
+            wi.name as warehouse_item_name,
+            wi.code as warehouse_item_code,
+            -- Warehouse Movements
+            wm.movement_type as movement_type,
+            wm.quantity as movement_quantity,
+            wm.created_at as movement_date,
+            wmi.name as movement_item_name,
+            -- Applications
+            ma.application_code,
+            ma.application_type,
+            -- Gates
+            g.gate_number,
+            g.name as gate_name,
+            -- Radio Directory
+            rd.name as radio_name,
+            rd.identifier as radio_identifier,
+            rd.dmr_id as radio_dmr_id,
+            -- Dispatch Talkgroups
+            dt.name as talkgroup_name,
+            dt.talkgroup_id as talkgroup_id
         FROM activity_logs al
         LEFT JOIN users u ON al.user_id = u.id
+        LEFT JOIN members m ON al.module IN ('member', 'members', 'member_portal') AND al.record_id = m.id
+        LEFT JOIN junior_members jm ON al.module IN ('junior_member', 'junior_members') AND al.record_id = jm.id
+        LEFT JOIN events e ON al.module IN ('event', 'events', 'event_participants', 'event_vehicles') AND al.record_id = e.id
+        LEFT JOIN interventions i ON al.module IN ('interventions', 'intervention_members', 'intervention_vehicles') AND al.record_id = i.id
+        LEFT JOIN training_courses tc ON al.module = 'training' AND al.record_id = tc.id
+        LEFT JOIN vehicles v ON al.module IN ('vehicle', 'vehicles', 'vehicle_maintenance') AND al.record_id = v.id
+        LEFT JOIN documents d ON al.module = 'documents' AND al.record_id = d.id
+        LEFT JOIN meetings mt ON al.module IN ('meeting', 'meetings') AND al.record_id = mt.id
+        LEFT JOIN scheduler_items si ON al.module = 'scheduler' AND al.record_id = si.id
+        LEFT JOIN users u2 ON al.module = 'users' AND al.record_id = u2.id
+        LEFT JOIN roles r ON al.module = 'roles' AND al.record_id = r.id
+        LEFT JOIN warehouse_items wi ON al.module IN ('warehouse', 'warehouse_item', 'warehouse_items') AND al.record_id = wi.id
+        LEFT JOIN warehouse_movements wm ON al.module = 'warehouse_movement' AND al.record_id = wm.id
+        LEFT JOIN warehouse_items wmi ON wm.item_id = wmi.id
+        LEFT JOIN member_applications ma ON al.module = 'applications' AND al.record_id = ma.id
+        LEFT JOIN gates g ON al.module = 'gate_management' AND al.record_id = g.id
+        LEFT JOIN radio_directory rd ON al.module = 'radio' AND al.record_id = rd.id
+        LEFT JOIN dispatch_talkgroups dt ON al.module = 'dispatch' AND al.record_id = dt.id
         $whereClause
         ORDER BY al.created_at DESC
         LIMIT ? OFFSET ?";
@@ -97,6 +172,220 @@ $users = $db->fetchAll("SELECT id, username, full_name FROM users ORDER BY usern
 // Get distinct actions and modules for filters
 $actions = $db->fetchAll("SELECT DISTINCT action FROM activity_logs WHERE action IS NOT NULL ORDER BY action");
 $modules = $db->fetchAll("SELECT DISTINCT module FROM activity_logs WHERE module IS NOT NULL ORDER BY module");
+
+/**
+ * Format the record identifier based on module type
+ */
+function formatRecordInfo($log) {
+    if (!$log['record_id']) {
+        return '<span class="text-muted">-</span>';
+    }
+    
+    $module = $log['module'];
+    $output = '';
+    
+    switch ($module) {
+        case 'member':
+        case 'members':
+            if ($log['member_reg_number'] || $log['member_badge_number']) {
+                $identifier = $log['member_badge_number'] ?: $log['member_reg_number'];
+                $name = trim(($log['member_first_name'] ?? '') . ' ' . ($log['member_last_name'] ?? ''));
+                $output = '<strong>' . htmlspecialchars($identifier) . '</strong>';
+                if ($name) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($name) . '</small>';
+                }
+            }
+            break;
+            
+        case 'junior_member':
+        case 'junior_members':
+            if ($log['junior_reg_number']) {
+                $name = trim(($log['junior_first_name'] ?? '') . ' ' . ($log['junior_last_name'] ?? ''));
+                $output = '<strong>' . htmlspecialchars($log['junior_reg_number']) . '</strong>';
+                if ($name) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($name) . '</small>';
+                }
+            }
+            break;
+            
+        case 'event':
+        case 'events':
+        case 'event_participants':
+        case 'event_vehicles':
+            if ($log['event_title']) {
+                $output = '<strong>' . htmlspecialchars($log['event_title']) . '</strong>';
+                if ($log['event_start_date']) {
+                    $output .= '<br><small class="text-muted">' . date('d/m/Y', strtotime($log['event_start_date'])) . '</small>';
+                }
+            }
+            break;
+            
+        case 'interventions':
+        case 'intervention_members':
+        case 'intervention_vehicles':
+            if ($log['intervention_title']) {
+                $output = '<strong>' . htmlspecialchars($log['intervention_title']) . '</strong>';
+                if ($log['intervention_start_time']) {
+                    $output .= '<br><small class="text-muted">' . date('d/m/Y H:i', strtotime($log['intervention_start_time'])) . '</small>';
+                }
+            }
+            break;
+            
+        case 'training':
+            if ($log['course_name']) {
+                $output = '<strong>' . htmlspecialchars($log['course_name']) . '</strong>';
+                if ($log['course_start_date']) {
+                    $output .= '<br><small class="text-muted">Inizio: ' . date('d/m/Y', strtotime($log['course_start_date'])) . '</small>';
+                }
+            }
+            break;
+            
+        case 'vehicle':
+        case 'vehicles':
+        case 'vehicle_maintenance':
+            if ($log['vehicle_license_plate'] || $log['vehicle_name']) {
+                $output = '<strong>' . htmlspecialchars($log['vehicle_license_plate'] ?: $log['vehicle_name']) . '</strong>';
+                if ($log['vehicle_license_plate'] && $log['vehicle_name']) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($log['vehicle_name']) . '</small>';
+                }
+            }
+            break;
+            
+        case 'documents':
+            if ($log['document_title']) {
+                $output = '<strong>' . htmlspecialchars($log['document_title']) . '</strong>';
+            }
+            break;
+            
+        case 'meeting':
+        case 'meetings':
+            if ($log['meeting_type']) {
+                $meetingTypes = [
+                    'assemblea_ordinaria' => 'Assemblea Ordinaria',
+                    'assemblea_straordinaria' => 'Assemblea Straordinaria',
+                    'consiglio_direttivo' => 'Consiglio Direttivo',
+                    'riunione_capisquadra' => 'Riunione Capisquadra',
+                    'riunione_nucleo' => 'Riunione Nucleo',
+                    'altra_riunione' => 'Altra Riunione'
+                ];
+                $typeLabel = $meetingTypes[$log['meeting_type']] ?? $log['meeting_type'];
+                $output = '<strong>' . htmlspecialchars($log['meeting_title'] ?: $typeLabel) . '</strong>';
+                if ($log['meeting_date']) {
+                    $output .= '<br><small class="text-muted">' . date('d/m/Y', strtotime($log['meeting_date'])) . '</small>';
+                }
+            }
+            break;
+            
+        case 'scheduler':
+            if ($log['scheduler_title']) {
+                $output = '<strong>' . htmlspecialchars($log['scheduler_title']) . '</strong>';
+                if ($log['scheduler_due_date']) {
+                    $output .= '<br><small class="text-muted">Scadenza: ' . date('d/m/Y', strtotime($log['scheduler_due_date'])) . '</small>';
+                }
+            }
+            break;
+            
+        case 'users':
+            if ($log['target_username']) {
+                $output = '<strong>@' . htmlspecialchars($log['target_username']) . '</strong>';
+                if ($log['target_user_full_name']) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($log['target_user_full_name']) . '</small>';
+                }
+            }
+            break;
+            
+        case 'roles':
+            if ($log['role_name']) {
+                $output = '<strong>' . htmlspecialchars($log['role_name']) . '</strong>';
+            }
+            break;
+            
+        case 'warehouse':
+        case 'warehouse_item':
+        case 'warehouse_items':
+            if ($log['warehouse_item_name']) {
+                $output = '<strong>' . htmlspecialchars($log['warehouse_item_name']) . '</strong>';
+                if ($log['warehouse_item_code']) {
+                    $output .= '<br><small class="text-muted">Cod. ' . htmlspecialchars($log['warehouse_item_code']) . '</small>';
+                }
+            }
+            break;
+            
+        case 'warehouse_movement':
+            if ($log['movement_item_name']) {
+                $movementTypes = [
+                    'carico' => 'Carico',
+                    'scarico' => 'Scarico',
+                    'assegnazione' => 'Assegnazione',
+                    'restituzione' => 'Restituzione',
+                    'trasferimento' => 'Trasferimento'
+                ];
+                $typeLabel = $movementTypes[$log['movement_type']] ?? $log['movement_type'];
+                $output = '<strong>' . htmlspecialchars($log['movement_item_name']) . '</strong>';
+                $output .= '<br><small class="text-muted">' . htmlspecialchars($typeLabel) . ': ' . htmlspecialchars($log['movement_quantity']) . '</small>';
+            }
+            break;
+            
+        case 'applications':
+            if ($log['application_code']) {
+                $typeLabels = ['adult' => 'Socio', 'junior' => 'Cadetto'];
+                $typeLabel = $typeLabels[$log['application_type']] ?? '';
+                $output = '<strong>' . htmlspecialchars($log['application_code']) . '</strong>';
+                if ($typeLabel) {
+                    $output .= '<br><small class="text-muted">' . $typeLabel . '</small>';
+                }
+            }
+            break;
+            
+        case 'gate_management':
+            if ($log['gate_number'] || $log['gate_name']) {
+                $output = '<strong>' . htmlspecialchars($log['gate_number'] ?: $log['gate_name']) . '</strong>';
+                if ($log['gate_number'] && $log['gate_name']) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($log['gate_name']) . '</small>';
+                }
+            }
+            break;
+            
+        case 'radio':
+            if ($log['radio_name']) {
+                $output = '<strong>' . htmlspecialchars($log['radio_name']) . '</strong>';
+                if ($log['radio_dmr_id']) {
+                    $output .= '<br><small class="text-muted">DMR: ' . htmlspecialchars($log['radio_dmr_id']) . '</small>';
+                } elseif ($log['radio_identifier']) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($log['radio_identifier']) . '</small>';
+                }
+            }
+            break;
+            
+        case 'dispatch':
+            if ($log['talkgroup_name']) {
+                $output = '<strong>' . htmlspecialchars($log['talkgroup_name']) . '</strong>';
+                if ($log['talkgroup_id']) {
+                    $output .= '<br><small class="text-muted">TG: ' . htmlspecialchars($log['talkgroup_id']) . '</small>';
+                }
+            }
+            break;
+            
+        case 'member_portal':
+            // Member portal activities related to members show member info
+            if ($log['member_reg_number'] || $log['member_badge_number']) {
+                $identifier = $log['member_badge_number'] ?: $log['member_reg_number'];
+                $name = trim(($log['member_first_name'] ?? '') . ' ' . ($log['member_last_name'] ?? ''));
+                $output = '<strong>' . htmlspecialchars($identifier) . '</strong>';
+                if ($name) {
+                    $output .= '<br><small class="text-muted">' . htmlspecialchars($name) . '</small>';
+                }
+            }
+            break;
+    }
+    
+    // If we couldn't determine the record info, show the ID as fallback
+    if (empty($output)) {
+        $output = '<code>#' . $log['record_id'] . '</code>';
+    }
+    
+    return $output;
+}
 
 // Get statistics - optimized queries for better index usage
 $stats = [];
@@ -120,6 +409,10 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
     <style>
         .log-table {
             font-size: 0.9rem;
+        }
+        .log-table td {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .log-description {
             max-width: 300px;
@@ -313,7 +606,7 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                             <th width="150">Utente</th>
                                             <th width="100">Azione</th>
                                             <th width="100">Modulo</th>
-                                            <th width="80">Record</th>
+                                            <th width="180">Record</th>
                                             <th>Descrizione</th>
                                             <th width="120">IP</th>
                                         </tr>
@@ -397,7 +690,7 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                                     <?php endif; ?>
                                                 </td>
                                                 <td class="text-center">
-                                                    <?= $log['record_id'] ? '<code>#' . $log['record_id'] . '</code>' : '<span class="text-muted">-</span>' ?>
+                                                    <?= formatRecordInfo($log) ?>
                                                 </td>
                                                 <td>
                                                     <?php if ($log['description']): ?>
