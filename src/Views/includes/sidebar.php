@@ -12,6 +12,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 </a>
             </li>
             
+            <?php if ($app->checkPermission('dashboard', 'view_advanced')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'dashboard_advanced.php' ? 'active' : '' ?>" href="dashboard_advanced.php">
+                    <i class="bi bi-graph-up"></i> Statistiche Avanzate
+                </a>
+            </li>
+            <?php endif; ?>
+            
             <?php if ($app->checkPermission('members', 'view')): ?>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'members.php' ? 'active' : '' ?>" href="members.php">

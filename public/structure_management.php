@@ -100,6 +100,23 @@ $pageTitle = 'Gestione Strutture';
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><i class="bi bi-building"></i> <?php echo htmlspecialchars($pageTitle); ?></h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <?php if ($app->checkPermission('structure_management', 'export')): ?>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-download"></i> Esporta
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="data_export.php?entity=structures&format=excel">
+                                    <i class="bi bi-file-earmark-excel"></i> Excel (.xlsx)
+                                </a></li>
+                                <li><a class="dropdown-item" href="data_export.php?entity=structures&format=csv">
+                                    <i class="bi bi-file-earmark-text"></i> CSV
+                                </a></li>
+                            </ul>
+                        </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <!-- Tabs -->
