@@ -76,11 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['course_name'] = TrainingCourseTypes::getName($data['course_type']) ?? $data['course_type'];
         }
         
-        if (empty($data['start_date'])) {
-            $errors[] = 'La data di inizio è obbligatoria';
-        }
-        
-        if (!empty($data['end_date']) && $data['start_date'] > $data['end_date']) {
+        if (!empty($data['start_date']) && !empty($data['end_date']) && $data['start_date'] > $data['end_date']) {
             $errors[] = 'La data di fine non può essere precedente alla data di inizio';
         }
         
@@ -232,10 +228,9 @@ $pageTitle = $isEdit ? 'Modifica Corso' : 'Nuovo Corso';
                             
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <label for="start_date" class="form-label">Data Inizio *</label>
+                                    <label for="start_date" class="form-label">Data Inizio</label>
                                     <input type="date" class="form-control" id="start_date" name="start_date" 
-                                           value="<?php echo htmlspecialchars($course['start_date'] ?? $_POST['start_date'] ?? ''); ?>" 
-                                           required>
+                                           value="<?php echo htmlspecialchars($course['start_date'] ?? $_POST['start_date'] ?? ''); ?>">
                                 </div>
                                 <div class="col-md-4">
                                     <label for="end_date" class="form-label">Data Fine</label>
