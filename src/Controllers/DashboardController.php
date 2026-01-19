@@ -153,7 +153,7 @@ class DashboardController {
         
         $sql = "SELECT 
                     intervention_id,
-                    intervention_number,
+                    title,
                     municipality,
                     province,
                     start_date,
