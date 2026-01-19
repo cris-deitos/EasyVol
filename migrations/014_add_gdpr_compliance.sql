@@ -2,7 +2,7 @@
 -- Compliance GDPR:
 --  - Consensi privacy tracciati
 --  - Scadenza consensi
---  - Export dati personali (diritto all'oblio)
+--  - Export dati personali (diritto di accesso - GDPR Article 15)
 --  - Log accessi dati sensibili
 --  - Registro trattamenti
 --  - Stampa nomina di responsabile del trattamento dati
@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS `privacy_consents` (
 -- SENSITIVE DATA ACCESS LOG
 -- =============================================
 -- Logs all access to sensitive personal data
+-- NOTE: This table will grow continuously. For production environments,
+--       implement periodic archiving (e.g., monthly/yearly) or table partitioning
+--       to maintain performance. Consider archiving logs older than 5 years
+--       (GDPR data retention recommendations).
 CREATE TABLE IF NOT EXISTS `sensitive_data_access_log` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL COMMENT 'Utente che ha effettuato l\'accesso',
@@ -245,6 +249,8 @@ WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'gdpr_compliance'
 -- GRANT PERMISSIONS TO ADMIN ROLE
 -- =============================================
 -- Grant all GDPR and warehouse permissions to admin role (role_id = 1)
+-- NOTE: This assumes the admin role has ID 1. If your system uses a different
+--       role ID for administrators, adjust this query accordingly or run manually.
 INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT 1, p.id FROM `permissions` p 
 WHERE p.module IN ('warehouse', 'gdpr_compliance')

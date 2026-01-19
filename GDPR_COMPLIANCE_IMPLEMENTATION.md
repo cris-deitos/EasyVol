@@ -107,6 +107,8 @@ January 19, 2026
 
 **Purpose**: Track requests for personal data export (right to access - GDPR Article 15).
 
+**Important Note**: This table handles the "right to access" (diritto di accesso) under GDPR Article 15, which allows data subjects to obtain a copy of their personal data. It does NOT handle the "right to erasure" (diritto all'oblio) under GDPR Article 17, which requires separate implementation for data deletion workflows.
+
 **Key Fields**:
 - `entity_type`: Type of entity (member, junior_member)
 - `entity_id`: ID of the entity
@@ -123,6 +125,7 @@ January 19, 2026
 - Support "right to data portability" (GDPR Article 20)
 - Maintain audit trail of export requests
 - Track request resolution time
+- Pre-export step before data deletion (Article 17)
 
 ### 6. GDPR Fields Added to Members Tables
 
@@ -188,8 +191,9 @@ January 19, 2026
    - Personal data export request system
 
 5. **Article 17** - Right to erasure ('right to be forgotten')
-   - Infrastructure to support deletion requests
-   - Export before deletion capability
+   - Infrastructure to support deletion requests (database structure ready)
+   - Export before deletion capability (to be implemented in UI)
+   - **Note**: Full implementation requires UI integration for deletion workflows
 
 6. **Article 30** - Records of processing activities
    - Data processing registry implementation
