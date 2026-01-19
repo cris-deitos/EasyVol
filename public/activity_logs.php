@@ -119,6 +119,11 @@ $sql = "SELECT
             -- Warehouse Items
             wi.name as warehouse_item_name,
             wi.code as warehouse_item_code,
+            -- Warehouse Movements
+            wm.movement_type as movement_type,
+            wm.quantity as movement_quantity,
+            wm.created_at as movement_date,
+            wmi.name as movement_item_name,
             -- Applications
             ma.application_code,
             ma.application_type,
@@ -145,7 +150,9 @@ $sql = "SELECT
         LEFT JOIN scheduler_items si ON al.module = 'scheduler' AND al.record_id = si.id
         LEFT JOIN users u2 ON al.module = 'users' AND al.record_id = u2.id
         LEFT JOIN roles r ON al.module = 'roles' AND al.record_id = r.id
-        LEFT JOIN warehouse_items wi ON al.module IN ('warehouse', 'warehouse_item', 'warehouse_items', 'warehouse_movement') AND al.record_id = wi.id
+        LEFT JOIN warehouse_items wi ON al.module IN ('warehouse', 'warehouse_item', 'warehouse_items') AND al.record_id = wi.id
+        LEFT JOIN warehouse_movements wm ON al.module = 'warehouse_movement' AND al.record_id = wm.id
+        LEFT JOIN warehouse_items wmi ON wm.item_id = wmi.id
         LEFT JOIN member_applications ma ON al.module = 'applications' AND al.record_id = ma.id
         LEFT JOIN gates g ON al.module = 'gate_management' AND al.record_id = g.id
         LEFT JOIN radio_directory rd ON al.module = 'radio' AND al.record_id = rd.id
@@ -296,12 +303,26 @@ function formatRecordInfo($log) {
         case 'warehouse':
         case 'warehouse_item':
         case 'warehouse_items':
-        case 'warehouse_movement':
             if ($log['warehouse_item_name']) {
                 $output = '<strong>' . htmlspecialchars($log['warehouse_item_name']) . '</strong>';
                 if ($log['warehouse_item_code']) {
                     $output .= '<br><small class="text-muted">Cod. ' . htmlspecialchars($log['warehouse_item_code']) . '</small>';
                 }
+            }
+            break;
+            
+        case 'warehouse_movement':
+            if ($log['movement_item_name']) {
+                $movementTypes = [
+                    'carico' => 'Carico',
+                    'scarico' => 'Scarico',
+                    'assegnazione' => 'Assegnazione',
+                    'restituzione' => 'Restituzione',
+                    'trasferimento' => 'Trasferimento'
+                ];
+                $typeLabel = $movementTypes[$log['movement_type']] ?? $log['movement_type'];
+                $output = '<strong>' . htmlspecialchars($log['movement_item_name']) . '</strong>';
+                $output .= '<br><small class="text-muted">' . $typeLabel . ': ' . $log['movement_quantity'] . '</small>';
             }
             break;
             
