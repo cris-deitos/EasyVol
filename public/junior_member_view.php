@@ -45,7 +45,9 @@ if (!$member) {
 }
 
 // Determine which sensitive data fields are being accessed based on active tab
-$activeTab = $_GET['tab'] ?? 'personal';
+// Whitelist of allowed tab values for junior members
+$allowedTabs = ['personal', 'contacts', 'address', 'guardians', 'health', 'sanctions', 'notes', 'attachments'];
+$activeTab = isset($_GET['tab']) && in_array($_GET['tab'], $allowedTabs) ? $_GET['tab'] : 'personal';
 
 // Map tabs to sensitive data categories for junior members
 $tabDataMap = [
@@ -59,7 +61,7 @@ $tabDataMap = [
     'attachments' => ['personal_data', 'attachments']
 ];
 
-$dataFields = $tabDataMap[$activeTab] ?? ['personal_data'];
+$dataFields = $tabDataMap[$activeTab];
 
 // Log sensitive data access
 $app->logSensitiveDataAccess(

@@ -495,13 +495,23 @@ private function loadEmailConfigFromDatabase() {
             return;
         }
         
+        // Encode data fields to JSON with error handling
+        $dataFieldsJson = null;
+        if ($dataFields) {
+            $dataFieldsJson = json_encode($dataFields, JSON_UNESCAPED_UNICODE);
+            if ($dataFieldsJson === false) {
+                error_log("Failed to encode data fields for sensitive data access log: " . json_last_error_msg());
+                $dataFieldsJson = json_encode(['encoding_error' => 'Failed to encode data fields']);
+            }
+        }
+        
         $data = [
             'user_id' => $userId,
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'access_type' => $accessType,
             'module' => $module,
-            'data_fields' => $dataFields ? json_encode($dataFields, JSON_UNESCAPED_UNICODE) : null,
+            'data_fields' => $dataFieldsJson,
             'purpose' => $purpose,
             'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
