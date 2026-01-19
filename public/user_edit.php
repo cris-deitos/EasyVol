@@ -350,7 +350,9 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                     'applications' => 'Domande Iscrizione',
                                     'reports' => 'Report',
                                     'settings' => 'Impostazioni',
-                                    'activity_logs' => 'Log Attività'
+                                    'activity_logs' => 'Log Attività',
+                                    'gdpr_compliance' => 'Conformità GDPR',
+                                    'dashboard' => 'Dashboard'
                                 ];
                                 
                                 $actionLabels = [
@@ -358,7 +360,14 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                     'create' => 'Crea',
                                     'edit' => 'Modifica',
                                     'delete' => 'Elimina',
-                                    'report' => 'Report'
+                                    'report' => 'Report',
+                                    'manage_consents' => 'Gestione Consensi',
+                                    'export_personal_data' => 'Export Dati Personali',
+                                    'view_access_logs' => 'Visualizza Log Accessi',
+                                    'manage_processing_registry' => 'Gestione Registro Trattamenti',
+                                    'manage_appointments' => 'Gestione Nomine',
+                                    'print_appointment' => 'Stampa Nomina',
+                                    'view_advanced' => 'Visualizza Avanzato'
                                 ];
                                 ?>
                                 
