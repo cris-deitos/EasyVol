@@ -133,6 +133,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
     <!-- Legend Panel -->
     <div class="legend-panel">
         <strong class="d-block mb-2">Intensità Precipitazioni</strong>
+        <small class="text-muted d-block mb-2">(Colori approssimati)</small>
         <div class="legend-item">
             <div class="legend-color" style="background: rgba(0, 255, 0, 0.6);"></div>
             <small>Leggere</small>
@@ -352,14 +353,13 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         loadRadarData();
 
         // Auto-refresh every 10 minutes
-        setInterval(() => {
+        setInterval(async () => {
             const wasPlaying = isPlaying;
             pauseAnimation();
-            loadRadarData().then(() => {
-                if (wasPlaying) {
-                    playAnimation();
-                }
-            });
+            await loadRadarData();
+            if (wasPlaying) {
+                playAnimation();
+            }
         }, 10 * 60 * 1000);
         
         // Auto-start animation after 2 seconds

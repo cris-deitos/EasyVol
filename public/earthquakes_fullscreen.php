@@ -145,7 +145,7 @@ $pageTitle = 'Monitoraggio Terremoti - Italia';
             </div>
             <div class="col-6">
                 <div class="stat-item">
-                    <div class="stat-value" id="maxMagnitude">0.0</div>
+                    <div class="stat-value" id="maxMagnitude">--</div>
                     <div class="stat-label">Max Magnitudo</div>
                 </div>
             </div>
