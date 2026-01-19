@@ -1134,14 +1134,14 @@ class ReportController {
                     m.gender as sesso,
                     m.member_status as stato,
                     m.registration_date as data_iscrizione,
-                    m.email,
-                    m.phone as telefono,
-                    m.mobile_phone as cellulare,
-                    m.address_street as via,
-                    m.address_number as civico,
-                    m.address_city as citta,
-                    m.address_province as provincia,
-                    m.address_cap as cap
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'telefono_fisso' LIMIT 1) as telefono,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                    (SELECT street FROM member_addresses WHERE member_id = m.id AND address_type = 'residenza' LIMIT 1) as via,
+                    (SELECT number FROM member_addresses WHERE member_id = m.id AND address_type = 'residenza' LIMIT 1) as civico,
+                    (SELECT city FROM member_addresses WHERE member_id = m.id AND address_type = 'residenza' LIMIT 1) as citta,
+                    (SELECT province FROM member_addresses WHERE member_id = m.id AND address_type = 'residenza' LIMIT 1) as provincia,
+                    (SELECT cap FROM member_addresses WHERE member_id = m.id AND address_type = 'residenza' LIMIT 1) as cap
                 FROM members m
                 ORDER BY m.last_name, m.first_name";
         
@@ -1169,11 +1169,11 @@ class ReportController {
                     jm.gender as sesso,
                     jm.member_status as stato,
                     jm.registration_date as data_iscrizione,
-                    jm.address_street as via,
-                    jm.address_number as civico,
-                    jm.address_city as citta,
-                    jm.address_province as provincia,
-                    jm.address_cap as cap
+                    (SELECT street FROM junior_member_addresses WHERE junior_member_id = jm.id AND address_type = 'residenza' LIMIT 1) as via,
+                    (SELECT number FROM junior_member_addresses WHERE junior_member_id = jm.id AND address_type = 'residenza' LIMIT 1) as civico,
+                    (SELECT city FROM junior_member_addresses WHERE junior_member_id = jm.id AND address_type = 'residenza' LIMIT 1) as citta,
+                    (SELECT province FROM junior_member_addresses WHERE junior_member_id = jm.id AND address_type = 'residenza' LIMIT 1) as provincia,
+                    (SELECT cap FROM junior_member_addresses WHERE junior_member_id = jm.id AND address_type = 'residenza' LIMIT 1) as cap
                 FROM junior_members jm
                 ORDER BY jm.last_name, jm.first_name";
         
@@ -1194,16 +1194,17 @@ class ReportController {
                     m.id,
                     m.title as titolo,
                     m.meeting_type as tipo,
-                    m.date as data,
-                    m.time as ora,
+                    m.meeting_date as data,
+                    m.start_time as ora_inizio,
+                    m.end_time as ora_fine,
                     m.location as luogo,
                     m.status as stato,
                     COUNT(DISTINCT mp.member_id) as partecipanti,
-                    SUM(CASE WHEN mp.attended = 1 THEN 1 ELSE 0 END) as presenti
+                    SUM(CASE WHEN mp.present = 1 THEN 1 ELSE 0 END) as presenti
                 FROM meetings m
                 LEFT JOIN meeting_participants mp ON m.id = mp.meeting_id
                 GROUP BY m.id
-                ORDER BY m.date DESC, m.time DESC";
+                ORDER BY m.meeting_date DESC, m.start_time DESC";
         
         $data = $this->db->fetchAll($sql);
         
@@ -1228,8 +1229,7 @@ class ReportController {
                     v.year as anno,
                     v.status as stato,
                     v.insurance_expiry as scadenza_assicurazione,
-                    v.inspection_expiry as scadenza_revisione,
-                    v.radio_call_sign as nominativo_radio
+                    v.inspection_expiry as scadenza_revisione
                 FROM vehicles v
                 ORDER BY v.name";
         
@@ -1256,6 +1256,7 @@ class ReportController {
                     wi.minimum_quantity as quantita_minima,
                     wi.unit as unita_misura,
                     wi.location as posizione,
+                    wi.status as stato,
                     wi.notes as note
                 FROM warehouse_items wi
                 ORDER BY wi.category, wi.name";
@@ -1277,14 +1278,14 @@ class ReportController {
                     s.id,
                     s.name as nome,
                     s.type as tipo,
-                    s.description as descrizione,
-                    s.address as indirizzo,
-                    s.city as citta,
-                    s.province as provincia,
+                    s.full_address as indirizzo,
                     s.latitude as latitudine,
                     s.longitude as longitudine,
-                    s.capacity as capienza,
-                    s.status as stato
+                    s.owner as proprietario,
+                    s.owner_contacts as contatti_proprietario,
+                    s.contracts_deadlines as contratti_scadenze,
+                    s.keys_codes as chiavi_codici,
+                    s.notes as note
                 FROM structures s
                 ORDER BY s.name";
         
@@ -1303,17 +1304,17 @@ class ReportController {
     public function exportTraining($format = 'excel') {
         $sql = "SELECT 
                     tc.id,
-                    tc.title as titolo,
+                    tc.course_name as titolo,
                     tc.course_type as tipo_corso,
                     tc.start_date as data_inizio,
                     tc.end_date as data_fine,
-                    tc.hours as ore,
                     tc.location as luogo,
                     tc.instructor as istruttore,
                     tc.status as stato,
-                    COUNT(DISTINCT ta.member_id) as partecipanti
+                    tc.max_participants as max_partecipanti,
+                    COUNT(DISTINCT tp.member_id) as partecipanti
                 FROM training_courses tc
-                LEFT JOIN training_attendance ta ON tc.id = ta.course_id
+                LEFT JOIN training_participants tp ON tc.id = tp.course_id
                 GROUP BY tc.id
                 ORDER BY tc.start_date DESC";
         
@@ -1337,7 +1338,6 @@ class ReportController {
                     e.start_date as data_inizio,
                     e.end_date as data_fine,
                     e.municipality as comune,
-                    e.province as provincia,
                     e.status as stato,
                     COUNT(DISTINCT i.id) as numero_interventi,
                     COUNT(DISTINCT ep.member_id) as partecipanti,
@@ -1368,9 +1368,8 @@ class ReportController {
                     si.due_date as data_scadenza,
                     si.priority as priorita,
                     si.status as stato,
-                    si.assigned_to_user_id as assegnato_a,
-                    si.description as descrizione,
-                    si.notes as note
+                    si.assigned_to as assegnato_a,
+                    si.description as descrizione
                 FROM scheduler_items si
                 ORDER BY si.due_date DESC";
         
