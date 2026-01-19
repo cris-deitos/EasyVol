@@ -50,6 +50,16 @@ if ($isEdit) {
         header('Location: members.php?error=not_found');
         exit;
     }
+    
+    // Log sensitive data access for editing
+    $app->logSensitiveDataAccess(
+        'member',
+        $memberId,
+        'edit',
+        'members',
+        ['personal_data', 'birth_info', 'tax_code'],
+        'Apertura form modifica socio'
+    );
 }
 
 // Gestione submit form
@@ -81,6 +91,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($isEdit) {
                 $result = $controller->update($memberId, $data, $app->getUserId());
+                
+                // Log sensitive data modification
+                if ($result) {
+                    $app->logSensitiveDataAccess(
+                        'member',
+                        $memberId,
+                        'edit',
+                        'members',
+                        ['personal_data', 'birth_info', 'tax_code'],
+                        'Modifica dati anagrafici socio'
+                    );
+                }
             } else {
                 $result = $controller->create($data, $app->getUserId());
                 $memberId = $result;

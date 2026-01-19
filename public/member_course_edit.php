@@ -79,6 +79,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             try {
                 $memberModel->addCourse($memberId, $data);
+                
+                // Log sensitive data modification
+                $app->logSensitiveDataAccess(
+                    'member',
+                    $memberId,
+                    'edit',
+                    'members',
+                    ['courses', 'training'],
+                    'Aggiunta corso socio'
+                );
+                
                 header('Location: member_view.php?id=' . $memberId . '&tab=courses&success=1');
                 exit;
             } catch (\Exception $e) {

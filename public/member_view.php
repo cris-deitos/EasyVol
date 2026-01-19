@@ -44,6 +44,41 @@ if (!$member) {
     exit;
 }
 
+// Determine which sensitive data fields are being accessed based on active tab
+$activeTab = $_GET['tab'] ?? 'personal';
+$dataFields = ['personal_data']; // Always includes personal data on view
+
+// Map tabs to sensitive data categories
+$tabDataMap = [
+    'personal' => ['personal_data', 'birth_info', 'tax_code'],
+    'contacts' => ['contacts', 'email', 'phone'],
+    'address' => ['addresses', 'residence'],
+    'qualifications' => ['qualifications'],
+    'courses' => ['courses', 'training'],
+    'licenses' => ['licenses', 'driving_licenses'],
+    'health' => ['health_info', 'allergies', 'intolerances'],
+    'health-surveillance' => ['health_surveillance'],
+    'availability' => ['availability'],
+    'fees' => ['fees'],
+    'sanctions' => ['sanctions'],
+    'notes' => ['notes'],
+    'attachments' => ['attachments']
+];
+
+if (isset($tabDataMap[$activeTab])) {
+    $dataFields = array_merge($dataFields, $tabDataMap[$activeTab]);
+}
+
+// Log sensitive data access
+$app->logSensitiveDataAccess(
+    'member',
+    $memberId,
+    'view',
+    'members',
+    $dataFields,
+    'Visualizzazione scheda socio'
+);
+
 $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_name'];
 ?>
 <!DOCTYPE html>

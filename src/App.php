@@ -465,4 +465,40 @@ private function loadEmailConfigFromDatabase() {
             error_log("Failed to log activity: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Log access to sensitive personal data for GDPR compliance
+     * 
+     * @param string $entityType Type of entity: 'member', 'junior_member', 'user'
+     * @param int $entityId ID of the entity being accessed
+     * @param string $accessType Type of access: 'view', 'edit', 'export', 'print', 'delete'
+     * @param string $module Module performing the access
+     * @param array|null $dataFields Array of sensitive data fields accessed (e.g., ['personal_data', 'contacts', 'health'])
+     * @param string|null $purpose Purpose of the access
+     */
+    public function logSensitiveDataAccess($entityType, $entityId, $accessType, $module, $dataFields = null, $purpose = null) {
+        if (!$this->isInstalled() || !$this->isLoggedIn()) {
+            return;
+        }
+        
+        $userId = $this->getCurrentUser()['id'];
+        
+        $data = [
+            'user_id' => $userId,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'access_type' => $accessType,
+            'module' => $module,
+            'data_fields' => $dataFields ? json_encode($dataFields, JSON_UNESCAPED_UNICODE) : null,
+            'purpose' => $purpose,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ];
+        
+        try {
+            $this->db->insert('sensitive_data_access_log', $data);
+        } catch (\Exception $e) {
+            error_log("Failed to log sensitive data access: " . $e->getMessage());
+        }
+    }
 }
