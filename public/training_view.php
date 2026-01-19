@@ -463,7 +463,7 @@ $csrfToken = $csrf->generateToken();
                     <div class="mb-3">
                         <label for="memberSearch" class="form-label">Cerca Socio</label>
                         <input type="text" class="form-control" id="memberSearch" 
-                               placeholder="Digita nome, cognome o matricola..." autocomplete="off">
+                               placeholder="Digita nome, cognome, matricola o codice fiscale..." autocomplete="off">
                         <small class="form-text text-muted">Inizia a digitare per cercare</small>
                     </div>
                     <div id="searchResults" class="list-group" style="max-height: 300px; overflow-y: auto;"></div>
@@ -609,8 +609,9 @@ $csrfToken = $csrf->generateToken();
             .then(data => {
                 if (data.success) {
                     showAlert('success', data.message);
-                    // Reload page to show updated participant list
+                    // Reload page and stay on Participants tab
                     setTimeout(function() {
+                        window.location.href = 'training_view.php?id=' + courseId + '#participants';
                         window.location.reload();
                     }, 1000);
                 } else {
