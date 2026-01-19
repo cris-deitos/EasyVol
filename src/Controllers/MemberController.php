@@ -7,6 +7,7 @@ use EasyVol\Utils\FileUploader;
 use EasyVol\Utils\ImageProcessor;
 use EasyVol\Utils\PdfGenerator;
 use EasyVol\Utils\PathHelper;
+use EasyVol\Utils\FiscalCodeValidator;
 
 /**
  * Member Controller
@@ -526,5 +527,157 @@ class MemberController {
         }
         
         return $data;
+    }
+    
+    /**
+     * Get all anomalies for members
+     * 
+     * @return array Array of anomalies grouped by type
+     */
+    public function getAnomalies() {
+        $anomalies = [
+            'no_mobile' => [],
+            'no_email' => [],
+            'invalid_fiscal_code' => [],
+            'no_health_surveillance' => [],
+            'expired_health_surveillance' => [],
+            'expired_licenses' => [],
+            'expired_courses' => []
+        ];
+        
+        // Get all active members with their related data
+        $sql = "SELECT 
+                    m.id, 
+                    m.registration_number,
+                    m.first_name, 
+                    m.last_name,
+                    m.tax_code,
+                    m.birth_date,
+                    m.gender,
+                    m.member_status,
+                    -- Get mobile contact
+                    (SELECT mc.value FROM member_contacts mc 
+                     WHERE mc.member_id = m.id AND mc.contact_type = 'cellulare' 
+                     LIMIT 1) as mobile,
+                    -- Get email contact
+                    (SELECT mc.value FROM member_contacts mc 
+                     WHERE mc.member_id = m.id AND mc.contact_type = 'email' 
+                     LIMIT 1) as email,
+                    -- Get latest health surveillance
+                    (SELECT mhs.expiry_date FROM member_health_surveillance mhs 
+                     WHERE mhs.member_id = m.id 
+                     ORDER BY mhs.expiry_date DESC 
+                     LIMIT 1) as health_surveillance_expiry
+                FROM members m
+                WHERE m.member_status = 'attivo'
+                ORDER BY m.last_name, m.first_name";
+        
+        $members = $this->db->fetchAll($sql);
+        
+        foreach ($members as $member) {
+            $memberInfo = [
+                'id' => $member['id'],
+                'registration_number' => $member['registration_number'],
+                'name' => $member['first_name'] . ' ' . $member['last_name'],
+                'member_status' => $member['member_status']
+            ];
+            
+            // Check for missing mobile
+            if (empty($member['mobile'])) {
+                $anomalies['no_mobile'][] = $memberInfo;
+            }
+            
+            // Check for missing email
+            if (empty($member['email'])) {
+                $anomalies['no_email'][] = $memberInfo;
+            }
+            
+            // Check fiscal code validity
+            if (!empty($member['tax_code'])) {
+                $personalData = [
+                    'birth_date' => $member['birth_date'],
+                    'gender' => $member['gender']
+                ];
+                
+                $verification = FiscalCodeValidator::verifyAgainstPersonalData(
+                    $member['tax_code'], 
+                    $personalData
+                );
+                
+                if (!$verification['valid']) {
+                    $memberInfo['fiscal_code'] = $member['tax_code'];
+                    $memberInfo['errors'] = implode('; ', $verification['errors']);
+                    $anomalies['invalid_fiscal_code'][] = $memberInfo;
+                }
+            }
+            
+            // Check for missing health surveillance
+            if (empty($member['health_surveillance_expiry'])) {
+                $anomalies['no_health_surveillance'][] = $memberInfo;
+            } else {
+                // Check for expired health surveillance
+                $expiryDate = new \DateTime($member['health_surveillance_expiry']);
+                $today = new \DateTime();
+                
+                if ($expiryDate < $today) {
+                    $memberInfo['expiry_date'] = $member['health_surveillance_expiry'];
+                    $anomalies['expired_health_surveillance'][] = $memberInfo;
+                }
+            }
+        }
+        
+        // Check for expired licenses
+        $licenseSql = "SELECT 
+                        m.id,
+                        m.registration_number,
+                        m.first_name,
+                        m.last_name,
+                        ml.license_type,
+                        ml.expiry_date
+                    FROM members m
+                    INNER JOIN member_licenses ml ON ml.member_id = m.id
+                    WHERE m.member_status = 'attivo'
+                        AND ml.expiry_date IS NOT NULL
+                        AND ml.expiry_date < CURDATE()
+                    ORDER BY m.last_name, m.first_name, ml.license_type";
+        
+        $expiredLicenses = $this->db->fetchAll($licenseSql);
+        foreach ($expiredLicenses as $license) {
+            $anomalies['expired_licenses'][] = [
+                'id' => $license['id'],
+                'registration_number' => $license['registration_number'],
+                'name' => $license['first_name'] . ' ' . $license['last_name'],
+                'license_type' => $license['license_type'],
+                'expiry_date' => $license['expiry_date']
+            ];
+        }
+        
+        // Check for expired courses
+        $courseSql = "SELECT 
+                        m.id,
+                        m.registration_number,
+                        m.first_name,
+                        m.last_name,
+                        mc.course_name,
+                        mc.expiry_date
+                    FROM members m
+                    INNER JOIN member_courses mc ON mc.member_id = m.id
+                    WHERE m.member_status = 'attivo'
+                        AND mc.expiry_date IS NOT NULL
+                        AND mc.expiry_date < CURDATE()
+                    ORDER BY m.last_name, m.first_name, mc.course_name";
+        
+        $expiredCourses = $this->db->fetchAll($courseSql);
+        foreach ($expiredCourses as $course) {
+            $anomalies['expired_courses'][] = [
+                'id' => $course['id'],
+                'registration_number' => $course['registration_number'],
+                'name' => $course['first_name'] . ' ' . $course['last_name'],
+                'course_name' => $course['course_name'],
+                'expiry_date' => $course['expiry_date']
+            ];
+        }
+        
+        return $anomalies;
     }
 }

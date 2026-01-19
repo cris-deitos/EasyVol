@@ -116,6 +116,11 @@ $pageTitle = 'Gestione Soci Minorenni';
                                 </a></li>
                             </ul>
                         </div>
+                        <?php if ($app->checkPermission('junior_members', 'view_anomalies')): ?>
+                            <a href="junior_member_anomalies.php" class="btn btn-warning me-2">
+                                <i class="bi bi-exclamation-triangle"></i> Anomalie
+                            </a>
+                        <?php endif; ?>
                         <?php if ($app->checkPermission('junior_members', 'create')): ?>
                             <a href="junior_member_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Socio Minorenne
