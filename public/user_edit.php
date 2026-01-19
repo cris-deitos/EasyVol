@@ -254,19 +254,22 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="member_id" class="form-label">Collega a Socio</label>
-                                    <select class="form-select" id="member_id" name="member_id">
-                                        <option value="">Nessun collegamento</option>
-                                        <?php
-                                        $selectedMember = $editUser['member_id'] ?? $_POST['member_id'] ?? '';
-                                        foreach ($members as $member):
-                                        ?>
-                                            <option value="<?php echo $member['id']; ?>" 
-                                                    <?php echo $selectedMember == $member['id'] ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($member['registration_number'] . ' - ' . $member['last_name'] . ' ' . $member['first_name']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <?php $selectedMember = $editUser['member_id'] ?? $_POST['member_id'] ?? ''; ?>
+                                    <label for="member_search" class="form-label">Collega a Socio</label>
+                                    <input type="text" class="form-control" id="member_search" 
+                                           placeholder="Cerca per nome, cognome, matricola o codice fiscale..." 
+                                           value="<?php 
+                                           if ($selectedMember) {
+                                               $member = array_filter($members, function($m) use ($selectedMember) { return $m['id'] == $selectedMember; });
+                                               if (!empty($member)) {
+                                                   $member = reset($member);
+                                                   echo htmlspecialchars($member['registration_number'] . ' - ' . $member['last_name'] . ' ' . $member['first_name']);
+                                               }
+                                           }
+                                           ?>" autocomplete="off">
+                                    <input type="hidden" id="member_id" name="member_id" value="<?php echo htmlspecialchars($selectedMember); ?>">
+                                    <div id="member_search_results" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
+                                    <small class="form-text text-muted">Lascia vuoto per nessun collegamento</small>
                                 </div>
                             </div>
                             
@@ -414,5 +417,75 @@ $pageTitle = $isEdit ? 'Modifica Utente' : 'Nuovo Utente';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Member search autocomplete
+        let memberSearchTimeout = null;
+        const memberSearchInput = document.getElementById('member_search');
+        const memberIdInput = document.getElementById('member_id');
+        const memberSearchResults = document.getElementById('member_search_results');
+        
+        if (memberSearchInput) {
+            memberSearchInput.addEventListener('input', function() {
+                clearTimeout(memberSearchTimeout);
+                const search = this.value.trim();
+                
+                if (search.length < 2) {
+                    memberSearchResults.style.display = 'none';
+                    memberSearchResults.innerHTML = '';
+                    if (search.length === 0) {
+                        memberIdInput.value = '';
+                    }
+                    return;
+                }
+                
+                memberSearchTimeout = setTimeout(function() {
+                    fetch('members_search_ajax.php?q=' + encodeURIComponent(search))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length === 0) {
+                                memberSearchResults.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                                memberSearchResults.style.display = 'block';
+                                return;
+                            }
+                            
+                            memberSearchResults.innerHTML = data.map(function(member) {
+                                return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(member.label) + '">' +
+                                    escapeHtml(member.label) +
+                                    '</button>';
+                            }).join('');
+                            memberSearchResults.style.display = 'block';
+                            
+                            // Add click handlers
+                            memberSearchResults.querySelectorAll('button').forEach(function(btn) {
+                                btn.addEventListener('click', function() {
+                                    memberIdInput.value = this.dataset.memberId;
+                                    memberSearchInput.value = this.dataset.memberLabel;
+                                    memberSearchResults.style.display = 'none';
+                                });
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            memberSearchResults.innerHTML = '<div class="list-group-item text-danger">Errore nella ricerca</div>';
+                            memberSearchResults.style.display = 'block';
+                        });
+                }, 300);
+            });
+            
+            // Close results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!memberSearchInput.contains(e.target) && !memberSearchResults.contains(e.target)) {
+                    memberSearchResults.style.display = 'none';
+                }
+            });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>

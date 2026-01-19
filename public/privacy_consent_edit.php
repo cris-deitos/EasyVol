@@ -94,10 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get members and junior members
-$members = $controller->getMembers();
-$juniorMembers = $controller->getJuniorMembers();
-
 $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
 ?>
 <!DOCTYPE html>
@@ -146,16 +142,32 @@ $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
                             <div class="row mb-4">
                                 <div class="col-md-6">
                                     <label for="entity_type" class="form-label">Tipo Entità *</label>
-                                    <select class="form-select" id="entity_type" name="entity_type" required onchange="toggleEntityList()">
+                                    <select class="form-select" id="entity_type" name="entity_type" required onchange="toggleEntitySearch()">
                                         <option value="member" <?php echo ($consent['entity_type'] ?? 'member') === 'member' ? 'selected' : ''; ?>>Socio</option>
                                         <option value="junior_member" <?php echo ($consent['entity_type'] ?? '') === 'junior_member' ? 'selected' : ''; ?>>Cadetto</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="entity_id" class="form-label">Seleziona Persona *</label>
-                                    <select class="form-select" id="entity_id" name="entity_id" required>
-                                        <option value="">Seleziona...</option>
-                                    </select>
+                                    <label for="entity_search" class="form-label">Seleziona Persona *</label>
+                                    <?php
+                                    $currentEntityName = '';
+                                    if (!empty($consent['entity_id'])) {
+                                        if ($consent['entity_type'] === 'member') {
+                                            $entity = $db->fetchOne("SELECT first_name, last_name, registration_number FROM members WHERE id = ?", [$consent['entity_id']]);
+                                        } else {
+                                            $entity = $db->fetchOne("SELECT first_name, last_name, registration_number FROM junior_members WHERE id = ?", [$consent['entity_id']]);
+                                        }
+                                        if ($entity) {
+                                            $currentEntityName = $entity['registration_number'] . ' - ' . $entity['last_name'] . ' ' . $entity['first_name'];
+                                        }
+                                    }
+                                    ?>
+                                    <input type="text" class="form-control" id="entity_search" 
+                                           placeholder="Cerca per nome, cognome, matricola o codice fiscale..." 
+                                           value="<?php echo htmlspecialchars($currentEntityName); ?>" 
+                                           autocomplete="off" required>
+                                    <input type="hidden" id="entity_id" name="entity_id" value="<?php echo htmlspecialchars($consent['entity_id'] ?? ''); ?>" required>
+                                    <div id="entity_search_results" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
                                 </div>
                             </div>
                             
@@ -261,35 +273,90 @@ $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const members = <?php echo json_encode($members); ?>;
-        const juniorMembers = <?php echo json_encode($juniorMembers); ?>;
-        const currentEntityId = <?php echo $consent['entity_id'] ?? 0; ?>;
+        // Entity search autocomplete
+        let entitySearchTimeout = null;
+        const entitySearchInput = document.getElementById('entity_search');
+        const entityIdInput = document.getElementById('entity_id');
+        const entitySearchResults = document.getElementById('entity_search_results');
+        const entityTypeSelect = document.getElementById('entity_type');
         
-        function toggleEntityList() {
-            const entityType = document.getElementById('entity_type').value;
-            const entitySelect = document.getElementById('entity_id');
-            const list = entityType === 'member' ? members : juniorMembers;
-            
-            entitySelect.innerHTML = '<option value="">Seleziona...</option>';
-            list.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.id;
-                option.textContent = `${item.registration_number} - ${item.first_name} ${item.last_name}`;
-                if (item.id == currentEntityId) {
-                    option.selected = true;
+        function toggleEntitySearch() {
+            // Clear the search when switching entity type
+            entitySearchInput.value = '';
+            entityIdInput.value = '';
+            entitySearchResults.style.display = 'none';
+            entitySearchResults.innerHTML = '';
+        }
+        
+        if (entitySearchInput) {
+            entitySearchInput.addEventListener('input', function() {
+                clearTimeout(entitySearchTimeout);
+                const search = this.value.trim();
+                
+                if (search.length < 2) {
+                    entitySearchResults.style.display = 'none';
+                    entitySearchResults.innerHTML = '';
+                    if (search.length === 0) {
+                        entityIdInput.value = '';
+                    }
+                    return;
                 }
-                entitySelect.appendChild(option);
+                
+                const entityType = entityTypeSelect.value;
+                
+                entitySearchTimeout = setTimeout(function() {
+                    fetch('entity_search_ajax.php?q=' + encodeURIComponent(search) + '&type=' + entityType)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length === 0) {
+                                entitySearchResults.innerHTML = '<div class="list-group-item text-muted">Nessuna persona trovata</div>';
+                                entitySearchResults.style.display = 'block';
+                                return;
+                            }
+                            
+                            entitySearchResults.innerHTML = data.map(function(entity) {
+                                return '<button type="button" class="list-group-item list-group-item-action" data-entity-id="' + entity.id + '" data-entity-label="' + escapeHtml(entity.label) + '">' +
+                                    escapeHtml(entity.label) +
+                                    '</button>';
+                            }).join('');
+                            entitySearchResults.style.display = 'block';
+                            
+                            // Add click handlers
+                            entitySearchResults.querySelectorAll('button').forEach(function(btn) {
+                                btn.addEventListener('click', function() {
+                                    entityIdInput.value = this.dataset.entityId;
+                                    entitySearchInput.value = this.dataset.entityLabel;
+                                    entitySearchResults.style.display = 'none';
+                                });
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            entitySearchResults.innerHTML = '<div class="list-group-item text-danger">Errore nella ricerca</div>';
+                            entitySearchResults.style.display = 'block';
+                        });
+                }, 300);
             });
+            
+            // Close results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!entitySearchInput.contains(e.target) && !entitySearchResults.contains(e.target)) {
+                    entitySearchResults.style.display = 'none';
+                }
+            });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         function toggleRevokedDate() {
             const revoked = document.getElementById('revoked').checked;
             document.getElementById('revoked_date_row').style.display = revoked ? 'block' : 'none';
         }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleEntityList();
-        });
     </script>
 </body>
 </html>
