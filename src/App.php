@@ -470,7 +470,7 @@ private function loadEmailConfigFromDatabase() {
      * Log access to sensitive personal data for GDPR compliance
      * 
      * @param string $entityType Type of entity: 'member', 'junior_member', 'user'
-     * @param int $entityId ID of the entity being accessed
+     * @param int|null $entityId ID of the entity being accessed (required for single entity access)
      * @param string $accessType Type of access: 'view', 'edit', 'export', 'print', 'delete'
      * @param string $module Module performing the access
      * @param array|null $dataFields Array of sensitive data fields accessed (e.g., ['personal_data', 'contacts', 'health'])
@@ -481,7 +481,19 @@ private function loadEmailConfigFromDatabase() {
             return;
         }
         
-        $userId = $this->getCurrentUser()['id'];
+        $currentUser = $this->getCurrentUser();
+        if (!$currentUser || !isset($currentUser['id'])) {
+            error_log("Failed to log sensitive data access: User not properly authenticated");
+            return;
+        }
+        
+        $userId = $currentUser['id'];
+        
+        // Validate required entity_id for database constraint
+        if ($entityId === null) {
+            error_log("Failed to log sensitive data access: entity_id is required but was null");
+            return;
+        }
         
         $data = [
             'user_id' => $userId,

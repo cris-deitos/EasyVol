@@ -44,20 +44,6 @@ if (!$event) {
     exit;
 }
 
-// Log sensitive data access when viewing event participants
-// Events contain member participation data which is privacy-sensitive
-$activeTab = $_GET['tab'] ?? 'details';
-if ($activeTab === 'participants' || $activeTab === 'vehicles') {
-    $app->logSensitiveDataAccess(
-        'member',
-        null, // No specific member, viewing multiple participants
-        'view',
-        'events',
-        ['event_participation', 'member_presence'],
-        'Visualizzazione partecipanti evento ID: ' . $eventId
-    );
-}
-
 // Carica i mezzi disponibili per il dropdown
 $availableVehicles = $controller->getAvailableVehicles($eventId);
 
