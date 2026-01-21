@@ -285,9 +285,11 @@ class Newsletter
         
         // All active members
         if ($type === 'all_members' || $type === 'all_members_cadets' || $type === 'all_members_cadets_parents' || $type === 'custom_members' || $type === 'custom_combined') {
-            $sql = "SELECT DISTINCT m.id, m.email, CONCAT(m.first_name, ' ', m.last_name) as name, 'member' as type
+            $sql = "SELECT DISTINCT m.id, mc.value as email, CONCAT(m.first_name, ' ', m.last_name) as name, 'member' as type
                     FROM members m
-                    WHERE m.email IS NOT NULL AND m.email != '' 
+                    INNER JOIN member_contacts mc ON m.id = mc.member_id
+                    WHERE mc.contact_type = 'email'
+                    AND mc.value IS NOT NULL AND mc.value != '' 
                     AND m.member_status = 'attivo'";
             
             if ($type === 'custom_members') {
@@ -316,9 +318,11 @@ class Newsletter
         
         // All active cadets
         if ($type === 'all_cadets' || $type === 'all_cadets_with_parents' || $type === 'all_members_cadets' || $type === 'all_members_cadets_parents' || $type === 'custom_cadets' || $type === 'custom_combined') {
-            $sql = "SELECT DISTINCT jm.id, jm.email, CONCAT(jm.first_name, ' ', jm.last_name) as name, 'junior_member' as type
+            $sql = "SELECT DISTINCT jm.id, jmc.value as email, CONCAT(jm.first_name, ' ', jm.last_name) as name, 'junior_member' as type
                     FROM junior_members jm
-                    WHERE jm.email IS NOT NULL AND jm.email != ''
+                    INNER JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id
+                    WHERE jmc.contact_type = 'email'
+                    AND jmc.value IS NOT NULL AND jmc.value != ''
                     AND jm.member_status = 'attivo'";
             
             if ($type === 'custom_cadets') {
