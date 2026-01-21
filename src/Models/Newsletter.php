@@ -280,13 +280,18 @@ class Newsletter
         $recipients = [];
         $type = $filter['type'] ?? '';
         $customIds = $filter['ids'] ?? [];
+        $customMemberIds = $filter['member_ids'] ?? [];
+        $customCadetIds = $filter['cadet_ids'] ?? [];
         
         // All active members
-        if ($type === 'all_members' || $type === 'custom_members') {
-            $sql = "SELECT DISTINCT m.id, m.email, CONCAT(m.first_name, ' ', m.last_name) as name, 'member' as type
+        $memberTypes = ['all_members', 'all_members_cadets', 'all_members_cadets_parents', 'custom_members', 'custom_combined'];
+        if (in_array($type, $memberTypes)) {
+            $sql = "SELECT DISTINCT m.id, mc.value as email, CONCAT(m.first_name, ' ', m.last_name) as name, 'member' as type
                     FROM members m
-                    WHERE m.email IS NOT NULL AND m.email != '' 
-                    AND m.status = 'attivo'";
+                    INNER JOIN member_contacts mc ON m.id = mc.member_id
+                    WHERE mc.contact_type = 'email'
+                    AND mc.value IS NOT NULL AND mc.value != '' 
+                    AND m.member_status = 'attivo'";
             
             if ($type === 'custom_members') {
                 if (empty($customIds)) {
@@ -297,6 +302,14 @@ class Newsletter
                     $sql .= " AND m.id IN ($placeholders)";
                     $members = $this->db->fetchAll($sql, $customIds);
                 }
+            } elseif ($type === 'custom_combined') {
+                if (empty($customMemberIds)) {
+                    $members = [];
+                } else {
+                    $placeholders = str_repeat('?,', count($customMemberIds) - 1) . '?';
+                    $sql .= " AND m.id IN ($placeholders)";
+                    $members = $this->db->fetchAll($sql, $customMemberIds);
+                }
             } else {
                 $members = $this->db->fetchAll($sql);
             }
@@ -305,11 +318,14 @@ class Newsletter
         }
         
         // All active cadets
-        if ($type === 'all_cadets' || $type === 'all_cadets_with_parents' || $type === 'custom_cadets') {
-            $sql = "SELECT DISTINCT jm.id, jm.email, CONCAT(jm.first_name, ' ', jm.last_name) as name, 'junior_member' as type
+        $cadetTypes = ['all_cadets', 'all_cadets_with_parents', 'all_members_cadets', 'all_members_cadets_parents', 'custom_cadets', 'custom_combined'];
+        if (in_array($type, $cadetTypes)) {
+            $sql = "SELECT DISTINCT jm.id, jmc.value as email, CONCAT(jm.first_name, ' ', jm.last_name) as name, 'junior_member' as type
                     FROM junior_members jm
-                    WHERE jm.email IS NOT NULL AND jm.email != ''
-                    AND jm.status = 'attivo'";
+                    INNER JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id
+                    WHERE jmc.contact_type = 'email'
+                    AND jmc.value IS NOT NULL AND jmc.value != ''
+                    AND jm.member_status = 'attivo'";
             
             if ($type === 'custom_cadets') {
                 if (empty($customIds)) {
@@ -320,6 +336,14 @@ class Newsletter
                     $sql .= " AND jm.id IN ($placeholders)";
                     $cadets = $this->db->fetchAll($sql, $customIds);
                 }
+            } elseif ($type === 'custom_combined') {
+                if (empty($customCadetIds)) {
+                    $cadets = [];
+                } else {
+                    $placeholders = str_repeat('?,', count($customCadetIds) - 1) . '?';
+                    $sql .= " AND jm.id IN ($placeholders)";
+                    $cadets = $this->db->fetchAll($sql, $customCadetIds);
+                }
             } else {
                 $cadets = $this->db->fetchAll($sql);
             }
@@ -328,7 +352,7 @@ class Newsletter
         }
         
         // Cadets' parents/guardians
-        if ($type === 'all_cadets_with_parents') {
+        if ($type === 'all_cadets_with_parents' || $type === 'all_members_cadets_parents') {
             $sql = "SELECT DISTINCT jmg.id, jmg.email, 
                            CONCAT(jmg.first_name, ' ', jmg.last_name) as name, 
                            'guardian' as type,
@@ -336,7 +360,7 @@ class Newsletter
                     FROM junior_member_guardians jmg
                     INNER JOIN junior_members jm ON jmg.junior_member_id = jm.id
                     WHERE jmg.email IS NOT NULL AND jmg.email != ''
-                    AND jm.status = 'attivo'";
+                    AND jm.member_status = 'attivo'";
             
             $guardians = $this->db->fetchAll($sql);
             $recipients = array_merge($recipients, $guardians);

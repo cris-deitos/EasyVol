@@ -62,8 +62,11 @@ These permissions can be assigned to:
   - All active members
   - All active cadets
   - All active cadets + their parents/guardians
-  - Custom selection of members
-  - Custom selection of cadets
+  - All active members + active cadets
+  - All active members + active cadets + parents/guardians
+  - Custom selection of members (with search by name, surname, registration number, or fiscal code)
+  - Custom selection of cadets (with search by name, surname, registration number, or fiscal code)
+  - Custom selection of members + cadets (combined with separate search fields)
 - Send options:
   - Save as draft
   - Send immediately
@@ -251,8 +254,10 @@ Ensure the web server has write permissions to the `uploads` directory.
 Recipient filters are stored as JSON in the database:
 ```json
 {
-  "type": "all_members|all_cadets|all_cadets_with_parents|custom_members|custom_cadets",
-  "ids": [1, 2, 3]  // Only for custom types
+  "type": "all_members|all_cadets|all_cadets_with_parents|all_members_cadets|all_members_cadets_parents|custom_members|custom_cadets|custom_combined",
+  "ids": [1, 2, 3],  // For custom_members and custom_cadets
+  "member_ids": [1, 2, 3],  // For custom_combined (members)
+  "cadet_ids": [4, 5, 6]  // For custom_combined (cadets)
 }
 ```
 

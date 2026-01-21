@@ -343,20 +343,26 @@ class NewsletterController
                 'guardians' => []
             ];
             
-            // Get active members
-            $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name, email
-                    FROM members
-                    WHERE email IS NOT NULL AND email != ''
-                    AND status = 'attivo'
-                    ORDER BY last_name, first_name";
+            // Get active members with email
+            $sql = "SELECT m.id, CONCAT(m.first_name, ' ', m.last_name) as name, 
+                           mc.value as email, m.registration_number, m.tax_code
+                    FROM members m
+                    INNER JOIN member_contacts mc ON m.id = mc.member_id
+                    WHERE mc.contact_type = 'email' 
+                    AND mc.value IS NOT NULL AND mc.value != ''
+                    AND m.member_status = 'attivo'
+                    ORDER BY m.last_name, m.first_name";
             $recipients['members'] = $this->db->fetchAll($sql);
             
-            // Get active cadets
-            $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name, email
-                    FROM junior_members
-                    WHERE email IS NOT NULL AND email != ''
-                    AND status = 'attivo'
-                    ORDER BY last_name, first_name";
+            // Get active cadets with email
+            $sql = "SELECT jm.id, CONCAT(jm.first_name, ' ', jm.last_name) as name, 
+                           jmc.value as email, jm.registration_number, jm.tax_code
+                    FROM junior_members jm
+                    INNER JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id
+                    WHERE jmc.contact_type = 'email'
+                    AND jmc.value IS NOT NULL AND jmc.value != ''
+                    AND jm.member_status = 'attivo'
+                    ORDER BY jm.last_name, jm.first_name";
             $recipients['junior_members'] = $this->db->fetchAll($sql);
             
             return $recipients;

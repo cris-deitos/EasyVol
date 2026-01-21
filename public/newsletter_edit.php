@@ -112,6 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($recipientType === 'custom_members' || $recipientType === 'custom_cadets') {
             $data['recipient_filter']['ids'] = $_POST['recipient_ids'] ?? [];
+        } elseif ($recipientType === 'custom_combined') {
+            $data['recipient_filter']['member_ids'] = $_POST['member_ids'] ?? [];
+            $data['recipient_filter']['cadet_ids'] = $_POST['cadet_ids'] ?? [];
         }
         
         // Handle scheduled send
@@ -299,11 +302,20 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
                                             <option value="all_cadets_with_parents" <?php echo ($newsletter['recipient_filter_decoded']['type'] ?? '') === 'all_cadets_with_parents' ? 'selected' : ''; ?>>
                                                 Tutti i Cadetti Attivi + Genitori/Tutori
                                             </option>
+                                            <option value="all_members_cadets" <?php echo ($newsletter['recipient_filter_decoded']['type'] ?? '') === 'all_members_cadets' ? 'selected' : ''; ?>>
+                                                Tutti i Soci Attivi + Cadetti Attivi
+                                            </option>
+                                            <option value="all_members_cadets_parents" <?php echo ($newsletter['recipient_filter_decoded']['type'] ?? '') === 'all_members_cadets_parents' ? 'selected' : ''; ?>>
+                                                Tutti i Soci Attivi + Cadetti Attivi + Genitori/Tutori
+                                            </option>
                                             <option value="custom_members" <?php echo ($newsletter['recipient_filter_decoded']['type'] ?? '') === 'custom_members' ? 'selected' : ''; ?>>
                                                 Soci Selezionati
                                             </option>
                                             <option value="custom_cadets" <?php echo ($newsletter['recipient_filter_decoded']['type'] ?? '') === 'custom_cadets' ? 'selected' : ''; ?>>
                                                 Cadetti Selezionati
+                                            </option>
+                                            <option value="custom_combined" <?php echo ($newsletter['recipient_filter_decoded']['type'] ?? '') === 'custom_combined' ? 'selected' : ''; ?>>
+                                                Soci + Cadetti Selezionati
                                             </option>
                                         </select>
                                     </div>
@@ -311,15 +323,27 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
                                     <!-- Custom Member Selection -->
                                     <div id="custom_members_selection" style="display: none;">
                                         <label class="form-label">Seleziona Soci</label>
-                                        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;">
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control" id="member_search" placeholder="Cerca per nome, cognome, matricola o codice fiscale..." onkeyup="filterMembers()">
+                                        </div>
+                                        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="members_list">
                                             <?php foreach ($availableRecipients['members'] as $member): ?>
-                                                <div class="form-check">
+                                                <div class="form-check member-item" 
+                                                     data-name="<?php echo htmlspecialchars(strtolower($member['name'])); ?>" 
+                                                     data-email="<?php echo htmlspecialchars(strtolower($member['email'])); ?>" 
+                                                     data-reg="<?php echo htmlspecialchars(strtolower($member['registration_number'] ?? '')); ?>" 
+                                                     data-tax="<?php echo htmlspecialchars(strtolower($member['tax_code'] ?? '')); ?>">
                                                     <input class="form-check-input" type="checkbox" name="recipient_ids[]" 
                                                            value="<?php echo $member['id']; ?>" 
                                                            id="member_<?php echo $member['id']; ?>">
                                                     <label class="form-check-label" for="member_<?php echo $member['id']; ?>">
                                                         <?php echo htmlspecialchars($member['name']); ?>
-                                                        <small class="text-muted">(<?php echo htmlspecialchars($member['email']); ?>)</small>
+                                                        <small class="text-muted">
+                                                            (<?php echo htmlspecialchars($member['email']); ?>)
+                                                            <?php if (!empty($member['registration_number'])): ?>
+                                                                - Mat: <?php echo htmlspecialchars($member['registration_number']); ?>
+                                                            <?php endif; ?>
+                                                        </small>
                                                     </label>
                                                 </div>
                                             <?php endforeach; ?>
@@ -329,18 +353,93 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
                                     <!-- Custom Cadet Selection -->
                                     <div id="custom_cadets_selection" style="display: none;">
                                         <label class="form-label">Seleziona Cadetti</label>
-                                        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;">
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control" id="cadet_search" placeholder="Cerca per nome, cognome, matricola o codice fiscale..." onkeyup="filterCadets()">
+                                        </div>
+                                        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="cadets_list">
                                             <?php foreach ($availableRecipients['junior_members'] as $cadet): ?>
-                                                <div class="form-check">
+                                                <div class="form-check cadet-item" 
+                                                     data-name="<?php echo htmlspecialchars(strtolower($cadet['name'])); ?>" 
+                                                     data-email="<?php echo htmlspecialchars(strtolower($cadet['email'])); ?>" 
+                                                     data-reg="<?php echo htmlspecialchars(strtolower($cadet['registration_number'] ?? '')); ?>" 
+                                                     data-tax="<?php echo htmlspecialchars(strtolower($cadet['tax_code'] ?? '')); ?>">
                                                     <input class="form-check-input" type="checkbox" name="recipient_ids[]" 
                                                            value="<?php echo $cadet['id']; ?>" 
                                                            id="cadet_<?php echo $cadet['id']; ?>">
                                                     <label class="form-check-label" for="cadet_<?php echo $cadet['id']; ?>">
                                                         <?php echo htmlspecialchars($cadet['name']); ?>
-                                                        <small class="text-muted">(<?php echo htmlspecialchars($cadet['email']); ?>)</small>
+                                                        <small class="text-muted">
+                                                            (<?php echo htmlspecialchars($cadet['email']); ?>)
+                                                            <?php if (!empty($cadet['registration_number'])): ?>
+                                                                - Mat: <?php echo htmlspecialchars($cadet['registration_number']); ?>
+                                                            <?php endif; ?>
+                                                        </small>
                                                     </label>
                                                 </div>
                                             <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Custom Combined Selection -->
+                                    <div id="custom_combined_selection" style="display: none;">
+                                        <label class="form-label">Seleziona Soci e Cadetti</label>
+                                        
+                                        <div class="mb-3">
+                                            <h6>Soci</h6>
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control" id="combined_member_search" placeholder="Cerca soci..." onkeyup="filterCombinedMembers()">
+                                            </div>
+                                            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="combined_members_list">
+                                                <?php foreach ($availableRecipients['members'] as $member): ?>
+                                                    <div class="form-check combined-member-item" 
+                                                         data-name="<?php echo htmlspecialchars(strtolower($member['name'])); ?>" 
+                                                         data-email="<?php echo htmlspecialchars(strtolower($member['email'])); ?>" 
+                                                         data-reg="<?php echo htmlspecialchars(strtolower($member['registration_number'] ?? '')); ?>" 
+                                                         data-tax="<?php echo htmlspecialchars(strtolower($member['tax_code'] ?? '')); ?>">
+                                                        <input class="form-check-input" type="checkbox" name="member_ids[]" 
+                                                               value="<?php echo $member['id']; ?>" 
+                                                               id="combined_member_<?php echo $member['id']; ?>">
+                                                        <label class="form-check-label" for="combined_member_<?php echo $member['id']; ?>">
+                                                            <?php echo htmlspecialchars($member['name']); ?>
+                                                            <small class="text-muted">
+                                                                (<?php echo htmlspecialchars($member['email']); ?>)
+                                                                <?php if (!empty($member['registration_number'])): ?>
+                                                                    - Mat: <?php echo htmlspecialchars($member['registration_number']); ?>
+                                                                <?php endif; ?>
+                                                            </small>
+                                                        </label>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <h6>Cadetti</h6>
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control" id="combined_cadet_search" placeholder="Cerca cadetti..." onkeyup="filterCombinedCadets()">
+                                            </div>
+                                            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="combined_cadets_list">
+                                                <?php foreach ($availableRecipients['junior_members'] as $cadet): ?>
+                                                    <div class="form-check combined-cadet-item" 
+                                                         data-name="<?php echo htmlspecialchars(strtolower($cadet['name'])); ?>" 
+                                                         data-email="<?php echo htmlspecialchars(strtolower($cadet['email'])); ?>" 
+                                                         data-reg="<?php echo htmlspecialchars(strtolower($cadet['registration_number'] ?? '')); ?>" 
+                                                         data-tax="<?php echo htmlspecialchars(strtolower($cadet['tax_code'] ?? '')); ?>">
+                                                        <input class="form-check-input" type="checkbox" name="cadet_ids[]" 
+                                                               value="<?php echo $cadet['id']; ?>" 
+                                                               id="combined_cadet_<?php echo $cadet['id']; ?>">
+                                                        <label class="form-check-label" for="combined_cadet_<?php echo $cadet['id']; ?>">
+                                                            <?php echo htmlspecialchars($cadet['name']); ?>
+                                                            <small class="text-muted">
+                                                                (<?php echo htmlspecialchars($cadet['email']); ?>)
+                                                                <?php if (!empty($cadet['registration_number'])): ?>
+                                                                    - Mat: <?php echo htmlspecialchars($cadet['registration_number']); ?>
+                                                                <?php endif; ?>
+                                                            </small>
+                                                        </label>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -432,6 +531,84 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
             recipientType === 'custom_members' ? 'block' : 'none';
         document.getElementById('custom_cadets_selection').style.display = 
             recipientType === 'custom_cadets' ? 'block' : 'none';
+        document.getElementById('custom_combined_selection').style.display = 
+            recipientType === 'custom_combined' ? 'block' : 'none';
+    }
+    
+    function filterMembers() {
+        const searchText = document.getElementById('member_search').value.toLowerCase();
+        const items = document.querySelectorAll('#members_list .member-item');
+        
+        items.forEach(item => {
+            const name = item.dataset.name || '';
+            const email = item.dataset.email || '';
+            const reg = item.dataset.reg || '';
+            const tax = item.dataset.tax || '';
+            
+            if (name.includes(searchText) || email.includes(searchText) || 
+                reg.includes(searchText) || tax.includes(searchText)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function filterCadets() {
+        const searchText = document.getElementById('cadet_search').value.toLowerCase();
+        const items = document.querySelectorAll('#cadets_list .cadet-item');
+        
+        items.forEach(item => {
+            const name = item.dataset.name || '';
+            const email = item.dataset.email || '';
+            const reg = item.dataset.reg || '';
+            const tax = item.dataset.tax || '';
+            
+            if (name.includes(searchText) || email.includes(searchText) || 
+                reg.includes(searchText) || tax.includes(searchText)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function filterCombinedMembers() {
+        const searchText = document.getElementById('combined_member_search').value.toLowerCase();
+        const items = document.querySelectorAll('#combined_members_list .combined-member-item');
+        
+        items.forEach(item => {
+            const name = item.dataset.name || '';
+            const email = item.dataset.email || '';
+            const reg = item.dataset.reg || '';
+            const tax = item.dataset.tax || '';
+            
+            if (name.includes(searchText) || email.includes(searchText) || 
+                reg.includes(searchText) || tax.includes(searchText)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function filterCombinedCadets() {
+        const searchText = document.getElementById('combined_cadet_search').value.toLowerCase();
+        const items = document.querySelectorAll('#combined_cadets_list .combined-cadet-item');
+        
+        items.forEach(item => {
+            const name = item.dataset.name || '';
+            const email = item.dataset.email || '';
+            const reg = item.dataset.reg || '';
+            const tax = item.dataset.tax || '';
+            
+            if (name.includes(searchText) || email.includes(searchText) || 
+                reg.includes(searchText) || tax.includes(searchText)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
     }
     
     function toggleSchedule() {
@@ -514,6 +691,40 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
     // Initialize on page load
     toggleRecipientSelection();
     toggleSchedule();
+    
+    // Pre-select recipients if editing
+    <?php if (!empty($newsletter['recipient_filter_decoded'])): ?>
+        const recipientFilter = <?php echo json_encode($newsletter['recipient_filter_decoded']); ?>;
+        
+        // For custom_members and custom_cadets
+        if (recipientFilter.ids && Array.isArray(recipientFilter.ids)) {
+            recipientFilter.ids.forEach(id => {
+                const checkbox = document.querySelector(`input[name="recipient_ids[]"][value="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+        
+        // For custom_combined
+        if (recipientFilter.member_ids && Array.isArray(recipientFilter.member_ids)) {
+            recipientFilter.member_ids.forEach(id => {
+                const checkbox = document.querySelector(`input[name="member_ids[]"][value="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+        
+        if (recipientFilter.cadet_ids && Array.isArray(recipientFilter.cadet_ids)) {
+            recipientFilter.cadet_ids.forEach(id => {
+                const checkbox = document.querySelector(`input[name="cadet_ids[]"][value="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+    <?php endif; ?>
     </script>
 </body>
 </html>
