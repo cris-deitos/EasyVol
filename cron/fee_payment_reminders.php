@@ -4,7 +4,7 @@
  * 
  * Processa la coda dei promemoria di pagamento quote e invia le email
  * Eseguire ogni 5 minuti con crontab -e:
- * */5 * * * * php /path/to/easyvol/cron/fee_payment_reminders.php
+ * (asterisk)/5 (asterisk) (asterisk) (asterisk) (asterisk) php /path/to/easyvol/cron/fee_payment_reminders.php
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
