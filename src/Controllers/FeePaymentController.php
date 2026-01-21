@@ -597,7 +597,6 @@ class FeePaymentController {
         $sql = "SELECT sent_at 
                 FROM fee_payment_reminders 
                 WHERE year = ? 
-                AND status = 'completed'
                 ORDER BY sent_at DESC 
                 LIMIT 1";
         
@@ -628,6 +627,7 @@ class FeePaymentController {
     
     /**
      * Crea batch di promemoria per soci con quote non versate
+     * Accoda direttamente le email in email_queue usando l'infrastruttura esistente
      * 
      * @param int $year Anno di riferimento
      * @param int $userId ID utente che richiede l'invio
@@ -641,47 +641,53 @@ class FeePaymentController {
                 throw new \Exception('Promemoria già inviato negli ultimi 20 giorni');
             }
             
-            $this->db->beginTransaction();
-            
-            // Create reminder batch
-            $sql = "INSERT INTO fee_payment_reminders (year, sent_by, status, sent_at) 
-                    VALUES (?, ?, 'pending', NOW())";
-            $this->db->execute($sql, [$year, $userId]);
-            $reminderId = $this->db->lastInsertId();
-            
             // Get unpaid members (all, no pagination)
             $unpaidResult = $this->getUnpaidMembersForReminder($year);
             $unpaidMembers = $unpaidResult['members'];
             
             if (empty($unpaidMembers)) {
-                $this->db->rollBack();
-                return false;
+                throw new \Exception('Nessun socio trovato con quota non versata');
             }
             
-            // Insert individual reminder records for each member
-            $sql = "INSERT INTO fee_payment_reminder_members 
-                    (reminder_id, member_type, member_id, registration_number, email, status) 
-                    VALUES (?, ?, ?, ?, ?, 'pending')";
+            $this->db->beginTransaction();
             
+            // Create EmailSender instance
+            $emailSender = new EmailSender($this->config, $this->db);
+            
+            // Queue emails directly using existing email_queue infrastructure
             $totalQueued = 0;
+            $subject = "Promemoria: Quota Associativa " . $year;
+            
             foreach ($unpaidMembers as $member) {
                 if (!empty($member['email'])) {
-                    $this->db->execute($sql, [
-                        $reminderId,
-                        $member['member_type'],
-                        $member['id'],
-                        $member['registration_number'],
-                        $member['email']
-                    ]);
-                    $totalQueued++;
+                    $body = $this->buildReminderEmailBody($member, $year);
+                    
+                    // Queue email with priority 2 (important but not urgent)
+                    $queueId = $emailSender->queue(
+                        $member['email'],
+                        $subject,
+                        $body,
+                        [], // no attachments
+                        2   // priority
+                    );
+                    
+                    if ($queueId) {
+                        $totalQueued++;
+                    } else {
+                        error_log("Failed to queue fee reminder email for member {$member['registration_number']} ({$member['email']})");
+                    }
                 }
             }
             
-            // Update total count
-            $this->db->execute(
-                "UPDATE fee_payment_reminders SET total_sent = ? WHERE id = ?",
-                [$totalQueued, $reminderId]
-            );
+            if ($totalQueued === 0) {
+                throw new \Exception('Nessuna email è stata accodata con successo');
+            }
+            
+            // Insert single record in fee_payment_reminders for cooldown tracking
+            $sql = "INSERT INTO fee_payment_reminders (year, sent_by, sent_at, total_queued) 
+                    VALUES (?, ?, NOW(), ?)";
+            $this->db->execute($sql, [$year, $userId, $totalQueued]);
+            $reminderId = $this->db->lastInsertId();
             
             $this->db->commit();
             
@@ -740,115 +746,6 @@ class FeePaymentController {
         ];
     }
     
-    /**
-     * Processa coda promemoria e invia email
-     * Chiamato dal cron
-     * 
-     * @param int $batchSize Numero massimo di email da processare
-     * @return int Numero di email inviate
-     */
-    public function processReminderQueue($batchSize = 50) {
-        try {
-            $emailSender = new EmailSender($this->config, $this->db);
-            
-            // Get pending reminder members
-            $sql = "SELECT frm.*, fpr.year
-                    FROM fee_payment_reminder_members frm
-                    JOIN fee_payment_reminders fpr ON frm.reminder_id = fpr.id
-                    WHERE frm.status = 'pending'
-                    ORDER BY frm.id ASC
-                    LIMIT ?";
-            
-            $stmt = $this->db->query($sql, [$batchSize]);
-            $reminders = $stmt->fetchAll();
-            
-            if (empty($reminders)) {
-                return 0;
-            }
-            
-            $sent = 0;
-            
-            foreach ($reminders as $reminder) {
-                try {
-                    // Get member details
-                    $memberData = $this->getMemberDataForReminder(
-                        $reminder['member_id'], 
-                        $reminder['member_type']
-                    );
-                    
-                    if (!$memberData) {
-                        throw new \Exception('Member not found');
-                    }
-                    
-                    // Send reminder email
-                    $subject = "Promemoria: Quota Associativa " . $reminder['year'];
-                    $body = $this->buildReminderEmailBody($memberData, $reminder['year']);
-                    
-                    // Queue email for sending
-                    $emailSender->queue(
-                        $reminder['email'],
-                        $subject,
-                        $body,
-                        null, // no attachments
-                        2 // priority
-                    );
-                    
-                    // Update status
-                    $this->db->execute(
-                        "UPDATE fee_payment_reminder_members 
-                        SET status = 'sent', sent_at = NOW() 
-                        WHERE id = ?",
-                        [$reminder['id']]
-                    );
-                    
-                    $sent++;
-                } catch (\Exception $e) {
-                    // Mark as failed
-                    $this->db->execute(
-                        "UPDATE fee_payment_reminder_members 
-                        SET status = 'failed', error_message = ? 
-                        WHERE id = ?",
-                        [$e->getMessage(), $reminder['id']]
-                    );
-                    error_log("Failed to send reminder to {$reminder['email']}: " . $e->getMessage());
-                }
-            }
-            
-            // Update reminder batch status if all sent
-            $this->updateReminderBatchStatus();
-            
-            return $sent;
-        } catch (\Exception $e) {
-            error_log("Error processing reminder queue: " . $e->getMessage());
-            return 0;
-        }
-    }
-    
-    /**
-     * Ottieni dati socio per promemoria
-     * 
-     * @param int $memberId ID socio
-     * @param string $memberType Tipo socio (adult/junior)
-     * @return array|false
-     */
-    private function getMemberDataForReminder($memberId, $memberType) {
-        if ($memberType === 'adult') {
-            $sql = "SELECT m.id, m.registration_number, m.first_name, m.last_name,
-                    mc.value as email
-                    FROM members m
-                    LEFT JOIN member_contacts mc ON m.id = mc.member_id AND mc.contact_type = 'email'
-                    WHERE m.id = ?";
-        } else {
-            $sql = "SELECT jm.id, jm.registration_number, jm.first_name, jm.last_name,
-                    jmc.value as email
-                    FROM junior_members jm
-                    LEFT JOIN junior_member_contacts jmc ON jm.id = jmc.junior_member_id AND jmc.contact_type = 'email'
-                    WHERE jm.id = ?";
-        }
-        
-        $stmt = $this->db->query($sql, [$memberId]);
-        return $stmt->fetch();
-    }
     
     /**
      * Costruisce corpo email promemoria
@@ -880,44 +777,6 @@ class FeePaymentController {
         ";
         
         return $body;
-    }
-    
-    /**
-     * Aggiorna stato batch promemoria
-     */
-    private function updateReminderBatchStatus() {
-        // Get all reminder batches that need status update
-        $sql = "SELECT fpr.id, fpr.total_sent,
-                COUNT(CASE WHEN frm.status = 'pending' THEN 1 END) as pending_count,
-                COUNT(CASE WHEN frm.status = 'sent' THEN 1 END) as sent_count,
-                COUNT(CASE WHEN frm.status = 'failed' THEN 1 END) as failed_count
-                FROM fee_payment_reminders fpr
-                LEFT JOIN fee_payment_reminder_members frm ON fpr.id = frm.reminder_id
-                WHERE fpr.status IN ('pending', 'processing')
-                GROUP BY fpr.id";
-        
-        $stmt = $this->db->query($sql);
-        $batches = $stmt->fetchAll();
-        
-        foreach ($batches as $batch) {
-            $newStatus = 'pending';
-            
-            if ($batch['pending_count'] == 0) {
-                // All processed
-                if ($batch['sent_count'] > 0) {
-                    $newStatus = 'completed';
-                } else {
-                    $newStatus = 'failed';
-                }
-            } else if ($batch['sent_count'] > 0 || $batch['failed_count'] > 0) {
-                $newStatus = 'processing';
-            }
-            
-            $this->db->execute(
-                "UPDATE fee_payment_reminders SET status = ? WHERE id = ?",
-                [$newStatus, $batch['id']]
-            );
-        }
     }
     
     /**

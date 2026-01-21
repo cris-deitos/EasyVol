@@ -96,20 +96,16 @@ try {
     
     // Get batch details
     $stmt = $db->query(
-        "SELECT fpr.*, COUNT(frm.id) as total_members
-         FROM fee_payment_reminders fpr
-         LEFT JOIN fee_payment_reminder_members frm ON fpr.id = frm.reminder_id
-         WHERE fpr.id = ?
-         GROUP BY fpr.id",
+        "SELECT * FROM fee_payment_reminders WHERE id = ?",
         [$reminderId]
     );
     $batch = $stmt->fetch();
     
     echo json_encode([
         'success' => true,
-        'message' => "Batch di promemoria creato con successo. {$batch['total_members']} email saranno inviate tramite cron.",
+        'message' => "Batch di promemoria creato con successo. {$batch['total_queued']} email sono state accodate per l'invio.",
         'reminder_id' => $reminderId,
-        'total_members' => $batch['total_members']
+        'total_queued' => $batch['total_queued']
     ]);
     
 } catch (\Exception $e) {
