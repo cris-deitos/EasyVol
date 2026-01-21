@@ -128,6 +128,9 @@ class AutoLogger {
             'fee_payments' => 'fee_payments',
             'pay_fee' => 'fee_payments',
             'activity_logs' => 'activity_logs',
+            'passwords' => 'password_management',
+            'password_edit' => 'password_management',
+            'password_api' => 'password_management',
         ];
         
         return $moduleMap[$pageName] ?? $pageName;
@@ -218,6 +221,9 @@ class AutoLogger {
             'pay_fee' => 'Pagamento Quota',
             'activity_logs' => 'Log Attività',
             'import_data' => 'Importazione Dati CSV',
+            'passwords' => 'Gestione Password',
+            'password_edit' => 'Modifica/Visualizza Password',
+            'password_api' => 'API Password',
         ];
         
         return $pageNames[$pageName] ?? ucfirst(str_replace('_', ' ', $pageName));

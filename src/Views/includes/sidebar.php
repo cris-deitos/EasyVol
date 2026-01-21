@@ -193,6 +193,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <span>Amministrazione</span>
         </h6>
         <ul class="nav flex-column mb-2">
+            <?php if ($app->checkPermission('password_management', 'view')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'passwords.php' ? 'active' : '' ?>" href="passwords.php">
+                    <i class="bi bi-key"></i> Gestione Password
+                </a>
+            </li>
+            <?php endif; ?>
+            
             <?php if ($app->checkPermission('users', 'view')): ?>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'users.php' ? 'active' : '' ?>" href="users.php">
