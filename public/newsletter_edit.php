@@ -183,7 +183,7 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../assets/css/main.css">
     <!-- TinyMCE Editor - NOTE: Replace 'no-api-key' with a valid TinyMCE API key for production use -->
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/svhvbvqwcchk5enuxule1zzpw3zpm3rvldernny7t3vwh22j/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <?php include __DIR__ . '/../src/Views/includes/navbar.php'; ?>

@@ -29,7 +29,7 @@ $pageTitle = 'Editor Documento';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- TinyMCE -->
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/svhvbvqwcchk5enuxule1zzpw3zpm3rvldernny7t3vwh22j/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <style>
         body {
             background: #f5f5f5;
