@@ -145,24 +145,28 @@ try {
         }
         
         if ($type === 'qualifications') {
-            // Check if used in member_roles
-            $used = $db->fetchOne("SELECT COUNT(*) as cnt FROM member_roles mr 
-                                   JOIN member_qualification_types mqt ON mr.role_name = mqt.name 
-                                   WHERE mqt.id = ?", [$id]);
-            if ($used && $used['cnt'] > 0) {
-                throw new Exception('Impossibile eliminare: qualifica utilizzata da ' . $used['cnt'] . ' soci');
+            // Check if used in member_roles (case-insensitive with trimming)
+            $qualType = $db->fetchOne("SELECT name FROM member_qualification_types WHERE id = ?", [$id]);
+            if ($qualType) {
+                $used = $db->fetchOne("SELECT COUNT(*) as cnt FROM member_roles 
+                                       WHERE TRIM(LOWER(role_name)) = TRIM(LOWER(?))", [$qualType['name']]);
+                if ($used && $used['cnt'] > 0) {
+                    throw new Exception('Impossibile eliminare: qualifica utilizzata da ' . $used['cnt'] . ' soci');
+                }
             }
             
             $sql = "DELETE FROM member_qualification_types WHERE id = ?";
             $db->execute($sql, [$id]);
             echo json_encode(['success' => true, 'message' => 'Qualifica eliminata con successo']);
         } elseif ($type === 'course-types') {
-            // Check if used in training_courses
-            $used = $db->fetchOne("SELECT COUNT(*) as cnt FROM training_courses tc 
-                                   JOIN training_course_types tct ON tc.course_type = tct.code 
-                                   WHERE tct.id = ?", [$id]);
-            if ($used && $used['cnt'] > 0) {
-                throw new Exception('Impossibile eliminare: tipo corso utilizzato in ' . $used['cnt'] . ' corsi');
+            // Check if used in training_courses (case-insensitive with trimming)
+            $courseType = $db->fetchOne("SELECT code FROM training_course_types WHERE id = ?", [$id]);
+            if ($courseType) {
+                $used = $db->fetchOne("SELECT COUNT(*) as cnt FROM training_courses 
+                                       WHERE TRIM(LOWER(course_type)) = TRIM(LOWER(?))", [$courseType['code']]);
+                if ($used && $used['cnt'] > 0) {
+                    throw new Exception('Impossibile eliminare: tipo corso utilizzato in ' . $used['cnt'] . ' corsi');
+                }
             }
             
             $sql = "DELETE FROM training_course_types WHERE id = ?";

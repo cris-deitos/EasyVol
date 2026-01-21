@@ -2171,8 +2171,16 @@ document.addEventListener('DOMContentLoaded', function() {
             row.addEventListener('dragend', function(e) {
                 this.style.opacity = '';
                 
-                // Save new order
-                const ids = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.id);
+                // Save new order - validate all rows have data-id
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const ids = rows.map(r => r.dataset.id).filter(id => id); // Filter out undefined/null
+                
+                if (ids.length !== rows.length) {
+                    console.error('Some table rows are missing data-id attributes');
+                    showAlert('danger', 'Errore: impossibile salvare l\'ordine');
+                    return;
+                }
+                
                 fetch('api/settings_manage.php?action=reorder&type=' + type, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -2182,7 +2190,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(data => {
                     if (data.success) {
                         showAlert('success', data.message);
+                    } else {
+                        showAlert('danger', data.message || 'Errore durante il salvataggio');
                     }
+                })
+                .catch(error => {
+                    showAlert('danger', 'Errore: ' + error.message);
                 });
             });
             

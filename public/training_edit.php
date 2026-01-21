@@ -173,14 +173,21 @@ $pageTitle = $isEdit ? 'Modifica Corso' : 'Nuovo Corso';
                                         $selectedType = $course['course_type'] ?? $_POST['course_type'] ?? '';
                                         
                                         $currentCategory = '';
+                                        $inOptgroup = false;
                                         foreach ($courseTypes as $ct):
                                             // Add optgroup for category changes
                                             if ($ct['category'] && $ct['category'] !== $currentCategory) {
-                                                if ($currentCategory !== '') {
+                                                if ($inOptgroup) {
                                                     echo '</optgroup>';
                                                 }
                                                 echo '<optgroup label="' . htmlspecialchars($ct['category']) . '">';
                                                 $currentCategory = $ct['category'];
+                                                $inOptgroup = true;
+                                            } elseif (!$ct['category'] && $inOptgroup) {
+                                                // Close optgroup if we hit an uncategorized course after categorized ones
+                                                echo '</optgroup>';
+                                                $inOptgroup = false;
+                                                $currentCategory = '';
                                             }
                                         ?>
                                             <option value="<?php echo htmlspecialchars($ct['code']); ?>" 
@@ -189,7 +196,7 @@ $pageTitle = $isEdit ? 'Modifica Corso' : 'Nuovo Corso';
                                             </option>
                                         <?php 
                                         endforeach;
-                                        if ($currentCategory !== '') {
+                                        if ($inOptgroup) {
                                             echo '</optgroup>';
                                         }
                                         ?>
