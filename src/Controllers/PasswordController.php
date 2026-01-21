@@ -52,6 +52,11 @@ class PasswordController {
         // Convert hex key to binary for encryption
         $keyBinary = hex2bin($this->encryptionKey);
         $encrypted = openssl_encrypt($password, 'aes-256-cbc', $keyBinary, 0, $iv);
+        
+        if ($encrypted === false) {
+            throw new \Exception('Password encryption failed');
+        }
+        
         return base64_encode($iv . $encrypted);
     }
     
@@ -59,12 +64,24 @@ class PasswordController {
      * Decrypt a password
      */
     private function decryptPassword($encryptedPassword) {
-        $data = base64_decode($encryptedPassword);
+        $data = base64_decode($encryptedPassword, true);
+        
+        if ($data === false || strlen($data) < 16) {
+            throw new \Exception('Invalid encrypted password data');
+        }
+        
         $iv = substr($data, 0, 16);
         $encrypted = substr($data, 16);
+        
         // Convert hex key to binary for decryption
         $keyBinary = hex2bin($this->encryptionKey);
-        return openssl_decrypt($encrypted, 'aes-256-cbc', $keyBinary, 0, $iv);
+        $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $keyBinary, 0, $iv);
+        
+        if ($decrypted === false) {
+            throw new \Exception('Password decryption failed');
+        }
+        
+        return $decrypted;
     }
     
     /**

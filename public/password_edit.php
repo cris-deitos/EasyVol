@@ -508,9 +508,34 @@ $pageTitle = $isEdit ? ($isEditMode ? 'Modifica Password' : 'Visualizza Password
         // Copy password to clipboard
         function copyPassword() {
             const passwordInput = document.getElementById('password-display');
+            const password = passwordInput.value;
+            
+            // Use modern Clipboard API with fallback
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(password)
+                    .then(() => {
+                        alert('Password copiata negli appunti!');
+                    })
+                    .catch(err => {
+                        console.error('Errore durante la copia:', err);
+                        // Fallback to old method
+                        fallbackCopyPassword(passwordInput);
+                    });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyPassword(passwordInput);
+            }
+        }
+        
+        // Fallback copy method for older browsers
+        function fallbackCopyPassword(passwordInput) {
             passwordInput.select();
-            document.execCommand('copy');
-            alert('Password copiata negli appunti!');
+            try {
+                document.execCommand('copy');
+                alert('Password copiata negli appunti!');
+            } catch (err) {
+                alert('Impossibile copiare la password. Copia manualmente.');
+            }
         }
         
         // Generate random password
