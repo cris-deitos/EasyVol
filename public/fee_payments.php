@@ -410,6 +410,43 @@ $pageTitle = 'Gestione Pagamento Quote';
                             </div>
                         </div>
                         
+                        <!-- Send Reminder Button -->
+                        <?php
+                        // Check if reminders can be sent for this year
+                        $reminderCheck = $controller->canSendReminders($unpaidYear);
+                        ?>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h5 class="mb-2">
+                                            <i class="bi bi-envelope"></i> Promemoria Pagamento Quote
+                                        </h5>
+                                        <p class="text-muted mb-0">
+                                            Invia email di promemoria a tutti i soci attivi che non hanno ancora versato la quota per l'anno <?php echo $unpaidYear; ?>.
+                                        </p>
+                                        <?php if (!$reminderCheck['can_send']): ?>
+                                        <div class="alert alert-warning mt-2 mb-0">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            Promemoria già inviato il <?php echo date('d/m/Y', strtotime($reminderCheck['last_sent'])); ?>
+                                            (<?php echo $reminderCheck['days_since']; ?> giorni fa).
+                                            Potrai inviare nuovamente tra <?php echo 20 - $reminderCheck['days_since']; ?> giorni.
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button type="button" 
+                                                class="btn btn-warning btn-lg" 
+                                                id="sendRemindersBtn"
+                                                <?php echo !$reminderCheck['can_send'] ? 'disabled' : ''; ?>
+                                                onclick="sendFeeReminders(<?php echo $unpaidYear; ?>)">
+                                            <i class="bi bi-send"></i> Invia Promemoria
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Unpaid Members Table -->
                         <div class="card">
                             <div class="card-header">
@@ -512,6 +549,45 @@ $pageTitle = 'Gestione Pagamento Quote';
                 document.getElementById('requestIdInput').value = requestId;
                 document.getElementById('actionForm').submit();
             }
+        }
+        
+        function sendFeeReminders(year) {
+            if (!confirm('Sei sicuro di voler inviare i promemoria di pagamento a tutti i soci che non hanno ancora versato la quota per l\'anno ' + year + '?\n\nLe email saranno accodate e inviate tramite cron.')) {
+                return;
+            }
+            
+            const btn = document.getElementById('sendRemindersBtn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Invio in corso...';
+            
+            fetch('api/send_fee_reminders.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    year: year,
+                    csrf_token: '<?php echo CsrfProtection::generateToken(); ?>'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message + '\n\nLe email saranno inviate gradualmente nei prossimi minuti.');
+                    window.location.reload();
+                } else {
+                    alert('❌ Errore: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Errore durante l\'invio dei promemoria. Riprova.');
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            });
         }
     </script>
 </body>
