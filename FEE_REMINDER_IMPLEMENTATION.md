@@ -1,51 +1,39 @@
 # Sistema di Promemoria Pagamento Quote Associative
 
-Questo documento descrive il sistema di invio promemoria per il pagamento delle quote associative implementato in EasyVol.
+Questo documento descrive il sistema semplificato di invio promemoria per il pagamento delle quote associative implementato in EasyVol.
 
 ## Panoramica
 
 Il sistema consente di inviare promemoria via email a tutti i soci (volontari e cadetti) che non hanno ancora versato la quota associativa per un determinato anno. Il sistema implementa:
 
 - **Cooldown di 20 giorni**: Previene l'invio di promemoria troppo frequenti
-- **Invio asincrono**: Le email vengono accodate e inviate gradualmente tramite cron
-- **Tracking completo**: Ogni invio viene tracciato nel database
+- **Invio immediato**: Le email vengono accodate direttamente nella `email_queue` esistente
+- **Tracking semplificato**: Un solo record per batch nella tabella `fee_payment_reminders`
 - **Interfaccia utente intuitiva**: Pulsante nella sezione "Quote Non Versate"
 
-## Architettura
+## Architettura Semplificata
 
 ### Database
 
-Il sistema utilizza due nuove tabelle:
+Il sistema utilizza **UNA SOLA tabella** dedicata ai promemoria:
 
 #### `fee_payment_reminders`
-Traccia i batch di promemoria inviati:
+Traccia i batch di promemoria inviati (solo per il cooldown):
 - `id`: ID univoco del batch
 - `year`: Anno di riferimento della quota
-- `sent_at`: Data e ora di creazione del batch
 - `sent_by`: ID dell'utente che ha avviato l'invio
-- `total_sent`: Numero totale di email nel batch
-- `status`: Stato del batch (pending, processing, completed, failed)
-- `notes`: Note aggiuntive
+- `sent_at`: Data e ora di creazione del batch
+- `total_queued`: Numero totale di email accodate in `email_queue`
 
-#### `fee_payment_reminder_members`
-Traccia ogni singola email del batch:
-- `id`: ID univoco dell'email
-- `reminder_id`: Riferimento al batch
-- `member_type`: Tipo di socio (adult/junior)
-- `member_id`: ID del socio
-- `registration_number`: Matricola del socio
-- `email`: Indirizzo email del destinatario
-- `status`: Stato dell'invio (pending, sent, failed)
-- `sent_at`: Data e ora di invio effettivo
-- `error_message`: Messaggio di errore in caso di fallimento
+Le email vengono accodate nella tabella **esistente** `email_queue` che viene già processata dal cron `email_queue.php`.
 
 ### Componenti
 
 1. **FeePaymentController** (`src/Controllers/FeePaymentController.php`)
    - `canSendReminders()`: Verifica se è possibile inviare promemoria (20 giorni dall'ultimo invio)
-   - `createReminderBatch()`: Crea un nuovo batch di promemoria
-   - `processReminderQueue()`: Processa la coda e invia le email (chiamato da cron)
+   - `createReminderBatch()`: Accoda le email direttamente in `email_queue` usando `EmailSender->queue()`
    - `getUnpaidMembersForReminder()`: Ottiene lista soci senza quota (con email)
+   - `buildReminderEmailBody()`: Costruisce il corpo dell'email personalizzata
 
 2. **API Endpoint** (`public/api/send_fee_reminders.php`)
    - Gestisce la richiesta AJAX dall'interfaccia utente
@@ -58,39 +46,40 @@ Traccia ogni singola email del batch:
    - Messaggio informativo sul cooldown
    - JavaScript per l'invio AJAX
 
-4. **Cron Job** (`cron/fee_payment_reminders.php`)
-   - Eseguito ogni 5 minuti
-   - Processa fino a 50 email per esecuzione
-   - Aggiorna lo stato delle email e dei batch
+4. **Cron Job Esistente** (`cron/email_queue.php`)
+   - Già presente nel sistema
+   - Processa TUTTE le email in coda (inclusi i promemoria)
+   - Eseguito ogni 5-10 minuti su hosting condiviso
 
-## Flusso di Lavoro
+## Flusso di Lavoro Semplificato
 
 ### 1. Creazione Batch
 
 Quando un amministratore clicca sul pulsante "Invia Promemoria":
 
 1. Il sistema verifica che siano passati almeno 20 giorni dall'ultimo invio
-2. Ottiene la lista di tutti i soci attivi senza quota per l'anno selezionato
+2. Ottiene la lista di tutti i soci attivi senza quota per l'anno selezato
 3. Filtra solo i soci che hanno un indirizzo email valido
-4. Crea un record in `fee_payment_reminders` con status 'pending'
-5. Crea un record in `fee_payment_reminder_members` per ogni socio
+4. **Accoda direttamente le email in `email_queue`** usando `EmailSender->queue()`
+5. Inserisce UN solo record in `fee_payment_reminders` per tracciare la data (cooldown)
 6. Restituisce conferma all'utente
 
-### 2. Invio Email (via Cron)
+### 2. Invio Email (automatico)
 
-Il cron `fee_payment_reminders.php` esegue questi passi:
+Il cron **esistente** `email_queue.php` si occupa dell'invio:
 
-1. Ottiene fino a 50 email con status 'pending'
-2. Per ogni email:
-   - Recupera i dati del socio
-   - Costruisce il corpo dell'email
-   - Accoda l'email nella tabella `email_queue`
-   - Aggiorna lo status a 'sent' o 'failed'
-3. Aggiorna lo status del batch quando tutte le email sono processate
+1. Eseguito ogni 5-10 minuti (configurabile)
+2. Processa le email in coda (inclusi i promemoria)
+3. Invia le email tramite SMTP
+4. Registra i log in `email_logs`
 
-### 3. Invio Effettivo
+## Vantaggi della Soluzione Semplificata
 
-Il cron `email_queue.php` (già esistente) processa la coda standard e invia fisicamente le email tramite SMTP.
+✅ **Nessun cron aggiuntivo** - Usa l'infrastruttura esistente `email_queue.php`
+✅ **Nessuna tabella ridondante** - Elimina `fee_payment_reminder_members`
+✅ **Codice più semplice** - Meno metodi, meno complessità
+✅ **Stesso comportamento** - L'utente non nota differenze
+✅ **Manutenzione ridotta** - Un solo sistema di coda email da gestire
 
 ## Installazione
 
@@ -102,22 +91,21 @@ Eseguire la migrazione `migrations/018_add_fee_reminder_system.sql`:
 mysql -u username -p database_name < migrations/018_add_fee_reminder_system.sql
 ```
 
-Oppure copiare le CREATE TABLE nel tool di gestione database (phpMyAdmin, ecc.).
+La migration rimuoverà automaticamente la tabella `fee_payment_reminder_members` se esiste (cleanup).
 
-### 2. Configurare il Cron
+### 2. Verificare Cron Esistente
 
-Aggiungere al crontab:
-
-```bash
-# Fee Payment Reminders - Ogni 5 minuti
-*/5 * * * * php /percorso/easyvol/cron/fee_payment_reminders.php >> /var/log/easyvol/fee_reminders.log 2>&1
-```
-
-**Per Aruba Hosting (HTTPS):**
+Assicurarsi che il cron `email_queue.php` sia configurato:
 
 ```bash
-*/5 * * * * wget -q -O /dev/null "https://tuosito.com/public/cron/fee_payment_reminders.php?token=IL_TUO_TOKEN"
+# CLI
+*/10 * * * * php /percorso/easyvol/cron/email_queue.php >> /var/log/easyvol/email_queue.log 2>&1
+
+# HTTPS (per Aruba)
+*/10 * * * * wget -q -O /dev/null "https://tuosito.com/public/cron/email_queue.php?token=IL_TUO_TOKEN"
 ```
+
+**NOTA**: Non serve configurare `fee_payment_reminders.php` - è stato eliminato!
 
 ### 3. Verificare Permessi
 
@@ -132,16 +120,16 @@ L'utente deve avere il permesso `members.edit` per accedere alla funzionalità.
 3. Selezionare l'**anno** desiderato
 4. Cliccare su **Invia Promemoria**
 5. Confermare l'operazione nel popup
-6. Le email saranno accodate e inviate gradualmente
+6. Le email saranno accodate e inviate automaticamente dal cron esistente
 
 ### Verifica Stato
 
 Dopo l'invio, è possibile verificare lo stato:
 
-- Nel database, tabella `fee_payment_reminders` per lo stato del batch
-- Nel database, tabella `fee_payment_reminder_members` per singole email
-- Nei log del cron: `/var/log/easyvol/fee_reminders.log`
-- Nella tabella `activity_logs` per le esecuzioni del cron
+- Nel database, tabella `fee_payment_reminders` per la data dell'ultimo invio
+- Nel database, tabella `email_queue` per le email in coda
+- Nella tabella `email_logs` per le email inviate
+- Nei log del cron: `/var/log/easyvol/email_queue.log`
 
 ## Contenuto Email
 
@@ -167,13 +155,19 @@ return [
 ];
 ```
 
-### Batch Size
+### Priorità Email
 
-Il numero di email processate per esecuzione cron è configurabile:
+Le email di promemoria sono accodate con priorità 2 (importante ma non urgente):
 
 ```php
-// In cron/fee_payment_reminders.php
-$sent = $controller->processReminderQueue(50);  // Modificare questo valore
+// In createReminderBatch()
+$emailSender->queue(
+    $member['email'],
+    $subject,
+    $body,
+    [], // no attachments
+    2   // priority: 1=alta, 5=bassa
+);
 ```
 
 ### Contenuto Email
@@ -192,26 +186,25 @@ SELECT * FROM fee_payment_reminders ORDER BY sent_at DESC;
 **Verificare email in coda:**
 ```sql
 SELECT COUNT(*) as pending 
-FROM fee_payment_reminder_members 
+FROM email_queue 
 WHERE status = 'pending';
 ```
 
-**Verificare email fallite:**
+**Verificare email inviate (promemoria):**
 ```sql
-SELECT frm.*, m.first_name, m.last_name
-FROM fee_payment_reminder_members frm
-LEFT JOIN members m ON frm.member_id = m.id AND frm.member_type = 'adult'
-LEFT JOIN junior_members jm ON frm.member_id = jm.id AND frm.member_type = 'junior'
-WHERE frm.status = 'failed';
+SELECT * FROM email_logs 
+WHERE subject LIKE 'Promemoria: Quota Associativa%'
+ORDER BY sent_at DESC;
 ```
 
 **Verificare ultimo invio per anno:**
 ```sql
 SELECT year, MAX(sent_at) as last_sent, 
-       DATEDIFF(NOW(), MAX(sent_at)) as days_since
+       DATEDIFF(NOW(), MAX(sent_at)) as days_since,
+       SUM(total_queued) as total_emails
 FROM fee_payment_reminders
-WHERE status = 'completed'
-GROUP BY year;
+GROUP BY year
+ORDER BY year DESC;
 ```
 
 ## Troubleshooting
@@ -224,37 +217,36 @@ GROUP BY year;
 
 ### Email non vengono inviate
 
-**Causa**: Il cron `fee_payment_reminders.php` non è in esecuzione.
+**Causa**: Il cron `email_queue.php` non è in esecuzione.
 
 **Soluzione**: 
 1. Verificare configurazione cron: `crontab -l`
-2. Controllare i log: `tail -f /var/log/easyvol/fee_reminders.log`
-3. Eseguire manualmente per test: `php cron/fee_payment_reminders.php`
+2. Controllare i log: `tail -f /var/log/easyvol/email_queue.log`
+3. Eseguire manualmente per test: `php cron/email_queue.php`
 
-### Alcune email falliscono
+### Email in coda ma non inviate
 
-**Causa**: Indirizzi email non validi o problemi SMTP.
-
-**Soluzione**:
-1. Verificare gli indirizzi email nella tabella `fee_payment_reminder_members` con status 'failed'
-2. Controllare l'`error_message` per dettagli
-3. Correggere gli indirizzi email non validi
-4. Verificare configurazione SMTP in `config/config.php`
-
-### Batch rimane in stato 'processing'
-
-**Causa**: Alcune email sono bloccate in stato 'pending'.
+**Causa**: Possibili problemi SMTP o configurazione email.
 
 **Soluzione**:
-1. Controllare `fee_payment_reminder_members` per email pending
-2. Verificare se il cron è in esecuzione
-3. Se necessario, resettare manualmente lo stato:
-```sql
-UPDATE fee_payment_reminder_members 
-SET status = 'failed', error_message = 'Manual reset' 
-WHERE status = 'pending' 
-AND reminder_id = [ID_BATCH];
-```
+1. Verificare configurazione SMTP in `config/config.php`
+2. Controllare la tabella `email_queue` per errori
+3. Verificare i log in `email_logs` per messaggi di errore
+4. Testare invio email manualmente tramite `public/test_email.php` (se disponibile)
+
+## Differenze dal Sistema Precedente
+
+### Prima (PR #274 - Complesso)
+- ❌ Due tabelle: `fee_payment_reminders` + `fee_payment_reminder_members`
+- ❌ Due cron: `email_queue.php` + `fee_payment_reminders.php`
+- ❌ Doppia coda: prima `fee_payment_reminder_members`, poi `email_queue`
+- ❌ Metodi aggiuntivi: `processReminderQueue()`, `updateReminderBatchStatus()`, ecc.
+
+### Dopo (Semplificato)
+- ✅ Una tabella: `fee_payment_reminders` (solo tracking cooldown)
+- ✅ Un cron: `email_queue.php` (già esistente)
+- ✅ Coda diretta: email accodate subito in `email_queue`
+- ✅ Codice minimo: solo i metodi essenziali
 
 ## Sicurezza
 
@@ -262,30 +254,20 @@ AND reminder_id = [ID_BATCH];
 - Token CSRF obbligatorio per tutte le operazioni POST
 - Il cron può essere protetto con token segreto (metodo HTTPS)
 - Nessun dato sensibile nei log
+- Input sanitizzato (htmlspecialchars) nel corpo email
 
 ## Performance
 
-- Le email sono inviate in batch di 50 per esecuzione
-- L'invio è distribuito nel tempo (ogni 5 minuti)
+- Le email sono accodate istantaneamente
+- L'invio è distribuito nel tempo tramite il cron esistente
 - Non impatta sulle prestazioni del sistema principale
 - Il processo è asincrono e non blocca l'interfaccia utente
-
-## Estensioni Future
-
-Possibili miglioramenti:
-
-- [ ] Template email personalizzabile dall'interfaccia
-- [ ] Statistiche di invio (aperture, click)
-- [ ] Filtri avanzati (per nucleo, gruppo, ecc.)
-- [ ] Invio selettivo a specifici soci
-- [ ] Reminder automatici programmabili
-- [ ] Notifiche Telegram per gli amministratori
-- [ ] Report di riepilogo dopo l'invio
+- Nessun overhead di gestione tabelle duplicate
 
 ## Supporto
 
 Per problemi o domande:
-- Consultare i log di sistema
-- Verificare la configurazione email
+- Consultare i log di sistema (`email_queue.log`)
+- Verificare la configurazione email in `config/config.php`
 - Controllare i permessi utente
 - Aprire una issue su GitHub con dettagli
