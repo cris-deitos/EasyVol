@@ -18,6 +18,13 @@ class JuniorMemberController {
     private $config;
     
     /**
+     * Registration number prefix for junior members
+     * Junior members have registration numbers like "C-1", "C-23", etc.
+     */
+    const REGISTRATION_PREFIX = 'C-';
+    const REGISTRATION_PREFIX_LENGTH = 2; // Length of "C-"
+    
+    /**
      * Constructor
      * 
      * @param Database $db Database instance
@@ -71,9 +78,10 @@ class JuniorMemberController {
         // Determine sort order
         $sortBy = $filters['sort_by'] ?? 'alphabetical';
         if ($sortBy === 'registration_number') {
-            // Junior members have registration numbers prefixed with "C-" (e.g., C-1, C-23)
-            // SUBSTRING(jm.registration_number, 3) removes the "C-" prefix for numeric sorting
-            $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) ASC";
+            // Junior members have registration numbers prefixed with self::REGISTRATION_PREFIX (e.g., C-1, C-23)
+            // SUBSTRING removes the prefix for numeric sorting
+            $prefixLen = strlen(self::REGISTRATION_PREFIX) + 1; // +1 for SQL SUBSTRING indexing
+            $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, $prefixLen) AS UNSIGNED) ASC";
         } else {
             $orderBy = "ORDER BY jm.last_name, jm.first_name";
         }
@@ -890,19 +898,13 @@ class JuniorMemberController {
     }
     
     /**
-     * Get next junior member ID based on current filters and sort order
+     * Build WHERE clause and parameters array for navigation queries
+     * Helper method to reduce code duplication
      * 
-     * @param int $currentId Current junior member ID
      * @param array $filters Filters applied
-     * @return int|null Next junior member ID or null if none
+     * @return array [whereClause, params]
      */
-    public function getNextMemberId($currentId, $filters = []) {
-        // Get current member details first
-        $currentMember = $this->get($currentId);
-        if (!$currentMember) {
-            return null;
-        }
-        
+    private function buildNavigationFilters($filters) {
         $where = [];
         $params = [];
         
@@ -924,11 +926,31 @@ class JuniorMemberController {
             $params[] = $searchTerm;
         }
         
-        // Build WHERE clause
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        
+        return [$whereClause, $params];
+    }
+    
+    /**
+     * Get next junior member ID based on current filters and sort order
+     * 
+     * @param int $currentId Current junior member ID
+     * @param array $filters Filters applied
+     * @return int|null Next junior member ID or null if none
+     */
+    public function getNextMemberId($currentId, $filters = []) {
+        // Get current member details first
+        $currentMember = $this->get($currentId);
+        if (!$currentMember) {
+            return null;
+        }
+        
+        [$whereClause, $params] = $this->buildNavigationFilters($filters);
         
         // Determine sort order and comparison logic
         $sortBy = $filters['sort_by'] ?? 'registration_number';
+        $prefixLen = strlen(self::REGISTRATION_PREFIX) + 1; // +1 for SQL SUBSTRING indexing
+        
         if ($sortBy === 'alphabetical') {
             // Next by name
             $orderBy = "ORDER BY jm.last_name ASC, jm.first_name ASC";
@@ -940,9 +962,9 @@ class JuniorMemberController {
             $params[] = $currentMember['first_name'];
             $params[] = $currentId;
         } else {
-            // Next by registration number (C-1, C-2, etc.)
-            $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) ASC, jm.id ASC";
-            $comparison = "(CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) > CAST(SUBSTRING(?, 3) AS UNSIGNED) OR (jm.registration_number = ? AND jm.id > ?))";
+            // Next by registration number (e.g., C-1, C-2)
+            $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, $prefixLen) AS UNSIGNED) ASC, jm.id ASC";
+            $comparison = "(CAST(SUBSTRING(jm.registration_number, $prefixLen) AS UNSIGNED) > CAST(SUBSTRING(?, $prefixLen) AS UNSIGNED) OR (jm.registration_number = ? AND jm.id > ?))";
             $params[] = $currentMember['registration_number'];
             $params[] = $currentMember['registration_number'];
             $params[] = $currentId;
@@ -974,32 +996,12 @@ class JuniorMemberController {
             return null;
         }
         
-        $where = [];
-        $params = [];
-        
-        // Apply same filters as index method
-        if (!empty($filters['status'])) {
-            $where[] = "jm.member_status = ?";
-            $params[] = $filters['status'];
-        }
-        
-        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
-            $where[] = "jm.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
-        }
-        
-        if (!empty($filters['search'])) {
-            $where[] = "(jm.first_name LIKE ? OR jm.last_name LIKE ? OR jm.registration_number LIKE ?)";
-            $searchTerm = '%' . $filters['search'] . '%';
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-        }
-        
-        // Build WHERE clause
-        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        [$whereClause, $params] = $this->buildNavigationFilters($filters);
         
         // Determine sort order and comparison logic (DESC for previous)
         $sortBy = $filters['sort_by'] ?? 'registration_number';
+        $prefixLen = strlen(self::REGISTRATION_PREFIX) + 1; // +1 for SQL SUBSTRING indexing
+        
         if ($sortBy === 'alphabetical') {
             // Previous by name
             $orderBy = "ORDER BY jm.last_name DESC, jm.first_name DESC";
@@ -1011,9 +1013,9 @@ class JuniorMemberController {
             $params[] = $currentMember['first_name'];
             $params[] = $currentId;
         } else {
-            // Previous by registration number (C-1, C-2, etc.)
-            $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) DESC, jm.id DESC";
-            $comparison = "(CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) < CAST(SUBSTRING(?, 3) AS UNSIGNED) OR (jm.registration_number = ? AND jm.id < ?))";
+            // Previous by registration number (e.g., C-1, C-2)
+            $orderBy = "ORDER BY CAST(SUBSTRING(jm.registration_number, $prefixLen) AS UNSIGNED) DESC, jm.id DESC";
+            $comparison = "(CAST(SUBSTRING(jm.registration_number, $prefixLen) AS UNSIGNED) < CAST(SUBSTRING(?, $prefixLen) AS UNSIGNED) OR (jm.registration_number = ? AND jm.id < ?))";
             $params[] = $currentMember['registration_number'];
             $params[] = $currentMember['registration_number'];
             $params[] = $currentId;

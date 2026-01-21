@@ -682,19 +682,13 @@ class MemberController {
     }
     
     /**
-     * Get next member ID based on current filters and sort order
+     * Build WHERE clause and parameters array for navigation queries
+     * Helper method to reduce code duplication
      * 
-     * @param int $currentId Current member ID
      * @param array $filters Filters applied
-     * @return int|null Next member ID or null if none
+     * @return array [whereClause, params]
      */
-    public function getNextMemberId($currentId, $filters = []) {
-        // Get current member details first
-        $currentMember = $this->get($currentId);
-        if (!$currentMember) {
-            return null;
-        }
-        
+    private function buildNavigationFilters($filters) {
         $where = [];
         $params = [];
         
@@ -726,8 +720,26 @@ class MemberController {
             $params[] = $searchTerm;
         }
         
-        // Build WHERE clause
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        
+        return [$whereClause, $params];
+    }
+    
+    /**
+     * Get next member ID based on current filters and sort order
+     * 
+     * @param int $currentId Current member ID
+     * @param array $filters Filters applied
+     * @return int|null Next member ID or null if none
+     */
+    public function getNextMemberId($currentId, $filters = []) {
+        // Get current member details first
+        $currentMember = $this->get($currentId);
+        if (!$currentMember) {
+            return null;
+        }
+        
+        [$whereClause, $params] = $this->buildNavigationFilters($filters);
         
         // Determine sort order and comparison logic
         $sortBy = $filters['sort_by'] ?? 'registration_number';
@@ -776,39 +788,7 @@ class MemberController {
             return null;
         }
         
-        $where = [];
-        $params = [];
-        
-        // Apply same filters as index method
-        if (!empty($filters['status'])) {
-            $where[] = "m.member_status = ?";
-            $params[] = $filters['status'];
-        }
-        
-        if (!empty($filters['volunteer_status'])) {
-            $where[] = "m.volunteer_status = ?";
-            $params[] = $filters['volunteer_status'];
-        }
-        
-        if (!empty($filters['role'])) {
-            $where[] = "EXISTS (SELECT 1 FROM member_roles mr WHERE mr.member_id = m.id AND mr.role_name = ?)";
-            $params[] = $filters['role'];
-        }
-        
-        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
-            $where[] = "m.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
-        }
-        
-        if (!empty($filters['search'])) {
-            $where[] = "(m.first_name LIKE ? OR m.last_name LIKE ? OR m.registration_number LIKE ?)";
-            $searchTerm = '%' . $filters['search'] . '%';
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-        }
-        
-        // Build WHERE clause
-        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        [$whereClause, $params] = $this->buildNavigationFilters($filters);
         
         // Determine sort order and comparison logic (DESC for previous)
         $sortBy = $filters['sort_by'] ?? 'registration_number';
