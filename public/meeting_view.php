@@ -171,7 +171,7 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                                             </tr>
                                             <?php if (($meeting['location_type'] ?? '') === 'online' && !empty($meeting['online_details'])): ?>
                                             <tr>
-                                                <th>Istruzioni collegamento online:</th>
+                                                <th>Istruzioni per il collegamento online:</th>
                                                 <td><?php echo nl2br(htmlspecialchars($meeting['online_details'])); ?></td>
                                             </tr>
                                             <?php endif; ?>

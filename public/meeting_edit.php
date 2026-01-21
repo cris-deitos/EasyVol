@@ -260,8 +260,8 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="location_type" class="form-label">Modalità <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="location_type" name="location_type" required>
+                                    <label for="location_type" class="form-label">Modalità</label>
+                                    <select class="form-select" id="location_type" name="location_type">
                                         <option value="fisico" <?php echo ($meeting['location_type'] ?? 'fisico') === 'fisico' ? 'selected' : ''; ?>>In Presenza</option>
                                         <option value="online" <?php echo ($meeting['location_type'] ?? '') === 'online' ? 'selected' : ''; ?>>Online</option>
                                     </select>
