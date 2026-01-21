@@ -348,14 +348,24 @@ class ReportController {
                     e.start_date as data_evento,
                     COUNT(DISTINCT i.id) as numero_interventi,
                     COUNT(DISTINCT COALESCE(ep.member_id, im.member_id)) as numero_volontari,
-                    (COALESCE(SUM(ep.hours), 0) + COALESCE(SUM(im.hours_worked), 0)) as ore_totali,
-                    (COALESCE(SUM(ep.hours), 0) + COALESCE(SUM(im.hours_worked), 0)) / NULLIF(COUNT(DISTINCT COALESCE(ep.member_id, im.member_id)), 0) as ore_medie
+                    CASE 
+                        WHEN COUNT(DISTINCT i.id) = 0 AND e.end_date IS NOT NULL THEN 
+                            COALESCE(SUM(ep.hours), 0) + (COUNT(DISTINCT ep.member_id) * TIMESTAMPDIFF(HOUR, e.start_date, e.end_date))
+                        ELSE 
+                            COALESCE(SUM(ep.hours), 0) + COALESCE(SUM(im.hours_worked), 0)
+                    END as ore_totali,
+                    CASE 
+                        WHEN COUNT(DISTINCT i.id) = 0 AND e.end_date IS NOT NULL THEN 
+                            (COALESCE(SUM(ep.hours), 0) + (COUNT(DISTINCT ep.member_id) * TIMESTAMPDIFF(HOUR, e.start_date, e.end_date))) / NULLIF(COUNT(DISTINCT COALESCE(ep.member_id, im.member_id)), 0)
+                        ELSE 
+                            (COALESCE(SUM(ep.hours), 0) + COALESCE(SUM(im.hours_worked), 0)) / NULLIF(COUNT(DISTINCT COALESCE(ep.member_id, im.member_id)), 0)
+                    END as ore_medie
                 FROM events e
                 LEFT JOIN event_participants ep ON e.id = ep.event_id
                 LEFT JOIN interventions i ON e.id = i.event_id
                 LEFT JOIN intervention_members im ON i.id = im.intervention_id
                 WHERE YEAR(e.start_date) = ?
-                GROUP BY e.id, e.title, e.event_type, e.municipality, e.start_date
+                GROUP BY e.id, e.title, e.event_type, e.municipality, e.start_date, e.end_date
                 ORDER BY e.event_type, ore_totali DESC";
         
         return $this->db->fetchAll($sql, [$year]);
@@ -379,7 +389,12 @@ class ReportController {
                     e.end_date as data_ora_chiusura_evento,
                     COUNT(DISTINCT i.id) as numero_interventi,
                     COUNT(DISTINCT COALESCE(ep.member_id, im.member_id)) as volontari_coinvolti,
-                    (COALESCE(SUM(ep.hours), 0) + COALESCE(SUM(im.hours_worked), 0)) as ore_totali,
+                    CASE 
+                        WHEN COUNT(DISTINCT i.id) = 0 AND e.end_date IS NOT NULL THEN 
+                            COALESCE(SUM(ep.hours), 0) + (COUNT(DISTINCT ep.member_id) * TIMESTAMPDIFF(HOUR, e.start_date, e.end_date))
+                        ELSE 
+                            COALESCE(SUM(ep.hours), 0) + COALESCE(SUM(im.hours_worked), 0)
+                    END as ore_totali,
                     MIN(i.start_time) as data_ora_primo_intervento,
                     COALESCE(MAX(i.end_time), MAX(i.start_time)) as data_ora_ultimo_intervento
                 FROM events e
@@ -432,7 +447,17 @@ class ReportController {
                                    INNER JOIN interventions i3 ON im3.intervention_id = i3.id
                                    INNER JOIN events e3 ON i3.event_id = e3.id
                                    WHERE im3.member_id = m.id 
-                                   AND YEAR(e3.start_date) = ?), 0)) as ore_totali,
+                                   AND YEAR(e3.start_date) = ?), 0) +
+                         COALESCE((SELECT SUM(TIMESTAMPDIFF(HOUR, e5.start_date, e5.end_date))
+                                   FROM event_participants ep5
+                                   INNER JOIN events e5 ON ep5.event_id = e5.id
+                                   WHERE ep5.member_id = m.id
+                                   AND YEAR(e5.start_date) = ?
+                                   AND e5.end_date IS NOT NULL
+                                   AND NOT EXISTS (
+                                       SELECT 1 FROM interventions i5 
+                                       WHERE i5.event_id = e5.id
+                                   )), 0)) as ore_totali,
                         GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as tipi_eventi,
                         MIN(e.start_date) as primo_evento,
                         MAX(e.start_date) as ultimo_evento
@@ -453,7 +478,7 @@ class ReportController {
                 ) AS member_data
                 ORDER BY member_data.ore_totali DESC, member_data.cognome, member_data.nome";
         
-        return $this->db->fetchAll($sql, [$year, $year, $year, $year, $year]);
+        return $this->db->fetchAll($sql, [$year, $year, $year, $year, $year, $year]);
     }
     
     /**
