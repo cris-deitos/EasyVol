@@ -646,7 +646,7 @@ class FeePaymentController {
             $unpaidMembers = $unpaidResult['members'];
             
             if (empty($unpaidMembers)) {
-                return false;
+                throw new \Exception('Nessun socio trovato con quota non versata');
             }
             
             $this->db->beginTransaction();
@@ -673,8 +673,14 @@ class FeePaymentController {
                     
                     if ($queueId) {
                         $totalQueued++;
+                    } else {
+                        error_log("Failed to queue fee reminder email for member {$member['registration_number']} ({$member['email']})");
                     }
                 }
+            }
+            
+            if ($totalQueued === 0) {
+                throw new \Exception('Nessuna email è stata accodata con successo');
             }
             
             // Insert single record in fee_payment_reminders for cooldown tracking

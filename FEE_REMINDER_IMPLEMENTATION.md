@@ -58,7 +58,7 @@ Le email vengono accodate nella tabella **esistente** `email_queue` che viene gi
 Quando un amministratore clicca sul pulsante "Invia Promemoria":
 
 1. Il sistema verifica che siano passati almeno 20 giorni dall'ultimo invio
-2. Ottiene la lista di tutti i soci attivi senza quota per l'anno selezato
+2. Ottiene la lista di tutti i soci attivi senza quota per l'anno selezionato
 3. Filtra solo i soci che hanno un indirizzo email valido
 4. **Accoda direttamente le email in `email_queue`** usando `EmailSender->queue()`
 5. Inserisce UN solo record in `fee_payment_reminders` per tracciare la data (cooldown)
