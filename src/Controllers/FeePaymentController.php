@@ -761,20 +761,30 @@ class FeePaymentController {
         $registrationNumber = htmlspecialchars($member['registration_number'], ENT_QUOTES, 'UTF-8');
         $yearEscaped = htmlspecialchars($year, ENT_QUOTES, 'UTF-8');
         
-        $body = "
-            <h2>Promemoria Pagamento Quota Associativa</h2>
-            <p>Gentile {$firstName} {$lastName},</p>
-            <p>Ti ricordiamo che non risulta ancora versata la quota associativa per l'anno <strong>{$yearEscaped}</strong>.</p>
-            <p><strong>Dati:</strong></p>
-            <ul>
-                <li>Matricola: {$registrationNumber}</li>
-                <li>Anno: {$yearEscaped}</li>
-            </ul>
-            <p>Ti invitiamo a provvedere al pagamento della quota associativa il prima possibile.</p>
-            <p>Dopo aver effettuato il pagamento, puoi caricare la ricevuta attraverso il portale dedicato.</p>
-            <p>Per qualsiasi chiarimento, non esitare a contattarci.</p>
-            <p>Cordiali saluti,<br>L'Amministrazione</p>
-        ";
+    $body = "
+        <h2>Promemoria Pagamento Quota Associativa</h2>
+        <p>Gentile {$firstName} {$lastName},</p>
+        <p>Ti ricordiamo che non risulta ancora versata la quota associativa per l'anno <strong>{$yearEscaped}</strong>.</p>
+        <p><strong>Dati:</strong></p>
+        <ul>
+            <li>Matricola: {$registrationNumber}</li>
+            <li>Anno: {$yearEscaped}</li>
+        </ul>
+        <p>Ti invitiamo a provvedere al pagamento della quota associativa il prima possibile.</p>
+        <p>Dopo aver effettuato il pagamento, puoi caricare la ricevuta attraverso il portale dedicato, 
+        raggiungibile all'interno dei <strong>Servizi Digitali Interni</strong> 
+        <a href=\"https://sdi.protezionecivilebassogarda.it/\" target=\"_blank\" style=\"color: #007bff; text-decoration: underline;\">qui</a>, 
+        e direttamente a questo link: </p>
+        <p style=\"text-align: center; margin:  20px 0;\">
+            <a href=\"https://sdi.protezionecivilebassogarda.it/EasyVol/public/pay_fee.php\" 
+               target=\"_blank\" 
+               style=\"display: inline-block; padding: 12px 24px; background-color: #007bff; color:  white; text-decoration: none; border-radius: 5px; font-weight: bold;\">
+                Carica Ricevuta Pagamento
+            </a>
+        </p>
+        <p>Per qualsiasi chiarimento, non esitare a contattarci.</p>
+        <p>Cordiali saluti,<br>Il Consiglio Direttivo</p>
+    ";
         
         return $body;
     }
