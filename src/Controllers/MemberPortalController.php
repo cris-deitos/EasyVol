@@ -56,7 +56,7 @@ class MemberPortalController {
      * @return mixed|null Returns null if value is empty string, otherwise returns the value
      */
     private function emptyToNull($value) {
-        return (isset($value) && trim($value) === '') ? null : $value;
+        return ($value !== null && trim($value) === '') ? null : $value;
     }
     
     /**
@@ -445,8 +445,8 @@ class MemberPortalController {
                     $this->db->execute($sql, [
                         $memberId,
                         $course['course_name'],
-                        $this->emptyToNull($course['completion_date'] ?? null),
-                        $this->emptyToNull($course['expiry_date'] ?? null),
+                        $this->emptyToNull($course['completion_date'] ?? ''),
+                        $this->emptyToNull($course['expiry_date'] ?? ''),
                         $course['notes'] ?? ''
                     ]);
                     $changes[] = "Corso aggiunto: " . $course['course_name'];
@@ -479,8 +479,8 @@ class MemberPortalController {
                     $memberId,
                     $license['license_type'],
                     $license['license_number'] ?? '',
-                    $this->emptyToNull($license['issue_date'] ?? null),
-                    $this->emptyToNull($license['expiry_date'] ?? null),
+                    $this->emptyToNull($license['issue_date'] ?? ''),
+                    $this->emptyToNull($license['expiry_date'] ?? ''),
                     $license['notes'] ?? ''
                 ]);
                 $changes[] = "Patente aggiunta: " . $license['license_type'];
