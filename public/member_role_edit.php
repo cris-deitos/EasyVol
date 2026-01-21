@@ -50,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// Load available qualifications from database
+$qualifications = $db->fetchAll("SELECT name FROM member_qualification_types WHERE is_active = 1 ORDER BY sort_order ASC, name ASC");
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -82,44 +84,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label for="role_name" class="form-label">Mansione/Qualifica *</label>
                                 <select class="form-select" id="role_name" name="role_name" required>
                                     <option value="">-- Seleziona Mansione --</option>
-                                    <option value="OPERATORE GENERICO" <?php echo $role['role_name'] === 'OPERATORE GENERICO' ? 'selected' : ''; ?>>OPERATORE GENERICO</option>
-                                    <option value="PRESIDENTE" <?php echo $role['role_name'] === 'PRESIDENTE' ? 'selected' : ''; ?>>PRESIDENTE</option>
-                                    <option value="VICE PRESIDENTE" <?php echo $role['role_name'] === 'VICE PRESIDENTE' ? 'selected' : ''; ?>>VICE PRESIDENTE</option>
-                                    <option value="CAPOSQUADRA" <?php echo $role['role_name'] === 'CAPOSQUADRA' ? 'selected' : ''; ?>>CAPOSQUADRA</option>
-                                    <option value="RESPONSABILE RAPPORTI ISTITUZIONALI E STAMPA" <?php echo $role['role_name'] === 'RESPONSABILE RAPPORTI ISTITUZIONALI E STAMPA' ? 'selected' : ''; ?>>RESPONSABILE RAPPORTI ISTITUZIONALI E STAMPA</option>
-                                    <option value="RESPONSABILE NUCLEO TLC RADIO" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO TLC RADIO' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO TLC RADIO</option>
-                                    <option value="RESPONSABILE NUCLEO GIS/GPS" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO GIS/GPS' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO GIS/GPS</option>
-                                    <option value="RESPONSABILE NUCLEO SEGRETERIA OPERATIVA" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO SEGRETERIA OPERATIVA' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO SEGRETERIA OPERATIVA</option>
-                                    <option value="RESPONSABILE NUCLEO DRONE" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO DRONE' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO DRONE</option>
-                                    <option value="RESPONSABILE NUCLEO RICERCA E SOCCORSO" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO RICERCA E SOCCORSO' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO RICERCA E SOCCORSO</option>
-                                    <option value="RESPONSABILE NUCLEO NAUTICO" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO NAUTICO' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO NAUTICO</option>
-                                    <option value="RESPONSABILE NUCLEO SOMMOZZATORI" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO SOMMOZZATORI' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO SOMMOZZATORI</option>
-                                    <option value="RESPONSABILE NUCLEO IDROGEOLOGICO" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO IDROGEOLOGICO' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO IDROGEOLOGICO</option>
-                                    <option value="RESPONSABILE NUCLEO LOGISTICO" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO LOGISTICO' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO LOGISTICO</option>
-                                    <option value="RESPONSABILE NUCLEO CINOFILI" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO CINOFILI' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO CINOFILI</option>
-                                    <option value="RESPONSABILE NUCLEO A CAVALLO" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO A CAVALLO' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO A CAVALLO</option>
-                                    <option value="RESPONSABILE NUCLEO CUCINA E MENSA" <?php echo $role['role_name'] === 'RESPONSABILE NUCLEO CUCINA E MENSA' ? 'selected' : ''; ?>>RESPONSABILE NUCLEO CUCINA E MENSA</option>
-                                    <option value="OPERATORE SEGRETERIA" <?php echo $role['role_name'] === 'OPERATORE SEGRETERIA' ? 'selected' : ''; ?>>OPERATORE SEGRETERIA</option>
-                                    <option value="OPERATORE TLC RADIO" <?php echo $role['role_name'] === 'OPERATORE TLC RADIO' ? 'selected' : ''; ?>>OPERATORE TLC RADIO</option>
-                                    <option value="OPERATORE GIS/GPS" <?php echo $role['role_name'] === 'OPERATORE GIS/GPS' ? 'selected' : ''; ?>>OPERATORE GIS/GPS</option>
-                                    <option value="OPERATORE DRONE" <?php echo $role['role_name'] === 'OPERATORE DRONE' ? 'selected' : ''; ?>>OPERATORE DRONE</option>
-                                    <option value="OPERATORE CUCINA" <?php echo $role['role_name'] === 'OPERATORE CUCINA' ? 'selected' : ''; ?>>OPERATORE CUCINA</option>
-                                    <option value="OPERATORE LOGISTICO" <?php echo $role['role_name'] === 'OPERATORE LOGISTICO' ? 'selected' : ''; ?>>OPERATORE LOGISTICO</option>
-                                    <option value="OPERATORE IDROGEOLOGICO" <?php echo $role['role_name'] === 'OPERATORE IDROGEOLOGICO' ? 'selected' : ''; ?>>OPERATORE IDROGEOLOGICO</option>
-                                    <option value="OPERATORE MENSA" <?php echo $role['role_name'] === 'OPERATORE MENSA' ? 'selected' : ''; ?>>OPERATORE MENSA</option>
-                                    <option value="OPERATORE SOMMOZZATORE" <?php echo $role['role_name'] === 'OPERATORE SOMMOZZATORE' ? 'selected' : ''; ?>>OPERATORE SOMMOZZATORE</option>
-                                    <option value="OPERATORE NAUTICO" <?php echo $role['role_name'] === 'OPERATORE NAUTICO' ? 'selected' : ''; ?>>OPERATORE NAUTICO</option>
-                                    <option value="OPERATORE CINOFILO" <?php echo $role['role_name'] === 'OPERATORE CINOFILO' ? 'selected' : ''; ?>>OPERATORE CINOFILO</option>
-                                    <option value="OPERATORE A CAVALLO" <?php echo $role['role_name'] === 'OPERATORE A CAVALLO' ? 'selected' : ''; ?>>OPERATORE A CAVALLO</option>
-                                    <option value="OPERATORE FOTO REPORTER" <?php echo $role['role_name'] === 'OPERATORE FOTO REPORTER' ? 'selected' : ''; ?>>OPERATORE FOTO REPORTER</option>
-                                    <option value="AUTISTA A" <?php echo $role['role_name'] === 'AUTISTA A' ? 'selected' : ''; ?>>AUTISTA A</option>
-                                    <option value="AUTISTA B" <?php echo $role['role_name'] === 'AUTISTA B' ? 'selected' : ''; ?>>AUTISTA B</option>
-                                    <option value="AUTISTA C" <?php echo $role['role_name'] === 'AUTISTA C' ? 'selected' : ''; ?>>AUTISTA C</option>
-                                    <option value="AUTISTA D" <?php echo $role['role_name'] === 'AUTISTA D' ? 'selected' : ''; ?>>AUTISTA D</option>
-                                    <option value="AUTISTA E" <?php echo $role['role_name'] === 'AUTISTA E' ? 'selected' : ''; ?>>AUTISTA E</option>
-                                    <option value="PILOTA NATANTE" <?php echo $role['role_name'] === 'PILOTA NATANTE' ? 'selected' : ''; ?>>PILOTA NATANTE</option>
-                                    <option value="NON OPERATIVO" <?php echo $role['role_name'] === 'NON OPERATIVO' ? 'selected' : ''; ?>>NON OPERATIVO</option>
+                                    <?php foreach ($qualifications as $qualification): ?>
+                                        <option value="<?php echo htmlspecialchars($qualification['name']); ?>" 
+                                                <?php echo $role['role_name'] === $qualification['name'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($qualification['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Puoi gestire le qualifiche disponibili in <a href="settings.php?tab=qualifications" target="_blank">Impostazioni → Qualifiche Soci</a>
+                                </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
