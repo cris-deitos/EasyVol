@@ -44,6 +44,20 @@ if (!$member) {
     exit;
 }
 
+// Get filter parameters for navigation
+$filters = [
+    'status' => $_GET['status'] ?? '',
+    'volunteer_status' => $_GET['volunteer_status'] ?? '',
+    'role' => $_GET['role'] ?? '',
+    'search' => $_GET['search'] ?? '',
+    'hide_dismissed' => $_GET['hide_dismissed'] ?? '1',
+    'sort_by' => $_GET['sort_by'] ?? 'registration_number'
+];
+
+// Get next and previous member IDs
+$nextMemberId = $controller->getNextMemberId($memberId, $filters);
+$previousMemberId = $controller->getPreviousMemberId($memberId, $filters);
+
 // Determine which sensitive data fields are being accessed based on active tab
 // Whitelist of allowed tab values
 $allowedTabs = ['personal', 'contacts', 'address', 'qualifications', 'courses', 'licenses', 
@@ -101,12 +115,55 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
-                        <a href="members.php" class="text-decoration-none text-muted">
+                        <?php
+                        // Build back URL preserving filter parameters
+                        $backParams = $_GET;
+                        unset($backParams['id']);
+                        unset($backParams['tab']);
+                        $backQueryString = !empty($backParams) ? '?' . http_build_query($backParams) : '';
+                        ?>
+                        <a href="members.php<?php echo $backQueryString; ?>" class="text-decoration-none text-muted">
                             <i class="bi bi-arrow-left"></i>
                         </a>
                         <?php echo htmlspecialchars($pageTitle); ?>
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
+                        <!-- Navigation buttons -->
+                        <div class="btn-group me-2">
+                            <?php
+                            // Build navigation query string (preserve all filters, change only ID)
+                            $navParams = $_GET;
+                            unset($navParams['tab']); // Don't preserve tab when navigating
+                            ?>
+                            <?php if ($previousMemberId): ?>
+                                <?php
+                                $navParams['id'] = $previousMemberId;
+                                $previousUrl = 'member_view.php?' . http_build_query($navParams);
+                                ?>
+                                <a href="<?php echo $previousUrl; ?>" class="btn btn-outline-secondary" title="Socio Precedente">
+                                    <i class="bi bi-chevron-left"></i> Precedente
+                                </a>
+                            <?php else: ?>
+                                <button class="btn btn-outline-secondary" disabled title="Nessun socio precedente">
+                                    <i class="bi bi-chevron-left"></i> Precedente
+                                </button>
+                            <?php endif; ?>
+                            
+                            <?php if ($nextMemberId): ?>
+                                <?php
+                                $navParams['id'] = $nextMemberId;
+                                $nextUrl = 'member_view.php?' . http_build_query($navParams);
+                                ?>
+                                <a href="<?php echo $nextUrl; ?>" class="btn btn-outline-secondary" title="Socio Successivo">
+                                    Successivo <i class="bi bi-chevron-right"></i>
+                                </a>
+                            <?php else: ?>
+                                <button class="btn btn-outline-secondary" disabled title="Nessun socio successivo">
+                                    Successivo <i class="bi bi-chevron-right"></i>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                        
                         <div class="btn-group me-2">
                             <?php if ($app->checkPermission('members', 'edit')): ?>
                                 <a href="member_edit.php?id=<?php echo $member['id']; ?>" class="btn btn-warning">

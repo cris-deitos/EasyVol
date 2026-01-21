@@ -680,4 +680,146 @@ class MemberController {
         
         return $anomalies;
     }
+    
+    /**
+     * Build WHERE clause and parameters array for navigation queries
+     * Helper method to reduce code duplication
+     * 
+     * @param array $filters Filters applied
+     * @return array [whereClause, params]
+     */
+    private function buildNavigationFilters($filters) {
+        $where = [];
+        $params = [];
+        
+        // Apply same filters as index method
+        if (!empty($filters['status'])) {
+            $where[] = "m.member_status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        if (!empty($filters['volunteer_status'])) {
+            $where[] = "m.volunteer_status = ?";
+            $params[] = $filters['volunteer_status'];
+        }
+        
+        if (!empty($filters['role'])) {
+            $where[] = "EXISTS (SELECT 1 FROM member_roles mr WHERE mr.member_id = m.id AND mr.role_name = ?)";
+            $params[] = $filters['role'];
+        }
+        
+        if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
+            $where[] = "m.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
+        }
+        
+        if (!empty($filters['search'])) {
+            $where[] = "(m.first_name LIKE ? OR m.last_name LIKE ? OR m.registration_number LIKE ?)";
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        
+        return [$whereClause, $params];
+    }
+    
+    /**
+     * Get next member ID based on current filters and sort order
+     * 
+     * @param int $currentId Current member ID
+     * @param array $filters Filters applied
+     * @return int|null Next member ID or null if none
+     */
+    public function getNextMemberId($currentId, $filters = []) {
+        // Get current member details first
+        $currentMember = $this->get($currentId);
+        if (!$currentMember) {
+            return null;
+        }
+        
+        [$whereClause, $params] = $this->buildNavigationFilters($filters);
+        
+        // Determine sort order and comparison logic
+        $sortBy = $filters['sort_by'] ?? 'registration_number';
+        if ($sortBy === 'alphabetical') {
+            // Next by name
+            $orderBy = "ORDER BY m.last_name ASC, m.first_name ASC";
+            $comparison = "(m.last_name > ? OR (m.last_name = ? AND m.first_name > ?) OR (m.last_name = ? AND m.first_name = ? AND m.id > ?))";
+            $params[] = $currentMember['last_name'];
+            $params[] = $currentMember['last_name'];
+            $params[] = $currentMember['first_name'];
+            $params[] = $currentMember['last_name'];
+            $params[] = $currentMember['first_name'];
+            $params[] = $currentId;
+        } else {
+            // Next by registration number
+            $orderBy = "ORDER BY CAST(m.registration_number AS UNSIGNED) ASC, m.id ASC";
+            $comparison = "(CAST(m.registration_number AS UNSIGNED) > CAST(? AS UNSIGNED) OR (m.registration_number = ? AND m.id > ?))";
+            $params[] = $currentMember['registration_number'];
+            $params[] = $currentMember['registration_number'];
+            $params[] = $currentId;
+        }
+        
+        if (!empty($whereClause)) {
+            $whereClause .= " AND " . $comparison;
+        } else {
+            $whereClause = "WHERE " . $comparison;
+        }
+        
+        $sql = "SELECT m.id FROM members m $whereClause $orderBy LIMIT 1";
+        $result = $this->db->fetchOne($sql, $params);
+        
+        return $result ? $result['id'] : null;
+    }
+    
+    /**
+     * Get previous member ID based on current filters and sort order
+     * 
+     * @param int $currentId Current member ID
+     * @param array $filters Filters applied
+     * @return int|null Previous member ID or null if none
+     */
+    public function getPreviousMemberId($currentId, $filters = []) {
+        // Get current member details first
+        $currentMember = $this->get($currentId);
+        if (!$currentMember) {
+            return null;
+        }
+        
+        [$whereClause, $params] = $this->buildNavigationFilters($filters);
+        
+        // Determine sort order and comparison logic (DESC for previous)
+        $sortBy = $filters['sort_by'] ?? 'registration_number';
+        if ($sortBy === 'alphabetical') {
+            // Previous by name
+            $orderBy = "ORDER BY m.last_name DESC, m.first_name DESC";
+            $comparison = "(m.last_name < ? OR (m.last_name = ? AND m.first_name < ?) OR (m.last_name = ? AND m.first_name = ? AND m.id < ?))";
+            $params[] = $currentMember['last_name'];
+            $params[] = $currentMember['last_name'];
+            $params[] = $currentMember['first_name'];
+            $params[] = $currentMember['last_name'];
+            $params[] = $currentMember['first_name'];
+            $params[] = $currentId;
+        } else {
+            // Previous by registration number
+            $orderBy = "ORDER BY CAST(m.registration_number AS UNSIGNED) DESC, m.id DESC";
+            $comparison = "(CAST(m.registration_number AS UNSIGNED) < CAST(? AS UNSIGNED) OR (m.registration_number = ? AND m.id < ?))";
+            $params[] = $currentMember['registration_number'];
+            $params[] = $currentMember['registration_number'];
+            $params[] = $currentId;
+        }
+        
+        if (!empty($whereClause)) {
+            $whereClause .= " AND " . $comparison;
+        } else {
+            $whereClause = "WHERE " . $comparison;
+        }
+        
+        $sql = "SELECT m.id FROM members m $whereClause $orderBy LIMIT 1";
+        $result = $this->db->fetchOne($sql, $params);
+        
+        return $result ? $result['id'] : null;
+    }
 }

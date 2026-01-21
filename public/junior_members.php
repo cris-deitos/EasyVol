@@ -310,7 +310,12 @@ $pageTitle = 'Gestione Soci Minorenni';
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <a href="junior_member_view.php?id=<?php echo $member['id']; ?>" 
+                                                        <?php
+                                                        // Build query string to preserve filters and sorting
+                                                        $viewParams = array_merge(['id' => $member['id']], $_GET);
+                                                        $viewQueryString = http_build_query($viewParams);
+                                                        ?>
+                                                        <a href="junior_member_view.php?<?php echo $viewQueryString; ?>" 
                                                            class="btn btn-sm btn-info" title="Visualizza">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
