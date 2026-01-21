@@ -81,7 +81,7 @@ try {
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, email, sent_at, year, status) 
-                VALUES (?, 'adult', ?, NOW(), ?, 'queued')",
+                VALUES (?, 'adult', ?, NOW(), ?, 'sent')",
                 [$member['id'], $email, $currentYear]
             );
             $sentCount++;
@@ -91,7 +91,7 @@ try {
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, email, sent_at, year, status, error_message) 
-                VALUES (?, 'adult', ?, NOW(), ?, 'failed', 'Email queue failed')",
+                VALUES (?, 'adult', ?, NOW(), ?, 'failed', 'Failed to add email to queue')",
                 [$member['id'], $email, $currentYear]
             );
             $failedCount++;
@@ -140,7 +140,7 @@ try {
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, junior_member_id, email, sent_at, year, status) 
-                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'queued')",
+                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'sent')",
                 [$member['id'], $email, $currentYear]
             );
             $sentCount++;
@@ -150,7 +150,7 @@ try {
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, junior_member_id, email, sent_at, year, status, error_message) 
-                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'failed', 'Email queue failed')",
+                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'failed', 'Failed to add email to queue')",
                 [$member['id'], $email, $currentYear]
             );
             $failedCount++;
