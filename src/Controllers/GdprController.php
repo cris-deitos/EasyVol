@@ -201,6 +201,82 @@ class GdprController {
     }
     
     /**
+     * Crea multipli consensi privacy (uno per ogni tipo selezionato)
+     * Usato quando si creano consensi multipli da un singolo form
+     */
+    public function createMultipleConsents($consentTypes, $data, $userId) {
+        if (empty($consentTypes) || !is_array($consentTypes)) {
+            throw new \Exception('Nessun tipo di consenso selezionato');
+        }
+        
+        // Validate required fields
+        if (empty($data['entity_type']) || !in_array($data['entity_type'], ['member', 'junior_member'])) {
+            throw new \Exception('Tipo entità non valido');
+        }
+        
+        if (empty($data['entity_id']) || !is_numeric($data['entity_id']) || $data['entity_id'] <= 0) {
+            throw new \Exception('ID entità non valido');
+        }
+        
+        if (empty($data['consent_date']) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['consent_date'])) {
+            throw new \Exception('Data consenso non valida');
+        }
+        
+        // Validate consent types
+        $validConsentTypes = ['privacy_policy', 'data_processing', 'sensitive_data', 'marketing', 'third_party_communication', 'image_rights'];
+        foreach ($consentTypes as $type) {
+            if (!in_array($type, $validConsentTypes)) {
+                throw new \Exception('Tipo di consenso non valido: ' . htmlspecialchars($type));
+            }
+        }
+        
+        try {
+            $this->db->beginTransaction();
+            
+            $createdIds = [];
+            $sql = "INSERT INTO privacy_consents (
+                entity_type, entity_id, consent_type, consent_given, consent_date,
+                consent_expiry_date, consent_version, consent_method, consent_document_path,
+                revoked, revoked_date, notes, created_by, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            
+            // Crea un consenso per ogni tipo selezionato
+            foreach ($consentTypes as $consentType) {
+                $params = [
+                    $data['entity_type'],
+                    $data['entity_id'],
+                    $consentType,  // Il tipo di consenso varia per ogni record
+                    $data['consent_given'] ?? 0,
+                    $data['consent_date'],
+                    $data['consent_expiry_date'] ?? null,
+                    $data['consent_version'] ?? null,
+                    $data['consent_method'] ?? 'paper',
+                    $data['consent_document_path'] ?? null,  // Lo stesso file per tutti i consensi
+                    $data['revoked'] ?? 0,
+                    $data['revoked_date'] ?? null,
+                    $data['notes'] ?? null,
+                    $userId
+                ];
+                
+                $this->db->execute($sql, $params);
+                $createdIds[] = $this->db->lastInsertId();
+            }
+            
+            $this->logActivity($userId, 'gdpr_compliance', 'create_multiple_consents', 
+                implode(',', $createdIds), 
+                'Creati ' . count($createdIds) . ' consensi privacy');
+            
+            $this->db->commit();
+            return $createdIds;
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Errore creazione consensi multipli: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    /**
      * Aggiorna consenso privacy
      */
     public function updateConsent($id, $data, $userId) {

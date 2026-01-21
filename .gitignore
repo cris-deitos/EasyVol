@@ -23,6 +23,10 @@
 !/uploads/junior_members/photos/
 /uploads/junior_members/photos/*
 !/uploads/junior_members/photos/.gitkeep
+!/uploads/privacy_consents/
+/uploads/privacy_consents/*
+!/uploads/privacy_consents/.gitkeep
+!/uploads/privacy_consents/.htaccess
 
 # Vendor (if using Composer)
 /vendor/
