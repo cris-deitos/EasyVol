@@ -152,7 +152,7 @@ class MemberPortalController {
             ]);
         }
         
-        return $result ?: false;
+        return $result;
     }
     
     /**
