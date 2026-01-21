@@ -215,7 +215,7 @@ class NewsletterController
     public function deleteAttachment(int $attachmentId): array
     {
         try {
-            $attachments = $this->db->query("SELECT * FROM newsletter_attachments WHERE id = ?", [$attachmentId]);
+            $attachments = $this->db->fetchAll("SELECT * FROM newsletter_attachments WHERE id = ?", [$attachmentId]);
             if (empty($attachments)) {
                 return ['success' => false, 'message' => 'Allegato non trovato'];
             }
@@ -289,7 +289,7 @@ class NewsletterController
                         $sendTime
                     ]);
                     
-                    $emailQueueId = $this->db->getLastInsertId();
+                    $emailQueueId = $this->db->lastInsertId();
                     
                     // Add recipient record
                     $this->model->addRecipient($id, [
@@ -349,7 +349,7 @@ class NewsletterController
                     WHERE email IS NOT NULL AND email != ''
                     AND status = 'attivo'
                     ORDER BY last_name, first_name";
-            $recipients['members'] = $this->db->query($sql);
+            $recipients['members'] = $this->db->fetchAll($sql);
             
             // Get active cadets
             $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name, email
@@ -357,7 +357,7 @@ class NewsletterController
                     WHERE email IS NOT NULL AND email != ''
                     AND status = 'attivo'
                     ORDER BY last_name, first_name";
-            $recipients['junior_members'] = $this->db->query($sql);
+            $recipients['junior_members'] = $this->db->fetchAll($sql);
             
             return $recipients;
         } catch (\Exception $e) {

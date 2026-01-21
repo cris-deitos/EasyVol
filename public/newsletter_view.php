@@ -45,10 +45,10 @@ if (!$newsletter) {
 }
 
 // Load attachments
-$attachments = $db->query("SELECT * FROM newsletter_attachments WHERE newsletter_id = ?", [$newsletterId]);
+$attachments = $db->fetchAll("SELECT * FROM newsletter_attachments WHERE newsletter_id = ?", [$newsletterId]);
 
 // Load recipients
-$recipients = $db->query("SELECT * FROM newsletter_recipients WHERE newsletter_id = ? ORDER BY email", [$newsletterId]);
+$recipients = $db->fetchAll("SELECT * FROM newsletter_recipients WHERE newsletter_id = ? ORDER BY email", [$newsletterId]);
 
 // Decode recipient filter
 $recipientFilter = json_decode($newsletter['recipient_filter'], true) ?? [];

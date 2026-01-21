@@ -33,7 +33,7 @@ class Newsletter
                 LEFT JOIN newsletters cloned ON n.cloned_from = cloned.id
                 WHERE n.id = ?";
         
-        $result = $this->db->query($sql, [$id]);
+        $result = $this->db->fetchAll($sql, [$id]);
         return $result[0] ?? null;
     }
     
@@ -93,7 +93,7 @@ class Newsletter
         $params[] = $perPage;
         $params[] = $offset;
         
-        return $this->db->query($sql, $params);
+        return $this->db->fetchAll($sql, $params);
     }
     
     /**
@@ -134,7 +134,7 @@ class Newsletter
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
         
         $sql = "SELECT COUNT(*) as count FROM newsletters {$whereClause}";
-        $result = $this->db->query($sql, $params);
+        $result = $this->db->fetchAll($sql, $params);
         
         return (int)($result[0]['count'] ?? 0);
     }
@@ -161,7 +161,7 @@ class Newsletter
         ];
         
         $this->db->execute($sql, $params);
-        return $this->db->getLastInsertId();
+        return $this->db->lastInsertId();
     }
     
     /**
@@ -242,7 +242,7 @@ class Newsletter
     public function getAttachments(int $newsletterId): array
     {
         $sql = "SELECT * FROM newsletter_attachments WHERE newsletter_id = ?";
-        return $this->db->query($sql, [$newsletterId]);
+        return $this->db->fetchAll($sql, [$newsletterId]);
     }
     
     /**
@@ -260,7 +260,7 @@ class Newsletter
             $data['filesize']
         ]);
         
-        return $this->db->getLastInsertId();
+        return $this->db->lastInsertId();
     }
     
     /**
@@ -295,10 +295,10 @@ class Newsletter
                 } else {
                     $placeholders = str_repeat('?,', count($customIds) - 1) . '?';
                     $sql .= " AND m.id IN ($placeholders)";
-                    $members = $this->db->query($sql, $customIds);
+                    $members = $this->db->fetchAll($sql, $customIds);
                 }
             } else {
-                $members = $this->db->query($sql);
+                $members = $this->db->fetchAll($sql);
             }
             
             $recipients = array_merge($recipients, $members);
@@ -318,10 +318,10 @@ class Newsletter
                 } else {
                     $placeholders = str_repeat('?,', count($customIds) - 1) . '?';
                     $sql .= " AND jm.id IN ($placeholders)";
-                    $cadets = $this->db->query($sql, $customIds);
+                    $cadets = $this->db->fetchAll($sql, $customIds);
                 }
             } else {
-                $cadets = $this->db->query($sql);
+                $cadets = $this->db->fetchAll($sql);
             }
             
             $recipients = array_merge($recipients, $cadets);
@@ -338,7 +338,7 @@ class Newsletter
                     WHERE jmg.email IS NOT NULL AND jmg.email != ''
                     AND jm.status = 'attivo'";
             
-            $guardians = $this->db->query($sql);
+            $guardians = $this->db->fetchAll($sql);
             $recipients = array_merge($recipients, $guardians);
         }
         
@@ -397,7 +397,7 @@ class Newsletter
             $data['status'] ?? 'pending'
         ]);
         
-        return $this->db->getLastInsertId();
+        return $this->db->lastInsertId();
     }
     
     /**
@@ -406,7 +406,7 @@ class Newsletter
     public function getNewsletterRecipients(int $newsletterId): array
     {
         $sql = "SELECT * FROM newsletter_recipients WHERE newsletter_id = ? ORDER BY email";
-        return $this->db->query($sql, [$newsletterId]);
+        return $this->db->fetchAll($sql, [$newsletterId]);
     }
     
     /**
