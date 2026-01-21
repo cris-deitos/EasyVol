@@ -142,6 +142,27 @@ wget -q -O /dev/null "https://tuosito.com/public/cron/email_queue.php?token=IL_T
 0 2 * * * wget -q -O /dev/null "https://tuosito.com/public/cron/backup.php?token=IL_TUO_TOKEN"
 ```
 
+### 9. Fee Payment Reminders
+**File**: `fee_payment_reminders.php`
+**Frequenza**: Mensile (consigliato: 1° giorno del mese alle 9:00)
+**Descrizione**: Invia promemoria automatici ai soci con quote associative non versate. Rispetta un periodo di cooldown di 20 giorni per evitare invii duplicati. Le email vengono accodate nel sistema email_queue e verranno inviate dal cron email_queue.php
+
+**Esecuzione CLI (metodo tradizionale):**
+```bash
+0 9 1 * * php /percorso/easyvol/cron/fee_payment_reminders.php >> /var/log/easyvol/fee_reminders.log 2>&1
+```
+
+**Esecuzione HTTPS (consigliato per Aruba):**
+```bash
+0 9 1 * * wget -q -O /dev/null "https://tuosito.com/public/cron/fee_payment_reminders.php?token=IL_TUO_TOKEN"
+```
+
+**Note importanti:**
+- Il cron verifica automaticamente se sono passati almeno 20 giorni dall'ultimo invio
+- Se il periodo di cooldown non è trascorso, il cron termina senza inviare email
+- Le email vengono accodate in `email_queue` e inviate dal cron `email_queue.php`
+- Il cron può essere eseguito manualmente anche dalla pagina web soci, oltre che automaticamente
+
 ## Installazione Cron Jobs
 
 ### Metodo 1: Crontab Utente
@@ -176,6 +197,9 @@ crontab -e
 
 # EasyVol - Database Backup
 0 2 * * * php /var/www/easyvol/cron/backup.php >> /var/log/easyvol/backup.log 2>&1
+
+# EasyVol - Fee Payment Reminders (Monthly, 1st day at 9:00)
+0 9 1 * * php /var/www/easyvol/cron/fee_payment_reminders.php >> /var/log/easyvol/fee_reminders.log 2>&1
 ```
 
 3. Salva e esci
@@ -213,6 +237,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Database Backup - Giornaliero alle 2:00
 0 2 * * * www-data php /var/www/easyvol/cron/backup.php >> /var/log/easyvol/backup.log 2>&1
+
+# Fee Payment Reminders - Mensile (1° giorno del mese alle 9:00)
+0 9 1 * * www-data php /var/www/easyvol/cron/fee_payment_reminders.php >> /var/log/easyvol/fee_reminders.log 2>&1
 ```
 
 3. Imposta permessi corretti:
