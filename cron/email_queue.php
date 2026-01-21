@@ -27,8 +27,8 @@ try {
     
     $emailSender = new EmailSender($config, $db);
     
-    // Process up to 50 emails
-    $sent = $emailSender->processQueue(50);
+    // Process up to 20 emails
+    $sent = $emailSender->processQueue(20);
     
     echo "Processed $sent emails\n";
     
