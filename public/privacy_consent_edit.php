@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_FILES['consent_document']['name'])) {
             $uploadDir = __DIR__ . '/../uploads/privacy_consents/';
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+                mkdir($uploadDir, 0750, true);
             }
             
             $fileExtension = strtolower(pathinfo($_FILES['consent_document']['name'], PATHINFO_EXTENSION));
@@ -75,7 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($_FILES['consent_document']['size'] > 5 * 1024 * 1024) { // 5MB limit
                 $errors[] = 'File troppo grande. Dimensione massima: 5MB';
             } else {
-                $fileName = uniqid('consent_') . '_' . time() . '.' . $fileExtension;
+                // Generate secure random filename
+                $randomBytes = bin2hex(random_bytes(16));
+                $fileName = 'consent_' . date('Ymd_His') . '_' . $randomBytes . '.' . $fileExtension;
                 $uploadPath = $uploadDir . $fileName;
                 
                 if (move_uploaded_file($_FILES['consent_document']['tmp_name'], $uploadPath)) {

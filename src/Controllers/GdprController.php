@@ -209,6 +209,27 @@ class GdprController {
             throw new \Exception('Nessun tipo di consenso selezionato');
         }
         
+        // Validate required fields
+        if (empty($data['entity_type']) || !in_array($data['entity_type'], ['member', 'junior_member'])) {
+            throw new \Exception('Tipo entità non valido');
+        }
+        
+        if (empty($data['entity_id']) || !is_numeric($data['entity_id']) || $data['entity_id'] <= 0) {
+            throw new \Exception('ID entità non valido');
+        }
+        
+        if (empty($data['consent_date']) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['consent_date'])) {
+            throw new \Exception('Data consenso non valida');
+        }
+        
+        // Validate consent types
+        $validConsentTypes = ['privacy_policy', 'data_processing', 'sensitive_data', 'marketing', 'third_party_communication', 'image_rights'];
+        foreach ($consentTypes as $type) {
+            if (!in_array($type, $validConsentTypes)) {
+                throw new \Exception('Tipo di consenso non valido: ' . htmlspecialchars($type));
+            }
+        }
+        
         try {
             $this->db->beginTransaction();
             

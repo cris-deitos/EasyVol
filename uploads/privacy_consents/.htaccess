@@ -1,9 +1,7 @@
-# Block direct access to all files
-Order Deny,Allow
-Deny from all
+# Block direct access to all files - Apache 2.4+ syntax
+Require all denied
 
 # Block PHP execution for security
 <FilesMatch "\.php$">
-    Order Deny,Allow
-    Deny from all
+    Require all denied
 </FilesMatch>
