@@ -238,9 +238,11 @@ function buildMemberVerificationEmail($member, $licenses, $health, $config) {
     $body .= "</div>";
     
     $body .= "<p><strong>Se i dati sono corretti:</strong> non è necessaria alcuna azione.</p>";
-    $body .= "<p><strong>Se ci sono variazioni:</strong> ti preghiamo di comunicarcele via email a 
-              <a href='mailto:{$associationEmail}'>{$associationEmail}</a> indicando nel soggetto 
-              'AGGIORNAMENTO DATI - " . htmlspecialchars($member['registration_number']) . "'.</p>";
+    $body .= "<p><strong>Se ci sono variazioni:</strong> accedi al portale dedicato ai servizi digitali interni al link 
+              <a href='https://sdi.protezionecivilebassogarda.it/'>https://sdi.protezionecivilebassogarda.it/</a> 
+              e premi sul pulsante azzurro <strong>\"CONTROLLA DATI SCHEDA PERSONALE\"</strong> 
+              (raggiungibile direttamente a questo link:  
+              <a href='https://sdi.protezionecivilebassogarda.it/EasyVol/public/member_portal_verify.php'>https://sdi.protezionecivilebassogarda.it/EasyVol/public/member_portal_verify.php</a>).</p>";
     
     $body .= "<p>Grazie per la collaborazione.</p>";
     $body .= "<p><em>$associationName</em></p>";
@@ -284,7 +286,7 @@ function buildJuniorMemberVerificationEmail($member, $config) {
     $body .= "<p><strong>Se i dati sono corretti:</strong> non è necessaria alcuna azione.</p>";
     $body .= "<p><strong>Se ci sono variazioni:</strong> ti preghiamo di comunicarcele via email a 
               <a href='mailto:{$associationEmail}'>{$associationEmail}</a> indicando nel soggetto 
-              'AGGIORNAMENTO DATI MINORENNE - " . htmlspecialchars($member['registration_number']) . "'.</p>";
+              'AGGIORNAMENTO DATI CADETTO - " . htmlspecialchars($member['registration_number']) . "'.</p>";
     
     $body .= "<p>Grazie per la collaborazione.</p>";
     $body .= "<p><em>$associationName</em></p>";
