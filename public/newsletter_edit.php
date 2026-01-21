@@ -328,7 +328,11 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
                                         </div>
                                         <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="members_list">
                                             <?php foreach ($availableRecipients['members'] as $member): ?>
-                                                <div class="form-check member-item" data-name="<?php echo htmlspecialchars(strtolower($member['name'])); ?>" data-email="<?php echo htmlspecialchars(strtolower($member['email'])); ?>" data-reg="<?php echo htmlspecialchars(strtolower($member['registration_number'] ?? '')); ?>" data-tax="<?php echo htmlspecialchars(strtolower($member['tax_code'] ?? '')); ?>">
+                                                <div class="form-check member-item" 
+                                                     data-name="<?php echo htmlspecialchars(strtolower($member['name'])); ?>" 
+                                                     data-email="<?php echo htmlspecialchars(strtolower($member['email'])); ?>" 
+                                                     data-reg="<?php echo htmlspecialchars(strtolower($member['registration_number'] ?? '')); ?>" 
+                                                     data-tax="<?php echo htmlspecialchars(strtolower($member['tax_code'] ?? '')); ?>">
                                                     <input class="form-check-input" type="checkbox" name="recipient_ids[]" 
                                                            value="<?php echo $member['id']; ?>" 
                                                            id="member_<?php echo $member['id']; ?>">
@@ -354,7 +358,11 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
                                         </div>
                                         <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="cadets_list">
                                             <?php foreach ($availableRecipients['junior_members'] as $cadet): ?>
-                                                <div class="form-check cadet-item" data-name="<?php echo htmlspecialchars(strtolower($cadet['name'])); ?>" data-email="<?php echo htmlspecialchars(strtolower($cadet['email'])); ?>" data-reg="<?php echo htmlspecialchars(strtolower($cadet['registration_number'] ?? '')); ?>" data-tax="<?php echo htmlspecialchars(strtolower($cadet['tax_code'] ?? '')); ?>">
+                                                <div class="form-check cadet-item" 
+                                                     data-name="<?php echo htmlspecialchars(strtolower($cadet['name'])); ?>" 
+                                                     data-email="<?php echo htmlspecialchars(strtolower($cadet['email'])); ?>" 
+                                                     data-reg="<?php echo htmlspecialchars(strtolower($cadet['registration_number'] ?? '')); ?>" 
+                                                     data-tax="<?php echo htmlspecialchars(strtolower($cadet['tax_code'] ?? '')); ?>">
                                                     <input class="form-check-input" type="checkbox" name="recipient_ids[]" 
                                                            value="<?php echo $cadet['id']; ?>" 
                                                            id="cadet_<?php echo $cadet['id']; ?>">
@@ -383,7 +391,11 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
                                             </div>
                                             <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="combined_members_list">
                                                 <?php foreach ($availableRecipients['members'] as $member): ?>
-                                                    <div class="form-check combined-member-item" data-name="<?php echo htmlspecialchars(strtolower($member['name'])); ?>" data-email="<?php echo htmlspecialchars(strtolower($member['email'])); ?>" data-reg="<?php echo htmlspecialchars(strtolower($member['registration_number'] ?? '')); ?>" data-tax="<?php echo htmlspecialchars(strtolower($member['tax_code'] ?? '')); ?>">
+                                                    <div class="form-check combined-member-item" 
+                                                         data-name="<?php echo htmlspecialchars(strtolower($member['name'])); ?>" 
+                                                         data-email="<?php echo htmlspecialchars(strtolower($member['email'])); ?>" 
+                                                         data-reg="<?php echo htmlspecialchars(strtolower($member['registration_number'] ?? '')); ?>" 
+                                                         data-tax="<?php echo htmlspecialchars(strtolower($member['tax_code'] ?? '')); ?>">
                                                         <input class="form-check-input" type="checkbox" name="member_ids[]" 
                                                                value="<?php echo $member['id']; ?>" 
                                                                id="combined_member_<?php echo $member['id']; ?>">
@@ -408,7 +420,11 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
                                             </div>
                                             <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;" id="combined_cadets_list">
                                                 <?php foreach ($availableRecipients['junior_members'] as $cadet): ?>
-                                                    <div class="form-check combined-cadet-item" data-name="<?php echo htmlspecialchars(strtolower($cadet['name'])); ?>" data-email="<?php echo htmlspecialchars(strtolower($cadet['email'])); ?>" data-reg="<?php echo htmlspecialchars(strtolower($cadet['registration_number'] ?? '')); ?>" data-tax="<?php echo htmlspecialchars(strtolower($cadet['tax_code'] ?? '')); ?>">
+                                                    <div class="form-check combined-cadet-item" 
+                                                         data-name="<?php echo htmlspecialchars(strtolower($cadet['name'])); ?>" 
+                                                         data-email="<?php echo htmlspecialchars(strtolower($cadet['email'])); ?>" 
+                                                         data-reg="<?php echo htmlspecialchars(strtolower($cadet['registration_number'] ?? '')); ?>" 
+                                                         data-tax="<?php echo htmlspecialchars(strtolower($cadet['tax_code'] ?? '')); ?>">
                                                         <input class="form-check-input" type="checkbox" name="cadet_ids[]" 
                                                                value="<?php echo $cadet['id']; ?>" 
                                                                id="combined_cadet_<?php echo $cadet['id']; ?>">
