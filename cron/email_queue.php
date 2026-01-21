@@ -32,10 +32,12 @@ try {
     
     echo "Processed $sent emails\n";
     
-    // Log activity
-    $sql = "INSERT INTO activity_logs (user_id, module, action, description, created_at) 
-            VALUES (NULL, 'cron', 'email_queue', ?, NOW())";
-    $db->execute($sql, ["Processed $sent emails"]);
+    // Log activity only if emails were sent
+    if ($sent > 0) {
+        $sql = "INSERT INTO activity_logs (user_id, module, action, description, created_at) 
+                VALUES (NULL, 'cron', 'email_queue', ?, NOW())";
+        $db->execute($sql, ["Processed $sent emails"]);
+    }
     
 } catch (\Exception $e) {
     error_log("Email queue cron error: " . $e->getMessage());
