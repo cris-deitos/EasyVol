@@ -72,8 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (!in_array($fileExtension, $allowedExtensions)) {
                 $errors[] = 'Formato file non consentito. Formati ammessi: ' . implode(', ', $allowedExtensions);
-            } elseif ($_FILES['consent_document']['size'] > 10 * 1024 * 1024) { // 10MB limit
-                $errors[] = 'File troppo grande. Dimensione massima: 10MB';
+            } elseif ($_FILES['consent_document']['size'] > 5 * 1024 * 1024) { // 5MB limit
+                $errors[] = 'File troppo grande. Dimensione massima: 5MB';
             } else {
                 $fileName = uniqid('consent_') . '_' . time() . '.' . $fileExtension;
                 $uploadPath = $uploadDir . $fileName;
@@ -354,7 +354,7 @@ $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
                                     <input type="file" class="form-control" id="consent_document" name="consent_document" 
                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
                                     <small class="text-muted">
-                                        Formati ammessi: PDF, JPG, PNG, DOC, DOCX. Dimensione massima: 10MB.
+                                        Formati ammessi: PDF, JPG, PNG, DOC, DOCX. Dimensione massima: 5MB.
                                         <?php if (!$isEdit): ?>
                                             <br><strong>Il file verrà associato a tutti i consensi selezionati.</strong>
                                         <?php endif; ?>
