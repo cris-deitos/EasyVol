@@ -48,7 +48,19 @@ try {
         exit;
     }
     
+    // Validate and sanitize year input
     $year = intval($input['year'] ?? date('Y'));
+    $currentYear = date('Y');
+    
+    // Ensure year is within reasonable bounds
+    if ($year < 2000 || $year > ($currentYear + 5)) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false, 
+            'error' => 'Anno non valido. L\'anno deve essere compreso tra 2000 e ' . ($currentYear + 5)
+        ]);
+        exit;
+    }
     
     $db = $app->getDb();
     $config = $app->getConfig();

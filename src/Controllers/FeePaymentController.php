@@ -614,7 +614,10 @@ class FeePaymentController {
         
         $lastSentDate = new \DateTime($lastReminder['sent_at']);
         $now = new \DateTime();
-        $daysSince = $now->diff($lastSentDate)->days;
+        $diff = $now->diff($lastSentDate);
+        
+        // Calculate days, handling false return case
+        $daysSince = $diff !== false ? (int)$diff->days : 0;
         
         return [
             'can_send' => $daysSince >= 20,
@@ -855,14 +858,20 @@ class FeePaymentController {
      * @return string
      */
     private function buildReminderEmailBody($member, $year) {
+        // Escape all user data to prevent HTML injection
+        $firstName = htmlspecialchars($member['first_name'], ENT_QUOTES, 'UTF-8');
+        $lastName = htmlspecialchars($member['last_name'], ENT_QUOTES, 'UTF-8');
+        $registrationNumber = htmlspecialchars($member['registration_number'], ENT_QUOTES, 'UTF-8');
+        $yearEscaped = htmlspecialchars($year, ENT_QUOTES, 'UTF-8');
+        
         $body = "
             <h2>Promemoria Pagamento Quota Associativa</h2>
-            <p>Gentile {$member['first_name']} {$member['last_name']},</p>
-            <p>Ti ricordiamo che non risulta ancora versata la quota associativa per l'anno <strong>{$year}</strong>.</p>
+            <p>Gentile {$firstName} {$lastName},</p>
+            <p>Ti ricordiamo che non risulta ancora versata la quota associativa per l'anno <strong>{$yearEscaped}</strong>.</p>
             <p><strong>Dati:</strong></p>
             <ul>
-                <li>Matricola: {$member['registration_number']}</li>
-                <li>Anno: {$year}</li>
+                <li>Matricola: {$registrationNumber}</li>
+                <li>Anno: {$yearEscaped}</li>
             </ul>
             <p>Ti invitiamo a provvedere al pagamento della quota associativa il prima possibile.</p>
             <p>Dopo aver effettuato il pagamento, puoi caricare la ricevuta attraverso il portale dedicato.</p>
