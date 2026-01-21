@@ -76,7 +76,7 @@ class JuniorMemberController {
         $offset = ($page - 1) * $perPage;
         
         // Determine sort order
-        $sortBy = $filters['sort_by'] ?? 'alphabetical';
+        $sortBy = $filters['sort_by'] ?? 'registration_number';
         if ($sortBy === 'registration_number') {
             // Junior members have registration numbers prefixed with self::REGISTRATION_PREFIX (e.g., C-1, C-23)
             // SUBSTRING removes the prefix for numeric sorting
