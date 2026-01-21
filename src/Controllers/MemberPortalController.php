@@ -50,6 +50,16 @@ class MemberPortalController {
     }
     
     /**
+     * Convert empty string to null for database fields
+     * 
+     * @param mixed $value The value to check
+     * @return mixed|null Returns null if value is empty string, otherwise returns the value
+     */
+    private function emptyToNull($value) {
+        return (isset($value) && trim($value) === '') ? null : $value;
+    }
+    
+    /**
      * Verify member by registration number and last name
      * Returns member data if active adult member found
      * 
@@ -435,8 +445,8 @@ class MemberPortalController {
                     $this->db->execute($sql, [
                         $memberId,
                         $course['course_name'],
-                        $course['completion_date'] ?? null,
-                        $course['expiry_date'] ?? null,
+                        $this->emptyToNull($course['completion_date'] ?? null),
+                        $this->emptyToNull($course['expiry_date'] ?? null),
                         $course['notes'] ?? ''
                     ]);
                     $changes[] = "Corso aggiunto: " . $course['course_name'];
@@ -469,8 +479,8 @@ class MemberPortalController {
                     $memberId,
                     $license['license_type'],
                     $license['license_number'] ?? '',
-                    $license['issue_date'] ?? null,
-                    $license['expiry_date'] ?? null,
+                    $this->emptyToNull($license['issue_date'] ?? null),
+                    $this->emptyToNull($license['expiry_date'] ?? null),
                     $license['notes'] ?? ''
                 ]);
                 $changes[] = "Patente aggiunta: " . $license['license_type'];
