@@ -75,8 +75,8 @@ try {
         $subject = "Verifica Annuale Dati Anagrafici - " . $config['association']['name'];
         $body = buildMemberVerificationEmail($member, $licenses, $health, $config);
         
-        // Send email
-        if ($emailSender->send($email, $subject, $body)) {
+        // Queue email
+        if ($emailSender->queue($email, $subject, $body)) {
             // Log success
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
@@ -85,21 +85,20 @@ try {
                 [$member['id'], $email, $currentYear]
             );
             $sentCount++;
-            echo "  Sent verification email to {$member['first_name']} {$member['last_name']} ({$email})\n";
+            echo "  Queued verification email to {$member['first_name']} {$member['last_name']} ({$email})\n";
         } else {
             // Log failure
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, email, sent_at, year, status, error_message) 
-                VALUES (?, 'adult', ?, NOW(), ?, 'failed', 'Email send failed')",
+                VALUES (?, 'adult', ?, NOW(), ?, 'failed', 'Failed to add email to queue')",
                 [$member['id'], $email, $currentYear]
             );
             $failedCount++;
-            echo "  Failed to send to {$member['first_name']} {$member['last_name']} ({$email})\n";
+            echo "  Failed to queue to {$member['first_name']} {$member['last_name']} ({$email})\n";
         }
         
-        // Small delay to avoid overwhelming the email server
-        usleep(100000); // 0.1 seconds
+        // No need for delay when queuing - the queue processor handles rate limiting
     }
     
     // ========================================
@@ -135,8 +134,8 @@ try {
         $subject = "Verifica Annuale Dati Anagrafici - " . $config['association']['name'];
         $body = buildJuniorMemberVerificationEmail($member, $config);
         
-        // Send email
-        if ($emailSender->send($email, $subject, $body)) {
+        // Queue email
+        if ($emailSender->queue($email, $subject, $body)) {
             // Log success
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
@@ -145,21 +144,20 @@ try {
                 [$member['id'], $email, $currentYear]
             );
             $sentCount++;
-            echo "  Sent verification email for {$member['first_name']} {$member['last_name']} to guardian ({$email})\n";
+            echo "  Queued verification email for {$member['first_name']} {$member['last_name']} to guardian ({$email})\n";
         } else {
             // Log failure
             $db->execute(
                 "INSERT INTO annual_data_verification_emails 
                 (member_id, member_type, junior_member_id, email, sent_at, year, status, error_message) 
-                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'failed', 'Email send failed')",
+                VALUES (NULL, 'junior', ?, ?, NOW(), ?, 'failed', 'Failed to add email to queue')",
                 [$member['id'], $email, $currentYear]
             );
             $failedCount++;
-            echo "  Failed to send for {$member['first_name']} {$member['last_name']} to guardian ({$email})\n";
+            echo "  Failed to queue for {$member['first_name']} {$member['last_name']} to guardian ({$email})\n";
         }
         
-        // Small delay
-        usleep(100000); // 0.1 seconds
+        // No need for delay when queuing - the queue processor handles rate limiting
     }
     
     echo "[" . date('Y-m-d H:i:s') . "] Annual verification job completed\n";
