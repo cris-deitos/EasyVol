@@ -162,9 +162,19 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                                                 </td>
                                             </tr>
                                             <tr>
+                                                <th>Modalità:</th>
+                                                <td><?php echo ($meeting['location_type'] ?? 'fisico') === 'online' ? 'Online' : 'In Presenza'; ?></td>
+                                            </tr>
+                                            <tr>
                                                 <th>Località:</th>
                                                 <td><?php echo htmlspecialchars($meeting['location'] ?? '-'); ?></td>
                                             </tr>
+                                            <?php if (($meeting['location_type'] ?? '') === 'online' && !empty($meeting['online_details'])): ?>
+                                            <tr>
+                                                <th>Istruzioni collegamento online:</th>
+                                                <td><?php echo nl2br(htmlspecialchars($meeting['online_details'])); ?></td>
+                                            </tr>
+                                            <?php endif; ?>
                                             <tr>
                                                 <th>Convocata da:</th>
                                                 <td><?php echo htmlspecialchars($meeting['convened_by'] ?? '-'); ?></td>

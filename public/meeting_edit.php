@@ -88,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'start_time' => $_POST['start_time'] ?? '',
             'end_time' => $_POST['end_time'] ?? '',
             'location' => trim($_POST['location'] ?? ''),
+            'location_type' => $_POST['location_type'] ?? 'fisico',
+            'online_details' => trim($_POST['online_details'] ?? ''),
             'convocator' => $convocatorValue,
             'description' => trim($_POST['description'] ?? ''),
             'notes' => trim($_POST['notes'] ?? '')
@@ -98,13 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($isEdit) {
                 // Update meeting
-                $db->query("UPDATE meetings SET meeting_type = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
-                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $meetingId]);
+                $db->query("UPDATE meetings SET meeting_type = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, location_type = ?, online_details = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
+                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['location_type'], $data['online_details'], $data['convocator'], $data['description'], $meetingId]);
             } else {
-                // Create new meeting (location_type defaults to 'fisico' for physical meetings)
-                $locationType = 'fisico'; // Physical meeting default
-                $db->query("INSERT INTO meetings (meeting_type, meeting_date, start_time, end_time, location, convocator, description, location_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['convocator'], $data['description'], $locationType]);
+                // Create new meeting
+                $db->query("INSERT INTO meetings (meeting_type, meeting_date, start_time, end_time, location, location_type, online_details, convocator, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['location_type'], $data['online_details'], $data['convocator'], $data['description']]);
                 $meetingId = $db->lastInsertId();
             }
             
@@ -258,11 +259,27 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             </div>
                             
                             <div class="row">
-                                <div class="col-md-12 mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label for="location_type" class="form-label">Modalità <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="location_type" name="location_type" required>
+                                        <option value="fisico" <?php echo ($meeting['location_type'] ?? 'fisico') === 'fisico' ? 'selected' : ''; ?>>In Presenza</option>
+                                        <option value="online" <?php echo ($meeting['location_type'] ?? '') === 'online' ? 'selected' : ''; ?>>Online</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
                                     <label for="location" class="form-label">Luogo</label>
                                     <input type="text" class="form-control" id="location" name="location" 
                                            value="<?php echo htmlspecialchars($meeting['location'] ?? ''); ?>"
                                            placeholder="es. Sede Associazione">
+                                </div>
+                            </div>
+                            
+                            <div class="row" id="online_details_row" style="display: none;">
+                                <div class="col-md-12 mb-3">
+                                    <label for="online_details" class="form-label">Istruzioni per il collegamento online</label>
+                                    <textarea class="form-control" id="online_details" name="online_details" rows="3" placeholder="es. Link di collegamento, password, istruzioni"><?php echo htmlspecialchars($meeting['online_details'] ?? ''); ?></textarea>
+                                    <small class="form-text text-muted">Inserisci il link della videoconferenza, password e altre istruzioni per il collegamento</small>
                                 </div>
                             </div>
                             
@@ -835,6 +852,26 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
             return false;
         }
     });
+    
+    // Toggle online_details field based on location_type selection
+    function toggleOnlineDetails() {
+        const locationType = document.getElementById('location_type').value;
+        const onlineDetailsRow = document.getElementById('online_details_row');
+        
+        if (locationType === 'online') {
+            onlineDetailsRow.style.display = 'block';
+        } else {
+            onlineDetailsRow.style.display = 'none';
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleOnlineDetails();
+    });
+    
+    // Add event listener to location_type dropdown
+    document.getElementById('location_type').addEventListener('change', toggleOnlineDetails);
     </script>
 </body>
 </html>
