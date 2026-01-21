@@ -127,6 +127,21 @@ wget -q -O /dev/null "https://tuosito.com/public/cron/email_queue.php?token=IL_T
 0 2 * * * wget -q -O /dev/null "https://tuosito.com/public/cron/generate_recurring_deadlines.php?token=IL_TUO_TOKEN"
 ```
 
+### 9. Fee Payment Reminders
+**File**: `fee_payment_reminders.php`
+**Frequenza**: Ogni 5 minuti
+**Descrizione**: Processa la coda dei promemoria di pagamento quote associative e invia le email ai soci che non hanno ancora versato la quota
+
+**Esecuzione CLI (metodo tradizionale):**
+```bash
+*/5 * * * * php /percorso/easyvol/cron/fee_payment_reminders.php >> /var/log/easyvol/fee_reminders.log 2>&1
+```
+
+**Esecuzione HTTPS (consigliato per Aruba):**
+```bash
+*/5 * * * * wget -q -O /dev/null "https://tuosito.com/public/cron/fee_payment_reminders.php?token=IL_TUO_TOKEN"
+```
+
 ### 8. Database Backup
 **File**: `backup.php`
 **Frequenza**: Giornaliero alle 2:00
@@ -174,6 +189,9 @@ crontab -e
 # EasyVol - Generate Recurring Deadlines
 0 2 * * * php /var/www/easyvol/cron/generate_recurring_deadlines.php >> /var/log/easyvol/recurring_deadlines.log 2>&1
 
+# EasyVol - Fee Payment Reminders
+*/5 * * * * php /var/www/easyvol/cron/fee_payment_reminders.php >> /var/log/easyvol/fee_reminders.log 2>&1
+
 # EasyVol - Database Backup
 0 2 * * * php /var/www/easyvol/cron/backup.php >> /var/log/easyvol/backup.log 2>&1
 ```
@@ -210,6 +228,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Annual Member Verification - 7 gennaio alle 9:00
 0 9 7 1 * www-data php /var/www/easyvol/cron/annual_member_verification.php >> /var/log/easyvol/annual_verification.log 2>&1
+
+# Fee Payment Reminders - Ogni 5 minuti
+*/5 * * * * www-data php /var/www/easyvol/cron/fee_payment_reminders.php >> /var/log/easyvol/fee_reminders.log 2>&1
 
 # Database Backup - Giornaliero alle 2:00
 0 2 * * * www-data php /var/www/easyvol/cron/backup.php >> /var/log/easyvol/backup.log 2>&1
@@ -372,6 +393,12 @@ Frequenza: 0 2 * * *
 ```
 Comando: wget -q -O /dev/null "https://tuosito.com/public/cron/annual_member_verification.php?token=IL_TUO_TOKEN"
 Frequenza: 0 9 7 1 *
+```
+
+#### Fee Payment Reminders (ogni 5 minuti)
+```
+Comando: wget -q -O /dev/null "https://tuosito.com/public/cron/fee_payment_reminders.php?token=IL_TUO_TOKEN"
+Frequenza: */5 * * * *
 ```
 
 ### Passo 3: Test e Verifica
