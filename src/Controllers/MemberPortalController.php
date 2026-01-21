@@ -130,6 +130,32 @@ class MemberPortalController {
     }
     
     /**
+     * Check if member has an existing valid (unused and not expired) verification code
+     * 
+     * @param int $memberId Member ID
+     * @return array|false Returns code data if valid code exists, false otherwise
+     */
+    public function hasValidVerificationCode($memberId) {
+        $sql = "SELECT id, code, email, expires_at, created_at 
+                FROM member_verification_codes 
+                WHERE member_id = ? 
+                  AND used = 0 
+                  AND expires_at > NOW()
+                ORDER BY created_at DESC 
+                LIMIT 1";
+        
+        $result = $this->db->fetchOne($sql, [$memberId]);
+        
+        if ($result) {
+            AutoLogger::logActivity('member_portal', 'valid_code_found', $memberId, [
+                'expires_at' => $result['expires_at']
+            ]);
+        }
+        
+        return $result;
+    }
+    
+    /**
      * Generate and send verification code to member's email
      * 
      * @param int $memberId Member ID

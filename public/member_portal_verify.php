@@ -57,11 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$email) {
                     $error = 'Nessuna email associata al tuo profilo. Contatta la Segreteria.';
                 } else {
-                    // Send verification code
-                    $sent = $controller->sendVerificationCode($member['id'], $email);
+                    // Check if member already has a valid verification code
+                    $existingCode = $controller->hasValidVerificationCode($member['id']);
                     
-                    if ($sent) {
-                        // Store member ID in session for next step
+                    if ($existingCode) {
+                        // Valid code exists, go to verification page without sending new email
                         $_SESSION['portal_member_id'] = $member['id'];
                         $_SESSION['portal_email'] = $email;
                         
@@ -69,7 +69,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         header("Location: member_portal_code.php");
                         exit;
                     } else {
-                        $error = 'Errore nell\'invio dell\'email. Riprova più tardi o contatta la Segreteria.';
+                        // No valid code exists, send a new one
+                        $sent = $controller->sendVerificationCode($member['id'], $email);
+                        
+                        if ($sent) {
+                            // Store member ID in session for next step
+                            $_SESSION['portal_member_id'] = $member['id'];
+                            $_SESSION['portal_email'] = $email;
+                            
+                            // Redirect to code verification page
+                            header("Location: member_portal_code.php");
+                            exit;
+                        } else {
+                            $error = 'Errore nell\'invio dell\'email. Riprova più tardi o contatta la Segreteria.';
+                        }
                     }
                 }
             }
