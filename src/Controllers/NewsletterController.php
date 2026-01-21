@@ -344,18 +344,18 @@ class NewsletterController
             ];
             
             // Get active members
-            $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name, email
+            $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name, email, registration_number, tax_code
                     FROM members
                     WHERE email IS NOT NULL AND email != ''
-                    AND status = 'attivo'
+                    AND member_status = 'attivo'
                     ORDER BY last_name, first_name";
             $recipients['members'] = $this->db->fetchAll($sql);
             
             // Get active cadets
-            $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name, email
+            $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name, email, registration_number, tax_code
                     FROM junior_members
                     WHERE email IS NOT NULL AND email != ''
-                    AND status = 'attivo'
+                    AND member_status = 'attivo'
                     ORDER BY last_name, first_name";
             $recipients['junior_members'] = $this->db->fetchAll($sql);
             
