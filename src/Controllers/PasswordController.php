@@ -49,7 +49,9 @@ class PasswordController {
      */
     private function encryptPassword($password) {
         $iv = random_bytes(16);
-        $encrypted = openssl_encrypt($password, 'aes-256-cbc', $this->encryptionKey, 0, $iv);
+        // Convert hex key to binary for encryption
+        $keyBinary = hex2bin($this->encryptionKey);
+        $encrypted = openssl_encrypt($password, 'aes-256-cbc', $keyBinary, 0, $iv);
         return base64_encode($iv . $encrypted);
     }
     
@@ -60,7 +62,9 @@ class PasswordController {
         $data = base64_decode($encryptedPassword);
         $iv = substr($data, 0, 16);
         $encrypted = substr($data, 16);
-        return openssl_decrypt($encrypted, 'aes-256-cbc', $this->encryptionKey, 0, $iv);
+        // Convert hex key to binary for decryption
+        $keyBinary = hex2bin($this->encryptionKey);
+        return openssl_decrypt($encrypted, 'aes-256-cbc', $keyBinary, 0, $iv);
     }
     
     /**
