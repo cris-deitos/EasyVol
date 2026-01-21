@@ -379,6 +379,16 @@ $pageTitle = 'Impostazioni Sistema';
                             <i class="bi bi-telegram"></i> Telegram
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="qualifications-tab" data-bs-toggle="tab" data-bs-target="#qualifications" type="button" role="tab">
+                            <i class="bi bi-award"></i> Qualifiche Soci
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="course-types-tab" data-bs-toggle="tab" data-bs-target="#course-types" type="button" role="tab">
+                            <i class="bi bi-book"></i> Tipi Corsi
+                        </button>
+                    </li>
                 </ul>
                 
                 <div class="tab-content" id="settingsTabsContent">
@@ -1558,8 +1568,140 @@ $pageTitle = 'Impostazioni Sistema';
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Qualifiche Soci -->
+                    <div class="tab-pane fade" id="qualifications" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Gestione Qualifiche Soci</h5>
+                                <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addQualificationModal">
+                                        <i class="bi bi-plus-circle"></i> Aggiungi Qualifica
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">
+                                    Gestisci le qualifiche utilizzabili per i soci. Le qualifiche possono essere riordinate, modificate o disattivate.
+                                </p>
+                                
+                                <div id="qualificationsListContainer">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Caricamento...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tipi Corsi -->
+                    <div class="tab-pane fade" id="course-types" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Gestione Tipi Corsi</h5>
+                                <?php if ($app->checkPermission('settings', 'edit')): ?>
+                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCourseTypeModal">
+                                        <i class="bi bi-plus-circle"></i> Aggiungi Tipo Corso
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">
+                                    Gestisci i tipi di corsi utilizzabili nella formazione. I tipi di corso possono essere riordinati, modificati o disattivati.
+                                </p>
+                                
+                                <div id="courseTypesListContainer">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Caricamento...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
+        </div>
+    </div>
+    
+    <!-- Modal Add/Edit Qualification -->
+    <div class="modal fade" id="addQualificationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qualificationModalTitle">Aggiungi Qualifica</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="qualificationForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="qualification_id" name="id">
+                        <div class="mb-3">
+                            <label for="qualification_name" class="form-label">Nome Qualifica *</label>
+                            <input type="text" class="form-control" id="qualification_name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="qualification_description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="qualification_description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="qualification_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="qualification_is_active">Attiva</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Add/Edit Course Type -->
+    <div class="modal fade" id="addCourseTypeModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="courseTypeModalTitle">Aggiungi Tipo Corso</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="courseTypeForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="course_type_id" name="id">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="course_type_code" class="form-label">Codice *</label>
+                                <input type="text" class="form-control" id="course_type_code" name="code" required 
+                                       placeholder="es. A1, A2-01">
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label for="course_type_name" class="form-label">Nome Corso *</label>
+                                <input type="text" class="form-control" id="course_type_name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="course_type_category" class="form-label">Categoria</label>
+                            <input type="text" class="form-control" id="course_type_category" name="category" 
+                                   placeholder="es. Corsi Base, Corsi A2 - Specializzazione">
+                        </div>
+                        <div class="mb-3">
+                            <label for="course_type_description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="course_type_description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="course_type_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="course_type_is_active">Attivo</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     
@@ -1567,7 +1709,7 @@ $pageTitle = 'Impostazioni Sistema';
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const VALID_TABS = ['general', 'association', 'mail', 'backup', 'import', 'print-templates', 'telegram'];
+    const VALID_TABS = ['general', 'association', 'mail', 'backup', 'import', 'print-templates', 'telegram', 'qualifications', 'course-types'];
     
     // Determina quale tab aprire
     let activeTab = null;
@@ -1700,6 +1842,379 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    
+    // ==========================================
+    // Qualifications Management
+    // ==========================================
+    
+    // Load qualifications list
+    function loadQualifications() {
+        fetch('api/settings_manage.php?action=list&type=qualifications')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderQualificationsList(data.data);
+                } else {
+                    document.getElementById('qualificationsListContainer').innerHTML = 
+                        '<div class="alert alert-danger">Errore caricamento qualifiche: ' + data.message + '</div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('qualificationsListContainer').innerHTML = 
+                    '<div class="alert alert-danger">Errore caricamento qualifiche: ' + error.message + '</div>';
+            });
+    }
+    
+    function renderQualificationsList(qualifications) {
+        let html = '<div class="table-responsive"><table class="table table-hover"><thead class="table-light"><tr>' +
+            '<th style="width: 40px;"><i class="bi bi-arrows-move"></i></th>' +
+            '<th>Nome</th>' +
+            '<th>Descrizione</th>' +
+            '<th style="width: 100px;">Stato</th>' +
+            '<th style="width: 120px;">Azioni</th></tr></thead><tbody id="qualificationsSortable">';
+        
+        qualifications.forEach(item => {
+            const statusBadge = item.is_active == 1 
+                ? '<span class="badge bg-success">Attiva</span>' 
+                : '<span class="badge bg-secondary">Disattivata</span>';
+            const description = item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-';
+            
+            html += `<tr data-id="${item.id}">
+                <td class="drag-handle" style="cursor: move;"><i class="bi bi-grip-vertical"></i></td>
+                <td><strong>${escapeHtml(item.name)}</strong></td>
+                <td class="text-muted small">${escapeHtml(description)}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editQualification(${item.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteQualification(${item.id}, '${escapeHtml(item.name)}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+        document.getElementById('qualificationsListContainer').innerHTML = html;
+        
+        // Initialize drag and drop
+        initSortable('qualificationsSortable', 'qualifications');
+    }
+    
+    // Edit qualification
+    window.editQualification = function(id) {
+        fetch('api/settings_manage.php?action=get&type=qualifications&id=' + id)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('qualificationModalTitle').textContent = 'Modifica Qualifica';
+                    document.getElementById('qualification_id').value = data.data.id;
+                    document.getElementById('qualification_name').value = data.data.name;
+                    document.getElementById('qualification_description').value = data.data.description || '';
+                    document.getElementById('qualification_is_active').checked = data.data.is_active == 1;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('addQualificationModal'));
+                    modal.show();
+                } else {
+                    alert('Errore: ' + data.message);
+                }
+            });
+    };
+    
+    // Delete qualification
+    window.deleteQualification = function(id, name) {
+        if (!confirm('Sei sicuro di voler eliminare la qualifica "' + name + '"?')) {
+            return;
+        }
+        
+        fetch('api/settings_manage.php?action=delete&type=qualifications', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadQualifications();
+                showAlert('success', data.message);
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => showAlert('danger', 'Errore: ' + error.message));
+    };
+    
+    // Handle qualification form submit
+    document.getElementById('qualificationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            id: document.getElementById('qualification_id').value,
+            name: document.getElementById('qualification_name').value,
+            description: document.getElementById('qualification_description').value,
+            is_active: document.getElementById('qualification_is_active').checked ? 1 : 0
+        };
+        
+        fetch('api/settings_manage.php?action=save&type=qualifications', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('addQualificationModal')).hide();
+                loadQualifications();
+                showAlert('success', data.message);
+                this.reset();
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => showAlert('danger', 'Errore: ' + error.message));
+    });
+    
+    // Reset qualification form on modal close
+    document.getElementById('addQualificationModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('qualificationModalTitle').textContent = 'Aggiungi Qualifica';
+        document.getElementById('qualificationForm').reset();
+        document.getElementById('qualification_id').value = '';
+    });
+    
+    // ==========================================
+    // Course Types Management
+    // ==========================================
+    
+    // Load course types list
+    function loadCourseTypes() {
+        fetch('api/settings_manage.php?action=list&type=course-types')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderCourseTypesList(data.data);
+                } else {
+                    document.getElementById('courseTypesListContainer').innerHTML = 
+                        '<div class="alert alert-danger">Errore caricamento tipi corso: ' + data.message + '</div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('courseTypesListContainer').innerHTML = 
+                    '<div class="alert alert-danger">Errore caricamento tipi corso: ' + error.message + '</div>';
+            });
+    }
+    
+    function renderCourseTypesList(courseTypes) {
+        let html = '<div class="table-responsive"><table class="table table-hover"><thead class="table-light"><tr>' +
+            '<th style="width: 40px;"><i class="bi bi-arrows-move"></i></th>' +
+            '<th style="width: 100px;">Codice</th>' +
+            '<th>Nome</th>' +
+            '<th style="width: 150px;">Categoria</th>' +
+            '<th style="width: 100px;">Stato</th>' +
+            '<th style="width: 120px;">Azioni</th></tr></thead><tbody id="courseTypesSortable">';
+        
+        courseTypes.forEach(item => {
+            const statusBadge = item.is_active == 1 
+                ? '<span class="badge bg-success">Attivo</span>' 
+                : '<span class="badge bg-secondary">Disattivato</span>';
+            const category = item.category || '-';
+            
+            html += `<tr data-id="${item.id}">
+                <td class="drag-handle" style="cursor: move;"><i class="bi bi-grip-vertical"></i></td>
+                <td><code>${escapeHtml(item.code)}</code></td>
+                <td><strong>${escapeHtml(item.name)}</strong></td>
+                <td class="text-muted small">${escapeHtml(category)}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editCourseType(${item.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteCourseType(${item.id}, '${escapeHtml(item.code)}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+        document.getElementById('courseTypesListContainer').innerHTML = html;
+        
+        // Initialize drag and drop
+        initSortable('courseTypesSortable', 'course-types');
+    }
+    
+    // Edit course type
+    window.editCourseType = function(id) {
+        fetch('api/settings_manage.php?action=get&type=course-types&id=' + id)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('courseTypeModalTitle').textContent = 'Modifica Tipo Corso';
+                    document.getElementById('course_type_id').value = data.data.id;
+                    document.getElementById('course_type_code').value = data.data.code;
+                    document.getElementById('course_type_name').value = data.data.name;
+                    document.getElementById('course_type_category').value = data.data.category || '';
+                    document.getElementById('course_type_description').value = data.data.description || '';
+                    document.getElementById('course_type_is_active').checked = data.data.is_active == 1;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('addCourseTypeModal'));
+                    modal.show();
+                } else {
+                    alert('Errore: ' + data.message);
+                }
+            });
+    };
+    
+    // Delete course type
+    window.deleteCourseType = function(id, code) {
+        if (!confirm('Sei sicuro di voler eliminare il tipo corso "' + code + '"?')) {
+            return;
+        }
+        
+        fetch('api/settings_manage.php?action=delete&type=course-types', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadCourseTypes();
+                showAlert('success', data.message);
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => showAlert('danger', 'Errore: ' + error.message));
+    };
+    
+    // Handle course type form submit
+    document.getElementById('courseTypeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            id: document.getElementById('course_type_id').value,
+            code: document.getElementById('course_type_code').value,
+            name: document.getElementById('course_type_name').value,
+            category: document.getElementById('course_type_category').value,
+            description: document.getElementById('course_type_description').value,
+            is_active: document.getElementById('course_type_is_active').checked ? 1 : 0
+        };
+        
+        fetch('api/settings_manage.php?action=save&type=course-types', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('addCourseTypeModal')).hide();
+                loadCourseTypes();
+                showAlert('success', data.message);
+                this.reset();
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => showAlert('danger', 'Errore: ' + error.message));
+    });
+    
+    // Reset course type form on modal close
+    document.getElementById('addCourseTypeModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('courseTypeModalTitle').textContent = 'Aggiungi Tipo Corso';
+        document.getElementById('courseTypeForm').reset();
+        document.getElementById('course_type_id').value = '';
+    });
+    
+    // ==========================================
+    // Common Utilities
+    // ==========================================
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function showAlert(type, message) {
+        // Create alert dynamically
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+    
+    function initSortable(tbodyId, type) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        
+        let draggedElement = null;
+        
+        tbody.querySelectorAll('tr').forEach(row => {
+            row.setAttribute('draggable', 'true');
+            
+            row.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                this.style.opacity = '0.5';
+            });
+            
+            row.addEventListener('dragend', function(e) {
+                this.style.opacity = '';
+                
+                // Save new order
+                const ids = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.id);
+                fetch('api/settings_manage.php?action=reorder&type=' + type, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({items: ids})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                    }
+                });
+            });
+            
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            
+            row.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (this !== draggedElement) {
+                    const allRows = Array.from(tbody.querySelectorAll('tr'));
+                    const draggedIndex = allRows.indexOf(draggedElement);
+                    const targetIndex = allRows.indexOf(this);
+                    
+                    if (draggedIndex < targetIndex) {
+                        this.after(draggedElement);
+                    } else {
+                        this.before(draggedElement);
+                    }
+                }
+            });
+        });
+    }
+    
+    // Load data when tabs are shown
+    document.getElementById('qualifications-tab').addEventListener('shown.bs.tab', function() {
+        loadQualifications();
+    });
+    
+    document.getElementById('course-types-tab').addEventListener('shown.bs.tab', function() {
+        loadCourseTypes();
+    });
 });
     </script>
 </body>
