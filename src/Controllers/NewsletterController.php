@@ -130,6 +130,11 @@ class NewsletterController
     public function uploadAttachment(int $newsletterId, array $file): array
     {
         try {
+            // Validate newsletter ID is positive integer
+            if ($newsletterId <= 0) {
+                return ['success' => false, 'message' => 'ID newsletter non valido'];
+            }
+            
             // Validate newsletter exists and is a draft
             $newsletter = $this->model->getById($newsletterId);
             if (!$newsletter || $newsletter['status'] !== 'draft') {
@@ -147,15 +152,37 @@ class NewsletterController
                 return ['success' => false, 'message' => 'File troppo grande (max 10MB)'];
             }
             
-            // Create upload directory if not exists
-            $uploadDir = __DIR__ . '/../../uploads/newsletters/' . $newsletterId;
+            // Validate file extension
+            $allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'zip'];
+            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (!in_array($extension, $allowedExtensions)) {
+                return ['success' => false, 'message' => 'Tipo di file non consentito. Estensioni permesse: ' . implode(', ', $allowedExtensions)];
+            }
+            
+            // Create upload directory if not exists - sanitize path
+            $baseUploadDir = __DIR__ . '/../../uploads/newsletters';
+            $uploadDir = $baseUploadDir . '/' . intval($newsletterId);
+            
+            // Ensure the path is within the uploads directory (prevent directory traversal)
+            $realBaseDir = realpath($baseUploadDir);
+            if (!$realBaseDir || !is_dir($realBaseDir)) {
+                mkdir($baseUploadDir, 0755, true);
+                $realBaseDir = realpath($baseUploadDir);
+            }
+            
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
             
-            // Generate unique filename
-            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($file['name']));
+            $realUploadDir = realpath($uploadDir);
+            if (!$realUploadDir || strpos($realUploadDir, $realBaseDir) !== 0) {
+                return ['success' => false, 'message' => 'Percorso di upload non valido'];
+            }
+            
+            // Generate unique and safe filename - only alphanumeric, dash, underscore, and dots
+            $safeBasename = preg_replace('/[^a-zA-Z0-9._-]/', '', pathinfo($file['name'], PATHINFO_FILENAME));
+            $safeBasename = substr($safeBasename, 0, 200); // Limit length
+            $filename = uniqid() . '_' . $safeBasename . '.' . $extension;
             $filepath = $uploadDir . '/' . $filename;
             
             // Move uploaded file

@@ -182,6 +182,7 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../assets/css/main.css">
+    <!-- TinyMCE Editor - NOTE: Replace 'no-api-key' with a valid TinyMCE API key for production use -->
     <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>

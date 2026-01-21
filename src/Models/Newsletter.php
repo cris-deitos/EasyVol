@@ -288,10 +288,15 @@ class Newsletter
                     WHERE m.email IS NOT NULL AND m.email != '' 
                     AND m.status = 'attivo'";
             
-            if ($type === 'custom_members' && !empty($customIds)) {
-                $placeholders = str_repeat('?,', count($customIds) - 1) . '?';
-                $sql .= " AND m.id IN ($placeholders)";
-                $members = $this->db->query($sql, $customIds);
+            if ($type === 'custom_members') {
+                if (empty($customIds)) {
+                    // No IDs provided for custom selection, return empty result
+                    $members = [];
+                } else {
+                    $placeholders = str_repeat('?,', count($customIds) - 1) . '?';
+                    $sql .= " AND m.id IN ($placeholders)";
+                    $members = $this->db->query($sql, $customIds);
+                }
             } else {
                 $members = $this->db->query($sql);
             }
@@ -306,10 +311,15 @@ class Newsletter
                     WHERE jm.email IS NOT NULL AND jm.email != ''
                     AND jm.status = 'attivo'";
             
-            if ($type === 'custom_cadets' && !empty($customIds)) {
-                $placeholders = str_repeat('?,', count($customIds) - 1) . '?';
-                $sql .= " AND jm.id IN ($placeholders)";
-                $cadets = $this->db->query($sql, $customIds);
+            if ($type === 'custom_cadets') {
+                if (empty($customIds)) {
+                    // No IDs provided for custom selection, return empty result
+                    $cadets = [];
+                } else {
+                    $placeholders = str_repeat('?,', count($customIds) - 1) . '?';
+                    $sql .= " AND jm.id IN ($placeholders)";
+                    $cadets = $this->db->query($sql, $customIds);
+                }
             } else {
                 $cadets = $this->db->query($sql);
             }
