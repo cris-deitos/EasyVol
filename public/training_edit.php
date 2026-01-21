@@ -8,7 +8,6 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
-use EasyVol\Utils\TrainingCourseTypes;
 use EasyVol\Controllers\TrainingController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -73,7 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Se course_name è vuoto, usa il nome del tipo corso
         if (empty($data['course_name'])) {
-            $data['course_name'] = TrainingCourseTypes::getName($data['course_type']) ?? $data['course_type'];
+            // Get course name from database
+            $courseType = $db->fetchOne("SELECT name FROM training_course_types WHERE code = ?", [$data['course_type']]);
+            $data['course_name'] = $courseType ? $courseType['name'] : $data['course_type'];
         }
         
         // Valida che la data di fine non sia precedente alla data di inizio
@@ -167,16 +168,43 @@ $pageTitle = $isEdit ? 'Modifica Corso' : 'Nuovo Corso';
                                     <select class="form-select" id="course_type" name="course_type" required>
                                         <option value="">Seleziona tipo di corso...</option>
                                         <?php
-                                        $courseTypes = TrainingCourseTypes::getAll();
+                                        // Load course types from database
+                                        $courseTypes = $db->fetchAll("SELECT code, name, category FROM training_course_types WHERE is_active = 1 ORDER BY sort_order ASC, code ASC");
                                         $selectedType = $course['course_type'] ?? $_POST['course_type'] ?? '';
-                                        foreach ($courseTypes as $code => $name):
+                                        
+                                        $currentCategory = '';
+                                        $inOptgroup = false;
+                                        foreach ($courseTypes as $ct):
+                                            // Add optgroup for category changes
+                                            if ($ct['category'] && $ct['category'] !== $currentCategory) {
+                                                if ($inOptgroup) {
+                                                    echo '</optgroup>';
+                                                }
+                                                echo '<optgroup label="' . htmlspecialchars($ct['category']) . '">';
+                                                $currentCategory = $ct['category'];
+                                                $inOptgroup = true;
+                                            } elseif (!$ct['category'] && $inOptgroup) {
+                                                // Close optgroup if we hit an uncategorized course after categorized ones
+                                                echo '</optgroup>';
+                                                $inOptgroup = false;
+                                                $currentCategory = '';
+                                            }
                                         ?>
-                                            <option value="<?php echo htmlspecialchars($code); ?>" 
-                                                    <?php echo $selectedType === $code ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($name); ?>
+                                            <option value="<?php echo htmlspecialchars($ct['code']); ?>" 
+                                                    <?php echo $selectedType === $ct['code'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($ct['name']); ?>
                                             </option>
-                                        <?php endforeach; ?>
+                                        <?php 
+                                        endforeach;
+                                        if ($inOptgroup) {
+                                            echo '</optgroup>';
+                                        }
+                                        ?>
                                     </select>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Puoi gestire i tipi di corso disponibili in <a href="settings.php?tab=course-types" target="_blank">Impostazioni → Tipi Corsi</a>
+                                    </div>
                                 </div>
                             </div>
                             
