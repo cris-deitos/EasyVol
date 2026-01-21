@@ -201,6 +201,61 @@ class GdprController {
     }
     
     /**
+     * Crea multipli consensi privacy (uno per ogni tipo selezionato)
+     * Usato quando si creano consensi multipli da un singolo form
+     */
+    public function createMultipleConsents($consentTypes, $data, $userId) {
+        if (empty($consentTypes) || !is_array($consentTypes)) {
+            throw new \Exception('Nessun tipo di consenso selezionato');
+        }
+        
+        try {
+            $this->db->beginTransaction();
+            
+            $createdIds = [];
+            $sql = "INSERT INTO privacy_consents (
+                entity_type, entity_id, consent_type, consent_given, consent_date,
+                consent_expiry_date, consent_version, consent_method, consent_document_path,
+                revoked, revoked_date, notes, created_by, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            
+            // Crea un consenso per ogni tipo selezionato
+            foreach ($consentTypes as $consentType) {
+                $params = [
+                    $data['entity_type'],
+                    $data['entity_id'],
+                    $consentType,  // Il tipo di consenso varia per ogni record
+                    $data['consent_given'] ?? 0,
+                    $data['consent_date'],
+                    $data['consent_expiry_date'] ?? null,
+                    $data['consent_version'] ?? null,
+                    $data['consent_method'] ?? 'paper',
+                    $data['consent_document_path'] ?? null,  // Lo stesso file per tutti i consensi
+                    $data['revoked'] ?? 0,
+                    $data['revoked_date'] ?? null,
+                    $data['notes'] ?? null,
+                    $userId
+                ];
+                
+                $this->db->execute($sql, $params);
+                $createdIds[] = $this->db->lastInsertId();
+            }
+            
+            $this->logActivity($userId, 'gdpr_compliance', 'create_multiple_consents', 
+                implode(',', $createdIds), 
+                'Creati ' . count($createdIds) . ' consensi privacy');
+            
+            $this->db->commit();
+            return $createdIds;
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("Errore creazione consensi multipli: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    /**
      * Aggiorna consenso privacy
      */
     public function updateConsent($id, $data, $userId) {

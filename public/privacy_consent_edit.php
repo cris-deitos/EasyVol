@@ -59,37 +59,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token di sicurezza non valido';
     } else {
-        $data = [
-            'entity_type' => $_POST['entity_type'] ?? 'member',
-            'entity_id' => intval($_POST['entity_id'] ?? 0),
-            'consent_type' => $_POST['consent_type'] ?? 'privacy_policy',
-            'consent_given' => !empty($_POST['consent_given']) ? 1 : 0,
-            'consent_date' => $_POST['consent_date'] ?? date('Y-m-d'),
-            'consent_expiry_date' => !empty($_POST['consent_expiry_date']) ? $_POST['consent_expiry_date'] : null,
-            'consent_version' => trim($_POST['consent_version'] ?? ''),
-            'consent_method' => $_POST['consent_method'] ?? 'paper',
-            'consent_document_path' => trim($_POST['consent_document_path'] ?? ''),
-            'revoked' => !empty($_POST['revoked']) ? 1 : 0,
-            'revoked_date' => !empty($_POST['revoked_date']) ? $_POST['revoked_date'] : null,
-            'notes' => trim($_POST['notes'] ?? '')
-        ];
-        
-        try {
-            if ($isEdit) {
-                $result = $controller->updateConsent($consentId, $data, $app->getUserId());
-            } else {
-                $result = $controller->createConsent($data, $app->getUserId());
-                $consentId = $result;
+        // Handle file upload
+        $uploadedFilePath = null;
+        if (!empty($_FILES['consent_document']['name'])) {
+            $uploadDir = __DIR__ . '/../uploads/privacy_consents/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
             }
             
-            if ($result) {
-                header('Location: privacy_consents.php?success=1');
-                exit;
+            $fileExtension = strtolower(pathinfo($_FILES['consent_document']['name'], PATHINFO_EXTENSION));
+            $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+            
+            if (!in_array($fileExtension, $allowedExtensions)) {
+                $errors[] = 'Formato file non consentito. Formati ammessi: ' . implode(', ', $allowedExtensions);
+            } elseif ($_FILES['consent_document']['size'] > 10 * 1024 * 1024) { // 10MB limit
+                $errors[] = 'File troppo grande. Dimensione massima: 10MB';
             } else {
-                $errors[] = 'Errore durante il salvataggio';
+                $fileName = uniqid('consent_') . '_' . time() . '.' . $fileExtension;
+                $uploadPath = $uploadDir . $fileName;
+                
+                if (move_uploaded_file($_FILES['consent_document']['tmp_name'], $uploadPath)) {
+                    $uploadedFilePath = 'uploads/privacy_consents/' . $fileName;
+                } else {
+                    $errors[] = 'Errore durante il caricamento del file';
+                }
             }
-        } catch (\Exception $e) {
-            $errors[] = $e->getMessage();
+        }
+        
+        // For edit mode, keep existing document path if no new file uploaded
+        $documentPath = $uploadedFilePath;
+        if ($isEdit && !$uploadedFilePath && !empty($consent['consent_document_path'])) {
+            $documentPath = $consent['consent_document_path'];
+        }
+        
+        if (empty($errors)) {
+            // Get consent types - for edit it's single, for create it can be multiple
+            $consentTypes = [];
+            if ($isEdit) {
+                // In edit mode, only one consent type (the existing one)
+                $consentTypes = [$_POST['consent_type'] ?? 'privacy_policy'];
+            } else {
+                // In create mode, allow multiple consent types
+                $consentTypes = $_POST['consent_types'] ?? [];
+                if (empty($consentTypes)) {
+                    $errors[] = 'Seleziona almeno un tipo di consenso';
+                }
+            }
+            
+            if (empty($errors)) {
+                $data = [
+                    'entity_type' => $_POST['entity_type'] ?? 'member',
+                    'entity_id' => intval($_POST['entity_id'] ?? 0),
+                    'consent_given' => !empty($_POST['consent_given']) ? 1 : 0,
+                    'consent_date' => $_POST['consent_date'] ?? date('Y-m-d'),
+                    'consent_expiry_date' => !empty($_POST['consent_expiry_date']) ? $_POST['consent_expiry_date'] : null,
+                    'consent_version' => trim($_POST['consent_version'] ?? ''),
+                    'consent_method' => $_POST['consent_method'] ?? 'paper',
+                    'consent_document_path' => $documentPath,
+                    'revoked' => !empty($_POST['revoked']) ? 1 : 0,
+                    'revoked_date' => !empty($_POST['revoked_date']) ? $_POST['revoked_date'] : null,
+                    'notes' => trim($_POST['notes'] ?? '')
+                ];
+                
+                try {
+                    if ($isEdit) {
+                        $data['consent_type'] = $consentTypes[0];
+                        $result = $controller->updateConsent($consentId, $data, $app->getUserId());
+                    } else {
+                        // Create multiple consents - one for each selected type
+                        $result = $controller->createMultipleConsents($consentTypes, $data, $app->getUserId());
+                    }
+                    
+                    if ($result) {
+                        header('Location: privacy_consents.php?success=1');
+                        exit;
+                    } else {
+                        $errors[] = 'Errore durante il salvataggio';
+                    }
+                } catch (\Exception $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
         }
     }
 }
@@ -136,7 +186,7 @@ $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
                 
                 <div class="card">
                     <div class="card-body">
-                        <form method="POST" action="">
+                        <form method="POST" action="" enctype="multipart/form-data">
                             <?php echo CsrfProtection::getHiddenField(); ?>
                             
                             <div class="row mb-4">
@@ -173,15 +223,64 @@ $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
                             
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label for="consent_type" class="form-label">Tipo Consenso *</label>
-                                    <select class="form-select" id="consent_type" name="consent_type" required>
-                                        <option value="privacy_policy" <?php echo ($consent['consent_type'] ?? '') === 'privacy_policy' ? 'selected' : ''; ?>>Privacy Policy</option>
-                                        <option value="data_processing" <?php echo ($consent['consent_type'] ?? '') === 'data_processing' ? 'selected' : ''; ?>>Trattamento Dati</option>
-                                        <option value="sensitive_data" <?php echo ($consent['consent_type'] ?? '') === 'sensitive_data' ? 'selected' : ''; ?>>Dati Sensibili</option>
-                                        <option value="marketing" <?php echo ($consent['consent_type'] ?? '') === 'marketing' ? 'selected' : ''; ?>>Marketing</option>
-                                        <option value="third_party_communication" <?php echo ($consent['consent_type'] ?? '') === 'third_party_communication' ? 'selected' : ''; ?>>Comunicazione Terzi</option>
-                                        <option value="image_rights" <?php echo ($consent['consent_type'] ?? '') === 'image_rights' ? 'selected' : ''; ?>>Diritti Immagine</option>
-                                    </select>
+                                    <?php if ($isEdit): ?>
+                                        <label for="consent_type" class="form-label">Tipo Consenso *</label>
+                                        <select class="form-select" id="consent_type" name="consent_type" required>
+                                            <option value="privacy_policy" <?php echo ($consent['consent_type'] ?? '') === 'privacy_policy' ? 'selected' : ''; ?>>Privacy Policy</option>
+                                            <option value="data_processing" <?php echo ($consent['consent_type'] ?? '') === 'data_processing' ? 'selected' : ''; ?>>Trattamento Dati</option>
+                                            <option value="sensitive_data" <?php echo ($consent['consent_type'] ?? '') === 'sensitive_data' ? 'selected' : ''; ?>>Dati Sensibili</option>
+                                            <option value="marketing" <?php echo ($consent['consent_type'] ?? '') === 'marketing' ? 'selected' : ''; ?>>Marketing</option>
+                                            <option value="third_party_communication" <?php echo ($consent['consent_type'] ?? '') === 'third_party_communication' ? 'selected' : ''; ?>>Comunicazione Terzi</option>
+                                            <option value="image_rights" <?php echo ($consent['consent_type'] ?? '') === 'image_rights' ? 'selected' : ''; ?>>Diritti Immagine</option>
+                                        </select>
+                                        <small class="text-muted">In modalità modifica puoi modificare solo un consenso alla volta</small>
+                                    <?php else: ?>
+                                        <label class="form-label">Tipi di Consenso * <small class="text-muted">(seleziona uno o più)</small></label>
+                                        <div class="border rounded p-3">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input consent-type-checkbox" type="checkbox" name="consent_types[]" value="privacy_policy" id="consent_privacy_policy">
+                                                <label class="form-check-label" for="consent_privacy_policy">
+                                                    Privacy Policy
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input consent-type-checkbox" type="checkbox" name="consent_types[]" value="data_processing" id="consent_data_processing">
+                                                <label class="form-check-label" for="consent_data_processing">
+                                                    Trattamento Dati
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input consent-type-checkbox" type="checkbox" name="consent_types[]" value="sensitive_data" id="consent_sensitive_data">
+                                                <label class="form-check-label" for="consent_sensitive_data">
+                                                    Dati Sensibili
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input consent-type-checkbox" type="checkbox" name="consent_types[]" value="marketing" id="consent_marketing">
+                                                <label class="form-check-label" for="consent_marketing">
+                                                    Marketing
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input consent-type-checkbox" type="checkbox" name="consent_types[]" value="third_party_communication" id="consent_third_party_communication">
+                                                <label class="form-check-label" for="consent_third_party_communication">
+                                                    Comunicazione Terzi
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input consent-type-checkbox" type="checkbox" name="consent_types[]" value="image_rights" id="consent_image_rights">
+                                                <label class="form-check-label" for="consent_image_rights">
+                                                    Diritti Immagine
+                                                </label>
+                                            </div>
+                                            <div class="form-check mt-3">
+                                                <input class="form-check-input" type="checkbox" id="select_all_consents">
+                                                <label class="form-check-label fw-bold" for="select_all_consents">
+                                                    Seleziona tutti
+                                                </label>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="consent_method" class="form-label">Modalità Acquisizione *</label>
@@ -243,11 +342,34 @@ $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
                             
                             <div class="row mb-4">
                                 <div class="col-md-12">
-                                    <label for="consent_document_path" class="form-label">Percorso Documento</label>
-                                    <input type="text" class="form-control" id="consent_document_path" name="consent_document_path" 
-                                           value="<?php echo htmlspecialchars($consent['consent_document_path'] ?? ''); ?>">
+                                    <label for="consent_document" class="form-label">Allega Documento Consenso</label>
+                                    <?php if ($isEdit && !empty($consent['consent_document_path'])): ?>
+                                        <div class="mb-2">
+                                            <small class="text-muted">
+                                                <i class="bi bi-file-earmark"></i> 
+                                                File attuale: <strong><?php echo htmlspecialchars(basename($consent['consent_document_path'])); ?></strong>
+                                            </small>
+                                        </div>
+                                    <?php endif; ?>
+                                    <input type="file" class="form-control" id="consent_document" name="consent_document" 
+                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                    <small class="text-muted">
+                                        Formati ammessi: PDF, JPG, PNG, DOC, DOCX. Dimensione massima: 10MB.
+                                        <?php if (!$isEdit): ?>
+                                            <br><strong>Il file verrà associato a tutti i consensi selezionati.</strong>
+                                        <?php endif; ?>
+                                    </small>
                                 </div>
                             </div>
+                            
+                            <?php if ($isEdit && !empty($consent['consent_document_path'])): ?>
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <label class="form-label">Percorso Documento Corrente</label>
+                                    <input type="text" class="form-control" value="<?php echo htmlspecialchars($consent['consent_document_path']); ?>" readonly>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                             
                             <div class="row mb-4">
                                 <div class="col-md-12">
@@ -356,6 +478,26 @@ $pageTitle = $isEdit ? 'Modifica Consenso Privacy' : 'Nuovo Consenso Privacy';
         function toggleRevokedDate() {
             const revoked = document.getElementById('revoked').checked;
             document.getElementById('revoked_date_row').style.display = revoked ? 'block' : 'none';
+        }
+        
+        // Select all consents checkbox handler
+        const selectAllCheckbox = document.getElementById('select_all_consents');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const consentCheckboxes = document.querySelectorAll('.consent-type-checkbox');
+                consentCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+            
+            // Update "select all" state when individual checkboxes change
+            const consentCheckboxes = document.querySelectorAll('.consent-type-checkbox');
+            consentCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(consentCheckboxes).every(cb => cb.checked);
+                    selectAllCheckbox.checked = allChecked;
+                });
+            });
         }
     </script>
 </body>
