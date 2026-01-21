@@ -1018,50 +1018,50 @@ class ReportController {
         // SITUAZIONE AL 01.01.XXXX
         $html .= '<h2>Situazione al 01.01.' . $year . '</h2>';
         $html .= '<div class="section">';
-        $html .= '<div><span class="stat-label">Nr. Soci Attivi:</span><span class="stat-value">' . number_format($data['year_start']['members_active']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Soci Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_start']['members_suspended']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Cadetti Attivi:</span><span class="stat-value">' . number_format($data['year_start']['junior_members_active']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Cadetti Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_start']['junior_members_suspended']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Mezzi:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_total']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di Cui Veicoli:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_veicoli']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di Cui Rimorchi:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_rimorchi']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di Cui Natanti:</span><span class="stat-value">' . number_format($data['year_start']['vehicles_natanti']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Soci Attivi: </span><span class="stat-value">' . number_format($data['year_start']['members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Soci Sospesi (Sospesi, in aspettativa, in congedo): </span><span class="stat-value">' . number_format($data['year_start']['members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Attivi: </span><span class="stat-value">' . number_format($data['year_start']['junior_members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Sospesi (Sospesi, in aspettativa, in congedo): </span><span class="stat-value">' . number_format($data['year_start']['junior_members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Mezzi: </span><span class="stat-value">' . number_format($data['year_start']['vehicles_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Veicoli: </span><span class="stat-value">' . number_format($data['year_start']['vehicles_veicoli']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Rimorchi: </span><span class="stat-value">' . number_format($data['year_start']['vehicles_rimorchi']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Natanti: </span><span class="stat-value">' . number_format($data['year_start']['vehicles_natanti']) . '</span></div>';
         $html .= '</div>';
         
         // SITUAZIONE AL 31.12.XXXX
         $html .= '<h2>Situazione al 31.12.' . $year . '</h2>';
         $html .= '<div class="section">';
-        $html .= '<div><span class="stat-label">Nr. Soci Attivi:</span><span class="stat-value">' . number_format($data['year_end']['members_active']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Soci Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_end']['members_suspended']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Cadetti Attivi:</span><span class="stat-value">' . number_format($data['year_end']['junior_members_active']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Cadetti Sospesi (Sospesi, in aspettativa, in congedo):</span><span class="stat-value">' . number_format($data['year_end']['junior_members_suspended']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Mezzi:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_total']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di Cui Veicoli:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_veicoli']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di Cui Rimorchi:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_rimorchi']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di Cui Natanti:</span><span class="stat-value">' . number_format($data['year_end']['vehicles_natanti']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Soci Attivi: </span><span class="stat-value">' . number_format($data['year_end']['members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Soci Sospesi (Sospesi, in aspettativa, in congedo): </span><span class="stat-value">' . number_format($data['year_end']['members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Attivi: </span><span class="stat-value">' . number_format($data['year_end']['junior_members_active']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Cadetti Sospesi (Sospesi, in aspettativa, in congedo): </span><span class="stat-value">' . number_format($data['year_end']['junior_members_suspended']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Mezzi: </span><span class="stat-value">' . number_format($data['year_end']['vehicles_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Veicoli: </span><span class="stat-value">' . number_format($data['year_end']['vehicles_veicoli']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Rimorchi: </span><span class="stat-value">' . number_format($data['year_end']['vehicles_rimorchi']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di Cui Natanti: </span><span class="stat-value">' . number_format($data['year_end']['vehicles_natanti']) . '</span></div>';
         $html .= '</div>';
         
         // ATTIVITÀ ANNUALE
         $html .= '<h2>Attività Annuale</h2>';
         $html .= '<div class="section">';
-        $html .= '<div><span class="stat-label">Nr. Nuovi Soci Iscritti:</span><span class="stat-value">' . number_format($data['annual_activity']['new_members']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Nr. Nuovi Cadetti Iscritti:</span><span class="stat-value">' . number_format($data['annual_activity']['new_junior_members']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Nuovi Soci Iscritti: </span><span class="stat-value">' . number_format($data['annual_activity']['new_members']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Nuovi Cadetti Iscritti: </span><span class="stat-value">' . number_format($data['annual_activity']['new_junior_members']) . '</span></div>';
         $html .= '<br>';
-        $html .= '<div><span class="stat-label">Nr. Eventi:</span><span class="stat-value">' . number_format($data['annual_activity']['events_total']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di cui Emergenze:</span><span class="stat-value">' . number_format($data['annual_activity']['events_emergenza']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di cui Esercitazioni:</span><span class="stat-value">' . number_format($data['annual_activity']['events_esercitazione']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di cui Attività:</span><span class="stat-value">' . number_format($data['annual_activity']['events_attivita']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di cui Servizi:</span><span class="stat-value">' . number_format($data['annual_activity']['events_servizio']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Eventi: </span><span class="stat-value">' . number_format($data['annual_activity']['events_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Emergenze: </span><span class="stat-value">' . number_format($data['annual_activity']['events_emergenza']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Esercitazioni: </span><span class="stat-value">' . number_format($data['annual_activity']['events_esercitazione']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Attività: </span><span class="stat-value">' . number_format($data['annual_activity']['events_attivita']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Servizi: </span><span class="stat-value">' . number_format($data['annual_activity']['events_servizio']) . '</span></div>';
         $html .= '<br>';
-        $html .= '<div><span class="stat-label">Nr. Riunioni ed Assemblee:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_total']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di cui Consigli Direttivi:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_consiglio']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di cui Assemblee Ordinarie dei Soci:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_assemblea_ordinaria']) . '</span></div>';
-        $html .= '<div class="indent"><span class="stat-label">Di cui Assemblee Straordinarie dei Soci:</span><span class="stat-value">' . number_format($data['annual_activity']['meetings_assemblea_straordinaria']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Riunioni ed Assemblee: </span><span class="stat-value">' . number_format($data['annual_activity']['meetings_total']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Consigli Direttivi: </span><span class="stat-value">' . number_format($data['annual_activity']['meetings_consiglio']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Assemblee Ordinarie dei Soci: </span><span class="stat-value">' . number_format($data['annual_activity']['meetings_assemblea_ordinaria']) . '</span></div>';
+        $html .= '<div class="indent"><span class="stat-label">Di cui Assemblee Straordinarie dei Soci: </span><span class="stat-value">' . number_format($data['annual_activity']['meetings_assemblea_straordinaria']) . '</span></div>';
         $html .= '<br>';
-        $html .= '<div><span class="stat-label">Nr. Corsi di Formazione organizzati:</span><span class="stat-value">' . number_format($data['annual_activity']['training_courses']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Nr. Corsi di Formazione organizzati: </span><span class="stat-value">' . number_format($data['annual_activity']['training_courses']) . '</span></div>';
         $html .= '<br>';
-        $html .= '<div><span class="stat-label">Km di viaggio con i mezzi dell\'Associazione:</span><span class="stat-value">' . number_format($data['annual_activity']['vehicle_km_total']) . '</span></div>';
-        $html .= '<div><span class="stat-label">Ore di viaggio con i mezzi dell\'Associazione:</span><span class="stat-value">' . number_format($data['annual_activity']['vehicle_hours_total']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Km di viaggio con i mezzi dell\'Associazione: </span><span class="stat-value">' . number_format($data['annual_activity']['vehicle_km_total']) . '</span></div>';
+        $html .= '<div><span class="stat-label">Ore di viaggio con i mezzi dell\'Associazione: </span><span class="stat-value">' . number_format($data['annual_activity']['vehicle_hours_total']) . '</span></div>';
         $html .= '</div>';
         
         // SEZIONE CONVENZIONE
