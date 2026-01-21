@@ -170,14 +170,14 @@ try {
             // Build HTML email body
             $body = buildReminderEmailHtml($data['user']['name'], $data['items']);
             
-            // Send email
+            // Queue email
             $subject = "Promemoria Scadenze - " . count($data['items']) . " scadenza/e in arrivo";
             
-            if ($emailSender->send($data['user']['email'], $subject, $body)) {
+            if ($emailSender->queue($data['user']['email'], $subject, $body)) {
                 $sentCount++;
-                echo "  Sent reminder to {$data['user']['email']}\n";
+                echo "  Queued reminder to {$data['user']['email']}\n";
             } else {
-                echo "  Failed to send reminder to {$data['user']['email']}\n";
+                echo "  Failed to queue reminder to {$data['user']['email']}\n";
             }
         }
         
@@ -194,17 +194,17 @@ try {
                     
                     $subject = "Promemoria Scadenza - " . $item['title'];
                     
-                    if ($emailSender->send($recipient['email'], $subject, $body)) {
+                    if ($emailSender->queue($recipient['email'], $subject, $body)) {
                         $sentCount++;
-                        echo "  Sent reminder to {$recipient['email']}\n";
+                        echo "  Queued reminder to {$recipient['email']}\n";
                     } else {
-                        echo "  Failed to send reminder to {$recipient['email']}\n";
+                        echo "  Failed to queue reminder to {$recipient['email']}\n";
                     }
                 }
             }
         }
         
-        echo "Sent $sentCount reminder emails\n";
+        echo "Queued $sentCount reminder emails\n";
         
         // Send Telegram notifications
         echo "Sending Telegram notifications...\n";
@@ -319,12 +319,14 @@ try {
             
             $body .= "Si prega di verificare e aggiornare lo stato di queste scadenze.\n";
             
-            if ($emailSender->send(
+            if ($emailSender->queue(
                 $config['email']['notification_email'],
                 "ALERT: Scadenze Urgenti Scadute",
-                $body
+                $body,
+                [],
+                1  // High priority for urgent alerts
             )) {
-                echo "Sent urgent items alert to admin\n";
+                echo "Queued urgent items alert to admin\n";
             }
         }
     }
