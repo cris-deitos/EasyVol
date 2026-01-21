@@ -675,6 +675,40 @@ $pageTitle = $isEdit ? 'Modifica Newsletter' : ($isClone ? 'Clone Newsletter' : 
     // Initialize on page load
     toggleRecipientSelection();
     toggleSchedule();
+    
+    // Pre-select recipients if editing
+    <?php if (!empty($newsletter['recipient_filter_decoded'])): ?>
+        const recipientFilter = <?php echo json_encode($newsletter['recipient_filter_decoded']); ?>;
+        
+        // For custom_members and custom_cadets
+        if (recipientFilter.ids && Array.isArray(recipientFilter.ids)) {
+            recipientFilter.ids.forEach(id => {
+                const checkbox = document.querySelector(`input[name="recipient_ids[]"][value="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+        
+        // For custom_combined
+        if (recipientFilter.member_ids && Array.isArray(recipientFilter.member_ids)) {
+            recipientFilter.member_ids.forEach(id => {
+                const checkbox = document.querySelector(`input[name="member_ids[]"][value="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+        
+        if (recipientFilter.cadet_ids && Array.isArray(recipientFilter.cadet_ids)) {
+            recipientFilter.cadet_ids.forEach(id => {
+                const checkbox = document.querySelector(`input[name="cadet_ids[]"][value="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+    <?php endif; ?>
     </script>
 </body>
 </html>
