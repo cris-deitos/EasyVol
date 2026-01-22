@@ -426,7 +426,43 @@ class SimplePdfGenerator {
         // Generate filename
         $filename = $this->generateFilename($template);
         
-        return $mpdf->Output($filename, $outputMode);
+        // For download mode, ensure clean output
+        if ($outputMode === 'D' || $outputMode === 'I') {
+            // Clean ALL output buffers (may be nested)
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Disable error reporting to prevent any PHP warnings/notices
+            $oldErrorReporting = error_reporting(0);
+            
+            // Set explicit headers for PDF download
+            header('Content-Type: application/pdf');
+            header('Cache-Control: private, must-revalidate, post-check=0, pre-check=0, max-age=1');
+            header('Pragma: public');
+            header('Expires: Sat, 26 Jul 1997 05:00:00 GMT'); // Date in the past
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            
+            if ($outputMode === 'D') {
+                header('Content-Disposition: attachment; filename="' . $filename . '"');
+            } else {
+                header('Content-Disposition: inline; filename="' . $filename . '"');
+            }
+            
+            // Output PDF as string and echo it directly
+            $pdfContent = $mpdf->Output('', 'S');
+            header('Content-Length: ' . strlen($pdfContent));
+            echo $pdfContent;
+            
+            // Restore error reporting
+            error_reporting($oldErrorReporting);
+            
+            // Must exit to prevent any trailing output
+            exit;
+        } else {
+            // For other modes (F, S), use normal Output
+            return $mpdf->Output($filename, $outputMode);
+        }
     }
     
     /**
