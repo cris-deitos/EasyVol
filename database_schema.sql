@@ -1650,7 +1650,7 @@ CREATE TABLE IF NOT EXISTS `print_templates` (
   `template_format` enum('html', 'xml') NOT NULL DEFAULT 'html' COMMENT 'Formato template: html o xml',
   `data_scope` enum('single', 'filtered', 'all', 'custom') NOT NULL DEFAULT 'single' COMMENT 'Scope dati: singolo record, filtrati, tutti, custom',
   `entity_type` varchar(100) NOT NULL COMMENT 'Tipo entità: members, junior_members, vehicles, meetings, etc',
-  `html_content` LONGTEXT COMMENT 'Contenuto HTML del template',
+  `html_content` LONGTEXT NULL COMMENT 'Contenuto HTML del template (opzionale per XML)',
   `xml_content` LONGTEXT COMMENT 'Contenuto XML del template',
   `xml_schema_version` VARCHAR(10) DEFAULT '1.0' COMMENT 'Versione schema XML',
   `css_content` TEXT COMMENT 'CSS personalizzato',
@@ -1673,11 +1673,10 @@ CREATE TABLE IF NOT EXISTS `print_templates` (
   PRIMARY KEY (`id`),
   KEY `entity_type` (`entity_type`),
   KEY `template_type` (`template_type`),
-  KEY `template_format` (`template_format`),
-  KEY `is_active` (`is_active`),
+  KEY `idx_template_format` (`template_format`),
+  KEY `idx_is_active` (`is_active`),
   KEY `idx_entity_active` (`entity_type`, `is_active`),
   KEY `idx_type_active` (`template_type`, `is_active`),
-  KEY `idx_template_format` (`template_format`),
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Template per generazione stampe e PDF';
