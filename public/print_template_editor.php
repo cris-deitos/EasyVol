@@ -440,7 +440,13 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                 init_instance_callback: function(editor) {
                     // Set content after initialization if provided
                     if (content) {
-                        editor.setContent(content);
+                        try {
+                            editor.setContent(content);
+                        } catch (e) {
+                            console.error('Error setting TinyMCE content:', e);
+                            // If content is malformed, set empty content
+                            editor.setContent('');
+                        }
                     }
                 }
             });
@@ -461,11 +467,18 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             if (mode === 'code') {
                 // Switch to code mode
                 if (tinymceEditor) {
-                    // Get content from TinyMCE and destroy it
-                    const content = tinymceEditor.getContent();
-                    tinymce.remove('#htmlContent');
-                    tinymceEditor = null;
-                    textarea.value = content;
+                    try {
+                        // Get content from TinyMCE and destroy it
+                        const content = tinymceEditor.getContent();
+                        tinymce.remove('#htmlContent');
+                        tinymceEditor = null;
+                        textarea.value = content;
+                    } catch (e) {
+                        console.error('Error switching to code mode:', e);
+                        // Try to preserve whatever content we can
+                        textarea.value = textarea.value || '';
+                        tinymceEditor = null;
+                    }
                 }
                 initCodeEditor();
                 currentEditorMode = 'code';

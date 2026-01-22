@@ -156,8 +156,9 @@ if ($isPreview) {
                     const previewContent = document.getElementById('previewContent');
                     
                     // Build full content with header and footer
-                    // Note: Content is already coming from sessionStorage which was set by the editor
-                    // and will be rendered in the DOM. The browser will handle HTML parsing.
+                    // Note: innerHTML is used intentionally here as this is template HTML content
+                    // created by authenticated admins with edit permissions. The content comes
+                    // from the same session and is meant to be rendered as HTML.
                     let fullContent = '';
                     if (header) {
                         const headerDiv = document.createElement('div');
