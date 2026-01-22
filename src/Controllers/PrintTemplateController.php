@@ -912,7 +912,7 @@ class PrintTemplateController {
         switch ($entityType) {
             case 'members':
                 // Get a sample member
-                $member = $this->db->fetchOne("SELECT * FROM members WHERE is_active = 1 LIMIT 1");
+                $member = $this->db->fetchOne("SELECT * FROM members WHERE member_status = 'attivo' LIMIT 1");
                 if ($member) {
                     $data = array_merge($data, $member);
                     // Get contacts
@@ -934,7 +934,7 @@ class PrintTemplateController {
                 break;
                 
             case 'junior_members':
-                $juniorMember = $this->db->fetchOne("SELECT * FROM junior_members WHERE is_active = 1 LIMIT 1");
+                $juniorMember = $this->db->fetchOne("SELECT * FROM junior_members WHERE member_status = 'attivo' LIMIT 1");
                 if ($juniorMember) {
                     $data = array_merge($data, $juniorMember);
                 } else {
@@ -949,7 +949,7 @@ class PrintTemplateController {
                 break;
                 
             case 'vehicles':
-                $vehicle = $this->db->fetchOne("SELECT * FROM vehicles WHERE is_active = 1 LIMIT 1");
+                $vehicle = $this->db->fetchOne("SELECT * FROM vehicles WHERE status = 'operativo' LIMIT 1");
                 if ($vehicle) {
                     $data = array_merge($data, $vehicle);
                 } else {
