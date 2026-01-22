@@ -185,38 +185,51 @@ if ($isPreview) {
                         '<div class="alert alert-warning">Nessun contenuto da visualizzare in anteprima</div>';
                 }
             });
-        <?php else: ?>
-            // Load preview via AJAX
-            document.addEventListener('DOMContentLoaded', function() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const generateUrl = 'print_generate.php?' + urlParams.toString();
+<?php else: ?>
+    // Load preview via AJAX from HTML endpoint
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        // Usa il nuovo endpoint HTML invece di print_generate.php
+        const previewUrl = 'print_preview_html.php?' + urlParams.toString();
+        
+        fetch(previewUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response. text();
+            })
+            .then(html => {
+                // Parse HTML response
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
                 
-                fetch(generateUrl)
-                    .then(response => response.text())
-                    .then(html => {
-                        // Extract entire document content from response
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        
-                        // Get all content from body (including header and footer)
-                        const bodyContent = doc.body.innerHTML;
-                        
-                        // Get styles from head
-                        const styles = doc.querySelectorAll('style');
-                        styles.forEach(style => {
-                            document.head.appendChild(style.cloneNode(true));
-                        });
-                        
-                        // Set content
-                        document.getElementById('previewContent').innerHTML = bodyContent;
-                    })
-                    .catch(error => {
-                        console.error('Error loading preview:', error);
-                        document.getElementById('previewContent').innerHTML = 
-                            '<div class="alert alert-danger">Errore nel caricamento dell\'anteprima: ' + error.message + '</div>';
-                    });
+                // Extract body content
+                const bodyContent = doc.body.innerHTML;
+                
+                // Extract and apply styles
+                const styles = doc.querySelectorAll('style');
+                styles.forEach(style => {
+                    document.head.appendChild(style.cloneNode(true));
+                });
+                
+                // Set content
+                document.getElementById('previewContent').innerHTML = bodyContent;
+            })
+            .catch(error => {
+                console. error('Error loading preview:', error);
+                document.getElementById('previewContent').innerHTML = 
+                    '<div class="alert alert-danger">Errore nel caricamento dell\'anteprima: ' + error.message + '</div>';
             });
-        <?php endif; ?>
+    });
+    
+    // Download PDF function
+    function downloadPDF() {
+        const urlParams = new URLSearchParams(window.location.search);
+        // Per il download, usa print_generate.php
+        window.open('print_generate.php?' + urlParams.toString(), '_blank');
+    }
+<?php endif; ?>
 
         function downloadPDF() {
             // Download PDF directly from server
