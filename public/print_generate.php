@@ -1,15 +1,9 @@
 <?php
-// TEMPORARY DEBUG MODE - MUST BE REMOVED BEFORE PRODUCTION
-// This is enabled per issue requirements for troubleshooting XML template issues
-// TODO: Remove these lines after XML template list generation is verified working
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 /**
- * Print Generation Endpoint
+ * Print Generation Endpoint - Simplified
  * 
- * Genera documenti da template
+ * Directly generates and downloads PDF from template
+ * No editable HTML generation - direct PDF download only
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
@@ -23,35 +17,15 @@ $app = App::getInstance();
 // Verifica autenticazione
 if (!$app->isLoggedIn()) {
     http_response_code(403);
-    echo json_encode(['error' => 'Non autenticato']);
-    exit;
+    die('Accesso negato: non autenticato');
 }
 
-// Check permission based on entity type
-$entityType = $_GET['entity'] ?? 'members';
-$permissionModule = '';
-switch ($entityType) {
-    case 'members':
-    case 'junior_members':
-        $permissionModule = 'members';
-        break;
-    case 'vehicles':
-        $permissionModule = 'vehicles';
-        break;
-    case 'meetings':
-        $permissionModule = 'meetings';
-        break;
-    case 'events':
-        $permissionModule = 'events';
-        break;
-    default:
-        $permissionModule = $entityType;
-}
+// Get parameters
+$templateId = $_GET['template_id'] ?? null;
 
-if (!$app->checkPermission($permissionModule, 'view')) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Accesso negato']);
-    exit;
+if (!$templateId) {
+    http_response_code(400);
+    die('Errore: Template ID richiesto');
 }
 
 $db = $app->getDb();
@@ -59,20 +33,48 @@ $config = $app->getConfig();
 $controller = new PrintTemplateController($db, $config);
 
 try {
-    $templateId = $_GET['template_id'] ?? null;
+    // Get template to check entity type for permissions
+    $template = $controller->getById($templateId);
     
-    if (!$templateId) {
-        throw new \Exception('Template ID richiesto');
+    if (!$template) {
+        throw new \Exception('Template non trovato');
     }
     
+    // Check permission based on entity type
+    $entityType = $template['entity_type'];
+    $permissionModule = '';
+    switch ($entityType) {
+        case 'members':
+        case 'junior_members':
+            $permissionModule = 'members';
+            break;
+        case 'vehicles':
+            $permissionModule = 'vehicles';
+            break;
+        case 'meetings':
+            $permissionModule = 'meetings';
+            break;
+        case 'events':
+            $permissionModule = 'events';
+            break;
+        default:
+            $permissionModule = $entityType;
+    }
+    
+    if (!$app->checkPermission($permissionModule, 'view')) {
+        http_response_code(403);
+        die('Accesso negato: permessi insufficienti');
+    }
+    
+    // Build options for PDF generation
     $options = [];
     
-    // Get record ID for single/relational templates
+    // Get record ID for single templates
     if (isset($_GET['record_id'])) {
         $options['record_id'] = intval($_GET['record_id']);
     }
     
-    // Get record IDs for multi-page templates
+    // Get record IDs for list templates with specific records
     if (isset($_GET['record_ids'])) {
         $recordIds = $_GET['record_ids'];
         if (is_string($recordIds)) {
@@ -93,8 +95,8 @@ try {
         if (isset($_GET['member_type'])) {
             $filters['member_type'] = $_GET['member_type'];
         }
-        if (isset($_GET['vehicle_type'])) {
-            $filters['vehicle_type'] = $_GET['vehicle_type'];
+        if (isset($_GET['status'])) {
+            $filters['status'] = $_GET['status'];
         }
         if (isset($_GET['date_from'])) {
             $filters['date_from'] = $_GET['date_from'];
@@ -107,69 +109,14 @@ try {
         $options['filters'] = $filters;
     }
     
-    // Generate document
-    $result = $controller->generate($templateId, $options);
-    
-    // Return as JSON or HTML based on request
-    if (isset($_GET['format']) && $_GET['format'] === 'json') {
-        header('Content-Type: application/json');
-        echo json_encode($result);
-    } else {
-        // Return HTML document
-        header('Content-Type: text/html; charset=utf-8');
-        
-        echo '<!DOCTYPE html>';
-        echo '<html lang="it">';
-        echo '<head>';
-        echo '<meta charset="UTF-8">';
-        echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-        echo '<title>Stampa</title>';
-        
-        // Add CSS
-        echo '<style>';
-        echo 'body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }';
-        echo '@page { size: ' . $result['page_format'] . ' ' . $result['page_orientation'] . '; margin: 2cm; }';
-        echo '@media print { body { margin: 0; padding: 0; } }';
-        echo '.page-break { page-break-after: always; }';
-        
-        // Watermark
-        if (!empty($result['watermark'])) {
-            echo 'body::before { content: "' . htmlspecialchars($result['watermark']) . '"; ';
-            echo 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); ';
-            echo 'font-size: 120px; color: rgba(0, 0, 0, 0.05); z-index: -1; white-space: nowrap; }';
-        }
-        
-        // Custom CSS
-        if (!empty($result['css'])) {
-            echo $result['css'];
-        }
-        echo '</style>';
-        echo '</head>';
-        echo '<body>';
-        
-        // Header
-        if (!empty($result['header'])) {
-            echo '<div class="document-header">' . $result['header'] . '</div>';
-        }
-        
-        // Content
-        echo $result['html'];
-        
-        // Footer
-        if (!empty($result['footer'])) {
-            echo '<div class="document-footer">' . $result['footer'] . '</div>';
-        }
-        
-        echo '</body>';
-        echo '</html>';
-    }
+    // Generate and download PDF directly
+    $controller->generatePdf($templateId, $options, 'D');
     
 } catch (\Exception $e) {
-    http_response_code(400);
-    if (isset($_GET['format']) && $_GET['format'] === 'json') {
-        header('Content-Type: application/json');
-        echo json_encode(['error' => $e->getMessage()]);
-    } else {
-        echo '<html><body><h1>Errore</h1><p>' . htmlspecialchars($e->getMessage()) . '</p></body></html>';
-    }
+    // Log the full error for debugging
+    error_log("Print generation error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    
+    http_response_code(500);
+    // Show generic error to users, log details for admins
+    die('Errore nella generazione del PDF. Contattare l\'amministratore del sistema.');
 }
