@@ -70,6 +70,14 @@ class PrintTemplateController {
     }
     
     public function create($data, $userId) {
+        // Validate required fields
+        $requiredFields = ['name', 'template_type', 'data_scope', 'entity_type', 'html_content'];
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                throw new \InvalidArgumentException("Campo obbligatorio mancante: $field");
+            }
+        }
+        
         $sql = "INSERT INTO print_templates (
             name, description, template_type, data_scope, entity_type,
             html_content, css_content, page_format, page_orientation,
@@ -97,6 +105,19 @@ class PrintTemplateController {
     }
     
     public function update($id, $data, $userId) {
+        // Validate ID
+        if (!is_numeric($id) || $id <= 0) {
+            throw new \InvalidArgumentException("ID template non valido");
+        }
+        
+        // Validate required fields
+        $requiredFields = ['name', 'template_type', 'data_scope', 'entity_type', 'html_content'];
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                throw new \InvalidArgumentException("Campo obbligatorio mancante: $field");
+            }
+        }
+        
         $sql = "UPDATE print_templates SET
             name = ?,
             description = ?,
@@ -132,6 +153,12 @@ class PrintTemplateController {
     }
     
     public function getAvailableVariables($entityType) {
+        // Validate entity type
+        $validEntityTypes = ['members', 'junior_members', 'member_applications', 'vehicles', 'meetings', 'events'];
+        if (!in_array($entityType, $validEntityTypes)) {
+            throw new \InvalidArgumentException("Tipo entità non valido: $entityType");
+        }
+        
         $variables = [
             'association_name' => 'Nome associazione',
             'association_address' => 'Indirizzo associazione',
