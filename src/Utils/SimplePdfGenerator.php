@@ -436,6 +436,9 @@ class SimplePdfGenerator {
             // Disable error reporting to prevent any PHP warnings/notices
             $oldErrorReporting = error_reporting(0);
             
+            // Sanitize filename for HTTP header (remove newlines and special chars)
+            $safeFilename = str_replace(["\r", "\n", '"'], '', $filename);
+            
             // Set explicit headers for PDF download
             header('Content-Type: application/pdf');
             header('Cache-Control: private, must-revalidate, post-check=0, pre-check=0, max-age=1');
@@ -444,14 +447,14 @@ class SimplePdfGenerator {
             header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
             
             if ($outputMode === 'D') {
-                header('Content-Disposition: attachment; filename="' . $filename . '"');
+                header('Content-Disposition: attachment; filename="' . $safeFilename . '"');
             } else {
-                header('Content-Disposition: inline; filename="' . $filename . '"');
+                header('Content-Disposition: inline; filename="' . $safeFilename . '"');
             }
             
             // Output PDF as string and echo it directly
             $pdfContent = $mpdf->Output('', 'S');
-            header('Content-Length: ' . strlen($pdfContent));
+            header('Content-Length: ' . mb_strlen($pdfContent, '8bit'));
             echo $pdfContent;
             
             // Restore error reporting
