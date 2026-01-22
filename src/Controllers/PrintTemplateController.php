@@ -319,4 +319,14 @@ class PrintTemplateController {
         // Keeping this method for backwards compatibility
         return [];
     }
+    
+    public function delete($id) {
+        $template = $this->getById($id);
+        if (!$template) {
+            throw new \Exception("Template non trovato");
+        }
+        
+        $sql = "DELETE FROM print_templates WHERE id = ?";
+        return $this->db->execute($sql, [$id]);
+    }
 }

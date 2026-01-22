@@ -516,7 +516,7 @@ class SimplePdfGenerator {
                 'roles' => [
                     'table' => 'member_roles',
                     'foreign_key' => 'member_id',
-                    'order_by' => 'assignment_date DESC'
+                    'order_by' => 'assigned_date DESC'
                 ],
                 'fees' => [
                     'table' => 'member_fees',
