@@ -340,8 +340,89 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
         let currentEditorMode = 'wysiwyg';
         let tinymceEditor = null;
         
+        /**
+         * Convert Handlebars block helpers to HTML comments before loading into TinyMCE.
+         * This prevents TinyMCE from moving {{#each}} and {{/each}} tags around in tables.
+         * 
+         * @param {string} html - The HTML content with Handlebars syntax
+         * @returns {string} - HTML with block helpers converted to comments
+         */
+        function handlebarsToComments(html) {
+            if (!html) return html;
+            
+            // Convert {{#each ...}} to <!-- HB_EACH_START:... -->
+            html = html.replace(/\{\{#each\s+([^}]+)\}\}/gi, function(match, arrayName) {
+                return '<!-- HB_EACH_START:' + arrayName.trim() + ' -->';
+            });
+            
+            // Convert {{/each}} to <!-- HB_EACH_END -->
+            html = html.replace(/\{\{\/each\}\}/gi, '<!-- HB_EACH_END -->');
+            
+            // Convert {{#if ...}} to <!-- HB_IF_START:... -->
+            html = html.replace(/\{\{#if\s+([^}]+)\}\}/gi, function(match, condition) {
+                return '<!-- HB_IF_START:' + condition.trim() + ' -->';
+            });
+            
+            // Convert {{else}} to <!-- HB_ELSE -->
+            html = html.replace(/\{\{else\}\}/gi, '<!-- HB_ELSE -->');
+            
+            // Convert {{/if}} to <!-- HB_IF_END -->
+            html = html.replace(/\{\{\/if\}\}/gi, '<!-- HB_IF_END -->');
+            
+            // Convert {{#unless ...}} to <!-- HB_UNLESS_START:... -->
+            html = html.replace(/\{\{#unless\s+([^}]+)\}\}/gi, function(match, condition) {
+                return '<!-- HB_UNLESS_START:' + condition.trim() + ' -->';
+            });
+            
+            // Convert {{/unless}} to <!-- HB_UNLESS_END -->
+            html = html.replace(/\{\{\/unless\}\}/gi, '<!-- HB_UNLESS_END -->');
+            
+            return html;
+        }
+        
+        /**
+         * Convert HTML comments back to Handlebars block helpers after getting content from TinyMCE.
+         * 
+         * @param {string} html - The HTML content with comment placeholders
+         * @returns {string} - HTML with Handlebars syntax restored
+         */
+        function commentsToHandlebars(html) {
+            if (!html) return html;
+            
+            // Convert <!-- HB_EACH_START:... --> back to {{#each ...}}
+            html = html.replace(/<!--\s*HB_EACH_START:(.+?)\s*-->/gi, function(match, arrayName) {
+                return '{{#each ' + arrayName.trim() + '}}';
+            });
+            
+            // Convert <!-- HB_EACH_END --> back to {{/each}}
+            html = html.replace(/<!--\s*HB_EACH_END\s*-->/gi, '{{/each}}');
+            
+            // Convert <!-- HB_IF_START:... --> back to {{#if ...}}
+            html = html.replace(/<!--\s*HB_IF_START:(.+?)\s*-->/gi, function(match, condition) {
+                return '{{#if ' + condition.trim() + '}}';
+            });
+            
+            // Convert <!-- HB_ELSE --> back to {{else}}
+            html = html.replace(/<!--\s*HB_ELSE\s*-->/gi, '{{else}}');
+            
+            // Convert <!-- HB_IF_END --> back to {{/if}}
+            html = html.replace(/<!--\s*HB_IF_END\s*-->/gi, '{{/if}}');
+            
+            // Convert <!-- HB_UNLESS_START:... --> back to {{#unless ...}}
+            html = html.replace(/<!--\s*HB_UNLESS_START:(.+?)\s*-->/gi, function(match, condition) {
+                return '{{#unless ' + condition.trim() + '}}';
+            });
+            
+            // Convert <!-- HB_UNLESS_END --> back to {{/unless}}
+            html = html.replace(/<!--\s*HB_UNLESS_END\s*-->/gi, '{{/unless}}');
+            
+            return html;
+        }
+        
         // Initialize TinyMCE
         function initTinyMCE(content) {
+            // Convert Handlebars block helpers to comments before loading into TinyMCE
+            const processedContent = handlebarsToComments(content);
             tinymce.init({
                 selector: '#htmlContent',
                 height: 600,
@@ -351,6 +432,10 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                 ],
                 toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat | code',
                 content_style: 'body { font-family: Arial, sans-serif; font-size: 12pt; }',
+                // Protect Handlebars/Mustache simple variable expressions from being modified
+                protect: [
+                    /\{\{[^#\/][^}]*\}\}/g  // Protect {{variable}} patterns (not block helpers which are converted to comments)
+                ],
               
                 setup: function (editor) {
                     tinymceEditor = editor;
@@ -363,10 +448,10 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                     });
                 },
                 init_instance_callback: function(editor) {
-                    // Set content after initialization if provided
-                    if (content) {
+                    // Set processed content after initialization (with block helpers converted to comments)
+                    if (processedContent) {
                         try {
-                            editor.setContent(content);
+                            editor.setContent(processedContent);
                         } catch (e) {
                             console.error('Error setting TinyMCE content:', e);
                             // If content is malformed, set empty content
@@ -394,7 +479,8 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                 if (tinymceEditor) {
                     try {
                         // Get content from TinyMCE and destroy it
-                        const content = tinymceEditor.getContent();
+                        // Convert comments back to Handlebars for code editing
+                        const content = commentsToHandlebars(tinymceEditor.getContent());
                         tinymce.remove('#htmlContent');
                         tinymceEditor = null;
                         textarea.value = content;
@@ -442,7 +528,8 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             document.getElementById('templateForm').addEventListener('submit', function(e) {
                 const textarea = document.getElementById('htmlContent');
                 if (currentEditorMode === 'wysiwyg' && tinymceEditor) {
-                    textarea.value = tinymceEditor.getContent();
+                    // Convert comments back to Handlebars before saving
+                    textarea.value = commentsToHandlebars(tinymceEditor.getContent());
                 }
             });
         });
@@ -513,7 +600,8 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             // Get HTML content based on current mode
             let htmlContent;
             if (currentEditorMode === 'wysiwyg' && tinymceEditor) {
-                htmlContent = tinymceEditor.getContent();
+                // Convert comments back to Handlebars for preview
+                htmlContent = commentsToHandlebars(tinymceEditor.getContent());
             } else {
                 htmlContent = document.getElementById('htmlContent').value;
             }
