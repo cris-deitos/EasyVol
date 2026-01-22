@@ -331,67 +331,6 @@ $pageTitle = 'Anomalie Soci Minorenni';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Anomaly visibility management
-        document.addEventListener('DOMContentLoaded', function() {
-            const STORAGE_KEY = 'easyvol_hidden_anomalies';
-            
-            // Load hidden anomalies from localStorage
-            function loadHiddenAnomalies() {
-                const stored = localStorage.getItem(STORAGE_KEY);
-                return stored ? JSON.parse(stored) : {};
-            }
-            
-            // Save hidden anomalies to localStorage
-            function saveHiddenAnomalies(hiddenAnomalies) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(hiddenAnomalies));
-            }
-            
-            // Toggle anomaly visibility
-            function toggleAnomaly(card, button) {
-                const anomalyType = card.dataset.anomalyType;
-                const content = card.querySelector('.anomaly-content');
-                const icon = button.querySelector('i');
-                const hiddenAnomalies = loadHiddenAnomalies();
-                
-                if (content.style.display === 'none') {
-                    // Show anomaly
-                    content.style.display = 'block';
-                    icon.className = 'bi bi-eye-slash';
-                    button.innerHTML = '<i class="bi bi-eye-slash"></i> Nascondi';
-                    delete hiddenAnomalies[anomalyType];
-                } else {
-                    // Hide anomaly
-                    content.style.display = 'none';
-                    icon.className = 'bi bi-eye';
-                    button.innerHTML = '<i class="bi bi-eye"></i> Mostra';
-                    hiddenAnomalies[anomalyType] = true;
-                }
-                
-                saveHiddenAnomalies(hiddenAnomalies);
-            }
-            
-            // Initialize anomaly cards
-            const anomalyCards = document.querySelectorAll('.anomaly-card');
-            const hiddenAnomalies = loadHiddenAnomalies();
-            
-            anomalyCards.forEach(card => {
-                const anomalyType = card.dataset.anomalyType;
-                const toggleBtn = card.querySelector('.anomaly-toggle-btn');
-                const content = card.querySelector('.anomaly-content');
-                
-                // Apply saved state
-                if (hiddenAnomalies[anomalyType]) {
-                    content.style.display = 'none';
-                    toggleBtn.innerHTML = '<i class="bi bi-eye"></i> Mostra';
-                }
-                
-                // Add click event
-                toggleBtn.addEventListener('click', function() {
-                    toggleAnomaly(card, toggleBtn);
-                });
-            });
-        });
-    </script>
+    <script src="../assets/js/anomaly-visibility.js"></script>
 </body>
 </html>
