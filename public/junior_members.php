@@ -12,6 +12,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Utils\PathHelper;
 use EasyVol\Controllers\JuniorMemberController;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -34,7 +35,6 @@ $config = $app->getConfig();
 $controller = new JuniorMemberController($db, $config);
 
 // Load print templates for junior_members
-use EasyVol\Controllers\PrintTemplateController;
 $printController = new PrintTemplateController($db, $config);
 $printTemplates = $printController->getAll([
     'entity_type' => 'junior_members',

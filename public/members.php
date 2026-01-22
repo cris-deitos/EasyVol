@@ -10,6 +10,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Controllers\MemberController;
+use EasyVol\Controllers\PrintTemplateController;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Utils\PathHelper;
 
@@ -31,7 +32,6 @@ $config = $app->getConfig();
 $controller = new MemberController($db, $config);
 
 // Load print templates for members
-use EasyVol\Controllers\PrintTemplateController;
 $printController = new PrintTemplateController($db, $config);
 $printTemplates = $printController->getAll([
     'entity_type' => 'members',

@@ -9,6 +9,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\VehicleController;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -29,7 +30,6 @@ $config = $app->getConfig();
 $controller = new VehicleController($db, $config);
 
 // Load print templates for vehicles
-use EasyVol\Controllers\PrintTemplateController;
 $printController = new PrintTemplateController($db, $config);
 $printTemplates = $printController->getAll([
     'entity_type' => 'vehicles',

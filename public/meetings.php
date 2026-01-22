@@ -9,6 +9,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\MeetingController;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -29,7 +30,6 @@ $config = $app->getConfig();
 $controller = new MeetingController($db, $config);
 
 // Load print templates for meetings
-use EasyVol\Controllers\PrintTemplateController;
 $printController = new PrintTemplateController($db, $config);
 $printTemplates = $printController->getAll([
     'entity_type' => 'meetings',
