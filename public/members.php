@@ -30,6 +30,14 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MemberController($db, $config);
 
+// Load print templates for members
+use EasyVol\Controllers\PrintTemplateController;
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'members',
+    'is_active' => 1
+]);
+
 // Gestione filtri
 $filters = [
     'status' => $_GET['status'] ?? '',
@@ -112,16 +120,19 @@ $pageTitle = 'Gestione Soci';
                                 <i class="bi bi-printer"></i> Stampa
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="printList('libro_soci'); return false;">
-                                    <i class="bi bi-book"></i> Libro Soci
-                                </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="printList('elenco_telefonico'); return false;">
-                                    <i class="bi bi-telephone"></i> Elenco Telefonico
-                                </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="printList('tessere_multiple'); return false;">
-                                    <i class="bi bi-credit-card-2-back"></i> Tessere Multiple
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                <?php if (!empty($printTemplates)): ?>
+                                    <?php 
+                                    $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                    foreach ($displayedTemplates as $template): 
+                                    ?>
+                                        <li><a class="dropdown-item" href="#" onclick="printListById(<?php echo $template['id']; ?>); return false;">
+                                            <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                        </a></li>
+                                    <?php endforeach; ?>
+                                    <?php if (count($printTemplates) > 3): ?>
+                                        <li><hr class="dropdown-divider"></li>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                                 <li><a class="dropdown-item" href="#" onclick="showPrintListModal(); return false;">
                                     <i class="bi bi-gear"></i> Scegli Template...
                                 </a></li>
@@ -388,7 +399,19 @@ $pageTitle = 'Gestione Soci';
         }
         
         // Print list functionality
+        function printListById(templateId) {
+            let filters = getCurrentFilters();
+            
+            const params = new URLSearchParams({
+                template_id: templateId,
+                entity: 'members',
+                ...filters
+            });
+            window.open('print_preview.php?' + params.toString(), '_blank');
+        }
+        
         function printList(type) {
+            // Legacy function for backward compatibility
             let templateId = null;
             let filters = getCurrentFilters();
             
@@ -405,12 +428,7 @@ $pageTitle = 'Gestione Soci';
             }
             
             if (templateId) {
-                const params = new URLSearchParams({
-                    template_id: templateId,
-                    entity: 'members',
-                    ...filters
-                });
-                window.open('print_preview.php?' + params.toString(), '_blank');
+                printListById(templateId);
             }
         }
         
@@ -462,9 +480,18 @@ $pageTitle = 'Gestione Soci';
                     <div class="mb-3">
                         <label class="form-label">Template</label>
                         <select id="listTemplateSelect" class="form-select">
-                            <option value="4">Libro Soci</option>
-                            <option value="5">Elenco Telefonico</option>
-                            <option value="6">Tessere Multiple</option>
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            [XML]
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                     <div class="alert alert-info">
