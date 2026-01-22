@@ -20,6 +20,7 @@ if (!$app->isLoggedIn()) {
 }
 
 $isPreview = isset($_GET['preview']) && $_GET['preview'] == '1';
+$pageOrientation = 'portrait'; // default
 
 if ($isPreview) {
     // Preview from editor (using session storage)
@@ -31,6 +32,13 @@ if ($isPreview) {
     
     if (!$templateId) {
         die('Template ID richiesto');
+    }
+    
+    // Fetch template to get orientation
+    $db = $app->getDb();
+    $template = $db->fetchOne("SELECT page_orientation FROM print_templates WHERE id = ?", [$templateId]);
+    if ($template && $template['page_orientation'] === 'landscape') {
+        $pageOrientation = 'landscape';
     }
     
     $pageTitle = 'Anteprima Stampa';
@@ -65,11 +73,14 @@ if ($isPreview) {
             background: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             margin: 0 auto 2rem;
-            padding: 2cm;
-            max-width: 21cm; /* A4 width */
+            padding: 1.5cm;
+            width: 21cm; /* A4 width */
+            min-height: 29.7cm; /* A4 height */
+            box-sizing: border-box;
         }
         .preview-page.landscape {
-            max-width: 29.7cm; /* A4 landscape width */
+            width: 29.7cm; /* A4 landscape width */
+            min-height: 21cm; /* A4 landscape height */
         }
         .document-header {
             border-bottom: 2px solid #dee2e6;
@@ -100,11 +111,6 @@ if ($isPreview) {
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><?php echo htmlspecialchars($pageTitle); ?></h5>
                 <div class="btn-group">
-                    <?php if (!$isPreview): ?>
-                        <button type="button" class="btn btn-success" onclick="downloadPDF()">
-                            <i class="bi bi-file-pdf"></i> Download PDF
-                        </button>
-                    <?php endif; ?>
                     <button type="button" class="btn btn-primary" onclick="window.print()">
                         <i class="bi bi-printer"></i> Stampa
                     </button>
@@ -117,7 +123,7 @@ if ($isPreview) {
     </div>
 
     <div class="preview-container">
-        <div id="previewContent" class="preview-page">
+        <div id="previewContent" class="preview-page<?php echo $pageOrientation === 'landscape' ? ' landscape' : ''; ?>">
             <?php if ($isPreview): ?>
                 <!-- Content will be loaded from sessionStorage -->
                 <div class="text-center text-muted p-5">
@@ -222,13 +228,6 @@ if ($isPreview) {
                     '<div class="alert alert-danger">Errore nel caricamento dell\'anteprima: ' + error.message + '</div>';
             });
     });
-    
-    // Download PDF function
-    function downloadPDF() {
-        const urlParams = new URLSearchParams(window.location.search);
-        // Per il download, usa print_generate.php
-        window.open('print_generate.php?' + urlParams.toString(), '_blank');
-    }
 <?php endif; ?>
     </script>
 </body>
