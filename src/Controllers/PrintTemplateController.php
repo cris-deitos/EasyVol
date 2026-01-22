@@ -4,16 +4,19 @@ namespace EasyVol\Controllers;
 use EasyVol\Database;
 use EasyVol\Models\Member;
 use EasyVol\Models\JuniorMember;
+use EasyVol\Utils\XmlTemplateProcessor;
 
 /**
  * Print Template Controller
  * 
  * Gestisce la generazione di stampe e PDF per EasyVol
  * Supporta template singoli, liste, multi-pagina e relazionali
+ * Supporta template in formato HTML e XML
  */
 class PrintTemplateController {
     private $db;
     private $config;
+    private $xmlProcessor;
     
     /**
      * Constructor
@@ -24,6 +27,7 @@ class PrintTemplateController {
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
+        $this->xmlProcessor = new XmlTemplateProcessor($config);
     }
     
     /**
@@ -76,20 +80,23 @@ class PrintTemplateController {
      */
     public function create($data, $userId) {
         $sql = "INSERT INTO print_templates (
-            name, description, template_type, data_scope, entity_type,
-            html_content, css_content, relations, filter_config, variables,
+            name, description, template_type, template_format, data_scope, entity_type,
+            html_content, xml_content, xml_schema_version, css_content, relations, filter_config, variables,
             page_format, page_orientation, show_header, show_footer,
             header_content, footer_content, watermark, is_active, is_default,
             created_by, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
         $params = [
             $data['name'],
             $data['description'] ?? null,
             $data['template_type'],
+            $data['template_format'] ?? 'html',
             $data['data_scope'],
             $data['entity_type'],
-            $data['html_content'],
+            $data['html_content'] ?? null,
+            $data['xml_content'] ?? null,
+            $data['xml_schema_version'] ?? '1.0',
             $data['css_content'] ?? null,
             $data['relations'] ?? null,
             $data['filter_config'] ?? null,
@@ -120,20 +127,24 @@ class PrintTemplateController {
      */
     public function update($id, $data, $userId) {
         $sql = "UPDATE print_templates SET
-            name = ?, description = ?, template_type = ?, data_scope = ?,
-            entity_type = ?, html_content = ?, css_content = ?, relations = ?,
-            filter_config = ?, variables = ?, page_format = ?, page_orientation = ?,
-            show_header = ?, show_footer = ?, header_content = ?, footer_content = ?,
-            watermark = ?, is_active = ?, is_default = ?, updated_by = ?, updated_at = NOW()
+            name = ?, description = ?, template_type = ?, template_format = ?, data_scope = ?,
+            entity_type = ?, html_content = ?, xml_content = ?, xml_schema_version = ?, 
+            css_content = ?, relations = ?, filter_config = ?, variables = ?, 
+            page_format = ?, page_orientation = ?, show_header = ?, show_footer = ?, 
+            header_content = ?, footer_content = ?, watermark = ?, is_active = ?, 
+            is_default = ?, updated_by = ?, updated_at = NOW()
             WHERE id = ?";
         
         $params = [
             $data['name'],
             $data['description'] ?? null,
             $data['template_type'],
+            $data['template_format'] ?? 'html',
             $data['data_scope'],
             $data['entity_type'],
-            $data['html_content'],
+            $data['html_content'] ?? null,
+            $data['xml_content'] ?? null,
+            $data['xml_schema_version'] ?? '1.0',
             $data['css_content'] ?? null,
             $data['relations'] ?? null,
             $data['filter_config'] ?? null,
@@ -879,4 +890,170 @@ class PrintTemplateController {
         
         return $this->create($templateData, $userId);
     }
+    
+    /**
+     * Get sample data for entity type (for preview)
+     * 
+     * @param string $entityType Entity type
+     * @return array Sample data
+     */
+    public function getSampleData($entityType) {
+        $data = [
+            'current_date' => date('d/m/Y'),
+            'current_year' => date('Y'),
+            'association' => [
+                'name' => $this->config['association_name'] ?? 'Nome Associazione',
+                'address' => 'Via Example 123, 12345 Città',
+                'phone' => '+39 012 3456789',
+                'email' => 'info@example.com'
+            ]
+        ];
+        
+        switch ($entityType) {
+            case 'members':
+                // Get a sample member
+                $member = $this->db->fetchOne("SELECT * FROM members WHERE is_active = 1 LIMIT 1");
+                if ($member) {
+                    $data = array_merge($data, $member);
+                    // Get contacts
+                    $contacts = $this->db->fetchAll("SELECT * FROM member_contacts WHERE member_id = ?", [$member['id']]);
+                    $data['contacts'] = $contacts;
+                } else {
+                    // Default sample data
+                    $data = array_merge($data, [
+                        'first_name' => 'Mario',
+                        'last_name' => 'Rossi',
+                        'badge_number' => '001',
+                        'member_type' => 'Volontario',
+                        'birth_date' => '1990-01-15',
+                        'phone' => '+39 333 1234567',
+                        'email' => 'mario.rossi@example.com',
+                        'contacts' => []
+                    ]);
+                }
+                break;
+                
+            case 'junior_members':
+                $juniorMember = $this->db->fetchOne("SELECT * FROM junior_members WHERE is_active = 1 LIMIT 1");
+                if ($juniorMember) {
+                    $data = array_merge($data, $juniorMember);
+                } else {
+                    $data = array_merge($data, [
+                        'first_name' => 'Luca',
+                        'last_name' => 'Bianchi',
+                        'badge_number' => 'C001',
+                        'birth_date' => '2010-05-20',
+                        'parent_name' => 'Giovanni Bianchi'
+                    ]);
+                }
+                break;
+                
+            case 'vehicles':
+                $vehicle = $this->db->fetchOne("SELECT * FROM vehicles WHERE is_active = 1 LIMIT 1");
+                if ($vehicle) {
+                    $data = array_merge($data, $vehicle);
+                } else {
+                    $data = array_merge($data, [
+                        'vehicle_name' => 'Ambulanza A1',
+                        'plate_number' => 'AB123CD',
+                        'brand' => 'Fiat',
+                        'model' => 'Ducato',
+                        'year' => 2020,
+                        'vehicle_type' => 'Ambulanza'
+                    ]);
+                }
+                break;
+                
+            case 'meetings':
+                $meeting = $this->db->fetchOne("SELECT * FROM meetings ORDER BY meeting_date DESC LIMIT 1");
+                if ($meeting) {
+                    $data = array_merge($data, $meeting);
+                    // Get participants
+                    $participants = $this->db->fetchAll(
+                        "SELECT m.first_name, m.last_name, mp.role 
+                         FROM meeting_participants mp 
+                         JOIN members m ON mp.member_id = m.id 
+                         WHERE mp.meeting_id = ?",
+                        [$meeting['id']]
+                    );
+                    $data['participants'] = $participants;
+                } else {
+                    $data = array_merge($data, [
+                        'meeting_title' => 'Assemblea Ordinaria',
+                        'meeting_date' => date('Y-m-d'),
+                        'meeting_time' => '18:00',
+                        'location' => 'Sede Associazione',
+                        'participants' => []
+                    ]);
+                }
+                break;
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Convert HTML template to XML format (helper method)
+     * 
+     * Note: This is a basic conversion helper. Full HTML-to-XML conversion
+     * would require proper HTML parsing. This creates a basic XML wrapper.
+     * 
+     * @param array $template Template data
+     * @return string XML content
+     */
+    public function htmlToXml($template) {
+        // Create basic XML structure from existing HTML template
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<template version="1.0">' . "\n";
+        $xml .= '  <metadata>' . "\n";
+        $xml .= '    <name>' . htmlspecialchars($template['name'], ENT_XML1) . '</name>' . "\n";
+        $xml .= '    <description>' . htmlspecialchars($template['description'] ?? '', ENT_XML1) . '</description>' . "\n";
+        $xml .= '    <entity_type>' . htmlspecialchars($template['entity_type'], ENT_XML1) . '</entity_type>' . "\n";
+        $xml .= '    <template_type>' . htmlspecialchars($template['template_type'], ENT_XML1) . '</template_type>' . "\n";
+        $xml .= '  </metadata>' . "\n\n";
+        
+        $xml .= '  <page format="' . htmlspecialchars($template['page_format'], ENT_XML1) . '" ';
+        $xml .= 'orientation="' . htmlspecialchars($template['page_orientation'], ENT_XML1) . '">' . "\n";
+        $xml .= '    <margins top="20" bottom="20" left="15" right="15" />' . "\n";
+        $xml .= '  </page>' . "\n\n";
+        
+        $xml .= '  <styles><![CDATA[' . "\n";
+        $xml .= $template['css_content'] ?? '';
+        $xml .= "\n" . '  ]]></styles>' . "\n\n";
+        
+        $xml .= '  <body>' . "\n";
+        $xml .= '    <!-- Converted from HTML template - requires manual review and restructuring -->' . "\n";
+        $xml .= '    <section>' . "\n";
+        // Wrap HTML content in CDATA to preserve it
+        $xml .= '      <![CDATA[' . "\n";
+        $xml .= '      ' . $template['html_content'] . "\n";
+        $xml .= '      ]]>' . "\n";
+        $xml .= '    </section>' . "\n";
+        $xml .= '  </body>' . "\n";
+        $xml .= '</template>';
+        
+        return $xml;
+    }
+    
+    /**
+     * Process XML template and generate HTML
+     * 
+     * @param array $template Template data
+     * @param array $data Data for variables
+     * @return array [html, css, format, orientation]
+     */
+    public function processXmlTemplate($template, $data) {
+        if ($template['template_format'] === 'xml' && !empty($template['xml_content'])) {
+            return $this->xmlProcessor->process($template['xml_content'], $data);
+        }
+        
+        // Fallback to HTML template
+        return [
+            'html' => $template['html_content'],
+            'css' => $template['css_content'] ?? '',
+            'format' => $template['page_format'],
+            'orientation' => $template['page_orientation']
+        ];
+    }
 }
+
