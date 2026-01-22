@@ -71,6 +71,16 @@ if ($isPreview) {
         .preview-page.landscape {
             max-width: 29.7cm; /* A4 landscape width */
         }
+        .document-header {
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+        .document-footer {
+            border-top: 2px solid #dee2e6;
+            padding-top: 1rem;
+            margin-top: 2rem;
+        }
         @media print {
             body { background: white; }
             .toolbar { display: none; }
@@ -139,10 +149,34 @@ if ($isPreview) {
             document.addEventListener('DOMContentLoaded', function() {
                 const html = sessionStorage.getItem('preview_html');
                 const css = sessionStorage.getItem('preview_css');
+                const header = sessionStorage.getItem('preview_header');
+                const footer = sessionStorage.getItem('preview_footer');
                 
                 if (html) {
                     const previewContent = document.getElementById('previewContent');
-                    previewContent.innerHTML = html;
+                    
+                    // Build full content with header and footer
+                    // Note: innerHTML is used intentionally here as this is template HTML content
+                    // created by authenticated admins with edit permissions. The content comes
+                    // from the same session and is meant to be rendered as HTML.
+                    let fullContent = '';
+                    if (header) {
+                        const headerDiv = document.createElement('div');
+                        headerDiv.className = 'document-header';
+                        headerDiv.innerHTML = header;
+                        previewContent.appendChild(headerDiv);
+                    }
+                    
+                    const contentDiv = document.createElement('div');
+                    contentDiv.innerHTML = html;
+                    previewContent.appendChild(contentDiv);
+                    
+                    if (footer) {
+                        const footerDiv = document.createElement('div');
+                        footerDiv.className = 'document-footer';
+                        footerDiv.innerHTML = footer;
+                        previewContent.appendChild(footerDiv);
+                    }
                     
                     if (css) {
                         const style = document.createElement('style');
@@ -163,10 +197,12 @@ if ($isPreview) {
                 fetch(generateUrl)
                     .then(response => response.text())
                     .then(html => {
-                        // Extract body content from response
+                        // Extract entire document content from response
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(html, 'text/html');
-                        const body = doc.body;
+                        
+                        // Get all content from body (including header and footer)
+                        const bodyContent = doc.body.innerHTML;
                         
                         // Get styles from head
                         const styles = doc.querySelectorAll('style');
@@ -175,7 +211,7 @@ if ($isPreview) {
                         });
                         
                         // Set content
-                        document.getElementById('previewContent').innerHTML = body.innerHTML;
+                        document.getElementById('previewContent').innerHTML = bodyContent;
                     })
                     .catch(error => {
                         console.error('Error loading preview:', error);
@@ -194,23 +230,21 @@ if ($isPreview) {
         function downloadPDF() {
             const element = document.getElementById('previewContent');
             const opt = {
-                margin: 1,
+                margin: [1, 1, 1, 1],
                 filename: 'documento_' + new Date().getTime() + '.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' }
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                },
+                jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             };
             
-            // Show loading indicator
-            const originalContent = element.innerHTML;
-            element.innerHTML = '<div class="text-center p-5"><div class="spinner-border"></div><p>Generazione PDF in corso...</p></div>';
-            
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.innerHTML = originalContent;
-            }).catch(error => {
+            html2pdf().set(opt).from(element).save().catch(error => {
                 console.error('Error generating PDF:', error);
-                alert('Errore durante la generazione del PDF');
-                element.innerHTML = originalContent;
+                alert('Errore durante la generazione del PDF: ' + error.message);
             });
         }
     </script>
