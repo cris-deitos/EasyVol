@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Example XML Template for Member Card (Tessera Socio)
+    
+    This XML format allows visual editing and automatic HTML/PDF generation
+    
+    Template Structure:
+    - <template>: Root element
+    - <metadata>: Template information
+    - <page>: Page settings (format, orientation, margins)
+    - <styles>: CSS styles
+    - <body>: Document content with special elements
+    
+    Special Elements:
+    - <variable name="field_name" />: Insert data field
+    - <loop source="array_name">: Iterate over array
+    - <condition test="expression">: Conditional content
+    - <section>: Styled div container
+    - <table>: Table with auto-formatting
+    - <text>: Styled text span
+    - <image src="path" />: Image insertion
+-->
+<template version="1.0">
+    
+    <!-- Template Metadata -->
+    <metadata>
+        <name>Tessera Socio XML</name>
+        <description>Tessera associativa formato XML con editor visivo</description>
+        <entity_type>members</entity_type>
+        <template_type>single</template_type>
+    </metadata>
+    
+    <!-- Page Configuration -->
+    <page format="A4" orientation="portrait">
+        <margins top="20" bottom="20" left="15" right="15" />
+    </page>
+    
+    <!-- CSS Styles -->
+    <styles>
+        <![CDATA[
+        body {
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 10pt;
+        }
+        
+        .card {
+            width: 8.5cm;
+            height: 5.4cm;
+            border: 2px solid #333;
+            padding: 0.3cm;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 0.2cm;
+            margin-bottom: 0.2cm;
+        }
+        
+        .card-title {
+            margin: 0;
+            font-size: 14pt;
+            font-weight: bold;
+        }
+        
+        .card-subtitle {
+            margin: 0;
+            font-size: 9pt;
+        }
+        
+        .card-body {
+            flex: 1;
+        }
+        
+        .info-table {
+            width: 100%;
+            font-size: 9pt;
+        }
+        
+        .info-table td {
+            padding: 0.1cm;
+        }
+        
+        .label {
+            font-weight: bold;
+        }
+        
+        .card-footer {
+            text-align: center;
+            font-size: 8pt;
+            border-top: 1px solid #999;
+            padding-top: 0.2cm;
+            margin-top: 0.2cm;
+        }
+        ]]>
+    </styles>
+    
+    <!-- Document Body -->
+    <body>
+        <section class="card">
+            
+            <!-- Card Header -->
+            <section class="card-header">
+                <h3 class="card-title">TESSERA ASSOCIATIVA</h3>
+                <p class="card-subtitle"><variable name="association.name" default="Nome Associazione" /></p>
+                <p class="card-subtitle">Anno <variable name="current_year" /></p>
+            </section>
+            
+            <!-- Card Body -->
+            <section class="card-body">
+                <table class="info-table">
+                    <tr>
+                        <td class="label" style="width: 40%;">Nome:</td>
+                        <td><variable name="first_name" /> <variable name="last_name" /></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Nato il:</td>
+                        <td><variable name="birth_date" format="date" /></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Matricola:</td>
+                        <td><variable name="badge_number" /></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Tipo Socio:</td>
+                        <td><variable name="member_type" /></td>
+                    </tr>
+                    
+                    <!-- Conditional: Show phone if available -->
+                    <condition test="phone">
+                        <tr>
+                            <td class="label">Telefono:</td>
+                            <td><variable name="phone" /></td>
+                        </tr>
+                    </condition>
+                </table>
+            </section>
+            
+            <!-- Card Footer -->
+            <section class="card-footer">
+                <p>Valida per l'anno <variable name="current_year" /></p>
+                <p>Emessa il <variable name="current_date" format="date" /></p>
+            </section>
+            
+        </section>
+    </body>
+    
+</template>
