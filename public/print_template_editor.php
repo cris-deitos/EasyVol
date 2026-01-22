@@ -390,7 +390,7 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             if (!html) return html;
             
             // Convert <!-- HB_EACH_START:... --> back to {{#each ...}}
-            html = html.replace(/<!--\s*HB_EACH_START:([^-]+)\s*-->/gi, function(match, arrayName) {
+            html = html.replace(/<!--\s*HB_EACH_START:(.+?)\s*-->/gi, function(match, arrayName) {
                 return '{{#each ' + arrayName.trim() + '}}';
             });
             
@@ -398,7 +398,7 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             html = html.replace(/<!--\s*HB_EACH_END\s*-->/gi, '{{/each}}');
             
             // Convert <!-- HB_IF_START:... --> back to {{#if ...}}
-            html = html.replace(/<!--\s*HB_IF_START:([^-]+)\s*-->/gi, function(match, condition) {
+            html = html.replace(/<!--\s*HB_IF_START:(.+?)\s*-->/gi, function(match, condition) {
                 return '{{#if ' + condition.trim() + '}}';
             });
             
@@ -409,7 +409,7 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             html = html.replace(/<!--\s*HB_IF_END\s*-->/gi, '{{/if}}');
             
             // Convert <!-- HB_UNLESS_START:... --> back to {{#unless ...}}
-            html = html.replace(/<!--\s*HB_UNLESS_START:([^-]+)\s*-->/gi, function(match, condition) {
+            html = html.replace(/<!--\s*HB_UNLESS_START:(.+?)\s*-->/gi, function(match, condition) {
                 return '{{#unless ' + condition.trim() + '}}';
             });
             
