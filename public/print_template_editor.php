@@ -55,16 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'entity_type' => $_POST['entity_type'],
             'html_content' => $_POST['html_content'],
             'css_content' => $_POST['css_content'] ?? null,
-            'relations' => !empty($_POST['relations']) ? json_encode($_POST['relations']) : null,
-            'filter_config' => !empty($_POST['filter_config']) ? json_encode($_POST['filter_config']) : null,
-            'variables' => !empty($_POST['variables']) ? json_encode($_POST['variables']) : null,
             'page_format' => $_POST['page_format'] ?? 'A4',
             'page_orientation' => $_POST['page_orientation'] ?? 'portrait',
-            'show_header' => isset($_POST['show_header']) ? 1 : 0,
-            'show_footer' => isset($_POST['show_footer']) ? 1 : 0,
-            'header_content' => $_POST['header_content'] ?? null,
-            'footer_content' => $_POST['footer_content'] ?? null,
-            'watermark' => $_POST['watermark'] ?? null,
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
             'is_default' => isset($_POST['is_default']) ? 1 : 0,
         ];
@@ -210,8 +202,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                                             <select name="template_type" id="templateType" class="form-select" required>
                                                 <option value="single" <?php echo ($template['template_type'] ?? 'single') === 'single' ? 'selected' : ''; ?>>Singolo</option>
                                                 <option value="list" <?php echo ($template['template_type'] ?? '') === 'list' ? 'selected' : ''; ?>>Lista</option>
-                                                <option value="multi_page" <?php echo ($template['template_type'] ?? '') === 'multi_page' ? 'selected' : ''; ?>>Multi-pagina</option>
-                                                <option value="relational" <?php echo ($template['template_type'] ?? '') === 'relational' ? 'selected' : ''; ?>>Relazionale</option>
                                             </select>
                                         </div>
                                     </div>
@@ -222,7 +212,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                                             <option value="single" <?php echo ($template['data_scope'] ?? 'single') === 'single' ? 'selected' : ''; ?>>Singolo Record</option>
                                             <option value="filtered" <?php echo ($template['data_scope'] ?? '') === 'filtered' ? 'selected' : ''; ?>>Record Filtrati</option>
                                             <option value="all" <?php echo ($template['data_scope'] ?? '') === 'all' ? 'selected' : ''; ?>>Tutti i Record</option>
-                                            <option value="custom" <?php echo ($template['data_scope'] ?? '') === 'custom' ? 'selected' : ''; ?>>Personalizzato</option>
                                         </select>
                                     </div>
                                 </div>
@@ -258,62 +247,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                                     <div class="form-text">CSS per personalizzare l'aspetto del documento stampato</div>
                                 </div>
                             </div>
-
-                            <!-- Relations (for relational templates) -->
-                            <div class="card mb-3" id="relationsCard" style="display: none;">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Tabelle Relazionali</h5>
-                                </div>
-                                <div class="card-body">
-                                    <?php
-                                    $selectedRelations = [];
-                                    if ($template && $template['relations']) {
-                                        $selectedRelations = json_decode($template['relations'], true) ?? [];
-                                    }
-                                    ?>
-                                    <?php foreach ($availableRelations as $table => $label): ?>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="relations[]" 
-                                                   value="<?php echo $table; ?>" id="rel_<?php echo $table; ?>"
-                                                   <?php echo in_array($table, $selectedRelations) ? 'checked' : ''; ?>>
-                                            <label class="form-check-label" for="rel_<?php echo $table; ?>">
-                                                <?php echo htmlspecialchars($label); ?> 
-                                                <code class="text-muted">({{#each <?php echo $table; ?>}})</code>
-                                            </label>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-
-                            <!-- Header/Footer -->
-                            <div class="card mb-3">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Header e Footer</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" name="show_header" id="showHeader"
-                                               <?php echo ($template['show_header'] ?? 1) ? 'checked' : ''; ?>>
-                                        <label class="form-check-label" for="showHeader">Mostra Header</label>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Contenuto Header</label>
-                                        <textarea name="header_content" class="form-control" rows="3"><?php echo htmlspecialchars($template['header_content'] ?? ''); ?></textarea>
-                                    </div>
-                                    
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" name="show_footer" id="showFooter"
-                                               <?php echo ($template['show_footer'] ?? 1) ? 'checked' : ''; ?>>
-                                        <label class="form-check-label" for="showFooter">Mostra Footer</label>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Contenuto Footer</label>
-                                        <textarea name="footer_content" class="form-control" rows="3"><?php echo htmlspecialchars($template['footer_content'] ?? ''); ?></textarea>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <div class="col-lg-4">
@@ -327,7 +260,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                                         <label class="form-label">Formato Pagina</label>
                                         <select name="page_format" class="form-select">
                                             <option value="A4" <?php echo ($template['page_format'] ?? 'A4') === 'A4' ? 'selected' : ''; ?>>A4</option>
-                                            <option value="A3" <?php echo ($template['page_format'] ?? '') === 'A3' ? 'selected' : ''; ?>>A3</option>
                                             <option value="Letter" <?php echo ($template['page_format'] ?? '') === 'Letter' ? 'selected' : ''; ?>>Letter</option>
                                         </select>
                                     </div>
@@ -338,13 +270,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                                             <option value="portrait" <?php echo ($template['page_orientation'] ?? 'portrait') === 'portrait' ? 'selected' : ''; ?>>Verticale</option>
                                             <option value="landscape" <?php echo ($template['page_orientation'] ?? '') === 'landscape' ? 'selected' : ''; ?>>Orizzontale</option>
                                         </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Watermark (opzionale)</label>
-                                        <input type="text" name="watermark" class="form-control" 
-                                               value="<?php echo htmlspecialchars($template['watermark'] ?? ''); ?>"
-                                               placeholder="es: BOZZA, CONFIDENZIALE">
                                     </div>
                                     
                                     <div class="form-check mb-2">
@@ -520,13 +445,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                     textarea.value = tinymceEditor.getContent();
                 }
             });
-            
-            // Show/hide relations card based on template type on page load
-            const templateType = document.getElementById('templateType').value;
-            const relationsCard = document.getElementById('relationsCard');
-            if (templateType === 'relational') {
-                relationsCard.style.display = 'block';
-            }
         });
 
         function insertVariable(varName) {
@@ -603,21 +521,9 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             // Save to session storage for preview
             sessionStorage.setItem('preview_html', htmlContent);
             sessionStorage.setItem('preview_css', formData.get('css_content'));
-            sessionStorage.setItem('preview_header', formData.get('show_header') ? formData.get('header_content') : '');
-            sessionStorage.setItem('preview_footer', formData.get('show_footer') ? formData.get('footer_content') : '');
             
             window.open('print_preview.php?preview=1', '_blank');
         }
-
-        // Show/hide relations card based on template type
-        document.getElementById('templateType').addEventListener('change', function() {
-            const relationsCard = document.getElementById('relationsCard');
-            if (this.value === 'relational') {
-                relationsCard.style.display = 'block';
-            } else {
-                relationsCard.style.display = 'none';
-            }
-        });
 
         // Reload page when entity type changes to get new variables
         document.getElementById('entityType').addEventListener('change', function() {
