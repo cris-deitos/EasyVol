@@ -132,14 +132,14 @@ class SimplePdfGenerator {
         $placeholders = implode(',', array_fill(0, count($recordIds), '?'));
         
         if ($entityType === 'members') {
-            // Members: matricola numerica (1, 2, 3...)
+            // Members: numeric registration number (1, 2, 3...)
             $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY (registration_number + 0) ASC";
         } elseif ($entityType === 'junior_members') {
-            // Junior members: matricola alfanumerica (C-1, C-2, C-10...)
-            // Estrae la parte numerica dopo "C-" per ordinamento corretto
+            // Junior members: alphanumeric registration number (C-1, C-2, C-10...)
+            // Extract numeric part after "C-" for correct sorting
             $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY CASE WHEN registration_number LIKE 'C-%' THEN CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) ELSE 0 END ASC, registration_number ASC";
         } else {
-            // Altri entity types: ordina per id
+            // Other entity types: sort by id
             $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY id ASC";
         }
         
