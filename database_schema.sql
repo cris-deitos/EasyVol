@@ -1671,6 +1671,12 @@ CREATE TABLE IF NOT EXISTS `print_templates` (
 
 -- MEMBERS TEMPLATES
 -- =============================================
+-- NOTE: These INSERT statements use old schema format with removed columns.
+-- The migration 023_simplify_print_templates.sql will handle the schema update.
+-- After running the migration, these templates will be automatically converted
+-- to the simplified format (only HTML, no XML, relations, etc.)
+-- Templates with unsupported types (multi_page, relational) will be marked as inactive.
+-- Administrators should review and update templates after migration.
 
 -- 1. Tessera Socio (single)
 INSERT INTO `print_templates` (
