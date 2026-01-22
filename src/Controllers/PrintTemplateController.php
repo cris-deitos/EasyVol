@@ -339,8 +339,6 @@ class PrintTemplateController {
      */
     public function importTemplate($templateData, $userId) {
         // Use the create method which handles all validation and insertion
-        $templateData['created_by'] = $userId;
-        $templateData['updated_by'] = $userId;
         return $this->create($templateData, $userId);
     }
 }

@@ -130,5 +130,5 @@ try {
     
     http_response_code(500);
     header('Content-Type: text/html; charset=utf-8');
-    die('Errore nella generazione del PDF: ' . htmlspecialchars($e->getMessage()));
+    die('Errore nella generazione del PDF. Contattare l\'amministratore del sistema.');
 }
