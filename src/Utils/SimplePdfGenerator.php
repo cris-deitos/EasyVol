@@ -131,10 +131,15 @@ class SimplePdfGenerator {
         $table = $this->getTableName($entityType);
         $placeholders = implode(',', array_fill(0, count($recordIds), '?'));
         
-        // Use registration_number for members (matricola), id for others
-        if ($entityType === 'members' || $entityType === 'junior_members') {
-            $sql = " ORDER BY (registration_number + 0) ASC";
+        if ($entityType === 'members') {
+            // Members: numeric registration number (1, 2, 3...)
+            $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY (registration_number + 0) ASC";
+        } elseif ($entityType === 'junior_members') {
+            // Junior members: alphanumeric registration number (C-1, C-2, C-10...)
+            // Extract numeric part after "C-" for correct sorting
+            $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY CASE WHEN registration_number LIKE 'C-%' THEN CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) ELSE 0 END ASC, registration_number ASC";
         } else {
+            // Other entity types: sort by id
             $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY id ASC";
         }
         
