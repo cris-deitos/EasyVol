@@ -28,6 +28,14 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new VehicleController($db, $config);
 
+// Load print templates for vehicles
+use EasyVol\Controllers\PrintTemplateController;
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'vehicles',
+    'is_active' => 1
+]);
+
 $filters = [
     'type' => $_GET['type'] ?? '',
     'status' => $_GET['status'] ?? '',
@@ -93,10 +101,19 @@ $pageTitle = 'Gestione Mezzi';
                                 <i class="bi bi-printer"></i> Stampa
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="printList('elenco_mezzi'); return false;">
-                                    <i class="bi bi-list-ul"></i> Elenco Mezzi
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                <?php if (!empty($printTemplates)): ?>
+                                    <?php 
+                                    $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                    foreach ($displayedTemplates as $template): 
+                                    ?>
+                                        <li><a class="dropdown-item" href="#" onclick="printListById(<?php echo $template['id']; ?>); return false;">
+                                            <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                        </a></li>
+                                    <?php endforeach; ?>
+                                    <?php if (count($printTemplates) > 3): ?>
+                                        <li><hr class="dropdown-divider"></li>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                                 <li><a class="dropdown-item" href="#" onclick="showPrintListModal(); return false;">
                                     <i class="bi bi-gear"></i> Scegli Template...
                                 </a></li>
@@ -305,7 +322,19 @@ $pageTitle = 'Gestione Mezzi';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Print list functionality
+        function printListById(templateId) {
+            let filters = getCurrentFilters();
+            
+            const params = new URLSearchParams({
+                template_id: templateId,
+                entity: 'vehicles',
+                ...filters
+            });
+            window.open('print_preview.php?' + params.toString(), '_blank');
+        }
+        
         function printList(type) {
+            // Legacy function for backward compatibility
             let templateId = null;
             let filters = getCurrentFilters();
             
@@ -316,12 +345,7 @@ $pageTitle = 'Gestione Mezzi';
             }
             
             if (templateId) {
-                const params = new URLSearchParams({
-                    template_id: templateId,
-                    entity: 'vehicles',
-                    ...filters
-                });
-                window.open('print_preview.php?' + params.toString(), '_blank');
+                printListById(templateId);
             }
         }
         
@@ -369,7 +393,18 @@ $pageTitle = 'Gestione Mezzi';
                     <div class="mb-3">
                         <label class="form-label">Template</label>
                         <select id="listTemplateSelect" class="form-select">
-                            <option value="8">Elenco Mezzi</option>
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            [XML]
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                     <div class="alert alert-info">
