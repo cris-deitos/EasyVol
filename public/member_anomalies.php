@@ -93,14 +93,17 @@ $pageTitle = 'Anomalie Soci';
                 
                 <!-- Soci senza numero di cellulare -->
                 <?php if (!empty($anomalies['no_mobile'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="member_no_mobile">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-phone"></i> 
                             Soci senza Numero di Cellulare (<?php echo count($anomalies['no_mobile']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -131,14 +134,17 @@ $pageTitle = 'Anomalie Soci';
                 
                 <!-- Soci senza email -->
                 <?php if (!empty($anomalies['no_email'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="member_no_email">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-envelope"></i> 
                             Soci senza Email (<?php echo count($anomalies['no_email']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -285,14 +291,17 @@ $pageTitle = 'Anomalie Soci';
                 
                 <!-- Patenti scadute -->
                 <?php if (!empty($anomalies['expired_licenses'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="member_expired_licenses">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-card-text"></i> 
                             Patenti Scadute (<?php echo count($anomalies['expired_licenses']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -325,14 +334,17 @@ $pageTitle = 'Anomalie Soci';
                 
                 <!-- Corsi scaduti -->
                 <?php if (!empty($anomalies['expired_courses'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="member_expired_courses">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-book"></i> 
                             Corsi Scaduti (<?php echo count($anomalies['expired_courses']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -368,5 +380,6 @@ $pageTitle = 'Anomalie Soci';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/anomaly-visibility.js"></script>
 </body>
 </html>

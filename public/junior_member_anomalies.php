@@ -92,14 +92,17 @@ $pageTitle = 'Anomalie Soci Minorenni';
                 
                 <!-- Cadetti senza numero di cellulare -->
                 <?php if (!empty($anomalies['no_mobile'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="junior_member_no_mobile">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-phone"></i> 
                             Cadetti senza Numero di Cellulare (<?php echo count($anomalies['no_mobile']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -130,14 +133,17 @@ $pageTitle = 'Anomalie Soci Minorenni';
                 
                 <!-- Cadetti senza email -->
                 <?php if (!empty($anomalies['no_email'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="junior_member_no_email">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-envelope"></i> 
                             Cadetti senza Email (<?php echo count($anomalies['no_email']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -325,5 +331,6 @@ $pageTitle = 'Anomalie Soci Minorenni';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/anomaly-visibility.js"></script>
 </body>
 </html>
