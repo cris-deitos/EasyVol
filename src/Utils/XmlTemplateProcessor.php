@@ -13,6 +13,17 @@ use Exception;
  */
 class XmlTemplateProcessor {
     
+    /**
+     * Allowed HTML tags for passthrough rendering
+     */
+    private const ALLOWED_HTML_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 
+                                        'strong', 'em', 'u', 'br', 'hr', 'ul', 'ol', 'li'];
+    
+    /**
+     * Allowed table-related tags
+     */
+    private const ALLOWED_TABLE_TAGS = ['thead', 'tbody', 'tfoot', 'tr', 'td', 'th'];
+    
     private $data;
     private $config;
     
@@ -273,9 +284,8 @@ class XmlTemplateProcessor {
      */
     private function processTableChild($element) {
         $tagName = $element->tagName;
-        $allowedTags = ['thead', 'tbody', 'tfoot', 'tr', 'td', 'th'];
         
-        if (!in_array($tagName, $allowedTags)) {
+        if (!in_array($tagName, self::ALLOWED_TABLE_TAGS)) {
             return '';
         }
         
@@ -349,10 +359,8 @@ class XmlTemplateProcessor {
      */
     private function processHtmlTag($element) {
         $tagName = $element->tagName;
-        $allowedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 
-                        'strong', 'em', 'u', 'br', 'hr', 'ul', 'ol', 'li'];
         
-        if (!in_array($tagName, $allowedTags)) {
+        if (!in_array($tagName, self::ALLOWED_HTML_TAGS)) {
             return $this->processNode($element);
         }
         
@@ -430,13 +438,15 @@ class XmlTemplateProcessor {
         switch ($format) {
             case 'date':
                 $timestamp = strtotime($value);
-                if ($timestamp === false) {
+                // Check for both false and -1 (older PHP versions)
+                if ($timestamp === false || $timestamp === -1) {
                     return $value; // Return original if invalid date
                 }
                 return date('d/m/Y', $timestamp);
             case 'datetime':
                 $timestamp = strtotime($value);
-                if ($timestamp === false) {
+                // Check for both false and -1 (older PHP versions)
+                if ($timestamp === false || $timestamp === -1) {
                     return $value; // Return original if invalid datetime
                 }
                 return date('d/m/Y H:i', $timestamp);

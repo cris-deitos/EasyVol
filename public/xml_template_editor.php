@@ -10,6 +10,9 @@
  * - Real-time preview
  */
 
+// Configuration constants
+define('MAX_XML_SIZE', 1048576); // 1MB limit for XML content
+
 require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
@@ -85,11 +88,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'preview') {
         }
         
         // Validate max size (prevent DoS)
-        if (strlen($xmlContent) > 1048576) { // 1MB limit
+        if (strlen($xmlContent) > MAX_XML_SIZE) {
             throw new \Exception('XML content too large');
         }
         
-        $entityType = filter_input(INPUT_POST, 'entity_type', FILTER_SANITIZE_STRING) ?? 'members';
+        $entityType = filter_input(INPUT_POST, 'entity_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? 'members';
         
         // Validate entity type
         $validEntityTypes = ['members', 'junior_members', 'vehicles', 'meetings'];
@@ -138,7 +141,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate') {
         $xmlContent = $_POST['xml_content'] ?? '';
         
         // Validate max size
-        if (strlen($xmlContent) > 1048576) { // 1MB limit
+        if (strlen($xmlContent) > MAX_XML_SIZE) {
             throw new \Exception('XML content too large');
         }
         
