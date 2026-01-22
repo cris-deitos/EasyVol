@@ -335,20 +335,25 @@ class SimplePdfGenerator {
     }
     
     /**
-     * Get nested value from array using dot or underscore notation
+     * Get nested value from array
+     * 
+     * Template variables use underscore notation (e.g., {{association_name}}).
+     * This method first tries direct key lookup, then attempts to access nested
+     * data by treating underscores as path separators.
      * 
      * @param array $data Data array
-     * @param string $path Path (supports both dot and underscore separators)
-     * @return mixed
+     * @param string $path Variable path from template (uses underscore notation)
+     * @return mixed Value or null if not found
      */
     private function getNestedValue($data, $path) {
-        // Try direct key access first (for flattened data with underscore)
+        // First, try direct key access (for flattened data)
         if (isset($data[$path])) {
             return $data[$path];
         }
         
-        // Try replacing underscores with dots for nested access
-        $keys = explode('.', str_replace('_', '.', $path));
+        // For nested data structures, try treating underscores as path separators
+        // e.g., "association_name" could map to $data['association']['name']
+        $keys = explode('_', $path);
         $value = $data;
         
         foreach ($keys as $key) {
@@ -490,10 +495,15 @@ class SimplePdfGenerator {
     /**
      * Get table name for entity type
      * 
-     * @param string $entityType Entity type
-     * @return string
+     * Maps UI entity types to database table names.
+     * The mapping is explicit for security to prevent SQL injection via arbitrary table names.
+     * 
+     * @param string $entityType Entity type from template
+     * @return string Database table name
+     * @throws \Exception If entity type is not valid
      */
     private function getTableName($entityType) {
+        // Explicit mapping for security - only these entity types are allowed
         $allowed = [
             'members' => 'members',
             'junior_members' => 'junior_members',
@@ -648,9 +658,9 @@ class SimplePdfGenerator {
                     'order_by' => 'id ASC'
                 ]
             ],
-            'member_applications' => [
-                // Member applications don't have related tables
-            ]
+            // Member applications are standalone records without related child tables.
+            // The application form data is stored directly in the member_applications table.
+            'member_applications' => []
         ];
         
         return $relations[$entityType] ?? [];
