@@ -119,7 +119,7 @@ try {
     
     // Wrap in a complete HTML document with CSS
     ?>
-<! DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -131,11 +131,11 @@ try {
             margin: 0;
             padding: 20px;
         }
-        <? php echo $template['css_content'] ?? ''; ?>
+        <?php echo $template['css_content'] ?? ''; ?>
     </style>
 </head>
 <body>
-    <? php echo $html; ?>
+    <?php echo $html; ?>
 </body>
 </html>
     <?php
@@ -144,7 +144,7 @@ try {
     http_response_code(500);
     error_log("HTML Preview Error: " . $e->getMessage());
     ?>
-<! DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -153,7 +153,7 @@ try {
 <body>
     <div style="padding: 20px; color: red;">
         <h3>Errore durante la generazione dell'anteprima</h3>
-        <p><? php echo htmlspecialchars($e->getMessage()); ?></p>
+        <p><?php echo htmlspecialchars($e->getMessage()); ?></p>
     </div>
 </body>
 </html>

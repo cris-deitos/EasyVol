@@ -335,14 +335,20 @@ class SimplePdfGenerator {
     }
     
     /**
-     * Get nested value from array using dot notation
+     * Get nested value from array using dot or underscore notation
      * 
      * @param array $data Data array
-     * @param string $path Dot-separated path
+     * @param string $path Path (supports both dot and underscore separators)
      * @return mixed
      */
     private function getNestedValue($data, $path) {
-        $keys = explode('.', $path);
+        // Try direct key access first (for flattened data with underscore)
+        if (isset($data[$path])) {
+            return $data[$path];
+        }
+        
+        // Try replacing underscores with dots for nested access
+        $keys = explode('.', str_replace('_', '.', $path));
         $value = $data;
         
         foreach ($keys as $key) {
@@ -367,7 +373,7 @@ class SimplePdfGenerator {
         $result = [];
         
         foreach ($array as $key => $value) {
-            $newKey = $prefix === '' ? $key : $prefix . '.' . $key;
+            $newKey = $prefix === '' ? $key : $prefix . '_' . $key;
             
             if (is_array($value) && !$this->isAssocArray($value)) {
                 // Skip indexed arrays
@@ -494,7 +500,7 @@ class SimplePdfGenerator {
             'vehicles' => 'vehicles',
             'meetings' => 'meetings',
             'events' => 'events',
-            'applications' => 'member_applications'
+            'member_applications' => 'member_applications'
         ];
         
         if (!isset($allowed[$entityType])) {
@@ -517,7 +523,7 @@ class SimplePdfGenerator {
             'vehicles' => 'acquisition_date',
             'meetings' => 'meeting_date',
             'events' => 'start_date',
-            'applications' => 'submitted_at'
+            'member_applications' => 'submitted_at'
         ];
         
         return $map[$entityType] ?? 'created_at';
@@ -641,6 +647,9 @@ class SimplePdfGenerator {
                     'foreign_key' => 'event_id',
                     'order_by' => 'id ASC'
                 ]
+            ],
+            'member_applications' => [
+                // Member applications don't have related tables
             ]
         ];
         
