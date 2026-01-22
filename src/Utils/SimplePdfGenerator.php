@@ -133,7 +133,7 @@ class SimplePdfGenerator {
         
         // Use registration_number for members (matricola), id for others
         if ($entityType === 'members' || $entityType === 'junior_members') {
-            $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY registration_number ASC";
+            $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY CAST(registration_number AS UNSIGNED) ASC";
         } else {
             $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY id ASC";
         }
@@ -183,7 +183,7 @@ class SimplePdfGenerator {
         
         // Add ordering - use registration_number for members (matricola), id for others
         if ($entityType === 'members' || $entityType === 'junior_members') {
-            $sql .= " ORDER BY registration_number ASC";
+            $sql .= " ORDER BY CAST(registration_number AS UNSIGNED) ASC";
         } else {
             $sql .= " ORDER BY id ASC";
         }
