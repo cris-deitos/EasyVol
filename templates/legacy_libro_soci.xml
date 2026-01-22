@@ -1,0 +1,439 @@
+<?xml version='1.0' encoding='iso-8859-1'?>
+
+<pdf creator="GestionaleWeb" title="Libro Soci Maggiorenni">
+
+<body format='A4' unit='mm' marginleft='5' marginbottom='0'>
+
+<!-- $BeginBlock form -->
+<page font="helvetica">
+
+</page>
+<!-- $EndBlock form -->
+
+<!-- $BeginBlock table -->
+<page font="helvetica" fontsize="6" orientation="l">
+
+	<image top="8" left="10" height="15" width="15" position="absolute" file="<!-- $Include var/templates/it/logo.txt -->" />
+	<paragraph top="8" left="28" fontsize="12" fontstyle="B" position="absolute" border="0" width="150" textalign="L"><!-- $Include var/templates/it/01-Nome_Prima_Riga.txt --></paragraph>
+	<paragraph top="13" left="28" fontsize="12" fontstyle="B" position="absolute" border="0" width="150" textalign="L"><!-- $Include var/templates/it/02-Nome_Seconda_Riga.txt --></paragraph>
+	<paragraph top="18" left="28" fontcolor="red" fontsize="12" fontstyle="B" position="absolute" border="0" width="150" textalign="L">Libro Soci</paragraph>
+
+	<paragraph position="absolute" left="217" top="8" width="75" fontsize="6" lineheight="5" textalign="L" border="1">Libro Soci MAGGIORENNI.
+Note: 
+
+</paragraph>
+
+	<paragraph position="absolute" left="5" top="28" width="7" lineheight="5" fontsize="8" textalign="L" border="0">Mtr</paragraph>
+	<paragraph position="absolute" left="5+7" top="28" width="27" lineheight="5" fontsize="8" textalign="L" border="0">Nome</paragraph>
+	<paragraph position="absolute" left="5+7+27" top="28" width="28" lineheight="5" fontsize="8" textalign="L" border="0">Cognome</paragraph>
+	<paragraph position="absolute" left="5+7+27+28" top="28" width="15" lineheight="5" fontsize="8" textalign="L" border="0">Nato/a il</paragraph>
+	<paragraph position="absolute" left="5+7+27+28+15" top="28" width="46" lineheight="5" fontsize="8" textalign="L" border="0">Luogo Nascita</paragraph>
+	<paragraph position="absolute" left="5+7+27+28+15+46" top="28" width="29" lineheight="5" fontsize="8" textalign="L" border="0">Codice Fiscale</paragraph>
+	<paragraph position="absolute" left="5+7+27+28+15+46+29" top="28" width="90" lineheight="5" fontsize="8" textalign="L" border="0">Indirizzo</paragraph>
+	<paragraph position="absolute" left="5+7+27+28+15+46+29+90" top="28" width="15" lineheight="5" fontsize="8" textalign="L" border="0">Iscriz.</paragraph>
+	<paragraph position="absolute" left="5+7+27+28+15+46+29+90+15" top="28" width="15" lineheight="5" fontsize="8" textalign="L" border="0">Approvaz.</paragraph>
+	<paragraph position="absolute" left="5+7+27+28+15+46+29+90+15+15" top="28" width="15" lineheight="5" fontsize="8" textalign="L" border="0">Dimissioni</paragraph>
+	
+<!-- $BeginBlock row1 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row1 -->
+
+<!-- $BeginBlock row2 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row2 -->
+
+<!-- $BeginBlock row3 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row3 -->
+
+<!-- $BeginBlock row4 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row4 -->
+
+<!-- $BeginBlock row5 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row5 -->
+
+<!-- $BeginBlock row6 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row6 -->
+
+<!-- $BeginBlock row7 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row7 -->
+
+<!-- $BeginBlock row8 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row8 -->
+
+<!-- $BeginBlock row9 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row9 -->
+
+<!-- $BeginBlock row10 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row10 -->
+
+<!-- $BeginBlock row11 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row11 -->
+
+<!-- $BeginBlock row12 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row12 -->
+
+<!-- $BeginBlock row13 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row13 -->
+
+<!-- $BeginBlock row14 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row14 -->
+
+<!-- $BeginBlock row15 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row15 -->
+
+<!-- $BeginBlock row16 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row16 -->
+
+<!-- $BeginBlock row17 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row17 -->
+
+<!-- $BeginBlock row18 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row18 -->
+
+<!-- $BeginBlock row19 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row19 -->
+
+<!-- $BeginBlock row20 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row20 -->
+
+<!-- $BeginBlock row21 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row21 -->
+
+<!-- $BeginBlock row22 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row22 -->
+
+<!-- $BeginBlock row23 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row23 -->
+
+<!-- $BeginBlock row24 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row24 -->
+
+<!-- $BeginBlock row25 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row25 -->
+
+<!-- $BeginBlock row26 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row26 -->
+
+<!-- $BeginBlock row27 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row27 -->
+
+<!-- $BeginBlock row28 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row28 -->
+
+<!-- $BeginBlock row29 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row29 -->
+
+<!-- $BeginBlock row30 -->
+	<paragraph position="relative" left="0" width="7" lineheight="5" fontsize="6" textalign="C" border="1">${matricola}</paragraph>
+	<paragraph position="relative" left="7" top="-5" width="27" lineheight="5" fontsize="7" textalign="C" border="1">${nome}</paragraph>
+	<paragraph position="relative" left="7+27" top="-5" width="28" lineheight="5" fontsize="7" textalign="C" border="1">${cognome}</paragraph>
+	<paragraph position="relative" left="7+27+28" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data di nascita}</paragraph>
+	<paragraph position="relative" left="7+27+28+15" top="-5" width="46" lineheight="5" fontsize="7" textalign="C" border="1">${luogo di nascita} (${provincia di nascita})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46" top="-5" width="29" lineheight="5" fontsize="7" textalign="C" border="1">${codice fiscale}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29" top="-5" width="90" lineheight="5" fontsize="7" textalign="C" border="1">${indirizzo di residenza} - ${cap di residenza} ${comune di residenza} (${provincia di residenza})</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data iscrizione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data approvazione}</paragraph>
+	<paragraph position="relative" left="7+27+28+15+46+29+90+15+15" top="-5" width="15" lineheight="5" fontsize="7" textalign="C" border="1">${data dimissioni/decadenza}</paragraph>
+<!-- $EndBlock row30 -->
+
+<paragraph position="absolute" left="0" width="287" top="185" lineheight="5" fontsize="6" textalign="R" border="0">Data/ora stampa: ${data/ora applicazione modello}</paragraph>
+
+<paragraph position="absolute" left="5" width="287" top="185" lineheight="5" fontsize="8" textalign="C" border="0" fontstyle="B"><!-- $Include var/templates/it/01-Nome_Prima_Riga.txt --> <!-- $Include var/templates/it/02-Nome_Seconda_Riga.txt --> - Organizzazione di Volontariato</paragraph>
+
+<paragraph position="absolute" left="5" width="287" top="190" lineheight="4" fontsize="7" textalign="C" border="0">Codice Fiscale: <!-- $Include var/templates/it/03-Codice_Fiscale.txt -->
+<!-- $Include var/templates/it/04-Indirizzo_1.txt --> - <!-- $Include var/templates/it/05-Indirizzo_2.txt -->
+Sito Web: <!-- $Include var/templates/it/07-Indirizzo_Web.txt --> - Indirizzo E-Mail: <!-- $Include var/templates/it/08-Indirizzo_eMail.txt --></paragraph>
+
+</page>
+<!-- $EndBlock table-->
+
+</body>
+</pdf>

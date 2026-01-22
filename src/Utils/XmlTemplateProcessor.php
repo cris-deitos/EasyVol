@@ -44,6 +44,12 @@ class XmlTemplateProcessor {
      * @return array Processed template data [html, css, format, orientation]
      */
     public function process($xmlContent, $data = []) {
+        // Check if this is a legacy format XML template
+        if (LegacyXmlTemplateProcessor::isLegacyFormat($xmlContent)) {
+            $legacyProcessor = new LegacyXmlTemplateProcessor($this->config);
+            return $legacyProcessor->process($xmlContent, $data);
+        }
+        
         $this->data = $data;
         
         // Parse XML
@@ -505,6 +511,12 @@ class XmlTemplateProcessor {
      * @return array [valid => bool, errors => array]
      */
     public function validate($xmlContent) {
+        // Check if this is a legacy format
+        if (LegacyXmlTemplateProcessor::isLegacyFormat($xmlContent)) {
+            $legacyProcessor = new LegacyXmlTemplateProcessor($this->config);
+            return $legacyProcessor->validate($xmlContent);
+        }
+        
         $errors = [];
         
         libxml_use_internal_errors(true);
