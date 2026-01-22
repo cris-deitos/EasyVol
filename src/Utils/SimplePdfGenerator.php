@@ -130,7 +130,14 @@ class SimplePdfGenerator {
         
         $table = $this->getTableName($entityType);
         $placeholders = implode(',', array_fill(0, count($recordIds), '?'));
-        $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY id ASC";
+        
+        // Use registration_number for members (matricola), id for others
+        if ($entityType === 'members' || $entityType === 'junior_members') {
+            $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY registration_number ASC";
+        } else {
+            $sql = "SELECT * FROM {$table} WHERE id IN ({$placeholders}) ORDER BY id ASC";
+        }
+        
         return $this->db->fetchAll($sql, $recordIds);
     }
     
@@ -174,8 +181,12 @@ class SimplePdfGenerator {
             $params[] = $filters['date_to'];
         }
         
-        // Add ordering
-        $sql .= " ORDER BY id ASC";
+        // Add ordering - use registration_number for members (matricola), id for others
+        if ($entityType === 'members' || $entityType === 'junior_members') {
+            $sql .= " ORDER BY registration_number ASC";
+        } else {
+            $sql .= " ORDER BY id ASC";
+        }
         
         // Add limit if specified
         if (isset($filters['limit'])) {
