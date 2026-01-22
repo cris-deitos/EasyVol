@@ -527,13 +527,22 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
 
         // Reload page when entity type changes to get new variables
         document.getElementById('entityType').addEventListener('change', function() {
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('entity', this.value);
+            const newEntityType = this.value;
+            const previousEntityType = '<?php echo htmlspecialchars($entityType, ENT_QUOTES, 'UTF-8'); ?>';
+            
             if (confirm('Cambiare il tipo di entità ricaricherà la pagina. I campi non salvati andranno persi. Continuare?')) {
-                window.location.href = currentUrl.toString();
+                // Clear any beforeunload handlers that might interfere with navigation
+                window.onbeforeunload = null;
+                
+                // Build new URL with entity parameter
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('entity', newEntityType);
+                
+                // Navigate to the new URL
+                window.location.assign(currentUrl.toString());
             } else {
                 // Restore previous value
-                this.value = '<?php echo $entityType; ?>';
+                this.value = previousEntityType;
             }
         });
     </script>
