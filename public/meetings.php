@@ -28,18 +28,13 @@ $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new MeetingController($db, $config);
 
-// Fetch template IDs for meetings by name
-$templateIds = [];
-try {
-    $templateSql = "SELECT id, name FROM print_templates WHERE entity_type = 'meetings' AND is_active = 1";
-    $templates = $db->fetchAll($templateSql);
-    foreach ($templates as $template) {
-        $templateIds[$template['name']] = $template['id'];
-    }
-} catch (\Exception $e) {
-    // Templates might not exist yet
-    $templateIds = [];
-}
+// Load print templates for meetings
+use EasyVol\Controllers\PrintTemplateController;
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'meetings',
+    'is_active' => 1
+]);
 
 $filters = [
     'type' => $_GET['type'] ?? '',
@@ -96,13 +91,19 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                 <i class="bi bi-printer"></i> Stampa
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="printList('verbale'); return false;">
-                                    <i class="bi bi-file-text"></i> Verbale Riunione
-                                </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="printList('foglio_presenze'); return false;">
-                                    <i class="bi bi-clipboard-check"></i> Foglio Presenze
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                <?php if (!empty($printTemplates)): ?>
+                                    <?php 
+                                    $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                    foreach ($displayedTemplates as $template): 
+                                    ?>
+                                        <li><a class="dropdown-item" href="#" onclick="printListById(<?php echo $template['id']; ?>); return false;">
+                                            <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                        </a></li>
+                                    <?php endforeach; ?>
+                                    <?php if (count($printTemplates) > 3): ?>
+                                        <li><hr class="dropdown-divider"></li>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                                 <li><a class="dropdown-item" href="#" onclick="showPrintListModal(); return false;">
                                     <i class="bi bi-gear"></i> Scegli Template...
                                 </a></li>
@@ -234,33 +235,16 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Template IDs loaded from database
-        const templateIds = <?php echo json_encode($templateIds); ?>;
-        
         // Print list functionality
-        function printList(type) {
-            let templateId = null;
+        function printListById(templateId) {
             let filters = getCurrentFilters();
             
-            switch(type) {
-                case 'verbale':
-                    templateId = templateIds['Verbale di Riunione'] || null;
-                    break;
-                case 'foglio_presenze':
-                    templateId = templateIds['Foglio Presenze Riunione'] || null;
-                    break;
-            }
-            
-            if (templateId) {
-                const params = new URLSearchParams({
-                    template_id: templateId,
-                    entity: 'meetings',
-                    ...filters
-                });
-                window.open('print_preview.php?' + params.toString(), '_blank');
-            } else {
-                alert('Template non trovato. Assicurati di aver importato i template di stampa.\nVedi il file seed_print_templates.sql');
-            }
+            const params = new URLSearchParams({
+                template_id: templateId,
+                entity: 'meetings',
+                ...filters
+            });
+            window.open('print_preview.php?' + params.toString(), '_blank');
         }
         
         function getCurrentFilters() {
@@ -304,22 +288,23 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="listTemplateSelect" class="form-label">Template Disponibili</label>
-                        <select class="form-select" id="listTemplateSelect">
-                            <option value="">Seleziona un template...</option>
-                            <?php
-                            // Fetch available list templates for meetings
-                            $templateSql = "SELECT id, name FROM print_templates 
-                                           WHERE entity_type = 'meetings' 
-                                           AND is_active = 1 
-                                           ORDER BY name";
-                            $templates = $db->fetchAll($templateSql);
-                            foreach ($templates as $template) {
-                                echo '<option value="' . $template['id'] . '">' . 
-                                     htmlspecialchars($template['name']) . '</option>';
-                            }
-                            ?>
+                        <label class="form-label">Template</label>
+                        <select id="listTemplateSelect" class="form-select">
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            [XML]
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
+                    </div>
+                    <div class="alert alert-info">
                         <small><i class="bi bi-info-circle"></i> Verranno stampati i record secondo i filtri attualmente applicati</small>
                     </div>
                 </div>

@@ -1168,7 +1168,7 @@ class ReportController {
                     (SELECT province FROM member_addresses WHERE member_id = m.id AND address_type = 'residenza' LIMIT 1) as provincia,
                     (SELECT cap FROM member_addresses WHERE member_id = m.id AND address_type = 'residenza' LIMIT 1) as cap
                 FROM members m
-                ORDER BY m.last_name, m.first_name";
+                ORDER BY CAST(m.registration_number AS UNSIGNED) ASC";
         
         $data = $this->db->fetchAll($sql);
         
@@ -1200,7 +1200,7 @@ class ReportController {
                     (SELECT province FROM junior_member_addresses WHERE junior_member_id = jm.id AND address_type = 'residenza' LIMIT 1) as provincia,
                     (SELECT cap FROM junior_member_addresses WHERE junior_member_id = jm.id AND address_type = 'residenza' LIMIT 1) as cap
                 FROM junior_members jm
-                ORDER BY jm.last_name, jm.first_name";
+                ORDER BY CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) ASC";
         
         $data = $this->db->fetchAll($sql);
         
