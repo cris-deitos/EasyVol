@@ -128,7 +128,10 @@ $pageTitle = 'Gestione Template Stampe';
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
                             <a href="print_template_editor.php" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> Nuovo Template
+                                <i class="bi bi-plus-circle"></i> Nuovo Template HTML
+                            </a>
+                            <a href="xml_template_editor.php" class="btn btn-success">
+                                <i class="bi bi-file-earmark-code"></i> Nuovo Template XML
                             </a>
                             <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                                 <i class="bi bi-upload"></i> Importa
@@ -219,6 +222,9 @@ $pageTitle = 'Gestione Template Stampe';
                                                     <?php if ($template['description']): ?>
                                                         <br><small class="text-muted"><?php echo htmlspecialchars($template['description']); ?></small>
                                                     <?php endif; ?>
+                                                    <?php if (isset($template['template_format']) && $template['template_format'] === 'xml'): ?>
+                                                        <br><span class="badge bg-success"><i class="bi bi-file-earmark-code"></i> XML</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <?php
@@ -262,7 +268,12 @@ $pageTitle = 'Gestione Template Stampe';
                                                 </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="print_template_editor.php?id=<?php echo $template['id']; ?>" 
+                                                        <?php 
+                                                        $editorUrl = (isset($template['template_format']) && $template['template_format'] === 'xml') 
+                                                            ? 'xml_template_editor.php' 
+                                                            : 'print_template_editor.php';
+                                                        ?>
+                                                        <a href="<?php echo $editorUrl; ?>?id=<?php echo $template['id']; ?>" 
                                                            class="btn btn-outline-primary" title="Modifica">
                                                             <i class="bi bi-pencil"></i>
                                                         </a>

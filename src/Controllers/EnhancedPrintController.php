@@ -180,9 +180,26 @@ class EnhancedPrintController {
      * @return array
      */
     private function generateFromDbTemplate($dbId, $options) {
-        // Use the existing PrintTemplateController for database templates
-        require_once __DIR__ . '/PrintTemplateController.php';
         $controller = new PrintTemplateController($this->db, $this->config);
+        $template = $controller->getById($dbId);
+        
+        if (!$template) {
+            throw new \Exception("Template not found");
+        }
+        
+        // Check if it's an XML template
+        if (isset($template['template_format']) && $template['template_format'] === 'xml') {
+            // Get data for the template
+            $data = $controller->getSampleData($template['entity_type']);
+            // Merge with any provided options data
+            if (isset($options['data'])) {
+                $data = array_merge($data, $options['data']);
+            }
+            // Process XML template
+            return $controller->processXmlTemplate($template, $data);
+        }
+        
+        // Use standard HTML generation
         return $controller->generate($dbId, $options);
     }
     
