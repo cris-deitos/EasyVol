@@ -37,7 +37,7 @@ if ($templateId) {
     if ($template) {
         $isEdit = true;
     } else {
-        header('Location: print_templates.php?error=not_found');
+        header('Location: settings.php?tab=print-templates&error=not_found');
         exit;
     }
 }
@@ -130,7 +130,7 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
-                        <a href="print_templates.php" class="text-decoration-none text-muted">
+                        <a href="settings.php?tab=print-templates" class="text-decoration-none text-muted">
                             <i class="bi bi-arrow-left"></i>
                         </a>
                         <?php echo htmlspecialchars($pageTitle); ?>
