@@ -429,13 +429,27 @@ class XmlTemplateProcessor {
     private function formatValue($value, $format) {
         switch ($format) {
             case 'date':
-                return date('d/m/Y', strtotime($value));
+                $timestamp = strtotime($value);
+                if ($timestamp === false) {
+                    return $value; // Return original if invalid date
+                }
+                return date('d/m/Y', $timestamp);
             case 'datetime':
-                return date('d/m/Y H:i', strtotime($value));
+                $timestamp = strtotime($value);
+                if ($timestamp === false) {
+                    return $value; // Return original if invalid datetime
+                }
+                return date('d/m/Y H:i', $timestamp);
             case 'currency':
-                return number_format($value, 2, ',', '.') . ' €';
+                if (!is_numeric($value)) {
+                    return $value; // Return original if not numeric
+                }
+                return number_format((float)$value, 2, ',', '.') . ' €';
             case 'number':
-                return number_format($value, 0, ',', '.');
+                if (!is_numeric($value)) {
+                    return $value; // Return original if not numeric
+                }
+                return number_format((float)$value, 0, ',', '.');
             case 'uppercase':
                 return strtoupper($value);
             case 'lowercase':
@@ -460,13 +474,13 @@ class XmlTemplateProcessor {
         if (strpos($condition, '==') !== false) {
             list($var, $expected) = array_map('trim', explode('==', $condition, 2));
             $value = $this->getVariableValue($var);
-            return $value == trim($expected, '"\'');
+            return $value === trim($expected, '"\'');
         }
         
         if (strpos($condition, '!=') !== false) {
             list($var, $expected) = array_map('trim', explode('!=', $condition, 2));
             $value = $this->getVariableValue($var);
-            return $value != trim($expected, '"\'');
+            return $value !== trim($expected, '"\'');
         }
         
         // Check if variable exists and is not empty

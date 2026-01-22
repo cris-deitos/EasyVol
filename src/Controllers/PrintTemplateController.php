@@ -995,6 +995,9 @@ class PrintTemplateController {
     /**
      * Convert HTML template to XML format (helper method)
      * 
+     * Note: This is a basic conversion helper. Full HTML-to-XML conversion
+     * would require proper HTML parsing. This creates a basic XML wrapper.
+     * 
      * @param array $template Template data
      * @return string XML content
      */
@@ -1003,27 +1006,28 @@ class PrintTemplateController {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $xml .= '<template version="1.0">' . "\n";
         $xml .= '  <metadata>' . "\n";
-        $xml .= '    <name>' . htmlspecialchars($template['name']) . '</name>' . "\n";
-        $xml .= '    <description>' . htmlspecialchars($template['description'] ?? '') . '</description>' . "\n";
-        $xml .= '    <entity_type>' . htmlspecialchars($template['entity_type']) . '</entity_type>' . "\n";
-        $xml .= '    <template_type>' . htmlspecialchars($template['template_type']) . '</template_type>' . "\n";
+        $xml .= '    <name>' . htmlspecialchars($template['name'], ENT_XML1) . '</name>' . "\n";
+        $xml .= '    <description>' . htmlspecialchars($template['description'] ?? '', ENT_XML1) . '</description>' . "\n";
+        $xml .= '    <entity_type>' . htmlspecialchars($template['entity_type'], ENT_XML1) . '</entity_type>' . "\n";
+        $xml .= '    <template_type>' . htmlspecialchars($template['template_type'], ENT_XML1) . '</template_type>' . "\n";
         $xml .= '  </metadata>' . "\n\n";
         
-        $xml .= '  <page format="' . htmlspecialchars($template['page_format']) . '" ';
-        $xml .= 'orientation="' . htmlspecialchars($template['page_orientation']) . '">' . "\n";
+        $xml .= '  <page format="' . htmlspecialchars($template['page_format'], ENT_XML1) . '" ';
+        $xml .= 'orientation="' . htmlspecialchars($template['page_orientation'], ENT_XML1) . '">' . "\n";
         $xml .= '    <margins top="20" bottom="20" left="15" right="15" />' . "\n";
         $xml .= '  </page>' . "\n\n";
         
         $xml .= '  <styles><![CDATA[' . "\n";
         $xml .= $template['css_content'] ?? '';
-        $xml .= '  ]]></styles>' . "\n\n";
+        $xml .= "\n" . '  ]]></styles>' . "\n\n";
         
         $xml .= '  <body>' . "\n";
-        $xml .= '    <!-- Converted from HTML template -->' . "\n";
+        $xml .= '    <!-- Converted from HTML template - requires manual review and restructuring -->' . "\n";
         $xml .= '    <section>' . "\n";
-        // Note: HTML content would need proper parsing and conversion
-        // For now, we just wrap it
+        // Wrap HTML content in CDATA to preserve it
+        $xml .= '      <![CDATA[' . "\n";
         $xml .= '      ' . $template['html_content'] . "\n";
+        $xml .= '      ]]>' . "\n";
         $xml .= '    </section>' . "\n";
         $xml .= '  </body>' . "\n";
         $xml .= '</template>';

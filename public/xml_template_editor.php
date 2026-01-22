@@ -67,14 +67,45 @@ if ($templateId) {
 if (isset($_POST['action']) && $_POST['action'] === 'preview') {
     header('Content-Type: application/json');
     
+    // Verify this is an AJAX request
+    if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || 
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Invalid request']);
+        exit;
+    }
+    
     try {
+        // Sanitize and validate XML content
         $xmlContent = $_POST['xml_content'] ?? '';
-        $entityType = $_POST['entity_type'] ?? 'members';
+        
+        // Basic validation - check if it looks like XML
+        if (empty($xmlContent) || strpos(trim($xmlContent), '<?xml') !== 0) {
+            throw new \Exception('Invalid XML content');
+        }
+        
+        // Validate max size (prevent DoS)
+        if (strlen($xmlContent) > 1048576) { // 1MB limit
+            throw new \Exception('XML content too large');
+        }
+        
+        $entityType = filter_input(INPUT_POST, 'entity_type', FILTER_SANITIZE_STRING) ?? 'members';
+        
+        // Validate entity type
+        $validEntityTypes = ['members', 'junior_members', 'vehicles', 'meetings'];
+        if (!in_array($entityType, $validEntityTypes)) {
+            throw new \Exception('Invalid entity type');
+        }
         
         // Get sample data for preview
         $sampleData = $controller->getSampleData($entityType);
         
-        // Process XML
+        // Process XML with validation
+        $validation = $xmlProcessor->validate($xmlContent);
+        if (!$validation['valid']) {
+            throw new \Exception('XML validation failed: ' . implode(', ', $validation['errors']));
+        }
+        
         $result = $xmlProcessor->process($xmlContent, $sampleData);
         
         echo json_encode([
@@ -95,8 +126,22 @@ if (isset($_POST['action']) && $_POST['action'] === 'preview') {
 if (isset($_POST['action']) && $_POST['action'] === 'validate') {
     header('Content-Type: application/json');
     
+    // Verify this is an AJAX request
+    if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || 
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
+        http_response_code(403);
+        echo json_encode(['valid' => false, 'errors' => ['Invalid request']]);
+        exit;
+    }
+    
     try {
         $xmlContent = $_POST['xml_content'] ?? '';
+        
+        // Validate max size
+        if (strlen($xmlContent) > 1048576) { // 1MB limit
+            throw new \Exception('XML content too large');
+        }
+        
         $validation = $xmlProcessor->validate($xmlContent);
         
         echo json_encode($validation);
@@ -508,7 +553,10 @@ $pageTitle = $isEdit ? 'Modifica Template XML' : 'Nuovo Template XML';
             try {
                 const response = await fetch('', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: 'action=validate&xml_content=' + encodeURIComponent(xmlContent)
                 });
                 
@@ -552,7 +600,10 @@ $pageTitle = $isEdit ? 'Modifica Template XML' : 'Nuovo Template XML';
             try {
                 const response = await fetch('', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: 'action=preview&xml_content=' + encodeURIComponent(xmlContent) + 
                           '&entity_type=' + encodeURIComponent(entityType)
                 });
