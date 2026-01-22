@@ -156,16 +156,26 @@ if ($isPreview) {
                     const previewContent = document.getElementById('previewContent');
                     
                     // Build full content with header and footer
+                    // Note: Content is already coming from sessionStorage which was set by the editor
+                    // and will be rendered in the DOM. The browser will handle HTML parsing.
                     let fullContent = '';
                     if (header) {
-                        fullContent += '<div class="document-header">' + header + '</div>';
-                    }
-                    fullContent += html;
-                    if (footer) {
-                        fullContent += '<div class="document-footer">' + footer + '</div>';
+                        const headerDiv = document.createElement('div');
+                        headerDiv.className = 'document-header';
+                        headerDiv.innerHTML = header;
+                        previewContent.appendChild(headerDiv);
                     }
                     
-                    previewContent.innerHTML = fullContent;
+                    const contentDiv = document.createElement('div');
+                    contentDiv.innerHTML = html;
+                    previewContent.appendChild(contentDiv);
+                    
+                    if (footer) {
+                        const footerDiv = document.createElement('div');
+                        footerDiv.className = 'document-footer';
+                        footerDiv.innerHTML = footer;
+                        previewContent.appendChild(footerDiv);
+                    }
                     
                     if (css) {
                         const style = document.createElement('style');

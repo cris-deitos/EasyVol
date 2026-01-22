@@ -416,8 +416,8 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
         let tinymceEditor = null;
         
         // Initialize TinyMCE
-        function initTinyMCE() {
-            return tinymce.init({
+        function initTinyMCE(content) {
+            tinymce.init({
                 selector: '#htmlContent',
                 height: 600,
                 menubar: true,
@@ -436,6 +436,12 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                             showVariableModal(editor);
                         }
                     });
+                },
+                init_instance_callback: function(editor) {
+                    // Set content after initialization if provided
+                    if (content) {
+                        editor.setContent(content);
+                    }
                 }
             });
         }
@@ -469,12 +475,8 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                     // Save current textarea content
                     const content = textarea.value;
                     textarea.style.display = 'none';
-                    // Initialize TinyMCE and set content when ready
-                    initTinyMCE().then(() => {
-                        if (tinymceEditor) {
-                            tinymceEditor.setContent(content);
-                        }
-                    });
+                    // Initialize TinyMCE with content via callback
+                    initTinyMCE(content);
                 }
                 currentEditorMode = 'wysiwyg';
             }
