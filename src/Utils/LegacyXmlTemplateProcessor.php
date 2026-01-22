@@ -15,6 +15,26 @@ use Exception;
  */
 class LegacyXmlTemplateProcessor {
     
+    /**
+     * Mapping of legacy variable names to database field names
+     */
+    private const VARIABLE_MAPPINGS = [
+        'matricola' => 'badge_number',
+        'nome' => 'first_name',
+        'cognome' => 'last_name',
+        'data di nascita' => 'birth_date',
+        'luogo di nascita' => 'birth_place',
+        'provincia di nascita' => 'birth_province',
+        'codice fiscale' => 'tax_code',
+        'indirizzo di residenza' => 'address_street',
+        'cap di residenza' => 'address_cap',
+        'comune di residenza' => 'address_city',
+        'provincia di residenza' => 'address_province',
+        'data iscrizione' => 'member_since',
+        'data approvazione' => 'approval_date',
+        'data dimissioni/decadenza' => 'resignation_date',
+    ];
+    
     private $data;
     private $config;
     private $includes = [];
@@ -362,26 +382,9 @@ class LegacyXmlTemplateProcessor {
             return $this->data[$normalizedName];
         }
         
-        // Try with common field mappings
-        $mappings = [
-            'matricola' => 'badge_number',
-            'nome' => 'first_name',
-            'cognome' => 'last_name',
-            'data di nascita' => 'birth_date',
-            'luogo di nascita' => 'birth_place',
-            'provincia di nascita' => 'birth_province',
-            'codice fiscale' => 'tax_code',
-            'indirizzo di residenza' => 'address_street',
-            'cap di residenza' => 'address_cap',
-            'comune di residenza' => 'address_city',
-            'provincia di residenza' => 'address_province',
-            'data iscrizione' => 'member_since',
-            'data approvazione' => 'approval_date',
-            'data dimissioni/decadenza' => 'resignation_date',
-        ];
-        
-        if (isset($mappings[$normalizedName])) {
-            $mappedName = $mappings[$normalizedName];
+        // Try with common field mappings using class constant
+        if (isset(self::VARIABLE_MAPPINGS[$normalizedName])) {
+            $mappedName = self::VARIABLE_MAPPINGS[$normalizedName];
             if (isset($this->data[$mappedName])) {
                 return $this->data[$mappedName];
             }
@@ -405,18 +408,48 @@ class LegacyXmlTemplateProcessor {
             return (float)$expr;
         }
         
-        // Simple evaluation for addition/subtraction
-        // Security: Only allow numbers and +/- operators
-        if (preg_match('/^[\d\.\+\-]+$/', $expr)) {
-            try {
-                // Safe evaluation
-                return eval('return ' . $expr . ';');
-            } catch (\Throwable $e) {
-                return 0;
+        // Safe evaluation for addition/subtraction only
+        // Security: Only allow numbers, dots, and +/- operators
+        if (!preg_match('/^[\d\.\+\-]+$/', $expr)) {
+            return 0;
+        }
+        
+        // Manual calculation without eval()
+        $result = 0;
+        $currentNumber = '';
+        $operator = '+';
+        
+        for ($i = 0; $i < strlen($expr); $i++) {
+            $char = $expr[$i];
+            
+            if ($char === '+' || $char === '-') {
+                // Process previous number
+                if ($currentNumber !== '') {
+                    $num = (float)$currentNumber;
+                    if ($operator === '+') {
+                        $result += $num;
+                    } else {
+                        $result -= $num;
+                    }
+                    $currentNumber = '';
+                }
+                $operator = $char;
+            } else {
+                $currentNumber .= $char;
             }
         }
         
-        return 0;
+        // Process last number
+        if ($currentNumber !== '') {
+            $num = (float)$currentNumber;
+            if ($operator === '+') {
+                $result += $num;
+            } else {
+                $result -= $num;
+            }
+        }
+        
+        return $result;
     }
     
     /**
