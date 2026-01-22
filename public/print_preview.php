@@ -101,15 +101,12 @@ if ($isPreview) {
                 <h5 class="mb-0"><?php echo htmlspecialchars($pageTitle); ?></h5>
                 <div class="btn-group">
                     <?php if (!$isPreview): ?>
-                        <button type="button" class="btn btn-warning" onclick="editBeforePrint()">
-                            <i class="bi bi-pencil"></i> Modifica
+                        <button type="button" class="btn btn-success" onclick="downloadPDF()">
+                            <i class="bi bi-file-pdf"></i> Download PDF
                         </button>
                     <?php endif; ?>
                     <button type="button" class="btn btn-primary" onclick="window.print()">
                         <i class="bi bi-printer"></i> Stampa
-                    </button>
-                    <button type="button" class="btn btn-success" onclick="downloadPDF()">
-                        <i class="bi bi-file-pdf"></i> Download PDF
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="window.close()">
                         <i class="bi bi-x-circle"></i> Chiudi
@@ -221,31 +218,11 @@ if ($isPreview) {
             });
         <?php endif; ?>
 
-        function editBeforePrint() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const editUrl = 'print_edit.php?' + urlParams.toString();
-            window.location.href = editUrl;
-        }
-
         function downloadPDF() {
-            const element = document.getElementById('previewContent');
-            const opt = {
-                margin: [1, 1, 1, 1],
-                filename: 'documento_' + new Date().getTime() + '.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2,
-                    useCORS: true,
-                    logging: false
-                },
-                jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-            };
-            
-            html2pdf().set(opt).from(element).save().catch(error => {
-                console.error('Error generating PDF:', error);
-                alert('Errore durante la generazione del PDF: ' + error.message);
-            });
+            // Download PDF directly from server
+            const urlParams = new URLSearchParams(window.location.search);
+            const pdfUrl = 'print_generate.php?' + urlParams.toString();
+            window.open(pdfUrl, '_blank');
         }
     </script>
 </body>
