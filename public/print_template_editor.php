@@ -417,7 +417,7 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
         
         // Initialize TinyMCE
         function initTinyMCE() {
-            tinymce.init({
+            return tinymce.init({
                 selector: '#htmlContent',
                 height: 600,
                 menubar: true,
@@ -446,8 +446,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             textarea.style.display = 'block';
             textarea.style.height = '600px';
             textarea.style.fontFamily = 'monospace';
-            textarea.classList.remove('form-control');
-            textarea.classList.add('form-control');
         }
         
         // Switch editor mode
@@ -471,13 +469,12 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                     // Save current textarea content
                     const content = textarea.value;
                     textarea.style.display = 'none';
-                    initTinyMCE();
-                    // Wait for TinyMCE to initialize then set content
-                    setTimeout(() => {
+                    // Initialize TinyMCE and set content when ready
+                    initTinyMCE().then(() => {
                         if (tinymceEditor) {
                             tinymceEditor.setContent(content);
                         }
-                    }, 500);
+                    });
                 }
                 currentEditorMode = 'wysiwyg';
             }
@@ -508,6 +505,13 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                     textarea.value = tinymceEditor.getContent();
                 }
             });
+            
+            // Show/hide relations card based on template type on page load
+            const templateType = document.getElementById('templateType').value;
+            const relationsCard = document.getElementById('relationsCard');
+            if (templateType === 'relational') {
+                relationsCard.style.display = 'block';
+            }
         });
 
         function insertVariable(varName) {
@@ -597,15 +601,6 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
                 relationsCard.style.display = 'block';
             } else {
                 relationsCard.style.display = 'none';
-            }
-        });
-
-        // Trigger on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const templateType = document.getElementById('templateType').value;
-            const relationsCard = document.getElementById('relationsCard');
-            if (templateType === 'relational') {
-                relationsCard.style.display = 'block';
             }
         });
 
