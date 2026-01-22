@@ -1,5 +1,7 @@
 <?php
-// Debug mode - remove after testing
+// TEMPORARY DEBUG MODE - MUST BE REMOVED BEFORE PRODUCTION
+// This is enabled per issue requirements for troubleshooting XML template issues
+// TODO: Remove these lines after XML template list generation is verified working
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);

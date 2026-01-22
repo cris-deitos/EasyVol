@@ -244,6 +244,37 @@ class PrintTemplateController {
     }
     
     /**
+     * Process list XML template with records
+     * 
+     * @param array $template Template data
+     * @param array $records Records data
+     * @return array Processed document data
+     */
+    private function processListXmlTemplate($template, $records) {
+        // Process XML template with records data
+        $data = ['records' => $records];
+        
+        // Add global variables
+        $data['current_date'] = date('d/m/Y');
+        $data['current_year'] = date('Y');
+        $data['association_name'] = $this->config['association_name'] ?? 'Nome Associazione';
+        
+        // Process XML
+        $xmlResult = $this->xmlProcessor->process($template['xml_content'], $data);
+        
+        // Normalize result to match HTML template format
+        return [
+            'html' => $xmlResult['html'],
+            'css' => $xmlResult['css'],
+            'header' => '',  // XML templates don't have separate headers
+            'footer' => '',  // XML templates don't have separate footers
+            'watermark' => '', // XML templates don't have watermarks
+            'page_format' => $xmlResult['format'] ?? $template['page_format'],
+            'page_orientation' => $xmlResult['orientation'] ?? $template['page_orientation']
+        ];
+    }
+    
+    /**
      * Generate list document
      * 
      * @param array $template Template data
@@ -256,27 +287,7 @@ class PrintTemplateController {
         
         // CHECK IF XML TEMPLATE
         if ($template['template_format'] === 'xml' && !empty($template['xml_content'])) {
-            // Process XML template with records data
-            $data = ['records' => $records];
-            
-            // Add global variables
-            $data['current_date'] = date('d/m/Y');
-            $data['current_year'] = date('Y');
-            $data['association_name'] = $this->config['association_name'] ?? 'Nome Associazione';
-            
-            // Process XML
-            $xmlResult = $this->xmlProcessor->process($template['xml_content'], $data);
-            
-            // Normalize result to match HTML template format
-            return [
-                'html' => $xmlResult['html'],
-                'css' => $xmlResult['css'],
-                'header' => '',  // XML templates don't have separate headers
-                'footer' => '',  // XML templates don't have separate footers
-                'watermark' => '', // XML templates don't have watermarks
-                'page_format' => $xmlResult['format'] ?? $template['page_format'],
-                'page_orientation' => $xmlResult['orientation'] ?? $template['page_orientation']
-            ];
+            return $this->processListXmlTemplate($template, $records);
         }
         
         // FALLBACK TO HTML (existing code)
@@ -402,27 +413,7 @@ class PrintTemplateController {
         
         // CHECK IF XML TEMPLATE
         if ($template['template_format'] === 'xml' && !empty($template['xml_content'])) {
-            // Process XML template with records data
-            $data = ['records' => $records];
-            
-            // Add global variables
-            $data['current_date'] = date('d/m/Y');
-            $data['current_year'] = date('Y');
-            $data['association_name'] = $this->config['association_name'] ?? 'Nome Associazione';
-            
-            // Process XML
-            $xmlResult = $this->xmlProcessor->process($template['xml_content'], $data);
-            
-            // Normalize result to match HTML template format
-            return [
-                'html' => $xmlResult['html'],
-                'css' => $xmlResult['css'],
-                'header' => '',  // XML templates don't have separate headers
-                'footer' => '',  // XML templates don't have separate footers
-                'watermark' => '', // XML templates don't have watermarks
-                'page_format' => $xmlResult['format'] ?? $template['page_format'],
-                'page_orientation' => $xmlResult['orientation'] ?? $template['page_orientation']
-            ];
+            return $this->processListXmlTemplate($template, $records);
         }
         
         // FALLBACK TO HTML (existing code)
