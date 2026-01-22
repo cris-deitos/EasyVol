@@ -9,6 +9,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\EventController;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -27,6 +28,13 @@ AutoLogger::logPageAccess();
 $db = $app->getDb();
 $config = $app->getConfig();
 $controller = new EventController($db, $config);
+
+// Load print templates for events
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'events',
+    'is_active' => 1
+]);
 
 $filters = [
     'type' => $_GET['type'] ?? '',
@@ -87,6 +95,29 @@ $pageTitle = 'Gestione Eventi e Interventi';
                             </ul>
                         </div>
                         <?php endif; ?>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-printer"></i> Stampa
+                            </button>
+                            <ul class="dropdown-menu">
+                                <?php if (!empty($printTemplates)): ?>
+                                    <?php 
+                                    $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                    foreach ($displayedTemplates as $template): 
+                                    ?>
+                                        <li><a class="dropdown-item" href="#" onclick="printListById(<?php echo $template['id']; ?>); return false;">
+                                            <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                        </a></li>
+                                    <?php endforeach; ?>
+                                    <?php if (count($printTemplates) > 3): ?>
+                                        <li><hr class="dropdown-divider"></li>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                <li><a class="dropdown-item" href="#" onclick="showPrintListModal(); return false;">
+                                    <i class="bi bi-gear"></i> Scegli Template...
+                                </a></li>
+                            </ul>
+                        </div>
                         <?php if ($app->checkPermission('events', 'create')): ?>
                             <a href="event_edit.php" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuovo Evento
@@ -367,6 +398,89 @@ $pageTitle = 'Gestione Eventi e Interventi';
                 alert('Errore durante la chiusura dell\'evento');
             });
         }
+        
+        // Print list functionality
+        function printListById(templateId) {
+            let filters = getCurrentFilters();
+            
+            const params = new URLSearchParams({
+                template_id: templateId,
+                entity: 'events',
+                ...filters
+            });
+            window.open('print_preview.php?' + params.toString(), '_blank');
+        }
+        
+        function getCurrentFilters() {
+            const filters = {};
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('type')) filters.event_type = urlParams.get('type');
+            if (urlParams.has('status')) filters.status = urlParams.get('status');
+            if (urlParams.has('search')) filters.search = urlParams.get('search');
+            
+            return filters;
+        }
+        
+        function showPrintListModal() {
+            const modal = new bootstrap.Modal(document.getElementById('printListModal'));
+            modal.show();
+        }
+        
+        function generateListFromModal() {
+            const templateId = document.getElementById('listTemplateSelect').value;
+            if (templateId) {
+                const filters = getCurrentFilters();
+                const params = new URLSearchParams({
+                    template_id: templateId,
+                    entity: 'events',
+                    ...filters
+                });
+                window.open('print_preview.php?' + params.toString(), '_blank');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printListModal'));
+                modal.hide();
+            }
+        }
     </script>
+
+    <!-- Print List Template Selection Modal -->
+    <div class="modal fade" id="printListModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template Lista</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select id="listTemplateSelect" class="form-select">
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            [XML]
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <small><i class="bi bi-info-circle"></i> Verranno stampati i record secondo i filtri attualmente applicati</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateListFromModal()">
+                        <i class="bi bi-printer"></i> Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
