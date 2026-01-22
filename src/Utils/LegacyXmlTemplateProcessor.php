@@ -18,22 +18,32 @@ class LegacyXmlTemplateProcessor {
     /**
      * Mapping of legacy variable names to database field names
      */
-    private const VARIABLE_MAPPINGS = [
-        'matricola' => 'badge_number',
-        'nome' => 'first_name',
-        'cognome' => 'last_name',
-        'data di nascita' => 'birth_date',
-        'luogo di nascita' => 'birth_place',
-        'provincia di nascita' => 'birth_province',
-        'codice fiscale' => 'tax_code',
-        'indirizzo di residenza' => 'address_street',
-        'cap di residenza' => 'address_cap',
-        'comune di residenza' => 'address_city',
-        'provincia di residenza' => 'address_province',
-        'data iscrizione' => 'member_since',
-        'data approvazione' => 'approval_date',
-        'data dimissioni/decadenza' => 'resignation_date',
-    ];
+private const VARIABLE_MAPPINGS = [
+    // Dati anagrafici
+    'matricola' => 'badge_number',
+    'nome' => 'first_name',
+    'cognome' => 'last_name',
+    'data di nascita' => 'birth_date',
+    'luogo di nascita' => 'birth_place',
+    'provincia di nascita' => 'birth_province',
+    'codice fiscale' => 'tax_code',
+    
+    // Indirizzi
+    'indirizzo di residenza' => 'address_street',
+    'cap di residenza' => 'address_cap',
+    'comune di residenza' => 'address_city',
+    'provincia di residenza' => 'address_province',
+    
+    // Dati associativi
+    'stato socio' => 'member_status',                       // ✅ AGGIUNTO
+    'data iscrizione' => 'registration_date',               // ✅ CORRETTO
+    'data approvazione' => 'approval_date',
+    'data dimissioni/decadenza' => 'termination_date',      // ✅ CORRETTO
+    
+    // Variabili sistema
+    'association_name' => 'association_name',               // ✅ AGGIUNTO
+    'data/ora applicazione modello' => 'current_date',      // ✅ AGGIUNTO
+];
     
     private $data;
     private $config;
