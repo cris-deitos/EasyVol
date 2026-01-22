@@ -197,7 +197,7 @@ if ($isPreview) {
                 if (!response.ok) {
                     throw new Error('HTTP ' + response.status);
                 }
-                return response. text();
+                return response.text();
             })
             .then(html => {
                 // Parse HTML response
@@ -217,7 +217,7 @@ if ($isPreview) {
                 document.getElementById('previewContent').innerHTML = bodyContent;
             })
             .catch(error => {
-                console. error('Error loading preview:', error);
+                console.error('Error loading preview:', error);
                 document.getElementById('previewContent').innerHTML = 
                     '<div class="alert alert-danger">Errore nel caricamento dell\'anteprima: ' + error.message + '</div>';
             });
@@ -230,13 +230,6 @@ if ($isPreview) {
         window.open('print_generate.php?' + urlParams.toString(), '_blank');
     }
 <?php endif; ?>
-
-        function downloadPDF() {
-            // Download PDF directly from server
-            const urlParams = new URLSearchParams(window.location.search);
-            const pdfUrl = 'print_generate.php?' + urlParams.toString();
-            window.open(pdfUrl, '_blank');
-        }
     </script>
 </body>
 </html>
