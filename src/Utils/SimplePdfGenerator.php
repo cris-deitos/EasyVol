@@ -51,7 +51,7 @@ class SimplePdfGenerator {
      * @param array $options Generation options
      * @return array Prepared data
      */
-    private function prepareData($template, $options) {
+    public function prepareData($template, $options) {
         $entityType = $template['entity_type'];
         $templateType = $template['template_type'];
         
@@ -237,7 +237,7 @@ class SimplePdfGenerator {
      * @param array $data Data
      * @return string Processed HTML
      */
-    private function processTemplate($template, $data) {
+    public function processTemplate($template, $data) {
         // Handle {{#each array}} loops
         $template = preg_replace_callback(
             '/\{\{#each\s+([a-zA-Z_]+)\}\}(.*?)\{\{\/each\}\}/s',
