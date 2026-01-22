@@ -230,11 +230,21 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
 
                             <!-- HTML Content -->
                             <div class="card mb-3">
-                                <div class="card-header">
+                                <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Contenuto HTML</h5>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <input type="radio" class="btn-check" name="editorMode" id="editorModeWysiwyg" value="wysiwyg" checked autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="editorModeWysiwyg">
+                                            <i class="bi bi-file-richtext"></i> WYSIWYG
+                                        </label>
+                                        <input type="radio" class="btn-check" name="editorMode" id="editorModeCode" value="code" autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="editorModeCode">
+                                            <i class="bi bi-code-slash"></i> HTML
+                                        </label>
+                                    </div>
                                 </div>
                                 <div class="card-body">
-                                    <textarea id="htmlContent" name="html_content" class="form-control"><?php echo htmlspecialchars($template['html_content'] ?? ''); ?></textarea>
+                                    <textarea id="htmlContent" name="html_content" class="form-control" style="font-family: monospace; display: none;"><?php echo htmlspecialchars($template['html_content'] ?? ''); ?></textarea>
                                 </div>
                             </div>
 
@@ -402,26 +412,102 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tiny.cloud/1/svhvbvqwcchk5enuxule1zzpw3zpm3rvldernny7t3vwh22j/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
+        let currentEditorMode = 'wysiwyg';
+        let tinymceEditor = null;
+        
         // Initialize TinyMCE
-        tinymce.init({
-            selector: '#htmlContent',
-            height: 600,
-            menubar: true,
-            plugins: [
-                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-            content_style: 'body { font-family: Arial, sans-serif; font-size: 12pt; }',
-          
-            setup: function (editor) {
-                // Add custom button for inserting variables
-                editor.ui.registry.addButton('insertVariable', {
-                    text: 'Inserisci Variabile',
-                    onAction: function () {
-                        showVariableModal(editor);
-                    }
-                });
+        function initTinyMCE() {
+            tinymce.init({
+                selector: '#htmlContent',
+                height: 600,
+                menubar: true,
+                plugins: [
+                    'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount', 'code'
+                ],
+                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat | code',
+                content_style: 'body { font-family: Arial, sans-serif; font-size: 12pt; }',
+              
+                setup: function (editor) {
+                    tinymceEditor = editor;
+                    // Add custom button for inserting variables
+                    editor.ui.registry.addButton('insertVariable', {
+                        text: 'Inserisci Variabile',
+                        onAction: function () {
+                            showVariableModal(editor);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Initialize code editor mode (plain textarea)
+        function initCodeEditor() {
+            const textarea = document.getElementById('htmlContent');
+            textarea.style.display = 'block';
+            textarea.style.height = '600px';
+            textarea.style.fontFamily = 'monospace';
+            textarea.classList.remove('form-control');
+            textarea.classList.add('form-control');
+        }
+        
+        // Switch editor mode
+        function switchEditorMode(mode) {
+            const textarea = document.getElementById('htmlContent');
+            
+            if (mode === 'code') {
+                // Switch to code mode
+                if (tinymceEditor) {
+                    // Get content from TinyMCE and destroy it
+                    const content = tinymceEditor.getContent();
+                    tinymce.remove('#htmlContent');
+                    tinymceEditor = null;
+                    textarea.value = content;
+                }
+                initCodeEditor();
+                currentEditorMode = 'code';
+            } else {
+                // Switch to WYSIWYG mode
+                if (currentEditorMode === 'code') {
+                    // Save current textarea content
+                    const content = textarea.value;
+                    textarea.style.display = 'none';
+                    initTinyMCE();
+                    // Wait for TinyMCE to initialize then set content
+                    setTimeout(() => {
+                        if (tinymceEditor) {
+                            tinymceEditor.setContent(content);
+                        }
+                    }, 500);
+                }
+                currentEditorMode = 'wysiwyg';
             }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Start with WYSIWYG mode
+            initTinyMCE();
+            
+            // Add event listeners for mode switch
+            document.getElementById('editorModeWysiwyg').addEventListener('change', function() {
+                if (this.checked) {
+                    switchEditorMode('wysiwyg');
+                }
+            });
+            
+            document.getElementById('editorModeCode').addEventListener('change', function() {
+                if (this.checked) {
+                    switchEditorMode('code');
+                }
+            });
+            
+            // Handle form submission to ensure content is saved
+            document.getElementById('templateForm').addEventListener('submit', function(e) {
+                const textarea = document.getElementById('htmlContent');
+                if (currentEditorMode === 'wysiwyg' && tinymceEditor) {
+                    textarea.value = tinymceEditor.getContent();
+                }
+            });
         });
 
         function insertVariable(varName) {
@@ -487,10 +573,19 @@ $pageTitle = $isEdit ? 'Modifica Template' : 'Nuovo Template';
             const form = document.getElementById('templateForm');
             const formData = new FormData(form);
             
+            // Get HTML content based on current mode
+            let htmlContent;
+            if (currentEditorMode === 'wysiwyg' && tinymceEditor) {
+                htmlContent = tinymceEditor.getContent();
+            } else {
+                htmlContent = document.getElementById('htmlContent').value;
+            }
+            
             // Save to session storage for preview
-            const htmlContent = tinymce.get('htmlContent').getContent();
             sessionStorage.setItem('preview_html', htmlContent);
             sessionStorage.setItem('preview_css', formData.get('css_content'));
+            sessionStorage.setItem('preview_header', formData.get('show_header') ? formData.get('header_content') : '');
+            sessionStorage.setItem('preview_footer', formData.get('show_footer') ? formData.get('footer_content') : '');
             
             window.open('print_preview.php?preview=1', '_blank');
         }
