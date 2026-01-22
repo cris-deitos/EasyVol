@@ -109,14 +109,26 @@ try {
         $options['filters'] = $filters;
     }
     
+    // Clear any previous output to prevent PDF corruption
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     // Generate and download PDF directly
     $controller->generatePdf($templateId, $options, 'D');
+    exit; // Important: exit after PDF output
     
 } catch (\Exception $e) {
+    // Clear output buffer in case of error
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     // Log the full error for debugging
-    error_log("Print generation error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    error_log("Print generation error: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
     
     http_response_code(500);
-    // Show generic error to users, log details for admins
-    die('Errore nella generazione del PDF. Contattare l\'amministratore del sistema.');
+    header('Content-Type: text/html; charset=utf-8');
+    die('Errore nella generazione del PDF: ' . htmlspecialchars($e->getMessage()));
 }
