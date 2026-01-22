@@ -113,6 +113,10 @@ try {
     $controller->generatePdf($templateId, $options, 'D');
     
 } catch (\Exception $e) {
+    // Log the full error for debugging
+    error_log("Print generation error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    
     http_response_code(500);
-    die('Errore nella generazione del PDF: ' . htmlspecialchars($e->getMessage()));
+    // Show generic error to users, log details for admins
+    die('Errore nella generazione del PDF. Contattare l\'amministratore del sistema.');
 }

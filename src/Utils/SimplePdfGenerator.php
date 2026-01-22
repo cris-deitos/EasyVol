@@ -193,6 +193,12 @@ class SimplePdfGenerator {
      * @return array Record with related data
      */
     private function loadRelatedData($entityType, $record) {
+        // Validate record has ID field
+        if (!isset($record['id'])) {
+            error_log("SimplePdfGenerator: Record missing 'id' field for entity type: $entityType");
+            return $record;
+        }
+        
         $recordId = $record['id'];
         
         // Define related tables for each entity type
