@@ -92,14 +92,17 @@ $pageTitle = 'Anomalie Soci Minorenni';
                 
                 <!-- Cadetti senza numero di cellulare -->
                 <?php if (!empty($anomalies['no_mobile'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="junior_member_no_mobile">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-phone"></i> 
                             Cadetti senza Numero di Cellulare (<?php echo count($anomalies['no_mobile']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -130,14 +133,17 @@ $pageTitle = 'Anomalie Soci Minorenni';
                 
                 <!-- Cadetti senza email -->
                 <?php if (!empty($anomalies['no_email'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning">
+                <div class="card mb-4 anomaly-card" data-anomaly-type="junior_member_no_email">
+                    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-envelope"></i> 
                             Cadetti senza Email (<?php echo count($anomalies['no_email']); ?>)
                         </h5>
+                        <button class="btn btn-sm btn-outline-secondary anomaly-toggle-btn" type="button">
+                            <i class="bi bi-eye-slash"></i> Nascondi
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body anomaly-content">
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
@@ -325,5 +331,67 @@ $pageTitle = 'Anomalie Soci Minorenni';
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Anomaly visibility management
+        document.addEventListener('DOMContentLoaded', function() {
+            const STORAGE_KEY = 'easyvol_hidden_anomalies';
+            
+            // Load hidden anomalies from localStorage
+            function loadHiddenAnomalies() {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                return stored ? JSON.parse(stored) : {};
+            }
+            
+            // Save hidden anomalies to localStorage
+            function saveHiddenAnomalies(hiddenAnomalies) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(hiddenAnomalies));
+            }
+            
+            // Toggle anomaly visibility
+            function toggleAnomaly(card, button) {
+                const anomalyType = card.dataset.anomalyType;
+                const content = card.querySelector('.anomaly-content');
+                const icon = button.querySelector('i');
+                const hiddenAnomalies = loadHiddenAnomalies();
+                
+                if (content.style.display === 'none') {
+                    // Show anomaly
+                    content.style.display = 'block';
+                    icon.className = 'bi bi-eye-slash';
+                    button.innerHTML = '<i class="bi bi-eye-slash"></i> Nascondi';
+                    delete hiddenAnomalies[anomalyType];
+                } else {
+                    // Hide anomaly
+                    content.style.display = 'none';
+                    icon.className = 'bi bi-eye';
+                    button.innerHTML = '<i class="bi bi-eye"></i> Mostra';
+                    hiddenAnomalies[anomalyType] = true;
+                }
+                
+                saveHiddenAnomalies(hiddenAnomalies);
+            }
+            
+            // Initialize anomaly cards
+            const anomalyCards = document.querySelectorAll('.anomaly-card');
+            const hiddenAnomalies = loadHiddenAnomalies();
+            
+            anomalyCards.forEach(card => {
+                const anomalyType = card.dataset.anomalyType;
+                const toggleBtn = card.querySelector('.anomaly-toggle-btn');
+                const content = card.querySelector('.anomaly-content');
+                
+                // Apply saved state
+                if (hiddenAnomalies[anomalyType]) {
+                    content.style.display = 'none';
+                    toggleBtn.innerHTML = '<i class="bi bi-eye"></i> Mostra';
+                }
+                
+                // Add click event
+                toggleBtn.addEventListener('click', function() {
+                    toggleAnomaly(card, toggleBtn);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
