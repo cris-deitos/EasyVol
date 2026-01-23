@@ -2623,9 +2623,7 @@ Dettagli connessione: {{online_details}}</p>
             <td>{{participant_name}}</td>
             <td>{{role}}</td>
             <td class="center">
-                {{#if present}}Presente{{else}}
-                {{#eq attendance_status "delegated"}}Delegato{{else}}Assente{{/eq}}
-                {{/if}}
+                {{#if present}}Presente{{else}}{{#if is_delegated}}Delegato{{else}}Assente{{/if}}{{/if}}
             </td>
             <td>{{#if delegated_to_name}}{{delegated_to_name}}{{/if}}</td>
         </tr>
