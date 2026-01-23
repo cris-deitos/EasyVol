@@ -393,6 +393,9 @@ class SimplePdfGenerator {
                     break;
                 }
             }
+            
+            // Also set fee_paid as an alias for quota_anno_corrente (used by some templates)
+            $record['fee_paid'] = $record['quota_anno_corrente'];
         }
         
         // Flatten guardians for junior_members
@@ -439,6 +442,12 @@ class SimplePdfGenerator {
                         // Replace @index
                         $itemOutput = str_replace('{{@index}}', $index + 1, $itemOutput);
                         $itemOutput = str_replace('{{@index0}}', $index, $itemOutput);
+                        
+                        // Process {{#if}} conditionals within item context
+                        $itemOutput = $this->processIfConditionalsInContext($itemOutput, $item);
+                        
+                        // Process {{#if}}...{{else}}...{{/if}} conditionals within item context
+                        $itemOutput = $this->processIfElseConditionalsInContext($itemOutput, $item);
                         
                         // Replace item variables
                         $itemOutput = $this->replaceVariables($itemOutput, $item);
@@ -550,6 +559,66 @@ class SimplePdfGenerator {
         }
         
         return $value;
+    }
+    
+    /**
+     * Process {{#if field}} conditionals within a specific data context
+     * 
+     * This is used within {{#each}} loops to evaluate conditionals against each item's data.
+     * 
+     * @param string $template Template content with {{#if}} blocks
+     * @param array $data Data context to use for evaluation
+     * @return string Processed template
+     */
+    private function processIfConditionalsInContext($template, $data) {
+        return preg_replace_callback(
+            '/\{\{#if\s+([a-zA-Z_\.]+)\}\}(.*?)\{\{\/if\}\}/s',
+            function($matches) use ($data) {
+                $fieldName = $matches[1];
+                $content = $matches[2];
+                
+                // Check if this is an if/else block (skip those, they're handled separately)
+                if (strpos($content, '{{else}}') !== false) {
+                    return $matches[0]; // Return unchanged, let processIfElseConditionalsInContext handle it
+                }
+                
+                $value = $this->getNestedValue($data, $fieldName);
+                
+                if ($value !== null && $value !== '' && $value !== false && $value !== 0) {
+                    return $content;
+                }
+                return '';
+            },
+            $template
+        );
+    }
+    
+    /**
+     * Process {{#if field}}...{{else}}...{{/if}} conditionals within a specific data context
+     * 
+     * This handles the if/else pattern used in templates.
+     * 
+     * @param string $template Template content with {{#if}}...{{else}}...{{/if}} blocks
+     * @param array $data Data context to use for evaluation
+     * @return string Processed template
+     */
+    private function processIfElseConditionalsInContext($template, $data) {
+        return preg_replace_callback(
+            '/\{\{#if\s+([a-zA-Z_\.]+)\}\}(.*?)\{\{else\}\}(.*?)\{\{\/if\}\}/s',
+            function($matches) use ($data) {
+                $fieldName = $matches[1];
+                $trueContent = $matches[2];
+                $falseContent = $matches[3];
+                
+                $value = $this->getNestedValue($data, $fieldName);
+                
+                if ($value !== null && $value !== '' && $value !== false && $value !== 0) {
+                    return $trueContent;
+                }
+                return $falseContent;
+            },
+            $template
+        );
     }
     
     /**
