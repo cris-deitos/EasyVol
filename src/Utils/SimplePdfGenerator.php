@@ -275,18 +275,103 @@ class SimplePdfGenerator {
         // Flatten related data for direct template access
         $record = $this->flattenRelatedData($entityType, $record);
 
-// Aggiungi nella funzione loadRelatedData() dopo la riga 278
-// Converti percorso foto in percorso assoluto per PDF
-if (isset($record['photo_path']) && !empty($record['photo_path'])) {
+// Determina sorgente immagine per mPDF (photo_src) e flag di assenza foto (has_no_photo)
+$record['photo_src'] = '';
+$record['has_no_photo'] = true;
+
+if (!empty($record['photo_path'])) {
+    // Radice del progetto (aggiusta se necessario)
     $basePath = realpath(__DIR__ . '/../../');
     $relativePath = ltrim($record['photo_path'], './');
     $absolutePath = $basePath . '/' . $relativePath;
-    
-    if (file_exists($absolutePath)) {
-        $record['photo_path'] = $absolutePath;
+
+    if (file_exists($absolutePath) && is_readable($absolutePath)) {
+        // Proviamo a creare data URI (raccomandata)
+        $mime = @mime_content_type($absolutePath) ?: 'image/jpeg';
+        $contents = @file_get_contents($absolutePath);
+
+        if ($contents !== false) {
+            $data = base64_encode($contents);
+            $dataUri = 'data:' . $mime . ';base64,' . $data;
+            $record['photo_src'] = $dataUri;
+            $record['photo_path_data'] = $dataUri; // mantieni per retrocompatibilità se vuoi
+            $record['photo_path'] = 'file://' . $absolutePath; // fallback
+            $record['has_no_photo'] = false;
+        } else {
+            // fallback a file:// se non riusciamo a leggere il contenuto
+            $record['photo_src'] = 'file://' . $absolutePath;
+            $record['photo_path_data'] = '';
+            $record['has_no_photo'] = false;
+        }
     } else {
+        // file non disponibile
+        $record['photo_src'] = '';
+        $record['photo_path_data'] = '';
         $record['photo_path'] = '';
+        $record['has_no_photo'] = true;
     }
+} else {
+    // nessun percorso foto
+    $record['photo_src'] = '';
+    $record['photo_path_data'] = '';
+    $record['has_no_photo'] = true;
+}
+
+// --- Associazione: popola association_email e association_logo (data URI) ---
+$record['association_email'] = $this->config['association']['email'] ?? ($record['association_email'] ?? '');
+
+// Recupera percorso logo da config o dal record (può essere relativo)
+$logoPath = $this->config['association']['logo_path'] ?? ($record['association_logo'] ?? '');
+$record['association_logo'] = '';
+
+// Normalizza e crea data URI se possibile
+if (!empty($logoPath)) {
+    $relative = ltrim($logoPath, './');
+    $absoluteLogo = realpath(__DIR__ . '/../../' . $relative);
+
+    if ($absoluteLogo && file_exists($absoluteLogo) && is_readable($absoluteLogo)) {
+        $mime = @mime_content_type($absoluteLogo) ?: 'image/png';
+        $contents = @file_get_contents($absoluteLogo);
+        if ($contents !== false) {
+            $record['association_logo'] = 'data:' . $mime . ';base64,' . base64_encode($contents);
+        } else {
+            // fallback file:// se non riusciamo a leggere il contenuto
+            $record['association_logo'] = 'file://' . $absoluteLogo;
+        }
+    } else {
+        // non trovato: lascia vuoto
+        $record['association_logo'] = '';
+    }
+}
+
+if (isset($record['roles']) && is_array($record['roles'])) {
+    $roleCards = [];
+    foreach ($record['roles'] as $role) {
+        // Crea una copia del ruolo e arricchiscila con i dati del socio
+        $card = $role;
+
+        // Copia i principali campi del socio nel card (sovrascrive se esistono, scegli i campi che ti servono)
+        $card['registration_number'] = $record['registration_number'] ?? ($record['id'] ?? '');
+        $card['first_name'] = $record['first_name'] ?? '';
+        $card['last_name'] = $record['last_name'] ?? '';
+        $card['tax_code'] = $record['tax_code'] ?? '';
+        $card['birth_date'] = $record['birth_date'] ?? '';
+        // Foto: usa photo_src se presente (data URI), altrimenti fallback photo_path
+        $card['photo_src'] = $record['photo_src'] ?? ($record['photo_path'] ?? '');
+        // Logo/associazione (se presenti in $record oppure in $this->config)
+$card['association_name'] = $record['association']['name'] ?? ($this->config['association']['name'] ?? $record['association_name'] ?? '');
+$card['association_tax_code'] = $record['association']['tax_code'] ?? ($this->config['association']['tax_code'] ?? $record['association_tax_code'] ?? '');
+$card['association_email'] = $record['association_email'] ?? '';
+$card['association_logo'] = $record['association_logo'] ?? '';
+
+        // Assicurati che il nome della mansione sia disponibile in una sola riga (trim)
+        $card['role_label'] = isset($role['role_name']) ? trim(preg_replace('/\s+/', ' ', $role['role_name'])) : '';
+
+        $roleCards[] = $card;
+    }
+    $record['role_cards'] = $roleCards;
+} else {
+    $record['role_cards'] = [];
 }
 
         return $record;
