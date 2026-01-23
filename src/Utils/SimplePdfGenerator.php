@@ -15,6 +15,16 @@ class SimplePdfGenerator {
     private $config;
     
     /**
+     * Active status constant for members (used for filtering)
+     */
+    private const MEMBER_ACTIVE_STATUS = 'attivo';
+    
+    /**
+     * Active status constant for junior members (used for filtering)
+     */
+    private const JUNIOR_MEMBER_ACTIVE_STATUS = 'attivo';
+    
+    /**
      * Constructor
      * 
      * @param object $db Database instance
@@ -165,10 +175,10 @@ class SimplePdfGenerator {
         if ($dataScope === 'filtered') {
             if ($entityType === 'members') {
                 $sql .= " AND member_status = ?";
-                $params[] = 'attivo';
+                $params[] = self::MEMBER_ACTIVE_STATUS;
             } elseif ($entityType === 'junior_members') {
                 $sql .= " AND status = ?";
-                $params[] = 'attivo';
+                $params[] = self::JUNIOR_MEMBER_ACTIVE_STATUS;
             }
         }
         
@@ -288,29 +298,9 @@ class SimplePdfGenerator {
                 $contactType = $contact['contact_type'] ?? '';
                 $value = $contact['value'] ?? '';
                 
-                // Map contact types to flat variables
-                switch ($contactType) {
-                    case 'email':
-                        // Only set if not already set (prefer first)
-                        if (!isset($record['email']) || empty($record['email'])) {
-                            $record['email'] = $value;
-                        }
-                        break;
-                    case 'cellulare':
-                        if (!isset($record['cellulare']) || empty($record['cellulare'])) {
-                            $record['cellulare'] = $value;
-                        }
-                        break;
-                    case 'telefono_fisso':
-                        if (!isset($record['telefono_fisso']) || empty($record['telefono_fisso'])) {
-                            $record['telefono_fisso'] = $value;
-                        }
-                        break;
-                    case 'pec':
-                        if (!isset($record['pec']) || empty($record['pec'])) {
-                            $record['pec'] = $value;
-                        }
-                        break;
+                // Map contact types to flat variables (only set if empty)
+                if ($this->shouldSetField($record, $contactType, $value)) {
+                    $record[$contactType] = $value;
                 }
             }
         }
@@ -322,8 +312,18 @@ class SimplePdfGenerator {
                 $prefix = $addressType; // 'residenza' or 'domicilio'
                 
                 if ($prefix === 'residenza' || $prefix === 'domicilio') {
-                    // Only set if not already set (prefer first entry)
-                    if (!isset($record[$prefix . '_street'])) {
+                    // Check if all address fields for this type are unset
+                    $addressFields = ['_street', '_number', '_cap', '_city', '_province'];
+                    $allFieldsEmpty = true;
+                    foreach ($addressFields as $field) {
+                        if (isset($record[$prefix . $field]) && !empty($record[$prefix . $field])) {
+                            $allFieldsEmpty = false;
+                            break;
+                        }
+                    }
+                    
+                    // Only set all fields if none are already set
+                    if ($allFieldsEmpty) {
                         $record[$prefix . '_street'] = $address['street'] ?? '';
                         $record[$prefix . '_number'] = $address['number'] ?? '';
                         $record[$prefix . '_cap'] = $address['postal_code'] ?? '';
@@ -859,6 +859,26 @@ class SimplePdfGenerator {
         ];
         
         return $relations[$entityType] ?? [];
+    }
+    
+    /**
+     * Check if a field should be set in a record
+     * 
+     * Returns true if the field is not already set or is empty, and the new value is not empty.
+     * 
+     * @param array $record Record data
+     * @param string $fieldName Field name to check
+     * @param mixed $newValue New value to set
+     * @return bool True if field should be set
+     */
+    private function shouldSetField($record, $fieldName, $newValue) {
+        // Don't set if new value is empty
+        if (empty($newValue)) {
+            return false;
+        }
+        
+        // Set if field is not set or is empty
+        return !isset($record[$fieldName]) || empty($record[$fieldName]);
     }
 }
 
