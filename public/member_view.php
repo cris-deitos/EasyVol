@@ -12,6 +12,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Utils\PathHelper;
 use EasyVol\Controllers\MemberController;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -43,6 +44,13 @@ if (!$member) {
     header('Location: members.php?error=not_found');
     exit;
 }
+
+// Load print templates for members
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'members',
+    'is_active' => 1
+]);
 
 // Get filter parameters for navigation
 $filters = [
@@ -175,16 +183,19 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                     <i class="bi bi-printer"></i> Stampa
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('single', <?php echo $member['id']; ?>); return false;">
-                                        <i class="bi bi-file-earmark-text"></i> Certificato Iscrizione
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('card', <?php echo $member['id']; ?>); return false;">
-                                        <i class="bi bi-credit-card"></i> Tessera Socio
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('full', <?php echo $member['id']; ?>); return false;">
-                                        <i class="bi bi-file-earmark-spreadsheet"></i> Scheda Completa
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
+                                    <?php if (!empty($printTemplates)): ?>
+                                        <?php 
+                                        $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                        foreach ($displayedTemplates as $template): 
+                                        ?>
+                                            <li><a class="dropdown-item" href="#" onclick="printById(<?php echo $template['id']; ?>); return false;">
+                                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                            </a></li>
+                                        <?php endforeach; ?>
+                                        <?php if (count($printTemplates) > 3): ?>
+                                            <li><hr class="dropdown-divider"></li>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                     <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
                                         <i class="bi bi-gear"></i> Scegli Template...
                                     </a></li>
@@ -1177,58 +1188,20 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
         }
         
         // Print functionality
-        function printTemplate(type, recordId) {
-            let templateId = null;
-            
-            // Map template types to default template IDs (will be auto-selected if available)
-            switch(type) {
-                case 'single':
-                    templateId = 1; // Certificato Iscrizione
-                    break;
-                case 'card':
-                    templateId = 2; // Tessera Socio
-                    break;
-                case 'full':
-                    templateId = 3; // Scheda Completa
-                    break;
-            }
-            
-            if (templateId) {
-                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=members';
-                window.open(url, '_blank');
-            } else {
-                showPrintModal();
-            }
+        function printById(templateId) {
+            const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $member['id']; ?>&entity=members';
+            window.open(url, '_blank');
         }
         
         function showPrintModal() {
-            // Create and show modal for template selection
             const modal = new bootstrap.Modal(document.getElementById('printModal'));
-            
-            // Load available templates
-            fetch('print_generate.php?format=json&entity=members&action=list_templates')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.templates) {
-                        const select = document.getElementById('templateSelect');
-                        select.innerHTML = '';
-                        data.templates.forEach(template => {
-                            const option = document.createElement('option');
-                            option.value = template.id;
-                            option.textContent = template.name;
-                            select.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => console.error('Error loading templates:', error));
-            
             modal.show();
         }
         
         function generateFromModal() {
             const templateId = document.getElementById('templateSelect').value;
-            if (templateId) {
-                printTemplate(null, <?php echo $member['id']; ?>);
+            if (templateId && templateId !== '') {
+                printById(templateId);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
                 modal.hide();
             }
@@ -1261,13 +1234,24 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                     <div class="mb-3">
                         <label class="form-label">Template</label>
                         <select id="templateSelect" class="form-select">
-                            <option value="">Caricamento...</option>
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            (XML)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()" <?php echo empty($printTemplates) ? 'disabled' : ''; ?>>
                         <i class="bi bi-printer"></i> Genera
                     </button>
                 </div>

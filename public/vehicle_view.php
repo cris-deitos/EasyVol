@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\VehicleController;
+use EasyVol\Controllers\PrintTemplateController;
 use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
@@ -46,6 +47,13 @@ if (!$vehicle) {
     header('Location: vehicles.php?error=not_found');
     exit;
 }
+
+// Load print templates for vehicles
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'vehicles',
+    'is_active' => 1
+]);
 
 $pageTitle = 'Dettaglio Mezzo';
 if (!empty($vehicle['license_plate'])) {
@@ -93,9 +101,19 @@ if (!empty($vehicle['license_plate'])) {
                                     <i class="bi bi-printer"></i> Stampa
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('technical', <?php echo $vehicle['id']; ?>); return false;">
-                                        <i class="bi bi-file-earmark-text"></i> Scheda Tecnica
-                                    </a></li>
+                                    <?php if (!empty($printTemplates)): ?>
+                                        <?php 
+                                        $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                        foreach ($displayedTemplates as $template): 
+                                        ?>
+                                            <li><a class="dropdown-item" href="#" onclick="printById(<?php echo $template['id']; ?>); return false;">
+                                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                            </a></li>
+                                        <?php endforeach; ?>
+                                        <?php if (count($printTemplates) > 3): ?>
+                                            <li><hr class="dropdown-divider"></li>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                     <li><a class="dropdown-item" href="#" onclick="printQrCode(); return false;">
                                         <i class="bi bi-qr-code"></i> QR Code
                                     </a></li>
@@ -548,22 +566,9 @@ if (!empty($vehicle['license_plate'])) {
         }
         
         // Print functionality
-        function printTemplate(type, recordId) {
-            let templateId = null;
-            
-            // Map template types to default template IDs for vehicles
-            switch(type) {
-                case 'technical':
-                    templateId = 7; // Scheda Tecnica Mezzo
-                    break;
-            }
-            
-            if (templateId) {
-                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=vehicles';
-                window.open(url, '_blank');
-            } else {
-                showPrintModal();
-            }
+        function printById(templateId) {
+            const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $vehicle['id']; ?>&entity=vehicles';
+            window.open(url, '_blank');
         }
         
         function showPrintModal() {
@@ -573,9 +578,8 @@ if (!empty($vehicle['license_plate'])) {
         
         function generateFromModal() {
             const templateId = document.getElementById('templateSelect').value;
-            if (templateId) {
-                const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $vehicle['id']; ?>&entity=vehicles';
-                window.open(url, '_blank');
+            if (templateId && templateId !== '') {
+                printById(templateId);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
                 modal.hide();
             }
@@ -877,14 +881,24 @@ if (!empty($vehicle['license_plate'])) {
                     <div class="mb-3">
                         <label class="form-label">Template</label>
                         <select id="templateSelect" class="form-select">
-                            <option value="7">Scheda Tecnica Mezzo</option>
-                            <option value="8">Elenco Mezzi</option>
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            (XML)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()" <?php echo empty($printTemplates) ? 'disabled' : ''; ?>>
                         <i class="bi bi-printer"></i> Genera
                     </button>
                 </div>
