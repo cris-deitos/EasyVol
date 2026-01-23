@@ -211,7 +211,7 @@ $pageTitle = 'Gestione Soci';
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label for="role" class="form-label">Qualifica/Mansione</label>
+                                <label for="role" class="form-label">Mansione</label>
                                 <select class="form-select" id="role" name="role">
                                     <option value="">Tutte</option>
                                     <?php foreach ($availableRoles as $r): ?>
@@ -269,7 +269,7 @@ $pageTitle = 'Gestione Soci';
                                         <th>Nome</th>
                                         <th>Data Nascita</th>
                                         <th>Stato</th>
-                                        <th>Qualifica</th>
+                                        <th>Mansione</th>
                                         <th>Azioni</th>
                                     </tr>
                                 </thead>
