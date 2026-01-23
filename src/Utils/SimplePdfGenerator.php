@@ -317,6 +317,103 @@ if (!empty($record['photo_path'])) {
     $record['has_no_photo'] = true;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+// --- POPOLA association_logo_src (data URI o file:// fallback) ---
+$record['association_logo_src'] = '';
+
+// Build candidates list (config e record)
+$logoCandidates = [];
+if (!empty($this->config['association']['logo'])) {
+    $logoCandidates[] = $this->config['association']['logo'];
+}
+if (!empty($this->config['association']['logo_path'])) {
+    $logoCandidates[] = $this->config['association']['logo_path'];
+}
+if (!empty($record['logo'])) {
+    $logoCandidates[] = $record['logo'];
+}
+if (!empty($record['association_logo'])) {
+    $logoCandidates[] = $record['association_logo'];
+}
+if (!empty($record['association']['logo'])) {
+    $logoCandidates[] = $record['association']['logo'];
+}
+if (!empty($record['association']['logo_path'])) {
+    $logoCandidates[] = $record['association']['logo_path'];
+}
+
+// Try candidates
+$projectRoot = realpath(__DIR__ . '/../../');
+foreach ($logoCandidates as $candidate) {
+    if (empty($candidate)) continue;
+
+    // already data URI
+    if (strpos($candidate, 'data:') === 0) {
+        $record['association_logo_src'] = $candidate;
+        break;
+    }
+
+    // http(s) URL: try download
+    if (preg_match('#^https?://#i', $candidate)) {
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $contents = @file_get_contents($candidate, false, $ctx);
+        if ($contents !== false) {
+            $mime = @finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $contents) ?: 'image/png';
+            $record['association_logo_src'] = 'data:' . $mime . ';base64,' . base64_encode($contents);
+            break;
+        }
+        // else try next candidate
+    }
+
+    // local path: try candidate as given and relative to project root
+    $pathsToTry = [$candidate];
+    if ($projectRoot) {
+        $pathsToTry[] = $projectRoot . '/' . ltrim($candidate, './');
+    }
+
+    foreach ($pathsToTry as $p) {
+        if (empty($p)) continue;
+        $abs = realpath($p) ?: false;
+        if ($abs && file_exists($abs) && is_readable($abs)) {
+            $contents = @file_get_contents($abs);
+            if ($contents !== false) {
+                $mime = @mime_content_type($abs) ?: 'image/png';
+                $record['association_logo_src'] = 'data:' . $mime . ';base64,' . base64_encode($contents);
+            } else {
+                $record['association_logo_src'] = 'file://' . $abs;
+            }
+            break 2;
+        }
+    }
+}
+// leave empty string if not found
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // --- Associazione: popola association_email e association_logo (data URI) ---
 $record['association_email'] = $this->config['association']['email'] ?? ($record['association_email'] ?? '');
 
@@ -324,25 +421,6 @@ $record['association_email'] = $this->config['association']['email'] ?? ($record
 $logoPath = $this->config['association']['logo_path'] ?? ($record['association_logo'] ?? '');
 $record['association_logo'] = '';
 
-// Normalizza e crea data URI se possibile
-if (!empty($logoPath)) {
-    $relative = ltrim($logoPath, './');
-    $absoluteLogo = realpath(__DIR__ . '/../../' . $relative);
-
-    if ($absoluteLogo && file_exists($absoluteLogo) && is_readable($absoluteLogo)) {
-        $mime = @mime_content_type($absoluteLogo) ?: 'image/png';
-        $contents = @file_get_contents($absoluteLogo);
-        if ($contents !== false) {
-            $record['association_logo'] = 'data:' . $mime . ';base64,' . base64_encode($contents);
-        } else {
-            // fallback file:// se non riusciamo a leggere il contenuto
-            $record['association_logo'] = 'file://' . $absoluteLogo;
-        }
-    } else {
-        // non trovato: lascia vuoto
-        $record['association_logo'] = '';
-    }
-}
 
 if (isset($record['roles']) && is_array($record['roles'])) {
     $roleCards = [];
@@ -362,7 +440,7 @@ if (isset($record['roles']) && is_array($record['roles'])) {
 $card['association_name'] = $record['association']['name'] ?? ($this->config['association']['name'] ?? $record['association_name'] ?? '');
 $card['association_tax_code'] = $record['association']['tax_code'] ?? ($this->config['association']['tax_code'] ?? $record['association_tax_code'] ?? '');
 $card['association_email'] = $record['association_email'] ?? '';
-$card['association_logo'] = $record['association_logo'] ?? '';
+$card['association_logo_src'] = $record['association_logo_src'] ?? '';
 
         // Assicurati che il nome della mansione sia disponibile in una sola riga (trim)
         $card['role_label'] = isset($role['role_name']) ? trim(preg_replace('/\s+/', ' ', $role['role_name'])) : '';
