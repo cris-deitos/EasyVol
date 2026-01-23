@@ -274,7 +274,21 @@ class SimplePdfGenerator {
         
         // Flatten related data for direct template access
         $record = $this->flattenRelatedData($entityType, $record);
-        
+
+// Aggiungi nella funzione loadRelatedData() dopo la riga 278
+// Converti percorso foto in percorso assoluto per PDF
+if (isset($record['photo_path']) && !empty($record['photo_path'])) {
+    $basePath = realpath(__DIR__ . '/../../');
+    $relativePath = ltrim($record['photo_path'], './');
+    $absolutePath = $basePath . '/' . $relativePath;
+    
+    if (file_exists($absolutePath)) {
+        $record['photo_path'] = $absolutePath;
+    } else {
+        $record['photo_path'] = '';
+    }
+}
+
         return $record;
     }
     
@@ -825,7 +839,7 @@ class SimplePdfGenerator {
                 'roles' => [
                     'table' => 'member_roles',
                     'foreign_key' => 'member_id',
-                    'order_by' => 'assigned_date DESC'
+                    'order_by' => 'id ASC'
                 ],
                 'fees' => [
                     'table' => 'member_fees',
@@ -837,6 +851,16 @@ class SimplePdfGenerator {
                     'foreign_key' => 'member_id',
                     'order_by' => 'id ASC'
                 ],
+'health_surveillance' => [
+    'table' => 'member_health_surveillance',
+    'foreign_key' => 'member_id',
+    'order_by' => 'visit_date DESC'
+],
+'sanctions' => [
+    'table' => 'member_sanctions',
+    'foreign_key' => 'member_id',
+    'order_by' => 'sanction_date DESC'
+],
                 'notes' => [
                     'table' => 'member_notes',
                     'foreign_key' => 'member_id',
@@ -869,6 +893,16 @@ class SimplePdfGenerator {
                     'foreign_key' => 'junior_member_id',
                     'order_by' => 'id ASC'
                 ],
+'health_surveillance' => [
+    'table' => 'junior_member_health_surveillance',
+    'foreign_key' => 'junior_member_id',
+    'order_by' => 'visit_date DESC'
+],
+'sanctions' => [
+    'table' => 'junior_member_sanctions',
+    'foreign_key' => 'junior_member_id',
+    'order_by' => 'sanction_date DESC'
+],
                 'notes' => [
                     'table' => 'junior_member_notes',
                     'foreign_key' => 'junior_member_id',
