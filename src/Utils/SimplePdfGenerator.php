@@ -15,6 +15,16 @@ class SimplePdfGenerator {
     private $config;
     
     /**
+     * Active status constant for members (used for filtering)
+     */
+    private const MEMBER_ACTIVE_STATUS = 'attivo';
+    
+    /**
+     * Active status constant for junior members (used for filtering)
+     */
+    private const JUNIOR_MEMBER_ACTIVE_STATUS = 'attivo';
+    
+    /**
      * Constructor
      * 
      * @param object $db Database instance
@@ -54,6 +64,7 @@ class SimplePdfGenerator {
     public function prepareData($template, $options) {
         $entityType = $template['entity_type'];
         $templateType = $template['template_type'];
+        $dataScope = $template['data_scope'] ?? 'single';
         
         // Add association data
         $data = [
@@ -88,7 +99,7 @@ class SimplePdfGenerator {
             if (!empty($options['record_ids'])) {
                 $records = $this->loadRecordsByIds($entityType, $options['record_ids']);
             } else {
-                $records = $this->loadRecords($entityType, $filters);
+                $records = $this->loadRecords($entityType, $filters, $dataScope);
             }
             
             // Load related data for each record
@@ -151,12 +162,25 @@ class SimplePdfGenerator {
      * 
      * @param string $entityType Entity type
      * @param array $filters Filters to apply
+     * @param string $dataScope Data scope: 'all' for all records, 'filtered' for active only
      * @return array Records
      */
-    private function loadRecords($entityType, $filters = []) {
+    private function loadRecords($entityType, $filters = [], $dataScope = 'all') {
         $table = $this->getTableName($entityType);
         $sql = "SELECT * FROM {$table} WHERE 1=1";
         $params = [];
+        
+        // When data_scope is 'filtered', only include active members/junior_members
+        // 'all' scope exports everyone (for Libro Soci template)
+        if ($dataScope === 'filtered') {
+            if ($entityType === 'members') {
+                $sql .= " AND member_status = ?";
+                $params[] = self::MEMBER_ACTIVE_STATUS;
+            } elseif ($entityType === 'junior_members') {
+                $sql .= " AND status = ?";
+                $params[] = self::JUNIOR_MEMBER_ACTIVE_STATUS;
+            }
+        }
         
         // Apply filters based on entity type
         if (isset($filters['status'])) {
@@ -186,17 +210,17 @@ class SimplePdfGenerator {
             $params[] = $filters['date_to'];
         }
         
-// Add ordering - use registration_number for members (matricola), id for others
-if ($entityType === 'members') {
-    // Members: numeric registration number (1, 2, 3...)
-    $sql .= " ORDER BY CAST(registration_number AS UNSIGNED) ASC";
-} elseif ($entityType === 'junior_members') {
-    // Junior members: alphanumeric registration number (C-1, C-2, C-10...)
-    // Extract numeric part after "C-" for correct sorting
-    $sql .= " ORDER BY CASE WHEN registration_number LIKE 'C-%' THEN CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) ELSE 0 END ASC, registration_number ASC";
-} else {
-    $sql .= " ORDER BY id ASC";
-}
+        // Add ordering - use registration_number for members (matricola), id for others
+        if ($entityType === 'members') {
+            // Members: numeric registration number (1, 2, 3...)
+            $sql .= " ORDER BY CAST(registration_number AS UNSIGNED) ASC";
+        } elseif ($entityType === 'junior_members') {
+            // Junior members: alphanumeric registration number (C-1, C-2, C-10...)
+            // Extract numeric part after "C-" for correct sorting
+            $sql .= " ORDER BY CASE WHEN registration_number LIKE 'C-%' THEN CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) ELSE 0 END ASC, registration_number ASC";
+        } else {
+            $sql .= " ORDER BY id ASC";
+        }
         
         // Add limit if specified
         if (isset($filters['limit'])) {
@@ -246,6 +270,146 @@ if ($entityType === 'members') {
             }
             
             $record[$key] = $this->db->fetchAll($sql, $params);
+        }
+        
+        // Flatten related data for direct template access
+        $record = $this->flattenRelatedData($entityType, $record);
+        
+        return $record;
+    }
+    
+    /**
+     * Flatten related data for direct template variable access
+     * 
+     * Extracts commonly needed data from related tables and adds them as flat variables:
+     * - Contacts: email, cellulare (mobile), telefono_fisso
+     * - Addresses: residenza_*, domicilio_*
+     * - Health: allergie, intolleranze, vegano, vegetariano
+     * - Fees: quota_anno_corrente (current year fee status)
+     * 
+     * @param string $entityType Entity type
+     * @param array $record Record with related data
+     * @return array Record with flattened data added
+     */
+    private function flattenRelatedData($entityType, $record) {
+        // Flatten contacts (for members and junior_members)
+        if (isset($record['contacts']) && is_array($record['contacts'])) {
+            foreach ($record['contacts'] as $contact) {
+                $contactType = $contact['contact_type'] ?? '';
+                $value = $contact['value'] ?? '';
+                
+                // Map contact types to flat variables (only set if empty)
+                if ($this->shouldSetField($record, $contactType, $value)) {
+                    $record[$contactType] = $value;
+                }
+            }
+        }
+        
+        // Flatten addresses (for members and junior_members)
+        if (isset($record['addresses']) && is_array($record['addresses'])) {
+            foreach ($record['addresses'] as $address) {
+                $addressType = $address['address_type'] ?? '';
+                $prefix = $addressType; // 'residenza' or 'domicilio'
+                
+                if ($prefix === 'residenza' || $prefix === 'domicilio') {
+                    // Check if all address fields for this type are unset
+                    $addressFields = ['_street', '_number', '_cap', '_city', '_province'];
+                    $allFieldsEmpty = true;
+                    foreach ($addressFields as $field) {
+                        if (isset($record[$prefix . $field]) && !empty($record[$prefix . $field])) {
+                            $allFieldsEmpty = false;
+                            break;
+                        }
+                    }
+                    
+                    // Only set all fields if none are already set
+                    if ($allFieldsEmpty) {
+                        $record[$prefix . '_street'] = $address['street'] ?? '';
+                        $record[$prefix . '_number'] = $address['number'] ?? '';
+                        $record[$prefix . '_cap'] = $address['postal_code'] ?? '';
+                        $record[$prefix . '_city'] = $address['city'] ?? '';
+                        $record[$prefix . '_province'] = $address['province'] ?? '';
+                    }
+                }
+            }
+        }
+        
+        // Flatten health info (for members and junior_members)
+        // First check which table key is used - 'health' is defined in getRelatedTables
+        $healthData = $record['health'] ?? [];
+        if (is_array($healthData)) {
+            // Initialize defaults
+            $record['allergie'] = '';
+            $record['intolleranze'] = '';
+            $record['vegano'] = false;
+            $record['vegetariano'] = false;
+            $record['patologie'] = '';
+            
+            $allergieList = [];
+            $intolleranzeList = [];
+            $patologieList = [];
+            
+            foreach ($healthData as $health) {
+                $healthType = $health['health_type'] ?? '';
+                $description = $health['description'] ?? '';
+                
+                switch ($healthType) {
+                    case 'allergie':
+                        $allergieList[] = $description;
+                        break;
+                    case 'intolleranze':
+                        $intolleranzeList[] = $description;
+                        break;
+                    case 'vegano':
+                        $record['vegano'] = true;
+                        break;
+                    case 'vegetariano':
+                        $record['vegetariano'] = true;
+                        break;
+                    case 'patologie':
+                        $patologieList[] = $description;
+                        break;
+                }
+            }
+            
+            $record['allergie'] = implode(', ', $allergieList);
+            $record['intolleranze'] = implode(', ', $intolleranzeList);
+            $record['patologie'] = implode(', ', $patologieList);
+        }
+        
+        // Flatten fees - check if current year fee is paid
+        $currentYear = (int)date('Y');
+        if (isset($record['fees']) && is_array($record['fees'])) {
+            $record['quota_anno_corrente'] = false;
+            $record['quota_anno_corrente_importo'] = '';
+            $record['quota_anno_corrente_data'] = '';
+            
+            foreach ($record['fees'] as $fee) {
+                $feeYear = isset($fee['year']) ? (int)$fee['year'] : 0;
+                if ($feeYear === $currentYear) {
+                    $record['quota_anno_corrente'] = !empty($fee['payment_date']);
+                    $record['quota_anno_corrente_importo'] = $fee['amount'] ?? '';
+                    $record['quota_anno_corrente_data'] = $fee['payment_date'] ?? '';
+                    break;
+                }
+            }
+        }
+        
+        // Flatten guardians for junior_members
+        if (isset($record['guardians']) && is_array($record['guardians'])) {
+            $guardianIndex = 1;
+            foreach ($record['guardians'] as $guardian) {
+                if ($guardianIndex <= 2) { // Only flatten first 2 guardians
+                    $prefix = 'tutore' . $guardianIndex;
+                    $record[$prefix . '_nome'] = $guardian['first_name'] ?? '';
+                    $record[$prefix . '_cognome'] = $guardian['last_name'] ?? '';
+                    $record[$prefix . '_telefono'] = $guardian['phone'] ?? '';
+                    $record[$prefix . '_cellulare'] = $guardian['mobile'] ?? '';
+                    $record[$prefix . '_email'] = $guardian['email'] ?? '';
+                    $record[$prefix . '_relazione'] = $guardian['relationship'] ?? '';
+                    $guardianIndex++;
+                }
+            }
         }
         
         return $record;
@@ -599,6 +763,11 @@ if ($entityType === 'members') {
                     'foreign_key' => 'member_id',
                     'order_by' => 'year DESC'
                 ],
+                'health' => [
+                    'table' => 'member_health',
+                    'foreign_key' => 'member_id',
+                    'order_by' => 'id ASC'
+                ],
                 'notes' => [
                     'table' => 'member_notes',
                     'foreign_key' => 'member_id',
@@ -625,6 +794,11 @@ if ($entityType === 'members') {
                     'table' => 'junior_member_fees',
                     'foreign_key' => 'junior_member_id',
                     'order_by' => 'year DESC'
+                ],
+                'health' => [
+                    'table' => 'junior_member_health',
+                    'foreign_key' => 'junior_member_id',
+                    'order_by' => 'id ASC'
                 ],
                 'notes' => [
                     'table' => 'junior_member_notes',
@@ -685,6 +859,26 @@ if ($entityType === 'members') {
         ];
         
         return $relations[$entityType] ?? [];
+    }
+    
+    /**
+     * Check if a field should be set in a record
+     * 
+     * Returns true if the field is not already set or is empty, and the new value is not empty.
+     * 
+     * @param array $record Record data
+     * @param string $fieldName Field name to check
+     * @param mixed $newValue New value to set
+     * @return bool True if field should be set
+     */
+    private function shouldSetField($record, $fieldName, $newValue) {
+        // Don't set if new value is empty
+        if (empty($newValue)) {
+            return false;
+        }
+        
+        // Set if field is not set or is empty
+        return !isset($record[$fieldName]) || empty($record[$fieldName]);
     }
 }
 
