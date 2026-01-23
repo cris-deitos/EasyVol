@@ -322,13 +322,13 @@ $pageTitle = 'Report e Statistiche';
                             <div class="col-md-6">
                                 <div class="card mb-3">
                                     <div class="card-header">
-                                        <h5 class="card-title mb-0">Soci per Qualifica</h5>
+                                        <h5 class="card-title mb-0">Soci per Mansione</h5>
                                     </div>
                                     <div class="card-body">
                                         <table class="table table-sm">
                                             <thead>
                                                 <tr>
-                                                    <th>Qualifica</th>
+                                                    <th>Mansione</th>
                                                     <th class="text-end">Numero</th>
                                                 </tr>
                                             </thead>
