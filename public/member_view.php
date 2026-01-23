@@ -266,7 +266,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="qualifications-tab" data-bs-toggle="tab" data-bs-target="#qualifications" type="button" role="tab" aria-controls="qualifications" aria-selected="false">
-                                    <i class="bi bi-award"></i> Qualifiche
+                                    <i class="bi bi-award"></i> Mansioni
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -526,7 +526,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="card-title mb-0">Mansioni e Qualifiche</h5>
+                                            <h5 class="card-title mb-0">Mansioni</h5>
                                             <?php if ($app->checkPermission('members', 'edit')): ?>
                                                 <a href="member_role_edit.php?member_id=<?php echo $member['id']; ?>" class="btn btn-sm btn-primary">
                                                     <i class="bi bi-plus"></i> Aggiungi Mansione
@@ -538,7 +538,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                 <table class="table table-hover">
                                                     <thead>
                                                         <tr>
-                                                            <th>Qualifica</th>
+                                                            <th>Mansione</th>
                                                             <th>Data Assegnazione</th>
                                                             <th>Data Fine</th>
                                                             <th>Azioni</th>
@@ -567,7 +567,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
                                                 </table>
                                             </div>
                                         <?php else: ?>
-                                            <p class="text-muted">Nessuna qualifica inserita</p>
+                                            <p class="text-muted">Nessuna mansione inserita</p>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -1120,7 +1120,7 @@ $pageTitle = 'Dettaglio Socio: ' . $member['first_name'] . ' ' . $member['last_n
         }
         
         function deleteRole(id) {
-            if (confirm('Sei sicuro di voler eliminare questa qualifica?')) {
+            if (confirm('Sei sicuro di voler eliminare questa mansione?')) {
                 window.location.href = 'member_data.php?action=delete_role&id=' + id + '&member_id=' + memberId;
             }
         }
