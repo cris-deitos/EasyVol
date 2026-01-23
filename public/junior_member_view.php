@@ -913,7 +913,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
         
         function generateFromModal() {
             const templateId = document.getElementById('templateSelect').value;
-            if (templateId) {
+            if (templateId && templateId !== '') {
                 printById(templateId);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
                 modal.hide();
