@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\MeetingController;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -42,6 +43,13 @@ if (!$meeting) {
     header('Location: meetings.php?error=not_found');
     exit;
 }
+
+// Load print templates for meetings
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'meetings',
+    'is_active' => 1
+]);
 
 // Generate page title from meeting type and date
 $meetingTypeName = MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
@@ -85,13 +93,19 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                                     <i class="bi bi-printer"></i> Stampa
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('minutes', <?php echo $meeting['id']; ?>); return false;">
-                                        <i class="bi bi-file-earmark-text"></i> Verbale
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('attendance', <?php echo $meeting['id']; ?>); return false;">
-                                        <i class="bi bi-clipboard-check"></i> Foglio Presenze
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
+                                    <?php if (!empty($printTemplates)): ?>
+                                        <?php 
+                                        $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                        foreach ($displayedTemplates as $template): 
+                                        ?>
+                                            <li><a class="dropdown-item" href="#" onclick="printById(<?php echo $template['id']; ?>); return false;">
+                                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                            </a></li>
+                                        <?php endforeach; ?>
+                                        <?php if (count($printTemplates) > 3): ?>
+                                            <li><hr class="dropdown-divider"></li>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                     <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
                                         <i class="bi bi-gear"></i> Scegli Template...
                                     </a></li>
@@ -466,31 +480,10 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function printMinutes() {
-            // Deprecated - use printTemplate instead
-            printTemplate('minutes', <?php echo $meeting['id']; ?>);
-        }
-        
         // Print functionality
-        function printTemplate(type, recordId) {
-            let templateId = null;
-            
-            // Map template types to default template IDs for meetings
-            switch(type) {
-                case 'minutes':
-                    templateId = 9; // Verbale di Riunione
-                    break;
-                case 'attendance':
-                    templateId = 10; // Foglio Presenze
-                    break;
-            }
-            
-            if (templateId) {
-                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=meetings';
-                window.open(url, '_blank');
-            } else {
-                showPrintModal();
-            }
+        function printById(templateId) {
+            const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $meeting['id']; ?>&entity=meetings';
+            window.open(url, '_blank');
         }
         
         function showPrintModal() {
@@ -501,8 +494,7 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
         function generateFromModal() {
             const templateId = document.getElementById('templateSelect').value;
             if (templateId) {
-                const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $meeting['id']; ?>&entity=meetings';
-                window.open(url, '_blank');
+                printById(templateId);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
                 modal.hide();
             }
@@ -687,14 +679,24 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                     <div class="mb-3">
                         <label class="form-label">Template</label>
                         <select id="templateSelect" class="form-select">
-                            <option value="9">Verbale di Riunione</option>
-                            <option value="10">Foglio Presenze</option>
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            (XML)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()" <?php echo empty($printTemplates) ? 'disabled' : ''; ?>>
                         <i class="bi bi-printer"></i> Genera
                     </button>
                 </div>

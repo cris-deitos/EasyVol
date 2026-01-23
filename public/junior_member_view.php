@@ -12,6 +12,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Utils\PathHelper;
 use EasyVol\Controllers\JuniorMemberController;
+use EasyVol\Controllers\PrintTemplateController;
 
 $app = App::getInstance();
 
@@ -43,6 +44,13 @@ if (!$member) {
     header('Location: junior_members.php?error=not_found');
     exit;
 }
+
+// Load print templates for junior_members
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'junior_members',
+    'is_active' => 1
+]);
 
 // Get filter parameters for navigation
 $filters = [
@@ -167,13 +175,19 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                     <i class="bi bi-printer"></i> Stampa
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('card', <?php echo $member['id']; ?>); return false;">
-                                        <i class="bi bi-credit-card"></i> Tessera Socio
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="printTemplate('full', <?php echo $member['id']; ?>); return false;">
-                                        <i class="bi bi-file-earmark-spreadsheet"></i> Scheda Completa
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
+                                    <?php if (!empty($printTemplates)): ?>
+                                        <?php 
+                                        $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                        foreach ($displayedTemplates as $template): 
+                                        ?>
+                                            <li><a class="dropdown-item" href="#" onclick="printById(<?php echo $template['id']; ?>); return false;">
+                                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                            </a></li>
+                                        <?php endforeach; ?>
+                                        <?php if (count($printTemplates) > 3): ?>
+                                            <li><hr class="dropdown-divider"></li>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                     <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
                                         <i class="bi bi-gear"></i> Scegli Template...
                                     </a></li>
@@ -887,25 +901,9 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
         }
         
         // Print functionality
-        function printTemplate(type, recordId) {
-            let templateId = null;
-            
-            // Map template types to default template IDs for junior members
-            switch(type) {
-                case 'card':
-                    templateId = 2; // Tessera Socio (can work for junior too)
-                    break;
-                case 'full':
-                    templateId = 3; // Scheda Completa
-                    break;
-            }
-            
-            if (templateId) {
-                const url = 'print_preview.php?template_id=' + templateId + '&record_id=' + recordId + '&entity=junior_members';
-                window.open(url, '_blank');
-            } else {
-                showPrintModal();
-            }
+        function printById(templateId) {
+            const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $member['id']; ?>&entity=junior_members';
+            window.open(url, '_blank');
         }
         
         function showPrintModal() {
@@ -916,8 +914,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
         function generateFromModal() {
             const templateId = document.getElementById('templateSelect').value;
             if (templateId) {
-                const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $member['id']; ?>&entity=junior_members';
-                window.open(url, '_blank');
+                printById(templateId);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
                 modal.hide();
             }
@@ -950,14 +947,24 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                     <div class="mb-3">
                         <label class="form-label">Template</label>
                         <select id="templateSelect" class="form-select">
-                            <option value="2">Tessera Socio</option>
-                            <option value="3">Scheda Completa</option>
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                            (XML)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="button" class="btn btn-primary" onclick="generateFromModal()">
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()" <?php echo empty($printTemplates) ? 'disabled' : ''; ?>>
                         <i class="bi bi-printer"></i> Genera
                     </button>
                 </div>
