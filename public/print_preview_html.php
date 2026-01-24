@@ -153,6 +153,7 @@ try {
 } catch (\Exception $e) {
     http_response_code(500);
     error_log("HTML Preview Error: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
     ?>
 <!DOCTYPE html>
 <html lang="it">

@@ -286,7 +286,14 @@ class SimplePdfGenerator {
                 $sql .= " ORDER BY " . $config['order_by'];
             }
             
-            $record[$key] = $this->db->fetchAll($sql, $params);
+            // Try to fetch related data, but don't fail if table is missing
+            try {
+                $record[$key] = $this->db->fetchAll($sql, $params);
+            } catch (\Exception $e) {
+                // Log the error but continue processing
+                error_log("SimplePdfGenerator: Error loading related data from {$table}: " . $e->getMessage());
+                $record[$key] = [];
+            }
         }
         
         // Flatten related data for direct template access
