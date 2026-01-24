@@ -19,13 +19,13 @@ SET time_zone = "+00:00";
 
 -- 1. Tessera Socio (single)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Tessera Socio',
     'Tessera associativa per singolo socio',
-    'single', 'single', 'members',
+    'single', 'single', 'members', NULL,
     '<div style="width: 8.5cm; height: 5.4cm; border: 2px solid #333; padding: 0.3cm; display: flex; flex-direction: column;">
         <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 0.2cm; margin-bottom: 0.2cm;">
             <h3 style="margin: 0; font-size: 14pt;">TESSERA ASSOCIATIVA</h3>
@@ -65,13 +65,13 @@ INSERT INTO `print_templates` (
 
 -- 2. Scheda Socio (single - with related data loops)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Scheda Socio',
     'Scheda completa del socio con tutti i dati',
-    'single', 'single', 'members',
+    'single', 'single', 'members', NULL,
     '<div style="margin: 1cm;">
         <h1 style="border-bottom: 3px solid #333; padding-bottom: 0.3cm;">SCHEDA SOCIO</h1>
         
@@ -161,13 +161,13 @@ INSERT INTO `print_templates` (
 
 -- 3. Libro Soci (list)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Libro Soci',
     'Elenco completo di tutti i soci',
-    'list', 'all', 'members',
+    'list', 'all', 'members', NULL,
     '<div style="margin: 1cm;">
         <h1 style="text-align: center; border-bottom: 3px solid #333; padding-bottom: 0.5cm;">LIBRO SOCI</h1>
         
@@ -213,13 +213,13 @@ INSERT INTO `print_templates` (
 
 -- 4. Elenco Mezzi (list)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Mezzi',
     'Lista completa dei mezzi',
-    'list', 'all', 'vehicles',
+    'list', 'all', 'vehicles', NULL,
     '<div style="margin: 1cm;">
         <h1 style="text-align: center; border-bottom: 3px solid #333; padding-bottom: 0.5cm;">ELENCO MEZZI</h1>
         
@@ -257,13 +257,13 @@ INSERT INTO `print_templates` (
 
 -- 5. Scheda Mezzo (single)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Scheda Mezzo',
     'Scheda completa del mezzo con storico manutenzioni',
-    'single', 'single', 'vehicles',
+    'single', 'single', 'vehicles', NULL,
     '<div style="margin: 1cm;">
         <h1 style="border-bottom: 3px solid #333; padding-bottom: 0.3cm;">SCHEDA TECNICA MEZZO</h1>
         
@@ -325,13 +325,13 @@ INSERT INTO `print_templates` (
 
 -- 6. Elenco Eventi (list)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Eventi',
     'Lista eventi con tipologia, date e orari',
-    'list', 'all', 'events',
+    'list', 'all', 'events', NULL,
     '<div style="margin: 1cm;">
         <h1 style="text-align: center; border-bottom: 3px solid #333; padding-bottom: 0.5cm;">ELENCO EVENTI</h1>
         
@@ -373,13 +373,13 @@ INSERT INTO `print_templates` (
 
 -- 7. Libro Soci Cadetti (list)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Libro Soci Cadetti',
     'Elenco completo di tutti i soci minorenni',
-    'list', 'all', 'junior_members',
+    'list', 'all', 'junior_members', NULL,
     '<div style="margin: 1cm;">
         <h1 style="text-align: center; border-bottom: 3px solid #333; padding-bottom: 0.5cm;">LIBRO SOCI MINORENNI</h1>
         
@@ -423,13 +423,13 @@ INSERT INTO `print_templates` (
 
 -- 8. Verbale Riunione (single)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Verbale di Riunione',
     'Verbale ufficiale della riunione con partecipanti',
-    'single', 'single', 'meetings',
+    'single', 'single', 'meetings', NULL,
     '<div style="margin: 1cm;">
         <h1 style="text-align: center; border-bottom: 3px solid #333; padding-bottom: 0.5cm;">VERBALE DI RIUNIONE</h1>
         
@@ -489,13 +489,13 @@ INSERT INTO `print_templates` (
 
 -- 9. Fogli Firma Assemblee Soci (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Fogli Firma Assemblee',
     'Foglio firme per assemblee soci maggiorenni (solo soci attivi)',
-    'list', 'filtered', 'members',
+    'list', 'filtered', 'members', NULL,
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -648,13 +648,13 @@ table.firma-table tbody tr:nth-child(even) {
 
 -- 10. Elenco Soci con Email e Cellulare (list - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Soci - Email e Cellulare',
     'Elenco soci con contatti email e cellulare (solo soci attivi)',
-    'list', 'filtered', 'members',
+    'list', 'filtered', 'members', JSON_ARRAY('contacts'),
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -777,13 +777,13 @@ table.contact-table tbody tr:nth-child(even) {
 
 -- 11. Elenco Soci con Codice Fiscale (list - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Soci - Codice Fiscale',
     'Elenco soci con codice fiscale (solo soci attivi)',
-    'list', 'filtered', 'members',
+    'list', 'filtered', 'members', NULL,
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -909,13 +909,13 @@ table.cf-table tbody tr:nth-child(even) {
 
 -- 12. Elenco Soci con Residenza e Domicilio (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Soci - Residenza e Domicilio',
     'Elenco soci con indirizzi di residenza e domicilio (solo soci attivi)',
-    'list', 'filtered', 'members',
+    'list', 'filtered', 'members', JSON_ARRAY('addresses'),
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -1038,13 +1038,13 @@ table.address-table tbody tr:nth-child(even) {
 
 -- 13. Elenco Soci con Intolleranze e Allergie (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Soci - Intolleranze e Allergie',
     'Elenco soci con intolleranze, allergie e scelte alimentari (solo soci attivi)',
-    'list', 'filtered', 'members',
+    'list', 'filtered', 'members', JSON_ARRAY('health'),
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -1171,13 +1171,13 @@ table.health-table tbody tr:nth-child(even) {
 
 -- 14. Scheda Socio Completa con Foto (single - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Scheda Socio Completa',
     'Scheda completa del socio con foto e tutte le informazioni (stampa singola)',
-    'single', 'single', 'members',
+    'single', 'single', 'members', NULL,
     '<div class="scheda-container">
 <div class="header">
 <h2>{{association_name}}</h2>
@@ -1444,13 +1444,13 @@ table.data-table tbody tr:nth-child(even) {
 
 -- 15. Fogli Firma Assemblee Cadetti (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Fogli Firma Assemblee Cadetti',
     'Foglio firme per assemblee soci minorenni (solo cadetti attivi)',
-    'list', 'filtered', 'junior_members',
+    'list', 'filtered', 'junior_members', NULL,
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -1592,13 +1592,13 @@ table.firma-table tbody tr:nth-child(even) {
 
 -- 16. Elenco Cadetti con Email e Cellulare (list - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Cadetti - Email e Cellulare',
     'Elenco cadetti con contatti email e cellulare (solo cadetti attivi)',
-    'list', 'filtered', 'junior_members',
+    'list', 'filtered', 'junior_members', JSON_ARRAY('contacts'),
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -1686,13 +1686,13 @@ table.contact-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 17. Elenco Cadetti con Tutori (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Cadetti - Tutori',
     'Elenco cadetti con informazioni sui tutori/genitori (solo cadetti attivi)',
-    'list', 'filtered', 'junior_members',
+    'list', 'filtered', 'junior_members', JSON_ARRAY('guardians'),
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -1784,13 +1784,13 @@ table.tutor-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 18. Elenco Cadetti con Residenza e Domicilio (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Cadetti - Residenza e Domicilio',
     'Elenco cadetti con indirizzi di residenza e domicilio (solo cadetti attivi)',
-    'list', 'filtered', 'junior_members',
+    'list', 'filtered', 'junior_members', JSON_ARRAY('addresses'),
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -1878,13 +1878,13 @@ table.address-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 19. Elenco Cadetti con Intolleranze e Allergie (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Cadetti - Intolleranze e Allergie',
     'Elenco cadetti con intolleranze, allergie e scelte alimentari (solo cadetti attivi)',
-    'list', 'filtered', 'junior_members',
+    'list', 'filtered', 'junior_members', JSON_ARRAY('health'),
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -1976,13 +1976,13 @@ table.health-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 20. Scheda Cadetto Completa con Foto (single - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Scheda Cadetto Completa',
     'Scheda completa del cadetto con foto e tutte le informazioni (stampa singola)',
-    'single', 'single', 'junior_members',
+    'single', 'single', 'junior_members', NULL,
     '<div class="scheda-container">
 <div class="header">
 <h2>{{association_name}}</h2>
@@ -2162,13 +2162,13 @@ table.data-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 21. Elenco Mezzi con Scadenze (list - landscape)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Elenco Mezzi - Scadenze',
     'Elenco mezzi con scadenze assicurazione e revisione',
-    'list', 'filtered', 'vehicles',
+    'list', 'filtered', 'vehicles', NULL,
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>
@@ -2275,13 +2275,13 @@ table.vehicle-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 22. Scheda Mezzo Completa (single - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Scheda Mezzo Completa',
     'Scheda completa del mezzo con tutti i dati (stampa singola)',
-    'single', 'single', 'vehicles',
+    'single', 'single', 'vehicles', NULL,
     '<div class="scheda-container">
 <div class="header">
 <h2>{{association_name}}</h2>
@@ -2411,13 +2411,13 @@ table.data-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 23. Scheda Mezzo con Manutenzioni (single - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Scheda Mezzo con Manutenzioni',
     'Scheda completa del mezzo con elenco manutenzioni (stampa singola)',
-    'single', 'single', 'vehicles',
+    'single', 'single', 'vehicles', NULL,
     '<div class="scheda-container">
 <div class="header">
 <h2>{{association_name}}</h2>
@@ -2580,13 +2580,13 @@ table.maint-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 
 -- 24. Verbale di Riunione/Assemblea Completo (single - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Verbale Riunione/Assemblea',
     'Verbale ufficiale completo di riunione o assemblea (stampa singola)',
-    'single', 'single', 'meetings',
+    'single', 'single', 'meetings', NULL,
     '<div class="verbale-container">
 <div class="header">
 <h2>{{association_name}}</h2>
@@ -2810,13 +2810,13 @@ ol.odg-list li { margin-bottom: 8px; }
 
 -- 25. Avviso di Convocazione Riunione/Assemblea (single - portrait)
 INSERT INTO `print_templates` (
-    `name`, `description`, `template_type`, `data_scope`, `entity_type`,
+    `name`, `description`, `template_type`, `data_scope`, `entity_type`, `relations`,
     `html_content`, `css_content`, `page_format`, `page_orientation`,
     `is_active`, `is_default`
 ) VALUES (
     'Avviso di Convocazione',
     'Avviso di convocazione per riunione o assemblea',
-    'single', 'single', 'meetings',
+    'single', 'single', 'meetings', NULL,
     '<div class="convocazione-container">
 <div class="header">
 <h2>{{association_name}}</h2>
