@@ -475,7 +475,7 @@ $pageTitle = 'Gestione Eventi e Interventi';
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="button" class="btn btn-primary" onclick="generateListFromModal()">
+                    <button type="button" class="btn btn-primary" onclick="generateListFromModal()" <?php echo empty($printTemplates) ? 'disabled' : ''; ?>>
                         <i class="bi bi-printer"></i> Genera
                     </button>
                 </div>
