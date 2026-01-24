@@ -177,20 +177,28 @@ class SimplePdfGenerator {
                 $sql .= " AND member_status = ?";
                 $params[] = self::MEMBER_ACTIVE_STATUS;
             } elseif ($entityType === 'junior_members') {
-                $sql .= " AND status = ?";
+                $sql .= " AND member_status = ?";
                 $params[] = self::JUNIOR_MEMBER_ACTIVE_STATUS;
             }
         }
         
         // Apply filters based on entity type
         if (isset($filters['status'])) {
-            $sql .= " AND status = ?";
+            // For members and junior_members, use member_status column; for others use status
+            if ($entityType === 'members' || $entityType === 'junior_members') {
+                $sql .= " AND member_status = ?";
+            } else {
+                $sql .= " AND status = ?";
+            }
             $params[] = $filters['status'];
         }
         
-        if (isset($filters['member_status']) && $entityType === 'members') {
-            $sql .= " AND member_status = ?";
-            $params[] = $filters['member_status'];
+        if (isset($filters['member_status'])) {
+            // member_status filter works for both members and junior_members
+            if ($entityType === 'members' || $entityType === 'junior_members') {
+                $sql .= " AND member_status = ?";
+                $params[] = $filters['member_status'];
+            }
         }
         
         if (isset($filters['member_type']) && $entityType === 'members') {
@@ -230,7 +238,8 @@ class SimplePdfGenerator {
         // Add ordering - use registration_number for members (matricola), id for others
         if ($entityType === 'members') {
             // Members: numeric registration number (1, 2, 3...)
-            $sql .= " ORDER BY CAST(registration_number AS UNSIGNED) ASC";
+            // Use COALESCE to handle NULL and fallback for non-numeric values
+            $sql .= " ORDER BY CAST(COALESCE(registration_number, '0') AS UNSIGNED) ASC, registration_number ASC";
         } elseif ($entityType === 'junior_members') {
             // Junior members: alphanumeric registration number (C-1, C-2, C-10...)
             // Extract numeric part after "C-" for correct sorting
@@ -618,10 +627,36 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                     $record[$prefix . '_telefono'] = $guardian['phone'] ?? '';
                     $record[$prefix . '_cellulare'] = $guardian['mobile'] ?? '';
                     $record[$prefix . '_email'] = $guardian['email'] ?? '';
-                    $record[$prefix . '_relazione'] = $guardian['relationship'] ?? '';
+                    // Use 'relationship' if available (custom field), fallback to 'guardian_type' (DB enum: padre/madre/tutore)
+                    $record[$prefix . '_relazione'] = $guardian['relationship'] ?? $guardian['guardian_type'] ?? '';
                     $guardianIndex++;
                 }
             }
+            
+            // Add guardian_name and guardian_phone as convenient aliases for templates
+            // Uses first guardian's data (typically padre or madre)
+            if (!empty($record['guardians'])) {
+                $firstGuardian = $record['guardians'][0];
+                // Use array_filter and implode to avoid extra spaces when only one name is present
+                $nameParts = array_filter([
+                    $firstGuardian['first_name'] ?? '',
+                    $firstGuardian['last_name'] ?? ''
+                ], function($v) { return $v !== ''; });
+                $record['guardian_name'] = implode(' ', $nameParts);
+                $record['guardian_phone'] = $firstGuardian['phone'] ?? '';
+                $record['guardian_email'] = $firstGuardian['email'] ?? '';
+            }
+        }
+        
+        // Initialize guardian fields if not already set (for records without guardians)
+        if (!isset($record['guardian_name'])) {
+            $record['guardian_name'] = '';
+        }
+        if (!isset($record['guardian_phone'])) {
+            $record['guardian_phone'] = '';
+        }
+        if (!isset($record['guardian_email'])) {
+            $record['guardian_email'] = '';
         }
         
         return $record;
