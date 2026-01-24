@@ -627,6 +627,7 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                     $record[$prefix . '_telefono'] = $guardian['phone'] ?? '';
                     $record[$prefix . '_cellulare'] = $guardian['mobile'] ?? '';
                     $record[$prefix . '_email'] = $guardian['email'] ?? '';
+                    // Use 'relationship' if available (custom field), fallback to 'guardian_type' (DB enum: padre/madre/tutore)
                     $record[$prefix . '_relazione'] = $guardian['relationship'] ?? $guardian['guardian_type'] ?? '';
                     $guardianIndex++;
                 }
@@ -636,7 +637,12 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
             // Uses first guardian's data (typically padre or madre)
             if (!empty($record['guardians'])) {
                 $firstGuardian = $record['guardians'][0];
-                $record['guardian_name'] = trim(($firstGuardian['first_name'] ?? '') . ' ' . ($firstGuardian['last_name'] ?? ''));
+                // Use array_filter and implode to avoid extra spaces when only one name is present
+                $nameParts = array_filter([
+                    $firstGuardian['first_name'] ?? '',
+                    $firstGuardian['last_name'] ?? ''
+                ], function($v) { return $v !== ''; });
+                $record['guardian_name'] = implode(' ', $nameParts);
                 $record['guardian_phone'] = $firstGuardian['phone'] ?? '';
                 $record['guardian_email'] = $firstGuardian['email'] ?? '';
             }
