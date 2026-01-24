@@ -25,6 +25,25 @@ class SimplePdfGenerator {
     private const JUNIOR_MEMBER_ACTIVE_STATUS = 'attivo';
     
     /**
+     * Valid guardian types for junior members
+     */
+    private const VALID_GUARDIAN_TYPES = ['padre', 'madre', 'tutore'];
+    
+    /**
+     * Guardian fields to flatten for each guardian type
+     */
+    private const GUARDIAN_FIELDS = [
+        'first_name' => '',
+        'last_name' => '',
+        'phone' => '',
+        'mobile' => '',
+        'email' => '',
+        'tax_code' => '',
+        'birth_date' => '',
+        'birth_place' => ''
+    ];
+    
+    /**
      * Constructor
      * 
      * @param object $db Database instance
@@ -108,7 +127,9 @@ class SimplePdfGenerator {
                     $record = $this->loadRelatedData($entityType, $record);
                 } catch (\Exception $e) {
                     // Log the error but don't fail the entire list generation
-                    error_log("SimplePdfGenerator: Error loading related data for record {$index}: " . $e->getMessage());
+                    // Use intval to sanitize index and prevent log injection
+                    $safeIndex = intval($index);
+                    error_log("SimplePdfGenerator: Error loading related data for record {$safeIndex}: " . $e->getMessage());
                     // Continue with the record without related data
                 }
             }
@@ -641,17 +662,14 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                 // Also create variables based on guardian_type (padre/madre/tutore)
                 // This allows templates to use {{padre_first_name}}, {{madre_phone}}, etc.
                 $guardianType = $guardian['guardian_type'] ?? '';
-                if (!empty($guardianType) && in_array($guardianType, ['padre', 'madre', 'tutore'])) {
+                // Validate guardian_type against allowed values using class constant
+                if (!empty($guardianType) && in_array($guardianType, self::VALID_GUARDIAN_TYPES, true)) {
                     // Only set if not already set (first guardian of this type wins)
                     if (!isset($record[$guardianType . '_first_name'])) {
-                        $record[$guardianType . '_first_name'] = $guardian['first_name'] ?? '';
-                        $record[$guardianType . '_last_name'] = $guardian['last_name'] ?? '';
-                        $record[$guardianType . '_phone'] = $guardian['phone'] ?? '';
-                        $record[$guardianType . '_mobile'] = $guardian['mobile'] ?? '';
-                        $record[$guardianType . '_email'] = $guardian['email'] ?? '';
-                        $record[$guardianType . '_tax_code'] = $guardian['tax_code'] ?? '';
-                        $record[$guardianType . '_birth_date'] = $guardian['birth_date'] ?? '';
-                        $record[$guardianType . '_birth_place'] = $guardian['birth_place'] ?? '';
+                        // Use GUARDIAN_FIELDS constant to ensure consistent field list
+                        foreach (self::GUARDIAN_FIELDS as $field => $default) {
+                            $record[$guardianType . '_' . $field] = $guardian[$field] ?? $default;
+                        }
                     }
                 }
             }
@@ -683,17 +701,12 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
             $record['guardian_email'] = '';
         }
         
-        // Padre/madre/tutore specific fields - initialize if not set
-        foreach (['padre', 'madre', 'tutore'] as $guardianType) {
+        // Padre/madre/tutore specific fields - initialize if not set using class constants
+        foreach (self::VALID_GUARDIAN_TYPES as $guardianType) {
             if (!isset($record[$guardianType . '_first_name'])) {
-                $record[$guardianType . '_first_name'] = '';
-                $record[$guardianType . '_last_name'] = '';
-                $record[$guardianType . '_phone'] = '';
-                $record[$guardianType . '_mobile'] = '';
-                $record[$guardianType . '_email'] = '';
-                $record[$guardianType . '_tax_code'] = '';
-                $record[$guardianType . '_birth_date'] = '';
-                $record[$guardianType . '_birth_place'] = '';
+                foreach (self::GUARDIAN_FIELDS as $field => $default) {
+                    $record[$guardianType . '_' . $field] = $default;
+                }
             }
         }
         
