@@ -10,6 +10,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\EventController;
 use EasyVol\Controllers\PrintTemplateController;
+use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
 
