@@ -286,7 +286,22 @@ class SimplePdfGenerator {
                 $sql .= " ORDER BY " . $config['order_by'];
             }
             
-            $record[$key] = $this->db->fetchAll($sql, $params);
+            // Try to fetch related data, but don't fail if table/column is missing
+            try {
+                $record[$key] = $this->db->fetchAll($sql, $params);
+            } catch (\Exception $e) {
+                $errorMsg = $e->getMessage();
+                // Only gracefully handle table/column not found errors (likely missing migrations)
+                // Re-throw other errors (connection issues, memory, etc.)
+                if (stripos($errorMsg, "doesn't exist") !== false || 
+                    stripos($errorMsg, "Unknown column") !== false ||
+                    stripos($errorMsg, "no such table") !== false) {
+                    error_log("SimplePdfGenerator: Related table/column missing for {$table}: " . $errorMsg);
+                    $record[$key] = [];
+                } else {
+                    throw $e;
+                }
+            }
         }
         
         // Flatten related data for direct template access

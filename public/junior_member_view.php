@@ -953,7 +953,7 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                 <?php foreach ($printTemplates as $template): ?>
                                     <option value="<?php echo $template['id']; ?>">
                                         <?php echo htmlspecialchars($template['name']); ?>
-                                        <?php if ($template['template_format'] === 'xml'): ?>
+                                        <?php if (isset($template['template_format']) && $template['template_format'] === 'xml'): ?>
                                             (XML)
                                         <?php endif; ?>
                                     </option>
