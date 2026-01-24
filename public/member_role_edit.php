@@ -57,7 +57,7 @@ $qualifications = $db->fetchAll("SELECT name FROM member_qualification_types WHE
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Qualifica - EasyVol</title>
+    <title>Mansione - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
@@ -70,7 +70,7 @@ $qualifications = $db->fetchAll("SELECT name FROM member_qualification_types WHE
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
                         <a href="member_view.php?id=<?php echo $memberId; ?>" class="text-decoration-none text-muted"><i class="bi bi-arrow-left"></i></a>
-                        <?php echo $roleId > 0 ? 'Modifica' : 'Aggiungi'; ?> Mansione/Qualifica
+                        <?php echo $roleId > 0 ? 'Modifica' : 'Aggiungi'; ?> Mansione
                     </h1>
                 </div>
                 <?php if (!empty($errors)): ?>
@@ -81,7 +81,7 @@ $qualifications = $db->fetchAll("SELECT name FROM member_qualification_types WHE
                         <form method="POST">
                             <?php echo CsrfProtection::getHiddenField(); ?>
                             <div class="mb-3">
-                                <label for="role_name" class="form-label">Mansione/Qualifica *</label>
+                                <label for="role_name" class="form-label">Mansione *</label>
                                 <select class="form-select" id="role_name" name="role_name" required>
                                     <option value="">-- Seleziona Mansione --</option>
                                     <?php foreach ($qualifications as $qualification): ?>
@@ -93,7 +93,7 @@ $qualifications = $db->fetchAll("SELECT name FROM member_qualification_types WHE
                                 </select>
                                 <div class="form-text">
                                     <i class="bi bi-info-circle"></i> 
-                                    Puoi gestire le qualifiche disponibili in <a href="settings.php?tab=qualifications" target="_blank">Impostazioni → Qualifiche Soci</a>
+                                    Puoi gestire le mansioni disponibili in <a href="settings.php?tab=qualifications" target="_blank">Impostazioni → Mansioni Soci</a>
                                 </div>
                             </div>
                             <div class="row mb-3">
