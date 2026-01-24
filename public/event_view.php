@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\EventController;
+use EasyVol\Controllers\PrintTemplateController;
 use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
@@ -46,6 +47,13 @@ if (!$event) {
 
 // Carica i mezzi disponibili per il dropdown
 $availableVehicles = $controller->getAvailableVehicles($eventId);
+
+// Load print templates for events
+$printController = new PrintTemplateController($db, $config);
+$printTemplates = $printController->getAll([
+    'entity_type' => 'events',
+    'is_active' => 1
+]);
 
 // Helper function per creare l'etichetta del veicolo
 function getVehicleLabel($vehicle) {
@@ -119,9 +127,29 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                             <a href="event_export_excel.php?event_id=<?php echo $event['id']; ?>" class="btn btn-primary" target="_blank">
                                 <i class="bi bi-file-earmark-excel"></i> Esporta Excel
                             </a>
-                            <button type="button" class="btn btn-info" onclick="printReport()">
-                                <i class="bi bi-printer"></i> Stampa Report
-                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-printer"></i> Stampa
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <?php if (!empty($printTemplates)): ?>
+                                        <?php 
+                                        $displayedTemplates = array_slice($printTemplates, 0, 3); 
+                                        foreach ($displayedTemplates as $template): 
+                                        ?>
+                                            <li><a class="dropdown-item" href="#" onclick="printById(<?php echo $template['id']; ?>); return false;">
+                                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($template['name']); ?>
+                                            </a></li>
+                                        <?php endforeach; ?>
+                                        <?php if (count($printTemplates) > 3): ?>
+                                            <li><hr class="dropdown-divider"></li>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    <li><a class="dropdown-item" href="#" onclick="showPrintModal(); return false;">
+                                        <i class="bi bi-gear"></i> Scegli Template...
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1269,9 +1297,24 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             });
         }
         
-        function printReport() {
-            // Implementare generazione e stampa report
-            alert('Funzionalità in sviluppo');
+        // Print functionality
+        function printById(templateId) {
+            const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $event['id']; ?>&entity=events';
+            window.open(url, '_blank');
+        }
+        
+        function showPrintModal() {
+            const modal = new bootstrap.Modal(document.getElementById('printModal'));
+            modal.show();
+        }
+        
+        function generateFromModal() {
+            const templateId = document.getElementById('templateSelect').value;
+            if (templateId && templateId !== '') {
+                printById(templateId);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printModal'));
+                modal.hide();
+            }
         }
         
         // Edit intervention
@@ -2098,6 +2141,43 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button type="button" class="btn btn-success" onclick="confirmQuickClose()">
                         <i class="bi bi-check-circle"></i> Chiudi Evento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Template Selection Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleziona Template di Stampa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select id="templateSelect" class="form-select">
+                            <?php if (empty($printTemplates)): ?>
+                                <option value="">Nessun template disponibile</option>
+                            <?php else: ?>
+                                <?php foreach ($printTemplates as $template): ?>
+                                    <option value="<?php echo $template['id']; ?>">
+                                        <?php echo htmlspecialchars($template['name']); ?>
+                                        <?php if (isset($template['template_format']) && $template['template_format'] === 'xml'): ?>
+                                            (XML)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="generateFromModal()" <?php echo empty($printTemplates) ? 'disabled' : ''; ?>>
+                        <i class="bi bi-printer"></i> Genera
                     </button>
                 </div>
             </div>
