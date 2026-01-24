@@ -102,9 +102,15 @@ class SimplePdfGenerator {
                 $records = $this->loadRecords($entityType, $filters, $dataScope);
             }
             
-            // Load related data for each record
-            foreach ($records as &$record) {
-                $record = $this->loadRelatedData($entityType, $record);
+            // Load related data for each record with error handling
+            foreach ($records as $index => &$record) {
+                try {
+                    $record = $this->loadRelatedData($entityType, $record);
+                } catch (\Exception $e) {
+                    // Log the error but don't fail the entire list generation
+                    error_log("SimplePdfGenerator: Error loading related data for record {$index}: " . $e->getMessage());
+                    // Continue with the record without related data
+                }
             }
             
             $data['records'] = $records;
@@ -631,6 +637,23 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                     $record[$prefix . '_relazione'] = $guardian['relationship'] ?? $guardian['guardian_type'] ?? '';
                     $guardianIndex++;
                 }
+                
+                // Also create variables based on guardian_type (padre/madre/tutore)
+                // This allows templates to use {{padre_first_name}}, {{madre_phone}}, etc.
+                $guardianType = $guardian['guardian_type'] ?? '';
+                if (!empty($guardianType) && in_array($guardianType, ['padre', 'madre', 'tutore'])) {
+                    // Only set if not already set (first guardian of this type wins)
+                    if (!isset($record[$guardianType . '_first_name'])) {
+                        $record[$guardianType . '_first_name'] = $guardian['first_name'] ?? '';
+                        $record[$guardianType . '_last_name'] = $guardian['last_name'] ?? '';
+                        $record[$guardianType . '_phone'] = $guardian['phone'] ?? '';
+                        $record[$guardianType . '_mobile'] = $guardian['mobile'] ?? '';
+                        $record[$guardianType . '_email'] = $guardian['email'] ?? '';
+                        $record[$guardianType . '_tax_code'] = $guardian['tax_code'] ?? '';
+                        $record[$guardianType . '_birth_date'] = $guardian['birth_date'] ?? '';
+                        $record[$guardianType . '_birth_place'] = $guardian['birth_place'] ?? '';
+                    }
+                }
             }
             
             // Add guardian_name and guardian_phone as convenient aliases for templates
@@ -649,6 +672,7 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
         }
         
         // Initialize guardian fields if not already set (for records without guardians)
+        // Generic guardian fields
         if (!isset($record['guardian_name'])) {
             $record['guardian_name'] = '';
         }
@@ -657,6 +681,20 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
         }
         if (!isset($record['guardian_email'])) {
             $record['guardian_email'] = '';
+        }
+        
+        // Padre/madre/tutore specific fields - initialize if not set
+        foreach (['padre', 'madre', 'tutore'] as $guardianType) {
+            if (!isset($record[$guardianType . '_first_name'])) {
+                $record[$guardianType . '_first_name'] = '';
+                $record[$guardianType . '_last_name'] = '';
+                $record[$guardianType . '_phone'] = '';
+                $record[$guardianType . '_mobile'] = '';
+                $record[$guardianType . '_email'] = '';
+                $record[$guardianType . '_tax_code'] = '';
+                $record[$guardianType . '_birth_date'] = '';
+                $record[$guardianType . '_birth_place'] = '';
+            }
         }
         
         return $record;

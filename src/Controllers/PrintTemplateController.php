@@ -239,6 +239,14 @@ class PrintTemplateController {
                     'tutore2_cognome' => 'Cognome Tutore 2',
                     'tutore2_telefono' => 'Telefono Tutore 2',
                     'tutore2_email' => 'Email Tutore 2',
+                    'padre_first_name' => 'Nome Padre',
+                    'padre_last_name' => 'Cognome Padre',
+                    'padre_phone' => 'Telefono Padre',
+                    'padre_email' => 'Email Padre',
+                    'madre_first_name' => 'Nome Madre',
+                    'madre_last_name' => 'Cognome Madre',
+                    'madre_phone' => 'Telefono Madre',
+                    'madre_email' => 'Email Madre',
                     'notes' => 'Note'
                 ]);
                 break;
