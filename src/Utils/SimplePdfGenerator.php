@@ -25,6 +25,25 @@ class SimplePdfGenerator {
     private const JUNIOR_MEMBER_ACTIVE_STATUS = 'attivo';
     
     /**
+     * Valid guardian types for junior members
+     */
+    private const VALID_GUARDIAN_TYPES = ['padre', 'madre', 'tutore'];
+    
+    /**
+     * Guardian fields to flatten for each guardian type
+     */
+    private const GUARDIAN_FIELDS = [
+        'first_name' => '',
+        'last_name' => '',
+        'phone' => '',
+        'mobile' => '',
+        'email' => '',
+        'tax_code' => '',
+        'birth_date' => '',
+        'birth_place' => ''
+    ];
+    
+    /**
      * Constructor
      * 
      * @param object $db Database instance
@@ -102,9 +121,17 @@ class SimplePdfGenerator {
                 $records = $this->loadRecords($entityType, $filters, $dataScope);
             }
             
-            // Load related data for each record
-            foreach ($records as &$record) {
-                $record = $this->loadRelatedData($entityType, $record);
+            // Load related data for each record with error handling
+            foreach ($records as $index => &$record) {
+                try {
+                    $record = $this->loadRelatedData($entityType, $record);
+                } catch (\Exception $e) {
+                    // Log the error but don't fail the entire list generation
+                    // Use intval to sanitize index and prevent log injection
+                    $safeIndex = intval($index);
+                    error_log("SimplePdfGenerator: Error loading related data for record {$safeIndex}: " . $e->getMessage());
+                    // Continue with the record without related data
+                }
             }
             
             $data['records'] = $records;
@@ -631,6 +658,20 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                     $record[$prefix . '_relazione'] = $guardian['relationship'] ?? $guardian['guardian_type'] ?? '';
                     $guardianIndex++;
                 }
+                
+                // Also create variables based on guardian_type (padre/madre/tutore)
+                // This allows templates to use {{padre_first_name}}, {{madre_phone}}, etc.
+                $guardianType = $guardian['guardian_type'] ?? '';
+                // Validate guardian_type against allowed values using class constant
+                if (!empty($guardianType) && in_array($guardianType, self::VALID_GUARDIAN_TYPES, true)) {
+                    // Only set if not already set (first guardian of this type wins)
+                    if (!isset($record[$guardianType . '_first_name'])) {
+                        // Use GUARDIAN_FIELDS constant to ensure consistent field list
+                        foreach (self::GUARDIAN_FIELDS as $field => $default) {
+                            $record[$guardianType . '_' . $field] = $guardian[$field] ?? $default;
+                        }
+                    }
+                }
             }
             
             // Add guardian_name and guardian_phone as convenient aliases for templates
@@ -649,6 +690,7 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
         }
         
         // Initialize guardian fields if not already set (for records without guardians)
+        // Generic guardian fields
         if (!isset($record['guardian_name'])) {
             $record['guardian_name'] = '';
         }
@@ -657,6 +699,15 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
         }
         if (!isset($record['guardian_email'])) {
             $record['guardian_email'] = '';
+        }
+        
+        // Padre/madre/tutore specific fields - initialize if not set using class constants
+        foreach (self::VALID_GUARDIAN_TYPES as $guardianType) {
+            if (!isset($record[$guardianType . '_first_name'])) {
+                foreach (self::GUARDIAN_FIELDS as $field => $default) {
+                    $record[$guardianType . '_' . $field] = $default;
+                }
+            }
         }
         
         return $record;
