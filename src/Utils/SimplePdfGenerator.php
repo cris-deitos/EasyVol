@@ -198,6 +198,23 @@ class SimplePdfGenerator {
             $params[] = $filters['member_type'];
         }
         
+        // Vehicle filters
+        if (isset($filters['vehicle_type']) && $entityType === 'vehicles') {
+            $sql .= " AND vehicle_type = ?";
+            $params[] = $filters['vehicle_type'];
+        }
+        
+        if (isset($filters['search']) && $entityType === 'vehicles') {
+            $sql .= " AND (name LIKE ? OR license_plate LIKE ? OR brand LIKE ? OR model LIKE ?)";
+            // Escape LIKE wildcards to prevent unintended wildcard matching
+            $escapedSearch = addcslashes($filters['search'], '%_');
+            $searchTerm = '%' . $escapedSearch . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
         if (isset($filters['date_from'])) {
             $dateField = $this->getDateField($entityType);
             $sql .= " AND {$dateField} >= ?";
