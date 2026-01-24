@@ -128,9 +128,16 @@ class SimplePdfGenerator {
                 // Parse relations field (could be JSON string or array)
                 $relations = $template['relations'];
                 if (is_string($relations)) {
-                    $relations = json_decode($relations, true);
+                    $decoded = json_decode($relations, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        error_log("SimplePdfGenerator: Invalid JSON in relations field: " . json_last_error_msg());
+                        $relations = [];
+                    } else {
+                        $relations = $decoded;
+                    }
                 }
                 
+                // Load relations only if we have a valid non-empty array
                 if (!empty($relations) && is_array($relations)) {
                     foreach ($records as $index => &$record) {
                         try {
@@ -536,6 +543,18 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
     }
     
     /**
+     * Validate SQL identifier (table or column name)
+     * 
+     * @param string $identifier SQL identifier to validate
+     * @return bool True if valid, false otherwise
+     */
+    private function isValidSqlIdentifier($identifier) {
+        // Valid SQL identifiers contain only alphanumeric characters and underscores
+        // and do not start with a digit
+        return preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $identifier) === 1;
+    }
+    
+    /**
      * Load specific relations for a record (used by list templates)
      * Only loads the relations specified in the array parameter
      * 
@@ -567,12 +586,24 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
             $table = $config['table'];
             $foreignKey = $config['foreign_key'];
             
+            // Validate table and foreign key names to prevent SQL injection
+            // (defense in depth, even though values come from controlled whitelist)
+            if (!$this->isValidSqlIdentifier($table) || !$this->isValidSqlIdentifier($foreignKey)) {
+                error_log("SimplePdfGenerator: Invalid SQL identifier in relation config for '{$relationKey}'");
+                continue;
+            }
+            
             $sql = "SELECT * FROM {$table} WHERE {$foreignKey} = ?";
             $params = [$recordId];
             
             // Add additional filters if needed
             if (isset($config['filters'])) {
                 foreach ($config['filters'] as $field => $value) {
+                    // Validate filter field names
+                    if (!$this->isValidSqlIdentifier($field)) {
+                        error_log("SimplePdfGenerator: Invalid SQL identifier in filter field: '{$field}'");
+                        continue;
+                    }
                     $sql .= " AND {$field} = ?";
                     $params[] = $value;
                 }
