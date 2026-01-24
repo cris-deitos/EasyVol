@@ -1649,6 +1649,7 @@ CREATE TABLE IF NOT EXISTS `print_templates` (
   `template_type` enum('single', 'list') NOT NULL DEFAULT 'single' COMMENT 'Tipo template: single (singolo record) o list (lista record)',
   `data_scope` enum('single', 'filtered', 'all') NOT NULL DEFAULT 'single' COMMENT 'Scope dati: single (singolo), filtered (con filtri), all (tutti)',
   `entity_type` varchar(100) NOT NULL COMMENT 'Tipo entità: members, junior_members, vehicles, meetings, etc',
+  `relations` JSON NULL COMMENT 'Optional: Array of relation keys to load for list templates (e.g., ["contacts", "addresses"])',
   `html_content` LONGTEXT NULL COMMENT 'Contenuto HTML del template',
   `css_content` TEXT COMMENT 'CSS personalizzato',
   `page_format` enum('A4', 'Letter') DEFAULT 'A4' COMMENT 'Formato pagina: A4 o Letter',

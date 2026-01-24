@@ -121,16 +121,28 @@ class SimplePdfGenerator {
                 $records = $this->loadRecords($entityType, $filters, $dataScope);
             }
             
-            // Load related data for each record with error handling
-            foreach ($records as $index => &$record) {
-                try {
-                    $record = $this->loadRelatedData($entityType, $record);
-                } catch (\Exception $e) {
-                    // Log the error but don't fail the entire list generation
-                    // Use intval to sanitize index and prevent log injection
-                    $safeIndex = intval($index);
-                    error_log("SimplePdfGenerator: Error loading related data for record {$safeIndex}: " . $e->getMessage());
-                    // Continue with the record without related data
+            // Load related data ONLY if explicitly requested by template
+            // List templates (elenchi) typically only need main table fields
+            // This prevents memory exhaustion when generating PDFs for large lists
+            if (!empty($template['relations'])) {
+                // Parse relations field (could be JSON string or array)
+                $relations = $template['relations'];
+                if (is_string($relations)) {
+                    $relations = json_decode($relations, true);
+                }
+                
+                if (!empty($relations) && is_array($relations)) {
+                    foreach ($records as $index => &$record) {
+                        try {
+                            $record = $this->loadSpecificRelations($entityType, $record, $relations);
+                        } catch (\Exception $e) {
+                            // Log the error but don't fail the entire list generation
+                            // Use intval to sanitize index and prevent log injection
+                            $safeIndex = intval($index);
+                            error_log("SimplePdfGenerator: Error loading relations for record {$safeIndex}: " . $e->getMessage());
+                            // Continue with the record without related data
+                        }
+                    }
                 }
             }
             
@@ -520,6 +532,78 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
     $record['role_cards'] = [];
 }
 
+        return $record;
+    }
+    
+    /**
+     * Load specific relations for a record (used by list templates)
+     * Only loads the relations specified in the array parameter
+     * 
+     * @param string $entityType Entity type
+     * @param array $record Record data
+     * @param array $relations Array of relation keys to load
+     * @return array Record with specified related data
+     */
+    private function loadSpecificRelations($entityType, $record, $relations) {
+        // Validate record has ID field
+        if (!isset($record['id'])) {
+            error_log("SimplePdfGenerator: Record missing 'id' field for entity type: $entityType");
+            return $record;
+        }
+        
+        $recordId = $record['id'];
+        
+        // Get all available related tables for this entity type
+        $allRelatedTables = $this->getRelatedTables($entityType);
+        
+        // Load only the specified relations
+        foreach ($relations as $relationKey) {
+            if (!isset($allRelatedTables[$relationKey])) {
+                error_log("SimplePdfGenerator: Unknown relation '{$relationKey}' for entity type '{$entityType}'");
+                continue;
+            }
+            
+            $config = $allRelatedTables[$relationKey];
+            $table = $config['table'];
+            $foreignKey = $config['foreign_key'];
+            
+            $sql = "SELECT * FROM {$table} WHERE {$foreignKey} = ?";
+            $params = [$recordId];
+            
+            // Add additional filters if needed
+            if (isset($config['filters'])) {
+                foreach ($config['filters'] as $field => $value) {
+                    $sql .= " AND {$field} = ?";
+                    $params[] = $value;
+                }
+            }
+            
+            // Add ordering
+            if (isset($config['order_by'])) {
+                $sql .= " ORDER BY " . $config['order_by'];
+            }
+            
+            // Try to fetch related data, but don't fail if table/column is missing
+            try {
+                $record[$relationKey] = $this->db->fetchAll($sql, $params);
+            } catch (\Exception $e) {
+                $errorMsg = $e->getMessage();
+                // Only gracefully handle table/column not found errors
+                if (stripos($errorMsg, "doesn't exist") !== false || 
+                    stripos($errorMsg, "Unknown column") !== false ||
+                    stripos($errorMsg, "no such table") !== false) {
+                    error_log("SimplePdfGenerator: Related table/column missing for {$table}: " . $errorMsg);
+                    $record[$relationKey] = [];
+                } else {
+                    throw $e;
+                }
+            }
+        }
+        
+        // Flatten the loaded relations to provide direct template variable access
+        // This allows templates to use {{email}}, {{cellulare}}, etc.
+        $record = $this->flattenRelatedData($entityType, $record);
+        
         return $record;
     }
     
