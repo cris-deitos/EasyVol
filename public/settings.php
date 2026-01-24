@@ -381,7 +381,7 @@ $pageTitle = 'Impostazioni Sistema';
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="qualifications-tab" data-bs-toggle="tab" data-bs-target="#qualifications" type="button" role="tab">
-                            <i class="bi bi-award"></i> Qualifiche Soci
+                            <i class="bi bi-award"></i> Mansioni Soci
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -1573,16 +1573,16 @@ $pageTitle = 'Impostazioni Sistema';
                     <div class="tab-pane fade" id="qualifications" role="tabpanel">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">Gestione Qualifiche Soci</h5>
+                                <h5 class="mb-0">Gestione Mansioni Soci</h5>
                                 <?php if ($app->checkPermission('settings', 'edit')): ?>
                                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addQualificationModal">
-                                        <i class="bi bi-plus-circle"></i> Aggiungi Qualifica
+                                        <i class="bi bi-plus-circle"></i> Aggiungi Mansione
                                     </button>
                                 <?php endif; ?>
                             </div>
                             <div class="card-body">
                                 <p class="text-muted">
-                                    Gestisci le qualifiche utilizzabili per i soci. Le qualifiche possono essere riordinate, modificate o disattivate.
+                                    Gestisci le mansioni utilizzabili per i soci. Le mansioni possono essere riordinate, modificate o disattivate.
                                 </p>
                                 
                                 <div id="qualificationsListContainer">
@@ -1632,14 +1632,14 @@ $pageTitle = 'Impostazioni Sistema';
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="qualificationModalTitle">Aggiungi Qualifica</h5>
+                    <h5 class="modal-title" id="qualificationModalTitle">Aggiungi Mansione</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="qualificationForm">
                     <div class="modal-body">
                         <input type="hidden" id="qualification_id" name="id">
                         <div class="mb-3">
-                            <label for="qualification_name" class="form-label">Nome Qualifica *</label>
+                            <label for="qualification_name" class="form-label">Nome Mansione *</label>
                             <input type="text" class="form-control" id="qualification_name" name="name" required>
                         </div>
                         <div class="mb-3">
@@ -1856,12 +1856,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderQualificationsList(data.data);
                 } else {
                     document.getElementById('qualificationsListContainer').innerHTML = 
-                        '<div class="alert alert-danger">Errore caricamento qualifiche: ' + data.message + '</div>';
+                        '<div class="alert alert-danger">Errore caricamento mansioni: ' + data.message + '</div>';
                 }
             })
             .catch(error => {
                 document.getElementById('qualificationsListContainer').innerHTML = 
-                    '<div class="alert alert-danger">Errore caricamento qualifiche: ' + error.message + '</div>';
+                    '<div class="alert alert-danger">Errore caricamento mansioni: ' + error.message + '</div>';
             });
     }
     
@@ -1908,7 +1908,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('qualificationModalTitle').textContent = 'Modifica Qualifica';
+                    document.getElementById('qualificationModalTitle').textContent = 'Modifica Mansione';
                     document.getElementById('qualification_id').value = data.data.id;
                     document.getElementById('qualification_name').value = data.data.name;
                     document.getElementById('qualification_description').value = data.data.description || '';
@@ -1924,7 +1924,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Delete qualification
     window.deleteQualification = function(id, name) {
-        if (!confirm('Sei sicuro di voler eliminare la qualifica "' + name + '"?')) {
+        if (!confirm('Sei sicuro di voler eliminare la mansione "' + name + '"?')) {
             return;
         }
         
