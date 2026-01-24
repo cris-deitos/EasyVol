@@ -2168,7 +2168,7 @@ INSERT INTO `print_templates` (
 ) VALUES (
     'Elenco Mezzi - Scadenze',
     'Elenco mezzi con scadenze assicurazione e revisione',
-    'list', 'filtered', 'vehicles',
+    'list', 'filtered', 'vehicles', NULL,
     '<div class="header">
 <h2>{{association_name}}</h2>
 <p class="subtitle">{{association_address}} - {{association_postal_code}} {{association_city}}<br>Codice Fiscale {{association_tax_code}}</p>

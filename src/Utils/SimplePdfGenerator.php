@@ -44,6 +44,19 @@ class SimplePdfGenerator {
     ];
     
     /**
+     * Regex pattern for validating ORDER BY clauses
+     * 
+     * Pattern breakdown:
+     * - ^[a-zA-Z_][a-zA-Z0-9_]* : Column name (starts with letter/underscore, followed by alphanumeric/underscore)
+     * - (\.[a-zA-Z_][a-zA-Z0-9_]*)? : Optional table prefix (e.g., table.column)
+     * - \s*(ASC|DESC)? : Optional sort direction
+     * - (\s*,\s*...)* : Optional comma-separated additional columns with same pattern
+     * 
+     * Valid examples: "column1 ASC", "table.column DESC", "col1 ASC, col2 DESC"
+     */
+    private const ORDER_BY_VALIDATION_PATTERN = '/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?\s*(ASC|DESC)?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?\s*(ASC|DESC)?)*$/i';
+    
+    /**
      * Constructor
      * 
      * @param object $db Database instance
@@ -566,11 +579,7 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
      * @return bool True if valid, false otherwise
      */
     private function isValidOrderByClause($orderBy) {
-        // Valid ORDER BY contains column names (with optional table prefix), 
-        // comma separators, and ASC/DESC keywords
-        // Example: "column1 ASC, column2 DESC" or "table.column DESC"
-        $pattern = '/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?\s*(ASC|DESC)?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?\s*(ASC|DESC)?)*$/i';
-        return preg_match($pattern, $orderBy) === 1;
+        return preg_match(self::ORDER_BY_VALIDATION_PATTERN, $orderBy) === 1;
     }
     
     /**
@@ -643,13 +652,16 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                 $record[$relationKey] = $this->db->fetchAll($sql, $params);
             } catch (\Exception $e) {
                 $errorMsg = $e->getMessage();
-                // Only gracefully handle table/column not found errors
+                // Only gracefully handle table/column not found errors (likely missing migrations)
+                // String matching is intentionally used here as we want to handle schema-related
+                // errors gracefully while re-throwing other critical errors (connection, memory, etc.)
                 if (stripos($errorMsg, "doesn't exist") !== false || 
                     stripos($errorMsg, "Unknown column") !== false ||
                     stripos($errorMsg, "no such table") !== false) {
                     error_log("SimplePdfGenerator: Related table/column missing for {$table}: " . $errorMsg);
                     $record[$relationKey] = [];
                 } else {
+                    // Re-throw other errors (connection issues, memory, etc.)
                     throw $e;
                 }
             }
