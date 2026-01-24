@@ -238,7 +238,8 @@ class SimplePdfGenerator {
         // Add ordering - use registration_number for members (matricola), id for others
         if ($entityType === 'members') {
             // Members: numeric registration number (1, 2, 3...)
-            $sql .= " ORDER BY CAST(registration_number AS UNSIGNED) ASC";
+            // Use COALESCE to handle NULL and fallback for non-numeric values
+            $sql .= " ORDER BY CAST(COALESCE(registration_number, '0') AS UNSIGNED) ASC, registration_number ASC";
         } elseif ($entityType === 'junior_members') {
             // Junior members: alphanumeric registration number (C-1, C-2, C-10...)
             // Extract numeric part after "C-" for correct sorting
