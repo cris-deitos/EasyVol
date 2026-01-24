@@ -269,7 +269,7 @@ $pageTitle = 'Gestione Soci';
                                         <th>Nome</th>
                                         <th>Data Nascita</th>
                                         <th>Stato</th>
-                                        <th>Mansione</th>
+                                        <th>Stato Volontario</th>
                                         <th>Azioni</th>
                                     </tr>
                                 </thead>
