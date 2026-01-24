@@ -177,20 +177,28 @@ class SimplePdfGenerator {
                 $sql .= " AND member_status = ?";
                 $params[] = self::MEMBER_ACTIVE_STATUS;
             } elseif ($entityType === 'junior_members') {
-                $sql .= " AND status = ?";
+                $sql .= " AND member_status = ?";
                 $params[] = self::JUNIOR_MEMBER_ACTIVE_STATUS;
             }
         }
         
         // Apply filters based on entity type
         if (isset($filters['status'])) {
-            $sql .= " AND status = ?";
+            // For members and junior_members, use member_status column; for others use status
+            if ($entityType === 'members' || $entityType === 'junior_members') {
+                $sql .= " AND member_status = ?";
+            } else {
+                $sql .= " AND status = ?";
+            }
             $params[] = $filters['status'];
         }
         
-        if (isset($filters['member_status']) && $entityType === 'members') {
-            $sql .= " AND member_status = ?";
-            $params[] = $filters['member_status'];
+        if (isset($filters['member_status'])) {
+            // member_status filter works for both members and junior_members
+            if ($entityType === 'members' || $entityType === 'junior_members') {
+                $sql .= " AND member_status = ?";
+                $params[] = $filters['member_status'];
+            }
         }
         
         if (isset($filters['member_type']) && $entityType === 'members') {
@@ -618,10 +626,30 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                     $record[$prefix . '_telefono'] = $guardian['phone'] ?? '';
                     $record[$prefix . '_cellulare'] = $guardian['mobile'] ?? '';
                     $record[$prefix . '_email'] = $guardian['email'] ?? '';
-                    $record[$prefix . '_relazione'] = $guardian['relationship'] ?? '';
+                    $record[$prefix . '_relazione'] = $guardian['relationship'] ?? $guardian['guardian_type'] ?? '';
                     $guardianIndex++;
                 }
             }
+            
+            // Add guardian_name and guardian_phone as convenient aliases for templates
+            // Uses first guardian's data (typically padre or madre)
+            if (!empty($record['guardians'])) {
+                $firstGuardian = $record['guardians'][0];
+                $record['guardian_name'] = trim(($firstGuardian['first_name'] ?? '') . ' ' . ($firstGuardian['last_name'] ?? ''));
+                $record['guardian_phone'] = $firstGuardian['phone'] ?? '';
+                $record['guardian_email'] = $firstGuardian['email'] ?? '';
+            }
+        }
+        
+        // Initialize guardian fields if not already set (for records without guardians)
+        if (!isset($record['guardian_name'])) {
+            $record['guardian_name'] = '';
+        }
+        if (!isset($record['guardian_phone'])) {
+            $record['guardian_phone'] = '';
+        }
+        if (!isset($record['guardian_email'])) {
+            $record['guardian_email'] = '';
         }
         
         return $record;
