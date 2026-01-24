@@ -1456,7 +1456,7 @@ class ApplicationController {
             }
             
             // Prevent deletion of approved applications
-            if ($application['status'] === 'approvata') {
+            if ($application['status'] === 'approved') {
                 return ['success' => false, 'message' => 'Impossibile eliminare: domanda già approvata'];
             }
             

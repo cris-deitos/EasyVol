@@ -10,6 +10,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\WarehouseCategories;
 use EasyVol\Controllers\WarehouseController;
 use EasyVol\Middleware\CsrfProtection;
 
@@ -168,18 +169,12 @@ $pageTitle = $isEdit ? 'Modifica Articolo' : 'Nuovo Articolo';
                                 <div class="col-md-6 mb-3">
                                     <label for="category" class="form-label">Categoria <span class="text-danger">*</span></label>
                                     <select class="form-select" id="category" name="category" required>
-                                        <option value="dpi" <?php echo ($item['category'] ?? '') === 'dpi' ? 'selected' : ''; ?>>DPI (Dispositivi Protezione Individuale)</option>
-                                        <option value="attrezzatura_generica" <?php echo ($item['category'] ?? '') === 'attrezzatura_generica' ? 'selected' : ''; ?>>Attrezzatura Generica</option>
-										<option value="attrezzatura_logistica_da_campo" <?php echo ($item['category'] ?? '') === 'attrezzatura_logistica_da_campo' ? 'selected' : ''; ?>>Attrezzatura Logistica da Campo</option>
-										<option value="attrezzatura_elettronica_ed_accessoro" <?php echo ($item['category'] ?? '') === 'attrezzatura_elettronica_ed_accessoro' ? 'selected' : ''; ?>>Attrezzatura Elettrica ed Accessori</option>
-										<option value="attrezzatura_idrogeologico" <?php echo ($item['category'] ?? '') === 'attrezzatura_idrogeologico' ? 'selected' : ''; ?>>Attrezzatura Idrogeologico</option>
-										<option value="attrezzatura_interventi_e_manutenzioni" <?php echo ($item['category'] ?? '') === 'attrezzatura_interventi_e_manutenzioni' ? 'selected' : ''; ?>>Attrezzatura per Interventi e Manutenzioni</option>
-										<option value="attrezzatura_it_radio_tlc" <?php echo ($item['category'] ?? '') === 'attrezzatura_it_radio_tlc' ? 'selected' : ''; ?>>Attrezzatura Informatica Radio TLC</option>
-										<option value="materiale_arredamento_accessori_sedi" <?php echo ($item['category'] ?? '') === 'materiale_arredamento_accessori_sedi' ? 'selected' : ''; ?>>Materiale per Arredamento e Accessori Sedi</option>
-                                        <option value="materiale_sanitario" <?php echo ($item['category'] ?? '') === 'materiale_sanitario' ? 'selected' : ''; ?>>Materiale Sanitario</option>
-                                        <option value="cancelleria" <?php echo ($item['category'] ?? '') === 'cancelleria' ? 'selected' : ''; ?>>Cancelleria</option>
-                                        <option value="consumabili" <?php echo ($item['category'] ?? '') === 'consumabili' ? 'selected' : ''; ?>>Consumabili</option>
-                                        <option value="altro" <?php echo ($item['category'] ?? 'altro') === 'altro' ? 'selected' : ''; ?>>Altro</option>
+                                        <?php 
+                                        $currentCategory = $item['category'] ?? 'altro';
+                                        foreach (WarehouseCategories::getCategories() as $value => $label): 
+                                        ?>
+                                            <option value="<?php echo htmlspecialchars($value); ?>" <?php echo $currentCategory === $value ? 'selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                                 

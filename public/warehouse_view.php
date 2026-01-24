@@ -10,6 +10,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\WarehouseCategories;
 use EasyVol\Controllers\WarehouseController;
 
 $app = App::getInstance();
@@ -131,7 +132,7 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                 <th>Categoria:</th>
                                                 <td>
                                                     <span class="badge bg-info">
-                                                        <?php echo htmlspecialchars(ucfirst($item['category'] ?? 'Altro')); ?>
+                                                        <?php echo htmlspecialchars(WarehouseCategories::getLabel($item['category'] ?? null)); ?>
                                                     </span>
                                                 </td>
                                             </tr>
