@@ -1093,7 +1093,7 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                 'maintenance' => [
                     'table' => 'vehicle_maintenance',
                     'foreign_key' => 'vehicle_id',
-                    'order_by' => 'maintenance_date DESC'
+                    'order_by' => 'date DESC'
                 ],
                 'documents' => [
                     'table' => 'vehicle_documents',
@@ -1116,14 +1116,14 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                 'agenda' => [
                     'table' => 'meeting_agenda',
                     'foreign_key' => 'meeting_id',
-                    'order_by' => 'order_position ASC'
+                    'order_by' => 'order_number ASC'
                 ]
             ],
             'events' => [
                 'interventions' => [
                     'table' => 'interventions',
                     'foreign_key' => 'event_id',
-                    'order_by' => 'start_datetime DESC'
+                    'order_by' => 'start_time DESC'
                 ],
                 'participants' => [
                     'table' => 'event_participants',
