@@ -206,7 +206,9 @@ class SimplePdfGenerator {
         
         if (isset($filters['search']) && $entityType === 'vehicles') {
             $sql .= " AND (name LIKE ? OR license_plate LIKE ? OR brand LIKE ? OR model LIKE ?)";
-            $searchTerm = '%' . $filters['search'] . '%';
+            // Escape LIKE wildcards to prevent unintended wildcard matching
+            $escapedSearch = addcslashes($filters['search'], '%_');
+            $searchTerm = '%' . $escapedSearch . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;

@@ -103,7 +103,11 @@ try {
             $filters['date_to'] = $_GET['date_to'];
         }
         if (isset($_GET['vehicle_type'])) {
-            $filters['vehicle_type'] = $_GET['vehicle_type'];
+            // Validate vehicle_type against allowed enum values
+            $allowedVehicleTypes = ['veicolo', 'natante', 'rimorchio'];
+            if (in_array($_GET['vehicle_type'], $allowedVehicleTypes, true)) {
+                $filters['vehicle_type'] = $_GET['vehicle_type'];
+            }
         }
         if (isset($_GET['search'])) {
             $filters['search'] = $_GET['search'];
