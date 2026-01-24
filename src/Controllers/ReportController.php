@@ -166,10 +166,8 @@ class ReportController {
         $data = $this->db->fetchAll($sql);
         
         // Convert category values to display labels
-        $categories = \EasyVol\Utils\WarehouseCategories::getCategories();
         foreach ($data as &$row) {
-            $categoryValue = $row['category'] ?? '';
-            $row['category'] = $categories[$categoryValue] ?? ($categoryValue ?: '-');
+            $row['category'] = \EasyVol\Utils\WarehouseCategories::getLabel($row['category'] ?? null);
         }
         unset($row);
         
@@ -1301,10 +1299,8 @@ class ReportController {
         $data = $this->db->fetchAll($sql);
         
         // Convert category values to display labels
-        $categories = \EasyVol\Utils\WarehouseCategories::getCategories();
         foreach ($data as &$row) {
-            $categoryValue = $row['categoria'] ?? '';
-            $row['categoria'] = $categories[$categoryValue] ?? $categoryValue;
+            $row['categoria'] = \EasyVol\Utils\WarehouseCategories::getLabel($row['categoria'] ?? null);
         }
         unset($row);
         
