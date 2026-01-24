@@ -338,7 +338,12 @@ class SimplePdfGenerator {
             
             // Add ordering
             if (isset($config['order_by'])) {
-                $sql .= " ORDER BY " . $config['order_by'];
+                // Validate ORDER BY clause to prevent SQL injection
+                if ($this->isValidOrderByClause($config['order_by'])) {
+                    $sql .= " ORDER BY " . $config['order_by'];
+                } else {
+                    error_log("SimplePdfGenerator: Invalid ORDER BY clause: '{$config['order_by']}'");
+                }
             }
             
             // Try to fetch related data, but don't fail if table/column is missing
@@ -555,6 +560,20 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
     }
     
     /**
+     * Validate ORDER BY clause
+     * 
+     * @param string $orderBy ORDER BY clause to validate
+     * @return bool True if valid, false otherwise
+     */
+    private function isValidOrderByClause($orderBy) {
+        // Valid ORDER BY contains column names (with optional table prefix), 
+        // comma separators, and ASC/DESC keywords
+        // Example: "column1 ASC, column2 DESC" or "table.column DESC"
+        $pattern = '/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?\s*(ASC|DESC)?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?\s*(ASC|DESC)?)*$/i';
+        return preg_match($pattern, $orderBy) === 1;
+    }
+    
+    /**
      * Load specific relations for a record (used by list templates)
      * Only loads the relations specified in the array parameter
      * 
@@ -611,7 +630,12 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
             
             // Add ordering
             if (isset($config['order_by'])) {
-                $sql .= " ORDER BY " . $config['order_by'];
+                // Validate ORDER BY clause to prevent SQL injection
+                if ($this->isValidOrderByClause($config['order_by'])) {
+                    $sql .= " ORDER BY " . $config['order_by'];
+                } else {
+                    error_log("SimplePdfGenerator: Invalid ORDER BY clause in relation config: '{$config['order_by']}'");
+                }
             }
             
             // Try to fetch related data, but don't fail if table/column is missing
