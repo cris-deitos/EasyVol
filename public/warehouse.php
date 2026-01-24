@@ -8,6 +8,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
+use EasyVol\Utils\WarehouseCategories;
 use EasyVol\Controllers\WarehouseController;
 
 $app = App::getInstance();
@@ -129,8 +130,12 @@ $pageTitle = 'Gestione Magazzino';
                             </div>
                             <div class="col-md-3">
                                 <label for="category" class="form-label">Categoria</label>
-                                <input type="text" class="form-control" id="category" name="category" 
-                                       value="<?php echo htmlspecialchars($filters['category']); ?>">
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Tutte le categorie</option>
+                                    <?php foreach (WarehouseCategories::getCategories() as $value => $label): ?>
+                                        <option value="<?php echo htmlspecialchars($value); ?>" <?php echo $filters['category'] === $value ? 'selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label for="status" class="form-label">Stato</label>
@@ -190,7 +195,7 @@ $pageTitle = 'Gestione Magazzino';
                                             <tr>
                                                 <td><?php echo htmlspecialchars($item['code'] ?? '-'); ?></td>
                                                 <td><?php echo htmlspecialchars($item['name']); ?></td>
-                                                <td><?php echo htmlspecialchars($item['category'] ?? '-'); ?></td>
+                                                <td><?php echo htmlspecialchars(WarehouseCategories::getLabel($item['category'] ?? null)); ?></td>
                                                 <td>
                                                     <?php
                                                     $lowStock = $item['quantity'] <= $item['minimum_quantity'];

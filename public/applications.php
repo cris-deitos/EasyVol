@@ -83,6 +83,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         header('Location: applications.php');
         exit;
+    } elseif ($_POST['action'] === 'delete' && $app->checkPermission('applications', 'delete')) {
+        // Handle application deletion
+        if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token di sicurezza non valido';
+        } else {
+            $result = $controller->delete($applicationId, $app->getUserId());
+            if ($result['success']) {
+                $_SESSION['success'] = 'Domanda eliminata con successo';
+            } else {
+                $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'eliminazione';
+            }
+        }
+        
+        header('Location: applications.php');
+        exit;
     }
 }
 
@@ -326,6 +341,14 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                                title="PDF">
                                                                 <i class="bi bi-file-pdf"></i>
                                                             </a>
+                                                        <?php endif; ?>
+                                                        <?php if ($application['status'] !== 'approved' && $app->checkPermission('applications', 'delete')): ?>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#deleteModal<?php echo $application['id']; ?>"
+                                                                    title="Elimina">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>
@@ -589,6 +612,31 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                             <div class="modal-footer">
                                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                                                                 <button type="submit" class="btn btn-danger">Rifiuta</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Modal Elimina -->
+                                            <div class="modal fade" id="deleteModal<?php echo $application['id']; ?>" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form method="POST" action="">
+                                                            <?php echo CsrfProtection::getHiddenField(); ?>
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Elimina Domanda</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <input type="hidden" name="action" value="delete">
+                                                                <input type="hidden" name="application_id" value="<?php echo $application['id']; ?>">
+                                                                <p>Sei sicuro di voler eliminare la domanda di <strong><?php echo htmlspecialchars($application['first_name'] . ' ' . $application['last_name']); ?></strong>?</p>
+                                                                <p class="text-danger"><small>Questa azione è irreversibile.</small></p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                                                <button type="submit" class="btn btn-danger">Elimina</button>
                                                             </div>
                                                         </form>
                                                     </div>

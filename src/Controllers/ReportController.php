@@ -163,7 +163,17 @@ class ReportController {
                 GROUP BY category
                 ORDER BY category";
         
-        return $this->db->fetchAll($sql);
+        $data = $this->db->fetchAll($sql);
+        
+        // Convert category values to display labels
+        $categories = \EasyVol\Utils\WarehouseCategories::getCategories();
+        foreach ($data as &$row) {
+            $categoryValue = $row['category'] ?? '';
+            $row['category'] = $categories[$categoryValue] ?? ($categoryValue ?: '-');
+        }
+        unset($row);
+        
+        return $data;
     }
     
     /**
@@ -1289,6 +1299,14 @@ class ReportController {
                 ORDER BY wi.category, wi.name";
         
         $data = $this->db->fetchAll($sql);
+        
+        // Convert category values to display labels
+        $categories = \EasyVol\Utils\WarehouseCategories::getCategories();
+        foreach ($data as &$row) {
+            $categoryValue = $row['categoria'] ?? '';
+            $row['categoria'] = $categories[$categoryValue] ?? $categoryValue;
+        }
+        unset($row);
         
         if ($format === 'csv') {
             return $this->exportToCSV($data);
