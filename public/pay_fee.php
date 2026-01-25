@@ -667,7 +667,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
                     </div>
                     <input type="file" class="form-control d-none" id="receipt_file" 
                            name="receipt_file" required
-                           accept="application/pdf,image/jpeg,image/jpg,image/png,.pdf,.jpg,.jpeg,.png"
+                           accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"
                            onchange="handleFileSelection(this);">
                     <div class="form-text">
                         Formati accettati: PDF, JPG, PNG. Dimensione massima: 5MB
@@ -692,7 +692,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
     <script>
         // Allowed file types and max size
         var allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
-        var allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        var allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
         var maxFileSize = 5 * 1024 * 1024; // 5MB
         
         // Handle file selection
