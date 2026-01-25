@@ -440,6 +440,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
         }
         
         .file-upload-area {
+            display: block;
             border: 2px dashed #667eea;
             border-radius: 12px;
             padding: 30px 20px;
@@ -645,9 +646,9 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
                 
                 <div class="mb-3">
                     <label for="receipt_file" class="form-label">Ricevuta di Pagamento *</label>
-                    <!-- Mobile-friendly file upload area -->
+                    <!-- Mobile-friendly file upload area - using label for cross-platform compatibility -->
                     <div class="file-upload-wrapper" id="file-upload-wrapper">
-                        <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('receipt_file').click();">
+                        <label class="file-upload-area" id="file-upload-area" for="receipt_file">
                             <i class="bi bi-cloud-upload file-upload-icon"></i>
                             <div class="file-upload-text">
                                 <span class="d-none d-md-inline">Clicca per selezionare</span>
@@ -656,7 +657,7 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
                             <div class="file-upload-hint">
                                 PDF, JPG, PNG (max 5MB)
                             </div>
-                        </div>
+                        </label>
                         <div class="file-selected-info d-none" id="file-selected-info">
                             <i class="bi bi-file-earmark-check"></i>
                             <span id="selected-file-name"></span>
