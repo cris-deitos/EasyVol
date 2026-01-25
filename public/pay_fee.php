@@ -433,6 +433,84 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
             font-size: 14px;
             color: #6c757d;
         }
+        
+        /* Mobile-friendly file upload styles */
+        .file-upload-wrapper {
+            margin-bottom: 10px;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(102, 126, 234, 0.05);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        .file-upload-area:hover,
+        .file-upload-area:active {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .file-upload-area:active {
+            transform: scale(0.98);
+        }
+        
+        .file-upload-icon {
+            font-size: 48px;
+            color: #667eea;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .file-upload-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .file-upload-hint {
+            font-size: 13px;
+            color: #6c757d;
+        }
+        
+        .file-selected-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            background: #d4edda;
+            border-radius: 12px;
+            color: #155724;
+            font-weight: 500;
+        }
+        
+        .file-selected-info i {
+            font-size: 24px;
+            margin-right: 10px;
+            color: #28a745;
+        }
+        
+        /* Improve touch targets for mobile */
+        @media (max-width: 767px) {
+            .file-upload-area {
+                padding: 40px 20px;
+            }
+            
+            .file-upload-icon {
+                font-size: 56px;
+            }
+            
+            .file-upload-text {
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -567,12 +645,34 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
                 
                 <div class="mb-3">
                     <label for="receipt_file" class="form-label">Ricevuta di Pagamento *</label>
-                    <input type="file" class="form-control" id="receipt_file" 
+                    <!-- Mobile-friendly file upload area -->
+                    <div class="file-upload-wrapper" id="file-upload-wrapper">
+                        <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('receipt_file').click();">
+                            <i class="bi bi-cloud-upload file-upload-icon"></i>
+                            <div class="file-upload-text">
+                                <span class="d-none d-md-inline">Clicca per selezionare</span>
+                                <span class="d-md-none">Tocca per selezionare</span>
+                            </div>
+                            <div class="file-upload-hint">
+                                PDF, JPG, PNG (max 5MB)
+                            </div>
+                        </div>
+                        <div class="file-selected-info d-none" id="file-selected-info">
+                            <i class="bi bi-file-earmark-check"></i>
+                            <span id="selected-file-name"></span>
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearFileSelection();">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" class="form-control d-none" id="receipt_file" 
                            name="receipt_file" required
-                           accept=".pdf,.jpg,.jpeg,.png">
+                           accept="application/pdf,image/jpeg,image/jpg,image/png,.pdf,.jpg,.jpeg,.png"
+                           onchange="handleFileSelection(this);">
                     <div class="form-text">
                         Formati accettati: PDF, JPG, PNG. Dimensione massima: 5MB
                     </div>
+                    <div class="invalid-feedback" id="file-error"></div>
                 </div>
                 
                 <div class="d-grid gap-2">
@@ -590,12 +690,118 @@ $pageTitle = 'Carica Ricevuta Pagamento Quota';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Allowed file types and max size
+        var allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+        var allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        var maxFileSize = 5 * 1024 * 1024; // 5MB
+        
+        // Handle file selection
+        function handleFileSelection(input) {
+            var fileUploadArea = document.getElementById('file-upload-area');
+            var fileSelectedInfo = document.getElementById('file-selected-info');
+            var selectedFileName = document.getElementById('selected-file-name');
+            var fileError = document.getElementById('file-error');
+            
+            if (input.files && input.files[0]) {
+                var file = input.files[0];
+                var fileName = file.name;
+                var fileExt = fileName.split('.').pop().toLowerCase();
+                var fileType = file.type || '';
+                var fileSize = file.size;
+                
+                // Validate file extension
+                var isValidExtension = allowedExtensions.indexOf(fileExt) !== -1;
+                // Validate MIME type (may be empty on some mobile browsers)
+                var isValidMime = fileType === '' || allowedMimeTypes.indexOf(fileType) !== -1;
+                
+                if (!isValidExtension) {
+                    showFileError('Formato file non valido. Usa PDF, JPG o PNG.');
+                    input.value = '';
+                    return;
+                }
+                
+                if (!isValidMime) {
+                    showFileError('Tipo di file non supportato. Usa PDF, JPG o PNG.');
+                    input.value = '';
+                    return;
+                }
+                
+                if (fileSize > maxFileSize) {
+                    showFileError('Il file è troppo grande. Dimensione massima: 5MB');
+                    input.value = '';
+                    return;
+                }
+                
+                // File is valid - show success state
+                hideFileError();
+                fileUploadArea.classList.add('d-none');
+                fileSelectedInfo.classList.remove('d-none');
+                
+                // Truncate filename if too long
+                var displayName = fileName.length > 30 ? fileName.substring(0, 27) + '...' : fileName;
+                selectedFileName.textContent = displayName;
+                
+                // Remove required validation error styling
+                input.setCustomValidity('');
+            }
+        }
+        
+        // Clear file selection
+        function clearFileSelection() {
+            var fileInput = document.getElementById('receipt_file');
+            var fileUploadArea = document.getElementById('file-upload-area');
+            var fileSelectedInfo = document.getElementById('file-selected-info');
+            
+            fileInput.value = '';
+            fileSelectedInfo.classList.add('d-none');
+            fileUploadArea.classList.remove('d-none');
+            hideFileError();
+        }
+        
+        // Show file error
+        function showFileError(message) {
+            var fileError = document.getElementById('file-error');
+            var fileUploadArea = document.getElementById('file-upload-area');
+            var fileSelectedInfo = document.getElementById('file-selected-info');
+            
+            fileError.textContent = message;
+            fileError.style.display = 'block';
+            fileUploadArea.classList.remove('d-none');
+            fileUploadArea.style.borderColor = '#dc3545';
+            fileSelectedInfo.classList.add('d-none');
+            
+            // Auto-hide error after 5 seconds
+            setTimeout(function() {
+                hideFileError();
+            }, 5000);
+        }
+        
+        // Hide file error
+        function hideFileError() {
+            var fileError = document.getElementById('file-error');
+            var fileUploadArea = document.getElementById('file-upload-area');
+            
+            fileError.style.display = 'none';
+            fileError.textContent = '';
+            fileUploadArea.style.borderColor = '#667eea';
+        }
+        
         // Form validation
         (function () {
             'use strict';
             var forms = document.querySelectorAll('.needs-validation');
             Array.prototype.slice.call(forms).forEach(function (form) {
                 form.addEventListener('submit', function (event) {
+                    var fileInput = document.getElementById('receipt_file');
+                    
+                    // Check if file is selected (for step 2 form)
+                    if (fileInput && !fileInput.files.length) {
+                        fileInput.setCustomValidity('La ricevuta di pagamento è obbligatoria');
+                        showFileError('La ricevuta di pagamento è obbligatoria');
+                    } else if (fileInput) {
+                        fileInput.setCustomValidity('');
+                    }
+                    
                     if (!form.checkValidity()) {
                         event.preventDefault();
                         event.stopPropagation();
