@@ -66,7 +66,7 @@ class SchedulerController {
         // Determine ordering based on sort filter
         $orderClause = "";
         if (!empty($filters['sort']) && $filters['sort'] === 'due_date') {
-            // Order by due date (most recent/closest first)
+            // Order by due date (closest deadline first)
             $orderClause = "s.due_date ASC";
         } else {
             // Default: order by priority first, then due date
