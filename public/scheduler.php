@@ -41,6 +41,9 @@ if (!empty($_GET['to_date'])) {
 if (!empty($_GET['search'])) {
     $filters['search'] = $_GET['search'];
 }
+if (!empty($_GET['sort'])) {
+    $filters['sort'] = $_GET['sort'];
+}
 
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $items = $controller->index($filters, $page, 50);
@@ -172,6 +175,13 @@ $pageTitle = 'Scadenzario';
                                 <label for="to_date" class="form-label">Al</label>
                                 <input type="date" class="form-control" id="to_date" name="to_date" 
                                        value="<?php echo isset($filters['to_date']) ? htmlspecialchars($filters['to_date']) : ''; ?>">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="sort" class="form-label">Ordina per</label>
+                                <select class="form-select" id="sort" name="sort">
+                                    <option value="priority" <?php echo (!isset($filters['sort']) || $filters['sort'] === 'priority') ? 'selected' : ''; ?>>Priorità</option>
+                                    <option value="due_date" <?php echo (isset($filters['sort']) && $filters['sort'] === 'due_date') ? 'selected' : ''; ?>>Data scadenza</option>
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label for="search" class="form-label">Ricerca</label>

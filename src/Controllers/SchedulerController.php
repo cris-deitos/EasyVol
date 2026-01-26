@@ -63,18 +63,27 @@ class SchedulerController {
         $whereClause = implode(' AND ', $where);
         $offset = ($page - 1) * $perPage;
         
-        $sql = "SELECT s.*, u.full_name as assigned_name 
-                FROM scheduler_items s
-                LEFT JOIN users u ON s.assigned_to = u.id
-                WHERE $whereClause 
-                ORDER BY 
-                    CASE s.priority 
+        // Determine ordering based on sort filter
+        $orderClause = "";
+        if (!empty($filters['sort']) && $filters['sort'] === 'due_date') {
+            // Order by due date (most recent/closest first)
+            $orderClause = "s.due_date ASC";
+        } else {
+            // Default: order by priority first, then due date
+            $orderClause = "CASE s.priority 
                         WHEN 'urgente' THEN 1 
                         WHEN 'alta' THEN 2 
                         WHEN 'media' THEN 3 
                         WHEN 'bassa' THEN 4 
                     END,
-                    s.due_date ASC
+                    s.due_date ASC";
+        }
+        
+        $sql = "SELECT s.*, u.full_name as assigned_name 
+                FROM scheduler_items s
+                LEFT JOIN users u ON s.assigned_to = u.id
+                WHERE $whereClause 
+                ORDER BY $orderClause
                 LIMIT $perPage OFFSET $offset";
         
         return $this->db->fetchAll($sql, $params);
@@ -450,9 +459,9 @@ class SchedulerController {
         $result = $this->db->fetchOne($sql);
         $counts['this_week'] = $result['count'];
         
-        // Overdue
+        // Overdue - count items that are past due date and not completed
         $sql = "SELECT COUNT(*) as count FROM scheduler_items 
-                WHERE status IN ('in_attesa', 'in_corso') 
+                WHERE status IN ('in_attesa', 'in_corso', 'scaduto') 
                 AND due_date < CURDATE()";
         $result = $this->db->fetchOne($sql);
         $counts['overdue'] = $result['count'];
