@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: vehicle_movement.php');
             exit;
         } else {
-            $error = 'Credenziali non valide o qualifica non autorizzata. È necessario avere almeno la qualifica di AUTISTA o PILOTA.';
+            $error = 'Credenziali non valide o mansione non autorizzata. È necessario avere almeno la mansione di AUTISTA o PILOTA.';
         }
     }
 }
@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mt-4 text-center">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i> 
-                    Per accedere è necessario avere la qualifica di AUTISTA o PILOTA NATANTE
+                    Per accedere è necessario avere la mansione di AUTISTA o PILOTA NATANTE
                 </small>
             </div>
         </div>
