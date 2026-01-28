@@ -38,10 +38,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $applicationId = intval($_POST['application_id'] ?? 0);
     
     if ($_POST['action'] === 'approve' && $app->checkPermission('applications', 'edit')) {
-        $controller->approve($applicationId, $app->getUserId());
-        header('Location: applications.php?success=approved');
+        if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+            header('Location: applications.php?error=invalid_token');
+            exit;
+        }
+        $result = $controller->approve($applicationId, $app->getUserId());
+        if ($result) {
+            header('Location: applications.php?success=approved');
+        } else {
+            header('Location: applications.php?error=approve_failed');
+        }
         exit;
     } elseif ($_POST['action'] === 'reject' && $app->checkPermission('applications', 'edit')) {
+        if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+            header('Location: applications.php?error=invalid_token');
+            exit;
+        }
         $reason = $_POST['rejection_reason'] ?? '';
         $result = $controller->reject($applicationId, $app->getUserId(), $reason);
         if ($result) {
@@ -189,6 +201,10 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                     <div class="alert alert-danger alert-dismissible fade show">
                         <?php if ($_GET['error'] === 'reject_failed'): ?>
                             Errore durante il rifiuto della domanda. Riprova.
+                        <?php elseif ($_GET['error'] === 'approve_failed'): ?>
+                            Errore durante l'approvazione della domanda. Riprova.
+                        <?php elseif ($_GET['error'] === 'invalid_token'): ?>
+                            Token di sicurezza non valido. Riprova.
                         <?php endif; ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -610,6 +626,7 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
                                                         <form method="POST" action="">
+                                                            <?php echo CsrfProtection::getHiddenField(); ?>
                                                             <div class="modal-header">
                                                                 <h5 class="modal-title">Rifiuta Domanda</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -673,6 +690,12 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '';
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = '<?php echo htmlspecialchars(CsrfProtection::generateToken()); ?>';
+                form.appendChild(csrfInput);
                 
                 const actionInput = document.createElement('input');
                 actionInput.type = 'hidden';
