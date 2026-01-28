@@ -440,21 +440,27 @@ class ApplicationController {
     public function reject($id, $userId, $reason = '') {
         try {
             $application = $this->get($id);
-            if (!$application) {
+            if (!$application || $application['status'] !== 'pending') {
                 return false;
             }
             
             $sql = "UPDATE member_applications SET 
                     status = 'rejected',
+                    processed_by = ?,
+                    processed_at = NOW(),
                     rejected_by = ?,
                     rejected_at = NOW(),
                     rejection_reason = ?
                     WHERE id = ?";
             
-            $this->db->execute($sql, [$userId, $reason, $id]);
+            $this->db->execute($sql, [$userId, $userId, $reason, $id]);
             
-            // Invia email rifiuto
-            $this->sendRejectionEmail($application, $reason);
+            // Invia email rifiuto (best effort - don't fail rejection if email fails)
+            try {
+                $this->sendRejectionEmail($application, $reason);
+            } catch (\Exception $emailEx) {
+                error_log("Errore invio email rifiuto domanda: " . $emailEx->getMessage());
+            }
             
             return true;
             

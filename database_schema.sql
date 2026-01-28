@@ -627,12 +627,16 @@ CREATE TABLE IF NOT EXISTS `member_applications` (
   `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `processed_at` timestamp NULL,
   `processed_by` int(11),
+  `rejected_by` int(11) DEFAULT NULL,
+  `rejected_at` timestamp NULL DEFAULT NULL,
+  `rejection_reason` text DEFAULT NULL,
   `approved_at` timestamp NULL,
   `member_id` int(11) DEFAULT NULL COMMENT 'ID of created member after approval',
   PRIMARY KEY (`id`),
   KEY `status` (`status`),
   KEY `application_type` (`application_type`),
-  KEY `idx_pdf_download_token` (`pdf_download_token`)
+  KEY `idx_pdf_download_token` (`pdf_download_token`),
+  KEY `idx_rejected_by` (`rejected_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `fee_payment_requests` (
