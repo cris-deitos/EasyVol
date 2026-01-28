@@ -455,8 +455,12 @@ class ApplicationController {
             
             $this->db->execute($sql, [$userId, $userId, $reason, $id]);
             
-            // Invia email rifiuto
-            $this->sendRejectionEmail($application, $reason);
+            // Invia email rifiuto (best effort - don't fail rejection if email fails)
+            try {
+                $this->sendRejectionEmail($application, $reason);
+            } catch (\Exception $emailEx) {
+                error_log("Errore invio email rifiuto domanda: " . $emailEx->getMessage());
+            }
             
             return true;
             
