@@ -43,8 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit;
     } elseif ($_POST['action'] === 'reject' && $app->checkPermission('applications', 'edit')) {
         $reason = $_POST['rejection_reason'] ?? '';
-        $controller->reject($applicationId, $app->getUserId(), $reason);
-        header('Location: applications.php?success=rejected');
+        $result = $controller->reject($applicationId, $app->getUserId(), $reason);
+        if ($result) {
+            header('Location: applications.php?success=rejected');
+        } else {
+            header('Location: applications.php?error=reject_failed');
+        }
         exit;
     } elseif ($_POST['action'] === 'regenerate_pdf' && $app->checkPermission('applications', 'edit')) {
         // Handle PDF regeneration
@@ -176,6 +180,15 @@ $pageTitle = 'Gestione Domande di Iscrizione';
                             Domanda approvata con successo!
                         <?php elseif ($_GET['success'] === 'rejected'): ?>
                             Domanda rifiutata.
+                        <?php endif; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($_GET['error'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <?php if ($_GET['error'] === 'reject_failed'): ?>
+                            Errore durante il rifiuto della domanda. Riprova.
                         <?php endif; ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
