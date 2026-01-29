@@ -1583,7 +1583,7 @@ class ApplicationController {
             'last_name', 'first_name', 'birth_place', 'birth_province', 'nationality',
             'residence_street', 'residence_city', 'residence_province',
             'domicile_street', 'domicile_city', 'domicile_province',
-            'compilation_place'
+            'compilation_place', 'tax_code'
         ];
         
         // Apply uppercase to main fields
