@@ -111,6 +111,18 @@ class ApplicationController {
      */
     public function createAdult($data) {
         try {
+            // Verifica se il codice fiscale è già registrato tra soci o cadetti attivi
+            if (!empty($data['tax_code'])) {
+                $taxCodeCheck = $this->checkTaxCodeAlreadyRegistered($data['tax_code']);
+                if ($taxCodeCheck['exists']) {
+                    $entityType = $taxCodeCheck['type'] === 'socio' ? 'SOCIO' : 'CADETTO';
+                    return [
+                        'success' => false,
+                        'error' => "$entityType GIÀ ISCRITTO. IMPOSSIBILE GENERARE UNA NUOVA DOMANDA DI ISCRIZIONE."
+                    ];
+                }
+            }
+            
             $this->db->beginTransaction();
             
             // Genera codice univoco
@@ -212,6 +224,18 @@ class ApplicationController {
      */
     public function createJunior($data) {
         try {
+            // Verifica se il codice fiscale è già registrato tra soci o cadetti attivi
+            if (!empty($data['tax_code'])) {
+                $taxCodeCheck = $this->checkTaxCodeAlreadyRegistered($data['tax_code']);
+                if ($taxCodeCheck['exists']) {
+                    $entityType = $taxCodeCheck['type'] === 'socio' ? 'SOCIO' : 'CADETTO';
+                    return [
+                        'success' => false,
+                        'error' => "$entityType GIÀ ISCRITTO. IMPOSSIBILE GENERARE UNA NUOVA DOMANDA DI ISCRIZIONE."
+                    ];
+                }
+            }
+            
             $this->db->beginTransaction();
             
             // Genera codice univoco
@@ -485,6 +509,42 @@ class ApplicationController {
         } while ($existing);
         
         return $code;
+    }
+    
+    /**
+     * Verifica se il codice fiscale è già presente in soci o cadetti attivi
+     * 
+     * @param string $taxCode Codice fiscale da verificare
+     * @return array ['exists' => bool, 'type' => 'socio'|'cadetto'|null]
+     */
+    private function checkTaxCodeAlreadyRegistered($taxCode) {
+        if (empty($taxCode)) {
+            return ['exists' => false, 'type' => null];
+        }
+        
+        $taxCode = strtoupper(trim($taxCode));
+        
+        // Controlla se esiste tra i soci attivi
+        $existingMember = $this->db->fetchOne(
+            "SELECT id FROM members WHERE tax_code = ? AND member_status = 'attivo'",
+            [$taxCode]
+        );
+        
+        if ($existingMember) {
+            return ['exists' => true, 'type' => 'socio'];
+        }
+        
+        // Controlla se esiste tra i cadetti attivi
+        $existingJunior = $this->db->fetchOne(
+            "SELECT id FROM junior_members WHERE tax_code = ? AND member_status = 'attivo'",
+            [$taxCode]
+        );
+        
+        if ($existingJunior) {
+            return ['exists' => true, 'type' => 'cadetto'];
+        }
+        
+        return ['exists' => false, 'type' => null];
     }
     
     /**
