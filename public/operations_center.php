@@ -213,9 +213,13 @@ $pageTitle = 'Centrale Operativa';
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-broadcast-pin"></i> Gestione Radio</h5>
-<!--                                <a href="dispatch.php" class="btn btn-sm btn-primary">                                                      -->
-<!--                                    <i class="bi bi-broadcast"></i> Dispatch                                                      -->
-<!--                                </a>                                                      -->
+                                <div>
+                                    <?php if ($app->checkPermission('operations_center', 'edit')): ?>
+                                        <a href="radio_directory.php" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-list"></i> Gestisci Radio
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                                 <?php if (empty($dashboard['available_radios'])): ?>
@@ -234,13 +238,6 @@ $pageTitle = 'Centrale Operativa';
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
-                                <?php endif; ?>
-                                <?php if ($app->checkPermission('operations_center', 'edit')): ?>
-                                    <div class="mt-3">
-                                        <a href="radio_directory.php" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-list"></i> Gestisci Radio
-                                        </a>
-                                    </div>
                                 <?php endif; ?>
                             </div>
                         </div>
