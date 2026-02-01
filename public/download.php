@@ -92,8 +92,8 @@ switch ($type) {
         if ($file) {
             $filePath = $file['pdf_file'];
             
-            // Admin can access all applications
-            $canAccess = $app->checkPermission('settings', 'view');
+            // Users with applications view permission can access application PDFs
+            $canAccess = $app->checkPermission('applications', 'view');
         }
         break;
         
