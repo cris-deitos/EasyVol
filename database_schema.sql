@@ -3008,12 +3008,25 @@ INSERT INTO `permissions` (`module`, `action`, `description`)
 SELECT 'newsletters', 'send', 'Inviare newsletter'
 WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'newsletters' AND `action` = 'send');
 
--- Grant all GDPR, warehouse, and password management permissions to admin role (role_id = 1)
+-- Add applications management permissions (if they don't exist)
+INSERT INTO `permissions` (`module`, `action`, `description`)
+SELECT 'applications', 'view', 'Visualizzazione domande di iscrizione'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'applications' AND `action` = 'view');
+
+INSERT INTO `permissions` (`module`, `action`, `description`)
+SELECT 'applications', 'edit', 'Modifica e approvazione domande di iscrizione'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'applications' AND `action` = 'edit');
+
+INSERT INTO `permissions` (`module`, `action`, `description`)
+SELECT 'applications', 'delete', 'Eliminazione domande di iscrizione'
+WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE `module` = 'applications' AND `action` = 'delete');
+
+-- Grant all GDPR, warehouse, password management, and applications permissions to admin role (role_id = 1)
 -- NOTE: This assumes the admin role has ID 1. If your system uses a different
 --       role ID for administrators, adjust this query accordingly or run manually.
 INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT 1, p.id FROM `permissions` p 
-WHERE p.module IN ('warehouse', 'gdpr_compliance', 'password_management')
+WHERE p.module IN ('warehouse', 'gdpr_compliance', 'password_management', 'applications')
 AND NOT EXISTS (
     SELECT 1 FROM `role_permissions` rp 
     WHERE rp.role_id = 1 AND rp.permission_id = p.id
