@@ -1056,6 +1056,10 @@ $associationName = $config['association']['name'] ?? 'Associazione';
         let initialFormState = null;
         let hasFormChanged = false;
         
+        // Internal form fields to exclude from change detection
+        // These are metadata fields that don't represent user-editable data
+        const INTERNAL_FORM_FIELDS = ['csrf_token', 'action'];
+        
         // Get serialized form state for comparison
         function getFormState() {
             const form = document.getElementById('updateForm');
@@ -1063,8 +1067,8 @@ $associationName = $config['association']['name'] ?? 'Associazione';
             const state = {};
             
             for (let [key, value] of formData.entries()) {
-                // Skip CSRF token as it doesn't represent user data
-                if (key === 'csrf_token' || key === 'action') continue;
+                // Skip internal form fields as they don't represent user data
+                if (INTERNAL_FORM_FIELDS.includes(key)) continue;
                 
                 if (state[key]) {
                     // Handle multiple values with same name
@@ -1116,7 +1120,8 @@ $associationName = $config['association']['name'] ?? 'Associazione';
         
         // Mark form as changed (called when adding/removing items)
         function markFormAsChanged() {
-            // Small delay to let DOM update
+            // 50ms delay allows DOM to update after add/remove operations
+            // before recalculating form state for comparison
             setTimeout(updateSubmitButtonState, 50);
         }
         
@@ -1132,37 +1137,37 @@ $associationName = $config['association']['name'] ?? 'Associazione';
             const form = document.getElementById('updateForm');
             form.addEventListener('input', updateSubmitButtonState);
             form.addEventListener('change', updateSubmitButtonState);
-        });
-        
-        // ========================================
-        // CONFIRMATION MODAL HANDLING
-        // ========================================
-        
-        // Open confirmation modal when submit button is clicked
-        document.getElementById('submitBtn').addEventListener('click', function() {
-            if (!hasFormChanged) {
-                alert('Non hai apportato modifiche ai dati.');
-                return;
-            }
-            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-            modal.show();
-        });
-        
-        // Actually submit the form when confirmed
-        document.getElementById('confirmSaveBtn').addEventListener('click', function() {
-            // Hide modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-            modal.hide();
             
-            // Submit the form
-            document.getElementById('updateForm').submit();
+            // ========================================
+            // CONFIRMATION MODAL HANDLING
+            // ========================================
+            
+            // Open confirmation modal when submit button is clicked
+            document.getElementById('submitBtn').addEventListener('click', function() {
+                if (!hasFormChanged) {
+                    alert('Non hai apportato modifiche ai dati.');
+                    return;
+                }
+                const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                modal.show();
+            });
+            
+            // Actually submit the form when confirmed
+            document.getElementById('confirmSaveBtn').addEventListener('click', function() {
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+                modal.hide();
+                
+                // Submit the form
+                document.getElementById('updateForm').submit();
+            });
         });
     </script>
     
     <style>
-        /* Style for enabled save button */
+        /* Style for disabled save button with accessible contrast */
         .btn-submit:disabled {
-            background: #ccc;
+            background: #6c757d;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
