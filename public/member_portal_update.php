@@ -849,11 +849,50 @@ $associationName = $config['association']['name'] ?? 'Associazione';
             
             <!-- Submit Button -->
             <div class="text-center mt-4 mb-5">
-                <button type="submit" class="btn btn-submit">
+                <button type="button" id="submitBtn" class="btn btn-submit" disabled title="Modifica i dati prima di salvare">
                     <i class="bi bi-save"></i> Salva Modifiche
                 </button>
+                <p id="noChangesHint" class="text-muted mt-2" style="font-size: 14px;">
+                    <i class="bi bi-info-circle"></i> Modifica almeno un dato per abilitare il salvataggio
+                </p>
             </div>
         </form>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; border: none;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px 16px 0 0;">
+                    <h5 class="modal-title" id="confirmModalLabel">
+                        <i class="bi bi-question-circle"></i> Conferma Salvataggio
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                </div>
+                <div class="modal-body" style="padding: 25px;">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size: 48px; color: #ffc107;"></i>
+                    </div>
+                    <p class="text-center" style="font-size: 16px; font-weight: 500;">
+                        SEI SICURO DI AVER MODIFICATO TUTTI I DATI?
+                    </p>
+                    <p class="text-center text-muted" style="font-size: 14px;">
+                        Premi il pulsante <strong>Salva Modifiche</strong> SOLO al termine delle modifiche, non ad ogni scheda.
+                    </p>
+                    <div class="alert alert-info" style="border-radius: 10px;">
+                        <i class="bi bi-info-circle"></i> Dopo il salvataggio riceverai una conferma via email con il riepilogo delle modifiche.
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: none; padding: 0 25px 25px 25px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 25px;">
+                        <i class="bi bi-x-circle"></i> Annulla
+                    </button>
+                    <button type="button" id="confirmSaveBtn" class="btn btn-submit" style="border-radius: 8px; padding: 10px 25px;">
+                        <i class="bi bi-save"></i> SALVA MODIFICHE
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -865,6 +904,8 @@ $associationName = $config['association']['name'] ?? 'Associazione';
         
         function removeItem(btn) {
             btn.closest('.repeater-item').remove();
+            // Mark that structure changed (item removed)
+            markFormAsChanged();
         }
         
         function addContact() {
@@ -896,6 +937,8 @@ $associationName = $config['association']['name'] ?? 'Associazione';
             `;
             container.insertAdjacentHTML('beforeend', html);
             contactIndex++;
+            // Mark that structure changed (new item added)
+            markFormAsChanged();
         }
         
         function addCourse() {
@@ -929,6 +972,8 @@ $associationName = $config['association']['name'] ?? 'Associazione';
             `;
             container.insertAdjacentHTML('beforeend', html);
             courseIndex++;
+            // Mark that structure changed (new item added)
+            markFormAsChanged();
         }
         
         function addLicense() {
@@ -966,6 +1011,8 @@ $associationName = $config['association']['name'] ?? 'Associazione';
             `;
             container.insertAdjacentHTML('beforeend', html);
             licenseIndex++;
+            // Mark that structure changed (new item added)
+            markFormAsChanged();
         }
         
         function addHealth() {
@@ -997,14 +1044,144 @@ $associationName = $config['association']['name'] ?? 'Associazione';
             `;
             container.insertAdjacentHTML('beforeend', html);
             healthIndex++;
+            // Mark that structure changed (new item added)
+            markFormAsChanged();
         }
         
-        // Confirm before submit
-        document.getElementById('updateForm').addEventListener('submit', function(e) {
-            if (!confirm('Confermi di voler salvare le modifiche? Riceverai una conferma via email.')) {
-                e.preventDefault();
+        // ========================================
+        // CHANGE DETECTION SYSTEM
+        // ========================================
+        
+        // Store initial form state for comparison
+        let initialFormState = null;
+        let hasFormChanged = false;
+        
+        // Internal form fields to exclude from change detection
+        // These are metadata fields that don't represent user-editable data
+        const INTERNAL_FORM_FIELDS = ['csrf_token', 'action'];
+        
+        // Get serialized form state for comparison
+        function getFormState() {
+            const form = document.getElementById('updateForm');
+            const formData = new FormData(form);
+            const state = {};
+            
+            for (let [key, value] of formData.entries()) {
+                // Skip internal form fields as they don't represent user data
+                if (INTERNAL_FORM_FIELDS.includes(key)) continue;
+                
+                if (state[key]) {
+                    // Handle multiple values with same name
+                    if (Array.isArray(state[key])) {
+                        state[key].push(value);
+                    } else {
+                        state[key] = [state[key], value];
+                    }
+                } else {
+                    state[key] = value;
+                }
             }
+            
+            // Also count number of repeater items
+            state['_contacts_count'] = document.querySelectorAll('#contacts-container .repeater-item').length;
+            state['_courses_count'] = document.querySelectorAll('#courses-container .repeater-item').length;
+            state['_licenses_count'] = document.querySelectorAll('#licenses-container .repeater-item').length;
+            state['_health_count'] = document.querySelectorAll('#health-container .repeater-item').length;
+            
+            return JSON.stringify(state);
+        }
+        
+        // Check if form has changed from initial state
+        function checkFormChanges() {
+            if (initialFormState === null) return false;
+            const currentState = getFormState();
+            return currentState !== initialFormState;
+        }
+        
+        // Update submit button state based on changes
+        function updateSubmitButtonState() {
+            const submitBtn = document.getElementById('submitBtn');
+            const hint = document.getElementById('noChangesHint');
+            
+            if (checkFormChanges()) {
+                hasFormChanged = true;
+                submitBtn.disabled = false;
+                submitBtn.title = 'Clicca per salvare le modifiche';
+                submitBtn.classList.add('btn-changed');
+                if (hint) hint.style.display = 'none';
+            } else {
+                hasFormChanged = false;
+                submitBtn.disabled = true;
+                submitBtn.title = 'Modifica i dati prima di salvare';
+                submitBtn.classList.remove('btn-changed');
+                if (hint) hint.style.display = 'block';
+            }
+        }
+        
+        // Mark form as changed (called when adding/removing items)
+        function markFormAsChanged() {
+            // 50ms delay allows DOM to update after add/remove operations
+            // before recalculating form state for comparison
+            setTimeout(updateSubmitButtonState, 50);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store initial form state after a small delay to ensure all elements are loaded
+            setTimeout(function() {
+                initialFormState = getFormState();
+                updateSubmitButtonState();
+            }, 100);
+            
+            // Add change listeners to all form inputs
+            const form = document.getElementById('updateForm');
+            form.addEventListener('input', updateSubmitButtonState);
+            form.addEventListener('change', updateSubmitButtonState);
+            
+            // ========================================
+            // CONFIRMATION MODAL HANDLING
+            // ========================================
+            
+            // Open confirmation modal when submit button is clicked
+            document.getElementById('submitBtn').addEventListener('click', function() {
+                if (!hasFormChanged) {
+                    alert('Non hai apportato modifiche ai dati.');
+                    return;
+                }
+                const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                modal.show();
+            });
+            
+            // Actually submit the form when confirmed
+            document.getElementById('confirmSaveBtn').addEventListener('click', function() {
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+                modal.hide();
+                
+                // Submit the form
+                document.getElementById('updateForm').submit();
+            });
         });
     </script>
+    
+    <style>
+        /* Style for disabled save button with accessible contrast */
+        .btn-submit:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-submit.btn-changed {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+        }
+    </style>
 </body>
 </html>
