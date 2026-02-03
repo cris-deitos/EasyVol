@@ -110,6 +110,9 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             height: 8px;
             margin-bottom: 10px;
         }
+        .progress-bar {
+            transition: width 0.3s ease-out;
+        }
         #playPauseBtn {
             width: 100px;
         }
@@ -204,6 +207,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         let isPlaying = false;
         let animationTimeout = null;
         let lastPastFrameIndex = -1; // Track where past frames end and nowcast begins
+        let fadeAnimationId = null; // Track ongoing fade animation
         
         // RainViewer API options
         const optionTileSize = 256;
@@ -213,7 +217,8 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         const optionExtension = 'webp';
         
         // Animation settings
-        const frameDuration = 1000; // Total time per frame in ms (same as before)
+        const frameDuration = 500; // Total time per frame in ms (faster for smoother feel)
+        const crossfadeDuration = 300; // Crossfade transition time in ms
 
         // Add radar layer for a specific frame
         function addRadarLayer(frame) {
@@ -281,9 +286,9 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                     // Pre-load all frames for smooth animation
                     radarFrames.forEach(frame => addRadarLayer(frame));
                     
-                    // Start from the last past frame
+                    // Start from the last past frame (instant transition for initial display)
                     currentFrameIndex = data.radar.past.length - 1;
-                    showFrame(currentFrameIndex);
+                    showFrame(currentFrameIndex, true);
                 } else {
                     document.getElementById('radarInfo').innerHTML = 
                         '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile</small>';
@@ -300,8 +305,59 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         // Track the currently visible frame path
         let visibleFramePath = null;
 
-        // Show specific frame with instant transition
-        function showFrame(index) {
+        // Crossfade animation using requestAnimationFrame for smooth transitions
+        function crossfade(fromLayer, toLayer, duration, callback) {
+            // Cancel any ongoing fade animation
+            if (fadeAnimationId) {
+                cancelAnimationFrame(fadeAnimationId);
+                fadeAnimationId = null;
+            }
+            
+            const startTime = performance.now();
+            const targetOpacity = 0.7;
+            
+            // Ensure target layer starts at 0 opacity
+            if (toLayer) {
+                toLayer.setOpacity(0);
+            }
+            
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Use easeInOutCubic for smoother feel
+                const eased = progress < 0.5 
+                    ? 4 * progress * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                
+                // Update opacities
+                if (fromLayer) {
+                    fromLayer.setOpacity(targetOpacity * (1 - eased));
+                }
+                if (toLayer) {
+                    toLayer.setOpacity(targetOpacity * eased);
+                }
+                
+                if (progress < 1) {
+                    fadeAnimationId = requestAnimationFrame(animate);
+                } else {
+                    fadeAnimationId = null;
+                    // Ensure final state
+                    if (fromLayer) {
+                        fromLayer.setOpacity(0);
+                    }
+                    if (toLayer) {
+                        toLayer.setOpacity(targetOpacity);
+                    }
+                    if (callback) callback();
+                }
+            }
+            
+            fadeAnimationId = requestAnimationFrame(animate);
+        }
+
+        // Show specific frame with smooth crossfade transition
+        function showFrame(index, instant = false) {
             if (radarFrames.length === 0 || index < 0 || index >= radarFrames.length) {
                 return;
             }
@@ -311,12 +367,22 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             const currentFrame = radarFrames[index];
             visibleFramePath = currentFrame.path;
             
-            // Instant switch - only update previous and current layers
-            if (previousFramePath && previousFramePath !== currentFrame.path && radarLayers[previousFramePath]) {
-                radarLayers[previousFramePath].setOpacity(0);
-            }
-            if (radarLayers[currentFrame.path]) {
-                radarLayers[currentFrame.path].setOpacity(0.7);
+            const fromLayer = previousFramePath && previousFramePath !== currentFrame.path 
+                ? radarLayers[previousFramePath] 
+                : null;
+            const toLayer = radarLayers[currentFrame.path];
+            
+            if (instant || !fromLayer) {
+                // Instant switch for first frame or manual navigation
+                if (fromLayer) {
+                    fromLayer.setOpacity(0);
+                }
+                if (toLayer) {
+                    toLayer.setOpacity(0.7);
+                }
+            } else {
+                // Smooth crossfade for animation
+                crossfade(fromLayer, toLayer, crossfadeDuration);
             }
             
             // Update time display
@@ -382,6 +448,12 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 clearTimeout(animationTimeout);
                 animationTimeout = null;
             }
+            
+            // Cancel any ongoing fade animation
+            if (fadeAnimationId) {
+                cancelAnimationFrame(fadeAnimationId);
+                fadeAnimationId = null;
+            }
         }
 
         // Previous frame
@@ -391,7 +463,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             if (currentFrameIndex < 0) {
                 currentFrameIndex = radarFrames.length - 1;
             }
-            showFrame(currentFrameIndex);
+            showFrame(currentFrameIndex, true);
         }
 
         // Next frame
@@ -401,7 +473,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             if (currentFrameIndex >= radarFrames.length) {
                 currentFrameIndex = 0;
             }
-            showFrame(currentFrameIndex);
+            showFrame(currentFrameIndex, true);
         }
 
         // Load radar data on page load
