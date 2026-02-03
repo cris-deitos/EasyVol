@@ -304,14 +304,19 @@ $pageTitle = 'Radar Meteo - Nord Italia';
 
         // Track the currently visible frame path
         let visibleFramePath = null;
-
-        // Crossfade animation using requestAnimationFrame for smooth transitions
-        function crossfade(fromLayer, toLayer, duration, callback) {
-            // Cancel any ongoing fade animation
+        
+        // Helper function to cancel any ongoing fade animation
+        function cancelFadeAnimation() {
             if (fadeAnimationId) {
                 cancelAnimationFrame(fadeAnimationId);
                 fadeAnimationId = null;
             }
+        }
+
+        // Crossfade animation using requestAnimationFrame for smooth transitions
+        function crossfade(fromLayer, toLayer, duration, callback) {
+            // Cancel any ongoing fade animation before starting new one
+            cancelFadeAnimation();
             
             const startTime = performance.now();
             const targetOpacity = 0.7;
@@ -373,10 +378,12 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             const toLayer = radarLayers[currentFrame.path];
             
             if (instant || !fromLayer) {
-                // Instant switch for first frame or manual navigation
+                // Instant switch: for initial load (no previous frame) or manual navigation
+                // Hide the previous frame if it exists
                 if (fromLayer) {
                     fromLayer.setOpacity(0);
                 }
+                // Show the new frame
                 if (toLayer) {
                     toLayer.setOpacity(0.7);
                 }
@@ -450,10 +457,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             }
             
             // Cancel any ongoing fade animation
-            if (fadeAnimationId) {
-                cancelAnimationFrame(fadeAnimationId);
-                fadeAnimationId = null;
-            }
+            cancelFadeAnimation();
         }
 
         // Previous frame
