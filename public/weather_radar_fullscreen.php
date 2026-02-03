@@ -219,9 +219,11 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         // Animation settings
         const frameDuration = 500; // Total time per frame in ms (faster for smoother feel)
         const crossfadeDuration = 300; // Crossfade transition time in ms
+        const initialFrameLoadTimeout = 3000; // Max wait time for initial frame tiles to load (ms)
 
         // Add radar layer for a specific frame
-        function addRadarLayer(frame) {
+        // onLoad: optional callback fired when all visible tiles in the current viewport are loaded
+        function addRadarLayer(frame, onLoad = null) {
             if (!radarLayers[frame.path]) {
                 const tileUrl = `${apiData.host}${frame.path}/${optionTileSize}/{z}/{x}/{y}/${optionColorScheme}/${optionSmoothData}_${optionSnowColors}.${optionExtension}`;
                 
@@ -232,7 +234,15 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                     attribution: '&copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
                 });
                 
+                // Add load event listener if callback provided
+                if (onLoad) {
+                    layer.once('load', onLoad);
+                }
+                
                 radarLayers[frame.path] = layer;
+            } else if (onLoad) {
+                // Layer already exists, call callback immediately
+                onLoad();
             }
             
             if (!map.hasLayer(radarLayers[frame.path])) {
@@ -284,21 +294,43 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                         `Intervallo: ogni ${intervalMinutes} minuti<br>` +
                         `Fonte: RainViewer</small>`;
                     
-                    // Pre-load all frames for smooth animation
-                    radarFrames.forEach(frame => addRadarLayer(frame));
-                    
-                    // Start from the last past frame (instant transition for initial display)
+                    // Start from the last past frame
                     currentFrameIndex = data.radar.past.length - 1;
-                    showFrame(currentFrameIndex, true);
+                    const initialFrame = radarFrames[currentFrameIndex];
                     
-                    // Auto-start animation after initial load (not on refresh)
-                    if (isInitialLoad) {
-                        setTimeout(() => {
-                            if (radarFrames.length > 0 && !isPlaying) {
-                                playAnimation();
-                            }
-                        }, 500);
-                    }
+                    // Track whether initial frame was shown
+                    let initialFrameShown = false;
+                    
+                    // Function to show initial frame and start animation
+                    const showInitialFrameAndAnimate = () => {
+                        if (initialFrameShown) return; // Prevent double execution
+                        initialFrameShown = true;
+                        
+                        showFrame(currentFrameIndex, true);
+                        
+                        // Auto-start animation after initial load (not on refresh)
+                        if (isInitialLoad) {
+                            setTimeout(() => {
+                                if (radarFrames.length > 0 && !isPlaying) {
+                                    playAnimation();
+                                }
+                            }, 500);
+                        }
+                    };
+                    
+                    // Add the initial frame first with a load callback, then pre-load others
+                    addRadarLayer(initialFrame, showInitialFrameAndAnimate);
+                    
+                    // Fallback: show frame after timeout even if tiles haven't fully loaded
+                    // This ensures the radar displays even with slow network or missing tiles
+                    setTimeout(showInitialFrameAndAnimate, initialFrameLoadTimeout);
+                    
+                    // Pre-load all other frames for smooth animation (in background)
+                    radarFrames.forEach((frame, index) => {
+                        if (index !== currentFrameIndex) {
+                            addRadarLayer(frame);
+                        }
+                    });
                 } else {
                     document.getElementById('radarInfo').innerHTML = 
                         '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile</small>';
