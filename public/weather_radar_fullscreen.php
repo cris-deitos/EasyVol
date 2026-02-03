@@ -196,19 +196,46 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             maxZoom: 19
         }).addTo(map);
 
-        // Define bounds for North Italy
-//        const northItalyBounds = [
-//            [43.5, 8.5],  // Southwest corner
-//            [47.0, 13.5]  // Northeast corner
-//        ];
-//        map.fitBounds(northItalyBounds);
-
         // Animation state
+        let apiData = {};
         let radarFrames = [];
+        let radarLayers = {};
         let currentFrameIndex = 0;
         let isPlaying = false;
-        let animationInterval = null;
-        let currentRadarLayer = null;
+        let animationTimeout = null;
+        let lastPastFrameIndex = -1; // Track where past frames end and nowcast begins
+        
+        // RainViewer API options
+        const optionTileSize = 256;
+        const optionColorScheme = 2; // Universal Blue
+        const optionSmoothData = 1;
+        const optionSnowColors = 1;
+        const optionExtension = 'webp';
+        
+        // Animation settings
+        const frameDuration = 1000; // Total time per frame in ms (same as before)
+
+        // Add radar layer for a specific frame
+        function addRadarLayer(frame) {
+            if (!radarLayers[frame.path]) {
+                const tileUrl = `${apiData.host}${frame.path}/${optionTileSize}/{z}/{x}/{y}/${optionColorScheme}/${optionSmoothData}_${optionSnowColors}.${optionExtension}`;
+                
+                const layer = L.tileLayer(tileUrl, {
+                    opacity: 0,
+                    maxZoom: 19,
+                    zIndex: frame.time,
+                    attribution: '&copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
+                });
+                
+                radarLayers[frame.path] = layer;
+            }
+            
+            if (!map.hasLayer(radarLayers[frame.path])) {
+                map.addLayer(radarLayers[frame.path]);
+            }
+            
+            return radarLayers[frame.path];
+        }
 
         // Load radar data from RainViewer API
         async function loadRadarData() {
@@ -219,25 +246,43 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 const data = await response.json();
                 
                 if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
-                    // Get past radar images (up to 24 most recent frames, typically at ~5-minute intervals)
-                    // This usually represents approximately 2 hours of radar data
-                    radarFrames = data.radar.past.slice(-24);
+                    // Store the full API response for using the host field
+                    apiData = data;
                     
-                    // Add current frame if available
+                    // Remove old layers
+                    for (const path in radarLayers) {
+                        map.removeLayer(radarLayers[path]);
+                    }
+                    radarLayers = {};
+                    visibleFramePath = null;
+                    
+                    // Get all past radar images (typically at ~5-minute intervals)
+                    radarFrames = [...data.radar.past];
+                    lastPastFrameIndex = data.radar.past.length - 1;
+                    
+                    // Add nowcast frames if available
                     if (data.radar.nowcast && data.radar.nowcast.length > 0) {
-                        radarFrames.push(data.radar.nowcast[0]);
+                        radarFrames = radarFrames.concat(data.radar.nowcast);
                     }
                     
                     // Update info
                     const latestTime = new Date(radarFrames[radarFrames.length - 1].time * 1000);
+                    const intervalMinutes = radarFrames.length > 1 
+                        ? Math.round((radarFrames[1].time - radarFrames[0].time) / 60) 
+                        : 5;
+                    
                     document.getElementById('radarInfo').innerHTML = 
                         `<small><i class="bi bi-check-circle text-success"></i> <strong>Dati disponibili</strong><br>` +
                         `Ultimo aggiornamento: ${latestTime.toLocaleString('it-IT')}<br>` +
                         `Frames disponibili: ${radarFrames.length}<br>` +
+                        `Intervallo: ogni ${intervalMinutes} minuti<br>` +
                         `Fonte: RainViewer</small>`;
                     
-                    // Start from the last frame
-                    currentFrameIndex = radarFrames.length - 1;
+                    // Pre-load all frames for smooth animation
+                    radarFrames.forEach(frame => addRadarLayer(frame));
+                    
+                    // Start from the last past frame
+                    currentFrameIndex = data.radar.past.length - 1;
                     showFrame(currentFrameIndex);
                 } else {
                     document.getElementById('radarInfo').innerHTML = 
@@ -252,32 +297,35 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             }
         }
 
-        // Show specific frame
+        // Track the currently visible frame path
+        let visibleFramePath = null;
+
+        // Show specific frame with instant transition
         function showFrame(index) {
             if (radarFrames.length === 0 || index < 0 || index >= radarFrames.length) {
                 return;
             }
             
+            const previousFramePath = visibleFramePath;
             currentFrameIndex = index;
-            const frame = radarFrames[index];
+            const currentFrame = radarFrames[index];
+            visibleFramePath = currentFrame.path;
             
-            // Remove existing radar layer
-            if (currentRadarLayer) {
-                map.removeLayer(currentRadarLayer);
+            // Instant switch - only update previous and current layers
+            if (previousFramePath && previousFramePath !== currentFrame.path && radarLayers[previousFramePath]) {
+                radarLayers[previousFramePath].setOpacity(0);
+            }
+            if (radarLayers[currentFrame.path]) {
+                radarLayers[currentFrame.path].setOpacity(0.7);
             }
             
-            // Add new radar layer
-            const radarUrl = `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
-            currentRadarLayer = L.tileLayer(radarUrl, {
-                opacity: 0.7,
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
-            }).addTo(map);
-            
             // Update time display
-            const frameTime = new Date(frame.time * 1000);
+            const frameTime = new Date(currentFrame.time * 1000);
+            const isNowcast = index > lastPastFrameIndex;
+            const timePrefix = isNowcast ? '(Previsione) ' : '';
+            
             document.getElementById('currentTimeDisplay').textContent = 
-                frameTime.toLocaleString('it-IT', {
+                timePrefix + frameTime.toLocaleString('it-IT', {
                     hour: '2-digit',
                     minute: '2-digit',
                     day: '2-digit',
@@ -309,13 +357,19 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             document.getElementById('playPauseBtn').innerHTML = 
                 '<i class="bi bi-pause-fill"></i> Pausa';
             
-            animationInterval = setInterval(() => {
+            function animate() {
+                if (!isPlaying) return;
+                
                 currentFrameIndex++;
                 if (currentFrameIndex >= radarFrames.length) {
                     currentFrameIndex = 0;
                 }
                 showFrame(currentFrameIndex);
-            }, 1000); // 1 second per frame
+                
+                animationTimeout = setTimeout(animate, frameDuration);
+            }
+            
+            animationTimeout = setTimeout(animate, frameDuration);
         }
 
         // Pause animation
@@ -324,9 +378,9 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             document.getElementById('playPauseBtn').innerHTML = 
                 '<i class="bi bi-play-fill"></i> Play';
             
-            if (animationInterval) {
-                clearInterval(animationInterval);
-                animationInterval = null;
+            if (animationTimeout) {
+                clearTimeout(animationTimeout);
+                animationTimeout = null;
             }
         }
 
