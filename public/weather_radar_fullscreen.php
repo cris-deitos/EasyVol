@@ -243,7 +243,8 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         }
 
         // Load radar data from RainViewer API
-        async function loadRadarData() {
+        // isInitialLoad: if true, auto-start animation after successful load
+        async function loadRadarData(isInitialLoad = false) {
             document.getElementById('loadingIndicator').style.display = 'block';
             
             try {
@@ -289,6 +290,15 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                     // Start from the last past frame (instant transition for initial display)
                     currentFrameIndex = data.radar.past.length - 1;
                     showFrame(currentFrameIndex, true);
+                    
+                    // Auto-start animation after initial load (not on refresh)
+                    if (isInitialLoad) {
+                        setTimeout(() => {
+                            if (radarFrames.length > 0 && !isPlaying) {
+                                playAnimation();
+                            }
+                        }, 500);
+                    }
                 } else {
                     document.getElementById('radarInfo').innerHTML = 
                         '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile</small>';
@@ -481,24 +491,17 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         }
 
         // Load radar data on page load
-        loadRadarData();
+        loadRadarData(true);
 
         // Auto-refresh every 5 minutes
         setInterval(async () => {
             const wasPlaying = isPlaying;
             pauseAnimation();
             await loadRadarData();
-            if (wasPlaying) {
+            if (wasPlaying && !isPlaying) {
                 playAnimation();
             }
         }, 5 * 60 * 1000);
-        
-        // Auto-start animation after 2 seconds
-        setTimeout(() => {
-            if (radarFrames.length > 0) {
-                playAnimation();
-            }
-        }, 2000);
     </script>
 </body>
 </html>
