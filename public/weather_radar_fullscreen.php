@@ -214,7 +214,6 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         
         // Animation settings
         const frameDuration = 1000; // Total time per frame in ms (same as before)
-        const crossfadeDuration = 300; // Duration of crossfade transition in ms
 
         // Add radar layer for a specific frame
         function addRadarLayer(frame) {
@@ -236,32 +235,6 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             }
             
             return radarLayers[frame.path];
-        }
-
-        // Animate opacity with smooth transition
-        function animateOpacity(layer, fromOpacity, toOpacity, duration, callback) {
-            const startTime = performance.now();
-            
-            function animate(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Ease in-out for smoother transition
-                const easeProgress = progress < 0.5 
-                    ? 2 * progress * progress 
-                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-                
-                const currentOpacity = fromOpacity + (toOpacity - fromOpacity) * easeProgress;
-                layer.setOpacity(currentOpacity);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else if (callback) {
-                    callback();
-                }
-            }
-            
-            requestAnimationFrame(animate);
         }
 
         // Load radar data from RainViewer API
@@ -309,7 +282,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                     
                     // Start from the last past frame
                     currentFrameIndex = data.radar.past.length - 1;
-                    showFrame(currentFrameIndex, true);
+                    showFrame(currentFrameIndex);
                 } else {
                     document.getElementById('radarInfo').innerHTML = 
                         '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile</small>';
@@ -323,30 +296,18 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             }
         }
 
-        // Show specific frame with optional crossfade
-        function showFrame(index, instant = false) {
+        // Show specific frame with instant transition
+        function showFrame(index) {
             if (radarFrames.length === 0 || index < 0 || index >= radarFrames.length) {
                 return;
             }
             
-            const previousIndex = currentFrameIndex;
             currentFrameIndex = index;
-            
             const currentFrame = radarFrames[index];
-            const previousFrame = radarFrames[previousIndex];
             
-            const currentLayer = addRadarLayer(currentFrame);
-            const previousLayer = previousIndex !== index ? radarLayers[previousFrame.path] : null;
-            
-            if (instant || !previousLayer) {
-                // Instant switch - hide all others, show current
-                for (const path in radarLayers) {
-                    radarLayers[path].setOpacity(path === currentFrame.path ? 0.7 : 0);
-                }
-            } else {
-                // Crossfade transition
-                animateOpacity(currentLayer, 0, 0.7, crossfadeDuration);
-                animateOpacity(previousLayer, 0.7, 0, crossfadeDuration);
+            // Instant switch - hide all others, show current
+            for (const path in radarLayers) {
+                radarLayers[path].setOpacity(path === currentFrame.path ? 0.7 : 0);
             }
             
             // Update time display
