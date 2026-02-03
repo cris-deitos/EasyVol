@@ -254,6 +254,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                         map.removeLayer(radarLayers[path]);
                     }
                     radarLayers = {};
+                    visibleFramePath = null;
                     
                     // Get all past radar images (typically at ~5-minute intervals)
                     radarFrames = [...data.radar.past];
@@ -296,18 +297,26 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             }
         }
 
+        // Track the currently visible frame path
+        let visibleFramePath = null;
+
         // Show specific frame with instant transition
         function showFrame(index) {
             if (radarFrames.length === 0 || index < 0 || index >= radarFrames.length) {
                 return;
             }
             
+            const previousFramePath = visibleFramePath;
             currentFrameIndex = index;
             const currentFrame = radarFrames[index];
+            visibleFramePath = currentFrame.path;
             
-            // Instant switch - hide all others, show current
-            for (const path in radarLayers) {
-                radarLayers[path].setOpacity(path === currentFrame.path ? 0.7 : 0);
+            // Instant switch - only update previous and current layers
+            if (previousFramePath && previousFramePath !== currentFrame.path && radarLayers[previousFramePath]) {
+                radarLayers[previousFramePath].setOpacity(0);
+            }
+            if (radarLayers[currentFrame.path]) {
+                radarLayers[currentFrame.path].setOpacity(0.7);
             }
             
             // Update time display
