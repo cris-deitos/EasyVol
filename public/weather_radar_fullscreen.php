@@ -203,6 +203,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         let currentFrameIndex = 0;
         let isPlaying = false;
         let animationTimeout = null;
+        let lastPastFrameIndex = -1; // Track where past frames end and nowcast begins
         
         // RainViewer API options
         const optionTileSize = 256;
@@ -283,6 +284,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                     
                     // Get all past radar images (typically at ~5-minute intervals)
                     radarFrames = [...data.radar.past];
+                    lastPastFrameIndex = data.radar.past.length - 1;
                     
                     // Add nowcast frames if available
                     if (data.radar.nowcast && data.radar.nowcast.length > 0) {
@@ -293,7 +295,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                     const latestTime = new Date(radarFrames[radarFrames.length - 1].time * 1000);
                     const intervalMinutes = radarFrames.length > 1 
                         ? Math.round((radarFrames[1].time - radarFrames[0].time) / 60) 
-                        : '~5';
+                        : 5;
                     
                     document.getElementById('radarInfo').innerHTML = 
                         `<small><i class="bi bi-check-circle text-success"></i> <strong>Dati disponibili</strong><br>` +
@@ -334,9 +336,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             const previousFrame = radarFrames[previousIndex];
             
             const currentLayer = addRadarLayer(currentFrame);
-            const previousLayer = previousIndex !== index && radarLayers[previousFrame.path] 
-                ? radarLayers[previousFrame.path] 
-                : null;
+            const previousLayer = previousIndex !== index ? radarLayers[previousFrame.path] : null;
             
             if (instant || !previousLayer) {
                 // Instant switch - hide all others, show current
@@ -351,8 +351,8 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             
             // Update time display
             const frameTime = new Date(currentFrame.time * 1000);
-            const isPast = currentFrame.time <= Date.now() / 1000;
-            const timePrefix = isPast ? '' : '(Previsione) ';
+            const isNowcast = index > lastPastFrameIndex;
+            const timePrefix = isNowcast ? '(Previsione) ' : '';
             
             document.getElementById('currentTimeDisplay').textContent = 
                 timePrefix + frameTime.toLocaleString('it-IT', {
