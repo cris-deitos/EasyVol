@@ -222,8 +222,8 @@ $pageTitle = $isEdit ? 'Modifica Articolo' : 'Nuovo Articolo';
                                     <label for="status" class="form-label">Stato <span class="text-danger">*</span></label>
                                     <select class="form-select" id="status" name="status" required>
                                         <option value="disponibile" <?php echo ($item['status'] ?? 'disponibile') === 'disponibile' ? 'selected' : ''; ?>>Disponibile</option>
-                                        <option value="esaurito" <?php echo ($item['status'] ?? '') === 'esaurito' ? 'selected' : ''; ?>>Esaurito</option>
-                                        <option value="in_ordine" <?php echo ($item['status'] ?? '') === 'in_ordine' ? 'selected' : ''; ?>>In Ordine</option>
+                                        <option value="in_manutenzione" <?php echo ($item['status'] ?? '') === 'in_manutenzione' ? 'selected' : ''; ?>>In Manutenzione</option>
+                                        <option value="fuori_servizio" <?php echo ($item['status'] ?? '') === 'fuori_servizio' ? 'selected' : ''; ?>>Fuori Servizio</option>
                                     </select>
                                 </div>
                             </div>
