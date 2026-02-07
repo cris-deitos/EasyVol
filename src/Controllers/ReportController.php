@@ -1422,4 +1422,432 @@ class ReportController {
             $this->exportToExcel($data, 'Scadenzario', 'scadenzario_' . date('Y-m-d') . '.xlsx');
         }
     }
+    
+    /**
+     * Raccoglie tutti i dati per il Report Mantenimento Requisiti
+     * 
+     * @param int $year Anno da analizzare (per gli eventi)
+     * @return array Dati completi del report
+     */
+    public function getMantenimentoRequisitiReportData($year) {
+        // Validazione anno
+        $year = intval($year);
+        $minYear = 2000;
+        $maxYear = date('Y') + 1;
+        if ($year < $minYear || $year > $maxYear) {
+            throw new \InvalidArgumentException("Anno non valido. Deve essere tra {$minYear} e {$maxYear}");
+        }
+        
+        $data = [];
+        
+        // ===== ELENCO SOCI ATTIVI =====
+        // Ordinato per matricola crescente
+        $sql = "SELECT 
+                    registration_number as matricola,
+                    first_name as nome,
+                    last_name as cognome,
+                    tax_code as codice_fiscale
+                FROM members
+                WHERE member_status = 'attivo'
+                ORDER BY COALESCE(CAST(NULLIF(registration_number, '') AS UNSIGNED), 0) ASC, registration_number ASC";
+        
+        $data['soci_attivi'] = $this->db->fetchAll($sql);
+        
+        // ===== ELENCO MEZZI =====
+        // Ordinato per ID
+        $sql = "SELECT 
+                    id,
+                    license_plate as targa,
+                    vehicle_type as tipo_veicolo,
+                    CONCAT_WS(' ', brand, model) as marca_modello,
+                    status as stato
+                FROM vehicles
+                ORDER BY id ASC";
+        
+        $data['mezzi'] = $this->db->fetchAll($sql);
+        
+        // ===== ELENCO ATTREZZATURE =====
+        // Ordinato per ID
+        $sql = "SELECT 
+                    id,
+                    name as denominazione,
+                    quantity as quantita
+                FROM warehouse_items
+                ORDER BY id ASC";
+        
+        $data['attrezzature'] = $this->db->fetchAll($sql);
+        
+        // ===== ELENCO EVENTI (solo emergenza e esercitazione) =====
+        // Ordinato per Data
+        $sql = "SELECT 
+                    e.id,
+                    e.title as titolo,
+                    e.start_date as data_ora_inizio,
+                    e.end_date as data_ora_fine,
+                    e.location as luogo,
+                    e.event_type as tipo_evento,
+                    e.description as descrizione,
+                    (SELECT COUNT(*) FROM interventions WHERE event_id = e.id) as numero_interventi
+                FROM events e
+                WHERE e.event_type IN ('emergenza', 'esercitazione')
+                AND YEAR(e.start_date) = ?
+                ORDER BY e.start_date ASC";
+        
+        $events = $this->db->fetchAll($sql, [$year]);
+        
+        // Per ogni evento, conta i volontari unici (da evento e interventi senza doppioni)
+        foreach ($events as &$event) {
+            $event['numero_volontari'] = $this->countUniqueVolunteersInEvent($event['id']);
+        }
+        unset($event);
+        
+        $data['eventi'] = $events;
+        
+        return $data;
+    }
+    
+    /**
+     * Conta i volontari unici intervenuti in un evento
+     * Include sia i partecipanti diretti all'evento che quelli negli interventi
+     * senza doppioni
+     * 
+     * @param int $eventId ID dell'evento
+     * @return int Numero di volontari unici
+     */
+    private function countUniqueVolunteersInEvent($eventId) {
+        $sql = "SELECT COUNT(DISTINCT member_id) as count
+                FROM (
+                    -- Partecipanti diretti all'evento
+                    SELECT member_id FROM event_participants WHERE event_id = ?
+                    UNION
+                    -- Partecipanti agli interventi dell'evento
+                    SELECT im.member_id 
+                    FROM intervention_members im
+                    INNER JOIN interventions i ON im.intervention_id = i.id
+                    WHERE i.event_id = ?
+                ) AS all_volunteers";
+        
+        $result = $this->db->fetchOne($sql, [$eventId, $eventId]);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Genera PDF del Report Mantenimento Requisiti
+     * 
+     * @param int $year Anno del report (per gli eventi)
+     * @param array $associationData Dati dell'associazione
+     * @return void (genera download)
+     */
+    public function generateMantenimentoRequisitiReportPDF($year, $associationData) {
+        // Validazione parametri
+        $year = intval($year);
+        $minYear = 2000;
+        $maxYear = date('Y') + 1;
+        if ($year < $minYear || $year > $maxYear) {
+            throw new \InvalidArgumentException("Anno non valido. Deve essere tra {$minYear} e {$maxYear}");
+        }
+        
+        if (!is_array($associationData)) {
+            throw new \InvalidArgumentException("I dati dell'associazione devono essere un array");
+        }
+        
+        // Raccogli i dati
+        $data = $this->getMantenimentoRequisitiReportData($year);
+        
+        // Inizializza mPDF
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_left' => 15,
+            'margin_right' => 15,
+            'margin_top' => 20,
+            'margin_bottom' => 20,
+            'margin_header' => 10,
+            'margin_footer' => 10,
+        ]);
+        
+        // Genera HTML
+        $html = $this->generateMantenimentoRequisitiReportHTML($year, $data, $associationData);
+        
+        // Scrivi HTML nel PDF
+        $mpdf->WriteHTML($html);
+        
+        // Output
+        $filename = "mantenimento_requisiti_{$year}.pdf";
+        $mpdf->Output($filename, \Mpdf\Output\Destination::DOWNLOAD);
+        exit;
+    }
+    
+    /**
+     * Genera HTML per il Report Mantenimento Requisiti
+     */
+    private function generateMantenimentoRequisitiReportHTML($year, $data, $associationData) {
+        $html = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: "DejaVu Sans", Arial, sans-serif;
+                    font-size: 10pt;
+                    line-height: 1.5;
+                }
+                h1 {
+                    color: #003366;
+                    text-align: center;
+                    font-size: 18pt;
+                    margin-bottom: 5px;
+                }
+                h2 {
+                    color: #003366;
+                    font-size: 14pt;
+                    margin-top: 20px;
+                    margin-bottom: 10px;
+                    border-bottom: 2px solid #003366;
+                    padding-bottom: 5px;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 3px solid #003366;
+                    padding-bottom: 15px;
+                }
+                .association-name {
+                    font-size: 16pt;
+                    font-weight: bold;
+                    color: #003366;
+                    margin-bottom: 5px;
+                }
+                .association-details {
+                    font-size: 9pt;
+                    color: #666;
+                }
+                .section {
+                    margin-bottom: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                    font-size: 9pt;
+                }
+                table th {
+                    background-color: #003366;
+                    color: white;
+                    padding: 8px;
+                    text-align: left;
+                    font-weight: bold;
+                }
+                table td {
+                    padding: 6px 8px;
+                    border-bottom: 1px solid #ddd;
+                }
+                table tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                .footer {
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 8pt;
+                    color: #666;
+                }
+                .no-data {
+                    font-style: italic;
+                    color: #666;
+                    padding: 10px;
+                }
+                .event-description {
+                    max-width: 200px;
+                    word-wrap: break-word;
+                }
+            </style>
+        </head>
+        <body>';
+        
+        // Header con informazioni associazione
+        $html .= '<div class="header">';
+        $html .= '<div class="association-name">' . htmlspecialchars($associationData['name'] ?? 'Associazione di Volontariato') . '</div>';
+        
+        $addressParts = [];
+        if (!empty($associationData['address_street'])) {
+            $addressStr = htmlspecialchars($associationData['address_street']);
+            if (!empty($associationData['address_number'])) {
+                $addressStr .= ' ' . htmlspecialchars($associationData['address_number']);
+            }
+            $addressParts[] = $addressStr;
+        }
+        if (!empty($associationData['address_city'])) {
+            $cityStr = '';
+            if (!empty($associationData['address_cap'])) {
+                $cityStr .= htmlspecialchars($associationData['address_cap']) . ' ';
+            }
+            $cityStr .= htmlspecialchars($associationData['address_city']);
+            if (!empty($associationData['address_province'])) {
+                $cityStr .= ' (' . htmlspecialchars($associationData['address_province']) . ')';
+            }
+            $addressParts[] = $cityStr;
+        }
+        if (!empty($addressParts)) {
+            $html .= '<div class="association-details">' . implode(' - ', $addressParts) . '</div>';
+        }
+        
+        if (!empty($associationData['email'])) {
+            $html .= '<div class="association-details">Email: ' . htmlspecialchars($associationData['email']) . '</div>';
+        }
+        if (!empty($associationData['phone'])) {
+            $html .= '<div class="association-details">Tel: ' . htmlspecialchars($associationData['phone']) . '</div>';
+        }
+        
+        $html .= '</div>';
+        
+        // Titolo Report
+        $html .= '<h1>Mantenimento Requisiti - Anno ' . $year . '</h1>';
+        $html .= '<p style="text-align: center; color: #666; font-size: 9pt;">Report generato il ' . date('d/m/Y H:i') . '</p>';
+        
+        // ===== ELENCO SOCI ATTIVI =====
+        $html .= '<h2>Elenco Soci Attivi</h2>';
+        $html .= '<div class="section">';
+        
+        if (!empty($data['soci_attivi'])) {
+            $html .= '<table>';
+            $html .= '<thead><tr>';
+            $html .= '<th>Matricola</th>';
+            $html .= '<th>Nome</th>';
+            $html .= '<th>Cognome</th>';
+            $html .= '<th>Codice Fiscale</th>';
+            $html .= '</tr></thead>';
+            $html .= '<tbody>';
+            
+            foreach ($data['soci_attivi'] as $socio) {
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($socio['matricola'] ?? '') . '</td>';
+                $html .= '<td>' . htmlspecialchars($socio['nome'] ?? '') . '</td>';
+                $html .= '<td>' . htmlspecialchars($socio['cognome'] ?? '') . '</td>';
+                $html .= '<td>' . htmlspecialchars($socio['codice_fiscale'] ?? '') . '</td>';
+                $html .= '</tr>';
+            }
+            
+            $html .= '</tbody></table>';
+            $html .= '<p style="font-size: 9pt; color: #666;">Totale soci attivi: ' . count($data['soci_attivi']) . '</p>';
+        } else {
+            $html .= '<p class="no-data">Nessun socio attivo presente.</p>';
+        }
+        
+        $html .= '</div>';
+        
+        // ===== ELENCO MEZZI =====
+        $html .= '<h2>Elenco Mezzi</h2>';
+        $html .= '<div class="section">';
+        
+        if (!empty($data['mezzi'])) {
+            $html .= '<table>';
+            $html .= '<thead><tr>';
+            $html .= '<th>Targa</th>';
+            $html .= '<th>Tipo Veicolo</th>';
+            $html .= '<th>Marca Modello</th>';
+            $html .= '<th>Stato</th>';
+            $html .= '</tr></thead>';
+            $html .= '<tbody>';
+            
+            foreach ($data['mezzi'] as $mezzo) {
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($mezzo['targa'] ?? '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars(ucfirst($mezzo['tipo_veicolo'] ?? '')) . '</td>';
+                $html .= '<td>' . htmlspecialchars(trim($mezzo['marca_modello'] ?? '')) . '</td>';
+                $html .= '<td>' . htmlspecialchars(ucfirst(str_replace('_', ' ', $mezzo['stato'] ?? ''))) . '</td>';
+                $html .= '</tr>';
+            }
+            
+            $html .= '</tbody></table>';
+            $html .= '<p style="font-size: 9pt; color: #666;">Totale mezzi: ' . count($data['mezzi']) . '</p>';
+        } else {
+            $html .= '<p class="no-data">Nessun mezzo presente.</p>';
+        }
+        
+        $html .= '</div>';
+        
+        // ===== ELENCO ATTREZZATURE =====
+        $html .= '<h2>Elenco Attrezzature</h2>';
+        $html .= '<div class="section">';
+        
+        if (!empty($data['attrezzature'])) {
+            $html .= '<table>';
+            $html .= '<thead><tr>';
+            $html .= '<th>Denominazione</th>';
+            $html .= '<th style="text-align: center;">Quantità</th>';
+            $html .= '</tr></thead>';
+            $html .= '<tbody>';
+            
+            foreach ($data['attrezzature'] as $attr) {
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($attr['denominazione'] ?? '') . '</td>';
+                $html .= '<td style="text-align: center;">' . intval($attr['quantita'] ?? 0) . '</td>';
+                $html .= '</tr>';
+            }
+            
+            $html .= '</tbody></table>';
+            $html .= '<p style="font-size: 9pt; color: #666;">Totale tipologie attrezzature: ' . count($data['attrezzature']) . '</p>';
+        } else {
+            $html .= '<p class="no-data">Nessuna attrezzatura presente.</p>';
+        }
+        
+        $html .= '</div>';
+        
+        // ===== ELENCO EVENTI (Emergenze e Esercitazioni) =====
+        $html .= '<h2>Elenco Eventi - Anno ' . $year . '</h2>';
+        $html .= '<p style="font-size: 9pt; color: #666; margin-top: -10px;">(Solo Emergenze e Esercitazioni)</p>';
+        $html .= '<div class="section">';
+        
+        if (!empty($data['eventi'])) {
+            $html .= '<table>';
+            $html .= '<thead><tr>';
+            $html .= '<th>Titolo</th>';
+            $html .= '<th>Data/Ora Inizio</th>';
+            $html .= '<th>Data/Ora Fine</th>';
+            $html .= '<th>Luogo</th>';
+            $html .= '<th>Tipo Evento</th>';
+            $html .= '<th style="width: 150px;">Descrizione</th>';
+            $html .= '<th style="text-align: center;">N. Interventi</th>';
+            $html .= '<th style="text-align: center;">N. Volontari</th>';
+            $html .= '</tr></thead>';
+            $html .= '<tbody>';
+            
+            foreach ($data['eventi'] as $evento) {
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($evento['titolo'] ?? '') . '</td>';
+                $html .= '<td>' . ($evento['data_ora_inizio'] ? date('d/m/Y H:i', strtotime($evento['data_ora_inizio'])) : '-') . '</td>';
+                $html .= '<td>' . ($evento['data_ora_fine'] ? date('d/m/Y H:i', strtotime($evento['data_ora_fine'])) : '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($evento['luogo'] ?? '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars(ucfirst($evento['tipo_evento'] ?? '')) . '</td>';
+                
+                // Descrizione troncata se troppo lunga
+                $descrizione = $evento['descrizione'] ?? '';
+                if (mb_strlen($descrizione, 'UTF-8') > 100) {
+                    $descrizione = mb_substr($descrizione, 0, 100, 'UTF-8') . '...';
+                }
+                $html .= '<td class="event-description">' . htmlspecialchars($descrizione) . '</td>';
+                
+                $html .= '<td style="text-align: center;">' . intval($evento['numero_interventi'] ?? 0) . '</td>';
+                $html .= '<td style="text-align: center;">' . intval($evento['numero_volontari'] ?? 0) . '</td>';
+                $html .= '</tr>';
+            }
+            
+            $html .= '</tbody></table>';
+            $html .= '<p style="font-size: 9pt; color: #666;">Totale eventi: ' . count($data['eventi']) . '</p>';
+        } else {
+            $html .= '<p class="no-data">Nessun evento (emergenza o esercitazione) per l\'anno ' . $year . '</p>';
+        }
+        
+        $html .= '</div>';
+        
+        // Footer
+        $html .= '<div class="footer">';
+        $html .= 'Report generato il ' . date('d/m/Y H:i') . ' da EasyVol';
+        $html .= '</div>';
+        
+        $html .= '</body></html>';
+        
+        return $html;
+    }
 }

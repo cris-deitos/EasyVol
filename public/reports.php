@@ -208,6 +208,28 @@ $pageTitle = 'Report e Statistiche';
                                                 </div>
                                             </div>
                                             
+                                            <!-- Report Mantenimento Requisiti PDF -->
+                                            <div class="col-md-12">
+                                                <div class="card h-100 border-secondary">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">
+                                                            <i class="bi bi-file-earmark-pdf text-secondary"></i>
+                                                            Mantenimento Requisiti
+                                                        </h5>
+                                                        <p class="card-text text-muted">
+                                                            Report PDF per il mantenimento requisiti con intestazione dell'Associazione.
+                                                            Include elenco soci attivi (matricola, nome, cognome, codice fiscale), 
+                                                            elenco mezzi (targa, tipo, marca modello, stato), elenco attrezzature 
+                                                            (denominazione, quantità), e elenco eventi dell'anno selezionato 
+                                                            (solo emergenze ed esercitazioni) con dettagli su interventi e volontari coinvolti.
+                                                        </p>
+                                                        <button class="btn btn-secondary" onclick="downloadReport('mantenimento_requisiti')">
+                                                            <i class="bi bi-file-earmark-pdf"></i> Scarica PDF
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
                                             <!-- Report 1: Ore volontariato per tipo di evento -->
                                             <div class="col-md-6">
                                                 <div class="card h-100 border-primary">

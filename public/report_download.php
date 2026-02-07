@@ -103,13 +103,38 @@ try {
             AutoLogger::logActivity('reports', 'export', null, "Export report chilometri mezzi - Anno {$year}");
             break;
             
+        case 'mantenimento_requisiti':
+            // Ottieni dati dell'associazione
+            $associationSql = "SELECT * FROM association LIMIT 1";
+            $associationData = $db->fetchOne($associationSql);
+            
+            if (empty($associationData)) {
+                $associationData = [
+                    'name' => 'Associazione di Volontariato',
+                    'address_street' => '',
+                    'address_number' => '',
+                    'address_city' => '',
+                    'address_province' => '',
+                    'address_cap' => '',
+                    'email' => '',
+                    'phone' => '',
+                ];
+            }
+            
+            // Log activity
+            AutoLogger::logActivity('reports', 'export', null, "Export Report Mantenimento Requisiti - Anno {$year}");
+            
+            // Genera PDF
+            $controller->generateMantenimentoRequisitiReportPDF($year, $associationData);
+            break;
+            
         default:
             http_response_code(400);
             die('Tipo di report non valido');
     }
     
     // Per i report Excel, verifica che ci siano dati
-    if ($reportType !== 'annual_association_report') {
+    if ($reportType !== 'annual_association_report' && $reportType !== 'mantenimento_requisiti') {
         if (empty($data)) {
             http_response_code(404);
             die('Nessun dato disponibile per il periodo selezionato');
