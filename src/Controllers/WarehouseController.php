@@ -140,7 +140,7 @@ class WarehouseController {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
             
             $params = [
-                $data['code'] ?? null,
+                !empty($data['code']) ? $data['code'] : null,
                 $data['name'],
                 $data['category'] ?? null,
                 $data['description'] ?? null,
@@ -193,7 +193,7 @@ class WarehouseController {
                 WHERE id = ?";
             
             $params = [
-                $data['code'] ?? null,
+                !empty($data['code']) ? $data['code'] : null,
                 $data['name'],
                 $data['category'] ?? null,
                 $data['description'] ?? null,
