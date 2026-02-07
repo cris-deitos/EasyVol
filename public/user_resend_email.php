@@ -55,8 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Show confirmation page for GET request
-$user = $controller->get($userId);
-if (!$user) {
+// Use $targetUser to avoid variable collision with navbar.php which sets $user to logged-in user
+$targetUser = $controller->get($userId);
+if (!$targetUser) {
     header('Location: users.php?error=not_found');
     exit;
 }
@@ -106,21 +107,21 @@ $pageTitle = 'Reinvia Email di Benvenuto';
                         <h5>Dettagli Utente:</h5>
                         <dl class="row">
                             <dt class="col-sm-3">Username:</dt>
-                            <dd class="col-sm-9"><strong><?php echo htmlspecialchars($user['username']); ?></strong></dd>
+                            <dd class="col-sm-9"><strong><?php echo htmlspecialchars($targetUser['username']); ?></strong></dd>
                             
                             <dt class="col-sm-3">Nome:</dt>
-                            <dd class="col-sm-9"><?php echo htmlspecialchars($user['full_name'] ?? '-'); ?></dd>
+                            <dd class="col-sm-9"><?php echo htmlspecialchars($targetUser['full_name'] ?? '-'); ?></dd>
                             
                             <dt class="col-sm-3">Email:</dt>
-                            <dd class="col-sm-9"><strong><?php echo htmlspecialchars($user['email']); ?></strong></dd>
+                            <dd class="col-sm-9"><strong><?php echo htmlspecialchars($targetUser['email']); ?></strong></dd>
                             
                             <dt class="col-sm-3">Ruolo:</dt>
-                            <dd class="col-sm-9"><?php echo htmlspecialchars($user['role_name'] ?? 'Nessuno'); ?></dd>
+                            <dd class="col-sm-9"><?php echo htmlspecialchars($targetUser['role_name'] ?? 'Nessuno'); ?></dd>
                         </dl>
                         
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i>
-                            L'email verrà inviata a: <strong><?php echo htmlspecialchars($user['email']); ?></strong>
+                            L'email verrà inviata a: <strong><?php echo htmlspecialchars($targetUser['email']); ?></strong>
                         </div>
                         
                         <form method="POST" action="">
