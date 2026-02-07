@@ -880,4 +880,48 @@ class FeePaymentController {
             'totalPages' => ceil($total / $perPage)
         ];
     }
+    
+    /**
+     * Ottieni tutti i soci senza quota versata per l'anno specificato (senza paginazione)
+     * Per export PDF
+     * 
+     * @param int $year Anno di riferimento
+     * @return array Lista di tutti i soci senza quota versata, ordinati per matricola
+     */
+    public function getAllUnpaidMembersForExport($year = null) {
+        if ($year === null) {
+            $year = date('Y');
+        }
+        
+        // Get adult members without payment for the specified year
+        $sqlAdult = "SELECT m.id, m.registration_number, m.first_name, m.last_name, 
+                    'adult' as member_type
+                    FROM members m
+                    WHERE m.member_status = 'attivo'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM member_fees mf 
+                        WHERE mf.member_id = m.id 
+                        AND mf.year = ?
+                    )";
+        
+        // Get junior members without payment for the specified year
+        $sqlJunior = "SELECT jm.id, jm.registration_number, jm.first_name, jm.last_name, 
+                     'junior' as member_type
+                     FROM junior_members jm
+                     WHERE jm.member_status = 'attivo'
+                     AND NOT EXISTS (
+                         SELECT 1 FROM junior_member_fees jmf 
+                         WHERE jmf.junior_member_id = jm.id 
+                         AND jmf.year = ?
+                     )";
+        
+        // Combine both queries and order by registration_number
+        $sql = "SELECT * FROM (
+                    ($sqlAdult) UNION ALL ($sqlJunior)
+                ) as combined
+                ORDER BY registration_number ASC";
+        
+        $stmt = $this->db->query($sql, [$year, $year]);
+        return $stmt->fetchAll();
+    }
 }

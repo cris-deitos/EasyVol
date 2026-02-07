@@ -449,13 +449,21 @@ $pageTitle = 'Gestione Pagamento Quote';
                         
                         <!-- Unpaid Members Table -->
                         <div class="card">
-                            <div class="card-header">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">
                                     Soci Attivi senza Pagamento per l'Anno <?php echo $unpaidYear; ?>
                                     <?php if ($unpaidTotal > 0): ?>
                                         (<?php echo $unpaidTotal; ?>)
                                     <?php endif; ?>
                                 </h5>
+                                <?php if ($unpaidTotal > 0): ?>
+                                <a href="unpaid_members_pdf.php?year=<?php echo $unpaidYear; ?>" 
+                                   class="btn btn-danger btn-sm" 
+                                   target="_blank"
+                                   title="Genera PDF con elenco soci senza pagamento">
+                                    <i class="bi bi-file-earmark-pdf"></i> Genera PDF
+                                </a>
+                                <?php endif; ?>
                             </div>
                             <div class="card-body p-0">
                                 <?php if (empty($unpaidMembers)): ?>
