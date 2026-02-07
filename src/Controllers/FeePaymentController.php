@@ -735,7 +735,8 @@ class FeePaymentController {
         $sql = "SELECT * FROM (
                     ($sqlAdult) UNION ALL ($sqlJunior)
                 ) as combined
-                ORDER BY CAST(registration_number AS UNSIGNED)";
+                ORDER BY CASE WHEN registration_number LIKE 'C-%' THEN 1 ELSE 0 END ASC,
+                         CAST(REPLACE(registration_number, 'C-', '') AS UNSIGNED) ASC";
         
         $stmt = $this->db->query($sql, [$year, $year]);
         $members = $stmt->fetchAll();
@@ -864,7 +865,8 @@ class FeePaymentController {
         $sql = "SELECT * FROM (
                     ($sqlAdult) UNION ALL ($sqlJunior)
                 ) as combined
-                ORDER BY CAST(registration_number AS UNSIGNED)
+                ORDER BY CASE WHEN registration_number LIKE 'C-%' THEN 1 ELSE 0 END ASC,
+                         CAST(REPLACE(registration_number, 'C-', '') AS UNSIGNED) ASC
                 LIMIT $perPage OFFSET $offset";
         
         // Merge parameters for main query (same as count query)
@@ -916,10 +918,12 @@ class FeePaymentController {
                      )";
         
         // Combine both queries and order by registration_number
+        // Sort Members (numeric) first, then Cadets (C-XX), both in ascending order
         $sql = "SELECT * FROM (
                     ($sqlAdult) UNION ALL ($sqlJunior)
                 ) as combined
-                ORDER BY CAST(registration_number AS UNSIGNED) ASC";
+                ORDER BY CASE WHEN registration_number LIKE 'C-%' THEN 1 ELSE 0 END ASC,
+                         CAST(REPLACE(registration_number, 'C-', '') AS UNSIGNED) ASC";
         
         $stmt = $this->db->query($sql, [$year, $year]);
         return $stmt->fetchAll();
