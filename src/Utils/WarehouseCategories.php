@@ -15,7 +15,7 @@ class WarehouseCategories {
             'dpi' => 'DPI (Dispositivi Protezione Individuale)',
             'attrezzatura_generica' => 'Attrezzatura Generica',
             'attrezzatura_logistica_da_campo' => 'Attrezzatura Logistica da Campo',
-            'attrezzatura_elettronica_ed_accessoro' => 'Attrezzatura Elettrica ed Accessori',
+            'attrezzatura_elettronica_ed_accessori' => 'Attrezzatura Elettrica ed Accessori',
             'attrezzatura_idrogeologico' => 'Attrezzatura Idrogeologico',
             'attrezzatura_interventi_e_manutenzioni' => 'Attrezzatura per Interventi e Manutenzioni',
             'attrezzatura_it_radio_tlc' => 'Attrezzatura Informatica Radio TLC',
