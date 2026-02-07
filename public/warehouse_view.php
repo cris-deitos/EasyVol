@@ -179,8 +179,8 @@ $pageTitle = 'Dettaglio Articolo: ' . $item['name'];
                                                     $status = $item['status'] ?? 'disponibile';
                                                     $statusClass = [
                                                         'disponibile' => 'success',
-                                                        'esaurito' => 'danger',
-                                                        'in_ordine' => 'warning'
+                                                        'in_manutenzione' => 'warning',
+                                                        'fuori_servizio' => 'danger'
                                                     ];
                                                     $class = $statusClass[$status] ?? 'secondary';
                                                     ?>
