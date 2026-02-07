@@ -1459,7 +1459,7 @@ class ReportController {
                     id,
                     license_plate as targa,
                     vehicle_type as tipo_veicolo,
-                    CONCAT(brand, ' ', model) as marca_modello,
+                    CONCAT_WS(' ', brand, model) as marca_modello,
                     status as stato
                 FROM vehicles
                 ORDER BY id ASC";
@@ -1782,7 +1782,7 @@ class ReportController {
             foreach ($data['attrezzature'] as $attr) {
                 $html .= '<tr>';
                 $html .= '<td>' . htmlspecialchars($attr['denominazione'] ?? '') . '</td>';
-                $html .= '<td style="text-align: center;">' . number_format($attr['quantita'] ?? 0) . '</td>';
+                $html .= '<td style="text-align: center;">' . intval($attr['quantita'] ?? 0) . '</td>';
                 $html .= '</tr>';
             }
             
@@ -1823,13 +1823,13 @@ class ReportController {
                 
                 // Descrizione troncata se troppo lunga
                 $descrizione = $evento['descrizione'] ?? '';
-                if (strlen($descrizione) > 100) {
-                    $descrizione = substr($descrizione, 0, 100) . '...';
+                if (mb_strlen($descrizione, 'UTF-8') > 100) {
+                    $descrizione = mb_substr($descrizione, 0, 100, 'UTF-8') . '...';
                 }
                 $html .= '<td class="event-description">' . htmlspecialchars($descrizione) . '</td>';
                 
-                $html .= '<td style="text-align: center;">' . number_format($evento['numero_interventi'] ?? 0) . '</td>';
-                $html .= '<td style="text-align: center;">' . number_format($evento['numero_volontari'] ?? 0) . '</td>';
+                $html .= '<td style="text-align: center;">' . intval($evento['numero_interventi'] ?? 0) . '</td>';
+                $html .= '<td style="text-align: center;">' . intval($evento['numero_volontari'] ?? 0) . '</td>';
                 $html .= '</tr>';
             }
             
