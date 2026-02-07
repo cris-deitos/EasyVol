@@ -1661,6 +1661,9 @@ class ReportController {
                     max-width: 200px;
                     word-wrap: break-word;
                 }
+                .page-break {
+                    page-break-before: always;
+                }
             </style>
         </head>
         <body>';
@@ -1737,6 +1740,7 @@ class ReportController {
         $html .= '</div>';
         
         // ===== ELENCO MEZZI =====
+        $html .= '<div class="page-break"></div>';
         $html .= '<h2>Elenco Mezzi</h2>';
         $html .= '<div class="section">';
         
@@ -1768,6 +1772,7 @@ class ReportController {
         $html .= '</div>';
         
         // ===== ELENCO ATTREZZATURE =====
+        $html .= '<div class="page-break"></div>';
         $html .= '<h2>Elenco Attrezzature</h2>';
         $html .= '<div class="section">';
         
@@ -1795,6 +1800,7 @@ class ReportController {
         $html .= '</div>';
         
         // ===== ELENCO EVENTI (Emergenze e Esercitazioni) =====
+        $html .= '<div class="page-break"></div>';
         $html .= '<h2>Elenco Eventi - Anno ' . $year . '</h2>';
         $html .= '<p style="font-size: 9pt; color: #666; margin-top: -10px;">(Solo Emergenze e Esercitazioni)</p>';
         $html .= '<div class="section">';
