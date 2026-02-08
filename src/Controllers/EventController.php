@@ -531,13 +531,23 @@ class EventController {
      */
     public function addInterventionParticipant($interventionId, $memberId, $role = null, $userId = null) {
         try {
-            // Check if already exists
+            // Check if already exists in intervention
             $sql = "SELECT id FROM intervention_members WHERE intervention_id = ? AND member_id = ?";
             $existing = $this->db->fetchOne($sql, [$interventionId, $memberId]);
             
             if ($existing) {
                 return ['error' => 'Il partecipante è già presente nell\'intervento'];
             }
+            
+            // Get event_id from intervention
+            $sql = "SELECT event_id FROM interventions WHERE id = ?";
+            $intervention = $this->db->fetchOne($sql, [$interventionId]);
+            
+            if (!$intervention) {
+                return ['error' => 'Intervento non trovato'];
+            }
+            
+            $eventId = $intervention['event_id'];
             
             // Note: hours_worked is initialized to 0 and will be updated later as work progresses
             $sql = "INSERT INTO intervention_members (intervention_id, member_id, role, hours_worked)
@@ -547,6 +557,20 @@ class EventController {
             
             if ($userId) {
                 $this->logActivity($userId, 'intervention_members', 'create', $interventionId, 'Aggiunto partecipante a intervento');
+            }
+            
+            // Also add participant to event level (if not already present)
+            $sql = "SELECT id FROM event_participants WHERE event_id = ? AND member_id = ?";
+            $existingEventParticipant = $this->db->fetchOne($sql, [$eventId, $memberId]);
+            
+            if (!$existingEventParticipant) {
+                $sql = "INSERT INTO event_participants (event_id, member_id, role, hours, notes, created_at)
+                        VALUES (?, ?, NULL, 0, NULL, NOW())";
+                $this->db->execute($sql, [$eventId, $memberId]);
+                
+                if ($userId) {
+                    $this->logActivity($userId, 'event_participants', 'create', $eventId, 'Aggiunto partecipante a evento (da intervento)');
+                }
             }
             
             return true;
@@ -561,13 +585,23 @@ class EventController {
      */
     public function addInterventionVehicle($interventionId, $vehicleId, $userId = null) {
         try {
-            // Check if already exists
+            // Check if already exists in intervention
             $sql = "SELECT id FROM intervention_vehicles WHERE intervention_id = ? AND vehicle_id = ?";
             $existing = $this->db->fetchOne($sql, [$interventionId, $vehicleId]);
             
             if ($existing) {
                 return ['error' => 'Il veicolo è già presente nell\'intervento'];
             }
+            
+            // Get event_id from intervention
+            $sql = "SELECT event_id FROM interventions WHERE id = ?";
+            $intervention = $this->db->fetchOne($sql, [$interventionId]);
+            
+            if (!$intervention) {
+                return ['error' => 'Intervento non trovato'];
+            }
+            
+            $eventId = $intervention['event_id'];
             
             // Note: km_start and km_end are initialized to NULL and will be recorded when the vehicle departs/returns
             $sql = "INSERT INTO intervention_vehicles (intervention_id, vehicle_id, km_start, km_end)
@@ -577,6 +611,20 @@ class EventController {
             
             if ($userId) {
                 $this->logActivity($userId, 'intervention_vehicles', 'create', $interventionId, 'Aggiunto veicolo a intervento');
+            }
+            
+            // Also add vehicle to event level (if not already present)
+            $sql = "SELECT id FROM event_vehicles WHERE event_id = ? AND vehicle_id = ?";
+            $existingEventVehicle = $this->db->fetchOne($sql, [$eventId, $vehicleId]);
+            
+            if (!$existingEventVehicle) {
+                $sql = "INSERT INTO event_vehicles (event_id, vehicle_id, driver_name, hours, km_traveled, notes, created_at)
+                        VALUES (?, ?, NULL, 0, 0, NULL, NOW())";
+                $this->db->execute($sql, [$eventId, $vehicleId]);
+                
+                if ($userId) {
+                    $this->logActivity($userId, 'event_vehicles', 'create', $eventId, 'Aggiunto veicolo a evento (da intervento)');
+                }
             }
             
             return true;
