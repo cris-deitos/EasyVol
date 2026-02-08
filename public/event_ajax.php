@@ -667,20 +667,16 @@ try {
                 exit;
             }
             
-            // Check if already assigned
-            $sql = "SELECT COUNT(*) as count FROM intervention_members WHERE intervention_id = ? AND member_id = ?";
-            $result = $db->fetchOne($sql, [$interventionId, $memberId]);
+            // Use controller method which handles both intervention and event-level participant sync
+            $result = $controller->addInterventionParticipant($interventionId, $memberId, null, $app->getUserId());
             
-            if ($result['count'] > 0) {
-                echo json_encode(['error' => 'Volontario già assegnato a questo intervento']);
-                exit;
+            if ($result === true) {
+                echo json_encode(['success' => true, 'message' => 'Volontario aggiunto all\'intervento']);
+            } elseif (is_array($result) && isset($result['error'])) {
+                echo json_encode(['error' => $result['error']]);
+            } else {
+                echo json_encode(['error' => 'Errore durante l\'aggiunta del volontario']);
             }
-            
-            // Insert
-            $sql = "INSERT INTO intervention_members (intervention_id, member_id) VALUES (?, ?)";
-            $db->execute($sql, [$interventionId, $memberId]);
-            
-            echo json_encode(['success' => true, 'message' => 'Volontario aggiunto all\'intervento']);
             break;
             
         case 'remove_intervention_member':
@@ -717,52 +713,6 @@ try {
             $db->execute($sql, [$interventionId, $memberId]);
             
             echo json_encode(['success' => true, 'message' => 'Volontario rimosso dall\'intervento']);
-            break;
-            
-        case 'add_intervention_vehicle':
-            // Add vehicle to intervention
-            if (!$app->checkPermission('events', 'edit')) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Permesso negato']);
-                exit;
-            }
-            
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                http_response_code(405);
-                echo json_encode(['error' => 'Metodo non consentito']);
-                exit;
-            }
-            
-            $input = $jsonInput ?? $_POST;
-            
-            if (!CsrfProtection::validateToken($input['csrf_token'] ?? '')) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Token di sicurezza non valido']);
-                exit;
-            }
-            
-            $interventionId = intval($input['intervention_id'] ?? 0);
-            $vehicleId = intval($input['vehicle_id'] ?? 0);
-            
-            if ($interventionId <= 0 || $vehicleId <= 0) {
-                echo json_encode(['error' => 'Parametri non validi']);
-                exit;
-            }
-            
-            // Check if already assigned
-            $sql = "SELECT COUNT(*) as count FROM intervention_vehicles WHERE intervention_id = ? AND vehicle_id = ?";
-            $result = $db->fetchOne($sql, [$interventionId, $vehicleId]);
-            
-            if ($result['count'] > 0) {
-                echo json_encode(['error' => 'Mezzo già assegnato a questo intervento']);
-                exit;
-            }
-            
-            // Insert
-            $sql = "INSERT INTO intervention_vehicles (intervention_id, vehicle_id) VALUES (?, ?)";
-            $db->execute($sql, [$interventionId, $vehicleId]);
-            
-            echo json_encode(['success' => true, 'message' => 'Mezzo aggiunto all\'intervento']);
             break;
             
         case 'remove_intervention_vehicle':
