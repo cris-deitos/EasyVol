@@ -785,8 +785,28 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                         </div>
                         <div class="mb-3">
                             <label for="edit_intervention_location" class="form-label">Località</label>
-                            <input type="text" class="form-control" id="edit_intervention_location">
+                            <input type="text" class="form-control" id="edit_intervention_location" placeholder="es. Via Roma 123, Milano">
+                            <small class="form-text text-muted">La georeferenziazione avviene automaticamente durante la digitazione</small>
                         </div>
+                        
+                        <!-- Geocoding results for edit intervention -->
+                        <div id="edit-intervention-geocoding-results" class="mb-3" style="display: none;">
+                            <label class="form-label">Altri indirizzi trovati (opzionale):</label>
+                            <div class="list-group" id="edit-intervention-address-suggestions"></div>
+                        </div>
+                        
+                        <!-- Hidden fields for edit intervention geocoding -->
+                        <input type="hidden" id="edit_intervention_latitude">
+                        <input type="hidden" id="edit_intervention_longitude">
+                        <input type="hidden" id="edit_intervention_full_address">
+                        <input type="hidden" id="edit_intervention_municipality">
+                        
+                        <!-- Selected address display for edit intervention -->
+                        <div id="edit-intervention-selected-address" class="alert alert-info mb-3" style="display: none;">
+                            <strong><i class="bi bi-geo-alt"></i> Indirizzo georeferenziato:</strong><br>
+                            <span id="edit-intervention-selected-address-text"></span>
+                        </div>
+                        
                         <div class="mb-3">
                             <label for="edit_intervention_status" class="form-label">Stato</label>
                             <select class="form-select" id="edit_intervention_status">
@@ -1337,6 +1357,29 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     document.getElementById('edit_intervention_location').value = intervention.location || '';
                     document.getElementById('edit_intervention_status').value = intervention.status || 'in_corso';
                     
+                    // Populate geocoding fields
+                    document.getElementById('edit_intervention_latitude').value = intervention.latitude || '';
+                    document.getElementById('edit_intervention_longitude').value = intervention.longitude || '';
+                    document.getElementById('edit_intervention_full_address').value = intervention.full_address || '';
+                    document.getElementById('edit_intervention_municipality').value = intervention.municipality || '';
+                    
+                    // Show existing geocoded address if available
+                    const editIntSelAddr = document.getElementById('edit-intervention-selected-address');
+                    const editIntSelAddrText = document.getElementById('edit-intervention-selected-address-text');
+                    if (intervention.full_address) {
+                        editIntSelAddrText.innerHTML = escapeHtml(intervention.full_address);
+                        if (intervention.municipality) {
+                            editIntSelAddrText.innerHTML += '<br><small>Comune: ' + escapeHtml(intervention.municipality) + '</small>';
+                        }
+                        editIntSelAddr.style.display = 'block';
+                    } else {
+                        editIntSelAddr.style.display = 'none';
+                    }
+                    
+                    // Reset geocoding suggestions
+                    document.getElementById('edit-intervention-geocoding-results').style.display = 'none';
+                    editInterventionCurrentResults = [];
+                    
                     // Format datetime for datetime-local input
                     if (intervention.start_time) {
                         const startTime = new Date(intervention.start_time);
@@ -1369,6 +1412,10 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             const endTime = document.getElementById('edit_intervention_end_time').value;
             const interventionLocation = document.getElementById('edit_intervention_location').value.trim();
             const status = document.getElementById('edit_intervention_status').value;
+            const latitude = document.getElementById('edit_intervention_latitude').value;
+            const longitude = document.getElementById('edit_intervention_longitude').value;
+            const fullAddress = document.getElementById('edit_intervention_full_address').value;
+            const municipality = document.getElementById('edit_intervention_municipality').value;
             
             if (!title || !startTime) {
                 alert('Titolo e data/ora inizio sono obbligatori');
@@ -1389,6 +1436,10 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                     end_time: endTime || null,
                     location: interventionLocation,
                     status: status,
+                    latitude: latitude || null,
+                    longitude: longitude || null,
+                    full_address: fullAddress || null,
+                    municipality: municipality || null,
                     csrf_token: csrfToken
                 })
             })
@@ -1996,6 +2047,128 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
             document.getElementById('intervention_full_address').value = '';
             document.getElementById('intervention_municipality').value = '';
             interventionSelectedAddressDiv.style.display = 'none';
+        }
+        
+        // Geocoding functionality for edit intervention
+        let editInterventionGeocodingTimeout = null;
+        let editInterventionCurrentResults = [];
+        const editInterventionLocationInput = document.getElementById('edit_intervention_location');
+        const editInterventionResultsDiv = document.getElementById('edit-intervention-geocoding-results');
+        const editInterventionSuggestionsDiv = document.getElementById('edit-intervention-address-suggestions');
+        const editInterventionSelectedAddressDiv = document.getElementById('edit-intervention-selected-address');
+        const editInterventionSelectedAddressText = document.getElementById('edit-intervention-selected-address-text');
+        
+        // Listen to edit intervention location input changes
+        if (editInterventionLocationInput) {
+            editInterventionLocationInput.addEventListener('input', function() {
+                clearTimeout(editInterventionGeocodingTimeout);
+                
+                const query = this.value.trim();
+                
+                if (query.length < 3) {
+                    editInterventionResultsDiv.style.display = 'none';
+                    clearEditInterventionGeocodingData();
+                    return;
+                }
+                
+                // Debounce: wait 800ms after user stops typing, then auto-geocode
+                editInterventionGeocodingTimeout = setTimeout(() => {
+                    searchEditInterventionAddress(query);
+                }, 800);
+            });
+            
+            // Auto-geocode on blur if field has content
+            editInterventionLocationInput.addEventListener('blur', function() {
+                setTimeout(() => {
+                    const query = this.value.trim();
+                    const resultsSnapshot = [...editInterventionCurrentResults];
+                    if (query.length >= 3 && resultsSnapshot.length > 0) {
+                        const latField = document.getElementById('edit_intervention_latitude');
+                        if (!latField.value || latField.value === '') {
+                            selectEditInterventionAddress(resultsSnapshot[0], true);
+                        }
+                    }
+                    editInterventionResultsDiv.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        // Search address for edit intervention
+        function searchEditInterventionAddress(query) {
+            fetch(`geocoding_api.php?action=search&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.results.length > 0) {
+                        editInterventionCurrentResults = data.results;
+                        displayEditInterventionSuggestions(data.results);
+                        selectEditInterventionAddress(data.results[0], true);
+                    } else {
+                        editInterventionCurrentResults = [];
+                        editInterventionResultsDiv.style.display = 'none';
+                        clearEditInterventionGeocodingData();
+                    }
+                })
+                .catch(error => {
+                    console.error('Errore geocoding modifica intervento:', error);
+                    editInterventionCurrentResults = [];
+                    editInterventionResultsDiv.style.display = 'none';
+                    clearEditInterventionGeocodingData();
+                });
+        }
+        
+        // Display address suggestions for edit intervention
+        function displayEditInterventionSuggestions(results) {
+            editInterventionSuggestionsDiv.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const item = document.createElement('a');
+                item.href = '#';
+                item.className = 'list-group-item list-group-item-action' + (index === 0 ? ' active' : '');
+                item.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${escapeHtml(result.address)}</h6>
+                        <small><i class="bi bi-geo-alt"></i> ${index === 0 ? '(selezionato)' : ''}</small>
+                    </div>
+                    <small class="text-muted">${escapeHtml(result.display_name)}</small>
+                `;
+                
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    selectEditInterventionAddress(result, false);
+                    editInterventionResultsDiv.style.display = 'none';
+                });
+                
+                editInterventionSuggestionsDiv.appendChild(item);
+            });
+            
+            editInterventionResultsDiv.style.display = 'block';
+        }
+        
+        // Select an address for edit intervention
+        function selectEditInterventionAddress(result, isAutomatic) {
+            document.getElementById('edit_intervention_latitude').value = result.latitude;
+            document.getElementById('edit_intervention_longitude').value = result.longitude;
+            document.getElementById('edit_intervention_full_address').value = result.display_name;
+            document.getElementById('edit_intervention_municipality').value = result.municipality;
+            
+            if (!isAutomatic) {
+                editInterventionLocationInput.value = result.address;
+            }
+            
+            editInterventionSelectedAddressText.innerHTML = escapeHtml(result.display_name);
+            if (result.municipality) {
+                editInterventionSelectedAddressText.innerHTML += '<br><small>Comune: ' + escapeHtml(result.municipality) + '</small>';
+            }
+            editInterventionSelectedAddressDiv.style.display = 'block';
+        }
+        
+        // Clear edit intervention geocoding data
+        function clearEditInterventionGeocodingData() {
+            document.getElementById('edit_intervention_latitude').value = '';
+            document.getElementById('edit_intervention_longitude').value = '';
+            document.getElementById('edit_intervention_full_address').value = '';
+            document.getElementById('edit_intervention_municipality').value = '';
+            editInterventionSelectedAddressDiv.style.display = 'none';
         }
         
         // Quick Close Event functions
