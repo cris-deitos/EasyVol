@@ -667,41 +667,16 @@ try {
                 exit;
             }
             
-            // Check if already assigned
-            $sql = "SELECT COUNT(*) as count FROM intervention_members WHERE intervention_id = ? AND member_id = ?";
-            $result = $db->fetchOne($sql, [$interventionId, $memberId]);
+            // Use controller method which handles both intervention and event-level participant sync
+            $result = $controller->addInterventionParticipant($interventionId, $memberId, null, $app->getUserId());
             
-            if ($result['count'] > 0) {
-                echo json_encode(['error' => 'Volontario già assegnato a questo intervento']);
-                exit;
+            if ($result === true) {
+                echo json_encode(['success' => true, 'message' => 'Volontario aggiunto all\'intervento']);
+            } elseif (is_array($result) && isset($result['error'])) {
+                echo json_encode(['error' => $result['error']]);
+            } else {
+                echo json_encode(['error' => 'Errore durante l\'aggiunta del volontario']);
             }
-            
-            // Get event_id from intervention for syncing to event participants
-            $sql = "SELECT event_id FROM interventions WHERE id = ?";
-            $intervention = $db->fetchOne($sql, [$interventionId]);
-            
-            if (!$intervention) {
-                echo json_encode(['error' => 'Intervento non trovato']);
-                exit;
-            }
-            
-            $eventId = $intervention['event_id'];
-            
-            // Insert to intervention
-            $sql = "INSERT INTO intervention_members (intervention_id, member_id) VALUES (?, ?)";
-            $db->execute($sql, [$interventionId, $memberId]);
-            
-            // Also add member to event participants (if not already present)
-            $sql = "SELECT id FROM event_participants WHERE event_id = ? AND member_id = ?";
-            $existingEventParticipant = $db->fetchOne($sql, [$eventId, $memberId]);
-            
-            if (!$existingEventParticipant) {
-                $sql = "INSERT INTO event_participants (event_id, member_id, role, hours, notes, created_at)
-                        VALUES (?, ?, NULL, 0, NULL, NOW())";
-                $db->execute($sql, [$eventId, $memberId]);
-            }
-            
-            echo json_encode(['success' => true, 'message' => 'Volontario aggiunto all\'intervento']);
             break;
             
         case 'remove_intervention_member':
