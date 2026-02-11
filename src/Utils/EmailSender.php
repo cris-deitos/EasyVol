@@ -788,7 +788,8 @@ class EmailSender {
             
             $assocName = $this->config['association']['name'] ?? 'Associazione';
             $baseUrl = $this->resolveEmailBaseUrl();
-            $loginUrl = $baseUrl . '/public/login.php';
+            $isCoUser = !empty($user['is_operations_center_user']);
+            $loginUrl = $baseUrl . ($isCoUser ? '/public/login_co.php' : '/public/login.php');
             
             $subject = "🎉 Benvenuto in EasyVol - Credenziali di Accesso";
             

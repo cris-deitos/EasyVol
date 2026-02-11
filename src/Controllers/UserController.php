@@ -155,7 +155,8 @@ public function index($filters = [], $page = 1, $perPage = 20) {
                 
                 $userData = [
                     'email' => $data['email'],
-                    'username' => $data['username']
+                    'username' => $data['username'],
+                    'is_operations_center_user' => $data['is_operations_center_user'] ?? 0
                 ];
                 
                 $emailSender->sendNewUserEmail($userData, $password);
@@ -431,7 +432,8 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             
             $userData = [
                 'email' => $user['email'],
-                'username' => $user['username']
+                'username' => $user['username'],
+                'is_operations_center_user' => $user['is_operations_center_user'] ?? 0
             ];
             
             $result = $emailSender->sendNewUserEmail($userData, $newPassword);
