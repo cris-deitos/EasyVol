@@ -420,14 +420,20 @@ class ApplicationController {
             }
             
             // Crea socio o cadetto
+            $registrationNumber = '';
             if ($application['application_type'] === 'junior') {
                 $memberId = $this->createJuniorMemberFromApplication($data, $userId);
                 $member = $this->db->fetchOne("SELECT registration_number FROM junior_members WHERE id = ?", [$memberId]);
+                if ($member) {
+                    $registrationNumber = $member['registration_number'] ?? '';
+                }
             } else {
                 $memberId = $this->createMemberFromApplication($data, $userId);
                 $member = $this->db->fetchOne("SELECT registration_number FROM members WHERE id = ?", [$memberId]);
+                if ($member) {
+                    $registrationNumber = $member['registration_number'] ?? '';
+                }
             }
-            $registrationNumber = $member['registration_number'] ?? '';
             
             // Aggiorna domanda con timestamp unico
             // processed_at e approved_at hanno lo stesso valore per domande approvate
