@@ -422,9 +422,12 @@ class ApplicationController {
             // Crea socio o cadetto
             if ($application['application_type'] === 'junior') {
                 $memberId = $this->createJuniorMemberFromApplication($data, $userId);
+                $member = $this->db->fetchOne("SELECT registration_number FROM junior_members WHERE id = ?", [$memberId]);
             } else {
                 $memberId = $this->createMemberFromApplication($data, $userId);
+                $member = $this->db->fetchOne("SELECT registration_number FROM members WHERE id = ?", [$memberId]);
             }
+            $registrationNumber = $member['registration_number'] ?? '';
             
             // Aggiorna domanda con timestamp unico
             // processed_at e approved_at hanno lo stesso valore per domande approvate
@@ -441,7 +444,7 @@ class ApplicationController {
             $this->db->execute($sql, [$userId, $now, $now, $memberId, $id]);
             
             // Invia email approvazione
-            $this->sendApprovalEmailFromData($data, $application['application_type']);
+            $this->sendApprovalEmailFromData($data, $application['application_type'], $registrationNumber);
             
             $this->db->commit();
             return true;
@@ -1343,8 +1346,9 @@ class ApplicationController {
      * 
      * @param array $data Dati domanda
      * @param string $type Tipo applicazione
+     * @param string $registrationNumber Matricola assegnata
      */
-    private function sendApprovalEmailFromData($data, $type) {
+    private function sendApprovalEmailFromData($data, $type, $registrationNumber = '') {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
@@ -1365,11 +1369,73 @@ class ApplicationController {
             return;
         }
         
-        $subject = 'Domanda di iscrizione approvata';
-        $body = '<p>Gentile ' . htmlspecialchars($data['first_name']) . ' ' . htmlspecialchars($data['last_name']) . ',</p>';
-        $body .= '<p>La domanda di iscrizione è stata approvata!</p>';
-        $body .= '<p>Benvenuto/a nella nostra associazione.</p>';
-        $body .= '<p>Riceverai a breve ulteriori comunicazioni.</p>';
+        $assocName = htmlspecialchars($this->config['association']['name'] ?? 'Associazione');
+        $baseUrl = rtrim($this->config['email']['base_url'] ?? $this->config['app']['base_url'] ?? $this->config['app']['url'] ?? 'http://localhost', '/');
+        $payFeeUrl = $baseUrl . '/public/pay_fee.php';
+        $regNumberDisplay = htmlspecialchars($registrationNumber);
+        
+        $subject = 'Domanda di iscrizione approvata - Benvenuto/a in ' . ($this->config['association']['name'] ?? 'Associazione');
+        
+        $body = "
+        <!DOCTYPE html>
+        <html lang='it'>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; }
+                .header { background: #28a745; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .matricola-box { background: #e7f3ff; border: 3px solid #007bff; padding: 20px; margin: 20px 0; text-align: center; border-radius: 8px; }
+                .matricola-box .label { font-size: 14px; color: #555; margin-bottom: 5px; }
+                .matricola-box .number { font-size: 36px; font-weight: bold; color: #007bff; }
+                .info-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+                .button { display: inline-block; background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .footer { text-align: center; padding: 15px; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>🎉 Benvenuto/a in $assocName!</h2>
+                </div>
+                
+                <div class='content'>
+                    <p>Gentile <strong>" . htmlspecialchars($data['first_name']) . " " . htmlspecialchars($data['last_name']) . "</strong>,</p>
+                    
+                    <p>Siamo lieti di comunicarti che la tua domanda di iscrizione è stata <strong>approvata</strong>!</p>
+                    <p>Benvenuto/a nella nostra associazione.</p>";
+        
+        if (!empty($registrationNumber)) {
+            $body .= "
+                    <div class='matricola-box'>
+                        <div class='label'>LA TUA MATRICOLA ASSOCIATIVA</div>
+                        <div class='number'>$regNumberDisplay</div>
+                    </div>";
+        }
+        
+        $body .= "
+                    <div class='info-box'>
+                        <p style='margin: 0;'><strong>📋 IMPORTANTE - Quota Associativa:</strong></p>
+                        <p style='margin: 10px 0 0 0;'>Per completare l'iscrizione, è necessario provvedere al <strong>pagamento della quota associativa annuale</strong> e caricare la ricevuta di pagamento tramite il portale.</p>
+                    </div>
+                    
+                    <p style='text-align: center;'>
+                        <a href='$payFeeUrl' class='button'>Carica Ricevuta Pagamento</a>
+                    </p>
+                    
+                    <p>Per qualsiasi domanda o necessità, non esitare a contattarci.</p>
+                    
+                    <p>Cordiali saluti,<br><strong>$assocName</strong></p>
+                </div>
+                
+                <div class='footer'>
+                    <p>&copy; " . date('Y') . " $assocName</p>
+                    <p>Questa è un'email automatica, non rispondere a questo messaggio.</p>
+                </div>
+            </div>
+        </body>
+        </html>";
         
         $emailSender->queue($email, $subject, $body);
     }
