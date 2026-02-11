@@ -417,6 +417,20 @@ class MeetingController {
     }
     
     /**
+     * Aggiorna ruolo partecipante
+     */
+    public function updateParticipantRole($participantId, $role) {
+        try {
+            $sql = "UPDATE meeting_participants SET role = ? WHERE id = ?";
+            $this->db->execute($sql, [$role, $participantId]);
+            return true;
+        } catch (\Exception $e) {
+            error_log("Errore aggiornamento ruolo: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Aggiorna stato presenza partecipante
      */
     public function updateAttendance($participantId, $status, $delegatedTo = null) {
