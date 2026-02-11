@@ -102,6 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Update meeting
                 $db->query("UPDATE meetings SET meeting_type = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, location_type = ?, online_details = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
                     [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['location_type'], $data['online_details'], $data['convocator'], $data['description'], $meetingId]);
+                
+                // In edit mode, do NOT modify participants or agenda items.
+                // They are managed separately via meeting_participants.php and meeting_agenda_edit.php.
             } else {
                 // Create new meeting
                 $db->query("INSERT INTO meetings (meeting_type, meeting_date, start_time, end_time, location, location_type, online_details, convocator, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
@@ -109,59 +112,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $meetingId = $db->lastInsertId();
             }
             
-            // Save participants
-            if (!empty($_POST['participants'])) {
-                // Delete existing participants
-                $db->query("DELETE FROM meeting_participants WHERE meeting_id = ?", [$meetingId]);
-                
-                // Validate that there's only one Presidente and one Segretario (case-insensitive)
-                $presidenteCount = 0;
-                $segretarioCount = 0;
-                foreach ($_POST['participants'] as $participant) {
-                    $role = $participant['role'] ?? null;
-                    if ($role && strcasecmp($role, MeetingController::ROLE_PRESIDENTE) === 0) $presidenteCount++;
-                    if ($role && strcasecmp($role, MeetingController::ROLE_SEGRETARIO) === 0) $segretarioCount++;
-                }
-                
-                if ($presidenteCount > 1) {
-                    throw new \Exception('È possibile assegnare solo un Presidente per riunione');
-                }
-                if ($segretarioCount > 1) {
-                    throw new \Exception('È possibile assegnare solo un Segretario per riunione');
-                }
-                
-                foreach ($_POST['participants'] as $participant) {
-                    $memberType = $participant['type'] ?? 'adult';
-                    $memberId = $participant['id'] ?? null;
-                    $role = $participant['role'] ?? null;
+            // Save participants and agenda only for new meetings (not when editing)
+            if (!$isEdit) {
+                // Save participants
+                if (!empty($_POST['participants'])) {
+                    // Validate that there's only one Presidente and one Segretario (case-insensitive)
+                    $presidenteCount = 0;
+                    $segretarioCount = 0;
+                    foreach ($_POST['participants'] as $participant) {
+                        $role = $participant['role'] ?? null;
+                        if ($role && strcasecmp($role, MeetingController::ROLE_PRESIDENTE) === 0) $presidenteCount++;
+                        if ($role && strcasecmp($role, MeetingController::ROLE_SEGRETARIO) === 0) $segretarioCount++;
+                    }
                     
-                    if ($memberId) {
-                        if ($memberType === 'adult') {
-                            $db->query("INSERT INTO meeting_participants (meeting_id, member_id, member_type, role, present) VALUES (?, ?, 'adult', ?, 0)",
-                                [$meetingId, $memberId, $role]);
-                        } else {
-                            $db->query("INSERT INTO meeting_participants (meeting_id, junior_member_id, member_type, role, present) VALUES (?, ?, 'junior', ?, 0)",
-                                [$meetingId, $memberId, $role]);
+                    if ($presidenteCount > 1) {
+                        throw new \Exception('È possibile assegnare solo un Presidente per riunione');
+                    }
+                    if ($segretarioCount > 1) {
+                        throw new \Exception('È possibile assegnare solo un Segretario per riunione');
+                    }
+                    
+                    foreach ($_POST['participants'] as $participant) {
+                        $memberType = $participant['type'] ?? 'adult';
+                        $memberId = $participant['id'] ?? null;
+                        $role = $participant['role'] ?? null;
+                        
+                        if ($memberId) {
+                            if ($memberType === 'adult') {
+                                $db->query("INSERT INTO meeting_participants (meeting_id, member_id, member_type, role, present) VALUES (?, ?, 'adult', ?, 0)",
+                                    [$meetingId, $memberId, $role]);
+                            } else {
+                                $db->query("INSERT INTO meeting_participants (meeting_id, junior_member_id, member_type, role, present) VALUES (?, ?, 'junior', ?, 0)",
+                                    [$meetingId, $memberId, $role]);
+                            }
                         }
                     }
                 }
-            }
-            
-            // Save agenda items
-            if (!empty($_POST['agenda_items'])) {
-                // Delete existing agenda items
-                $db->query("DELETE FROM meeting_agenda WHERE meeting_id = ?", [$meetingId]);
                 
-                foreach ($_POST['agenda_items'] as $index => $item) {
-                    $hasVoting = isset($item['has_voting']) ? 1 : 0;
-                    $votingTotal = intval($item['voting_total'] ?? 0);
-                    $votingInFavor = intval($item['voting_in_favor'] ?? 0);
-                    $votingAgainst = intval($item['voting_against'] ?? 0);
-                    $votingAbstentions = intval($item['voting_abstentions'] ?? 0);
-                    $votingResult = $item['voting_result'] ?? 'non_votato';
-                    
-                    $db->query("INSERT INTO meeting_agenda (meeting_id, order_number, subject, description, discussion, has_voting, voting_total, voting_in_favor, voting_against, voting_abstentions, voting_result) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        [$meetingId, ($index + 1), trim($item['subject'] ?? ''), trim($item['description'] ?? ''), trim($item['discussion'] ?? ''), $hasVoting, $votingTotal, $votingInFavor, $votingAgainst, $votingAbstentions, $votingResult]);
+                // Save agenda items
+                if (!empty($_POST['agenda_items'])) {
+                    foreach ($_POST['agenda_items'] as $index => $item) {
+                        $hasVoting = isset($item['has_voting']) ? 1 : 0;
+                        $votingTotal = intval($item['voting_total'] ?? 0);
+                        $votingInFavor = intval($item['voting_in_favor'] ?? 0);
+                        $votingAgainst = intval($item['voting_against'] ?? 0);
+                        $votingAbstentions = intval($item['voting_abstentions'] ?? 0);
+                        $votingResult = $item['voting_result'] ?? 'non_votato';
+                        
+                        $db->query("INSERT INTO meeting_agenda (meeting_id, order_number, subject, description, discussion, has_voting, voting_total, voting_in_favor, voting_against, voting_abstentions, voting_result) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            [$meetingId, ($index + 1), trim($item['subject'] ?? ''), trim($item['description'] ?? ''), trim($item['discussion'] ?? ''), $hasVoting, $votingTotal, $votingInFavor, $votingAgainst, $votingAbstentions, $votingResult]);
+                    }
                 }
             }
             
@@ -324,6 +324,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                         </div>
                     </div>
                     
+                    <?php if (!$isEdit): ?>
                     <div class="card mb-3">
                         <div class="card-header bg-success text-white">
                             <h5 class="mb-0"><i class="bi bi-people"></i> Partecipanti</h5>
@@ -473,6 +474,31 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                             </button>
                         </div>
                     </div>
+                    <?php else: ?>
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-people"></i> Partecipanti</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-info-circle"></i> I partecipanti vengono gestiti separatamente. 
+                                Usa il tab <a href="meeting_view.php?id=<?php echo $meetingId; ?>#participants" class="alert-link">Partecipanti</a> 
+                                o la pagina <a href="meeting_participants.php?id=<?php echo $meetingId; ?>" class="alert-link">Gestisci Partecipanti</a>.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="bi bi-list-ol"></i> Ordini del Giorno</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-info-circle"></i> Gli ordini del giorno vengono gestiti separatamente. 
+                                Usa il tab <a href="meeting_view.php?id=<?php echo $meetingId; ?>#agenda" class="alert-link">Ordine del Giorno</a>.
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     
                     <div class="card mb-3">
                         <div class="card-header bg-info text-white">

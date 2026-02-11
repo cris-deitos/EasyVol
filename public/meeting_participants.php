@@ -90,10 +90,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $participantId = intval($_POST['participant_id'] ?? 0);
                 $status = $_POST['status'] ?? 'invited';
                 $delegatedTo = !empty($_POST['delegated_to']) ? intval($_POST['delegated_to']) : null;
+                $role = isset($_POST['role']) ? trim($_POST['role']) : null;
                 
-                if ($participantId && $meetingController->updateAttendance($participantId, $status, $delegatedTo)) {
+                $updated = false;
+                if ($participantId) {
+                    // Update role if provided
+                    if ($role !== null) {
+                        $meetingController->updateParticipantRole($participantId, $role ?: null);
+                    }
+                    // Update attendance
+                    $updated = $meetingController->updateAttendance($participantId, $status, $delegatedTo);
+                }
+                
+                if ($updated) {
                     $success = true;
-                    $message = 'Presenza aggiornata con successo';
+                    $message = 'Presenza e ruolo aggiornati con successo';
                     // Reload meeting data
                     $meeting = $meetingController->get($meetingId);
                 } else {
@@ -400,7 +411,8 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                                                                     echo htmlspecialchars($participant['last_name'] ?? $participant['junior_last_name']); 
                                                                 ?>"
                                                                 data-current-status="<?php echo $participant['attendance_status'] ?? 'invited'; ?>"
-                                                                title="Modifica presenza">
+                                                                data-current-role="<?php echo htmlspecialchars($participant['role'] ?? ''); ?>"
+                                                                title="Modifica presenza e ruolo">
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-outline-danger" 
@@ -432,7 +444,7 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
             <div class="modal-content">
                 <form method="POST">
                     <div class="modal-header">
-                        <h5 class="modal-title">Aggiorna Presenza</h5>
+                        <h5 class="modal-title">Aggiorna Presenza e Ruolo</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -441,6 +453,18 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                         <input type="hidden" name="participant_id" id="modal_participant_id">
                         
                         <p>Partecipante: <strong id="modal_participant_name"></strong></p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Ruolo</label>
+                            <select class="form-select" name="role" id="modal_role">
+                                <option value="">Nessun ruolo</option>
+                                <option value="Presidente">Presidente</option>
+                                <option value="Segretario">Segretario</option>
+                                <option value="Uditore">Uditore</option>
+                                <option value="Scrutatore">Scrutatore</option>
+                                <option value="Presidente del Seggio Elettorale">Presidente del Seggio Elettorale</option>
+                            </select>
+                        </div>
                         
                         <div class="mb-3">
                             <label class="form-label">Stato Presenza</label>
@@ -452,9 +476,14 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                             </select>
                         </div>
                         
-                        <div class="mb-3" id="delegated_to_field" style="display: none;">
-                            <label class="form-label">Delegato a (Matricola o Nome)</label>
-                            <input type="text" class="form-control" name="delegated_to" placeholder="Inserisci matricola o nome">
+                        <div class="mb-3 position-relative" id="delegated_to_field" style="display: none;">
+                            <label class="form-label">Delegato a</label>
+                            <input type="text" class="form-control" id="modal_delegate_search" 
+                                   placeholder="Digita nome, cognome o matricola..." 
+                                   autocomplete="off">
+                            <input type="hidden" name="delegated_to" id="modal_delegated_to">
+                            <div id="modal_delegate_search_results" class="list-group position-absolute" style="z-index: 1050; max-height: 300px; overflow-y: auto; display: none; width: 100%;"></div>
+                            <small class="form-text text-muted">Inizia a digitare per cercare un socio o cadetto</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -535,6 +564,9 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
             if (!e.target.closest('#member_search') && !e.target.closest('#member_search_results')) {
                 document.getElementById('member_search_results').style.display = 'none';
             }
+            if (!e.target.closest('#modal_delegate_search') && !e.target.closest('#modal_delegate_search_results')) {
+                document.getElementById('modal_delegate_search_results').style.display = 'none';
+            }
         });
         
         // Toggle member type - clear search when type changes
@@ -552,14 +584,23 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                 const participantId = button.getAttribute('data-participant-id');
                 const participantName = button.getAttribute('data-participant-name');
                 const currentStatus = button.getAttribute('data-current-status');
+                const currentRole = button.getAttribute('data-current-role');
                 
                 document.getElementById('modal_participant_id').value = participantId;
                 document.getElementById('modal_participant_name').textContent = participantName;
                 document.getElementById('modal_status').value = currentStatus;
+                document.getElementById('modal_role').value = currentRole || '';
+                
+                // Reset delegate search
+                document.getElementById('modal_delegate_search').value = '';
+                document.getElementById('modal_delegated_to').value = '';
+                document.getElementById('modal_delegate_search_results').style.display = 'none';
                 
                 // Show/hide delegated field based on status
                 if (currentStatus === 'delegated') {
                     document.getElementById('delegated_to_field').style.display = 'block';
+                } else {
+                    document.getElementById('delegated_to_field').style.display = 'none';
                 }
             });
         }
@@ -571,6 +612,54 @@ $pageTitle = 'Gestione Partecipanti - ' . $meetingTypeName . ' - ' . date('d/m/Y
                 delegatedField.style.display = 'block';
             } else {
                 delegatedField.style.display = 'none';
+            }
+        });
+        
+        // Delegate search autocomplete in modal
+        let modalDelegateSearchTimeout = null;
+        document.getElementById('modal_delegate_search').addEventListener('input', function() {
+            clearTimeout(modalDelegateSearchTimeout);
+            const search = this.value.trim();
+            const resultsDiv = document.getElementById('modal_delegate_search_results');
+            
+            if (search.length < 1) {
+                resultsDiv.style.display = 'none';
+                document.getElementById('modal_delegated_to').value = '';
+                return;
+            }
+            
+            modalDelegateSearchTimeout = setTimeout(function() {
+                // Search in both adult and junior members
+                const allMembers = activeMembersData.concat(activeJuniorsData);
+                const filtered = allMembers.filter(function(m) {
+                    const fullName = ((m.last_name || '') + ' ' + (m.first_name || '') + ' ' + (m.registration_number || '')).toLowerCase();
+                    return fullName.includes(search.toLowerCase());
+                });
+                
+                if (filtered.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = filtered.slice(0, 20).map(function(member) {
+                    const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
+                    return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(label) + '">' +
+                        escapeHtml(label) +
+                        '</button>';
+                }).join('');
+                resultsDiv.style.display = 'block';
+            }, 300);
+        });
+        
+        // Event delegation for delegate selection in modal
+        document.getElementById('modal_delegate_search_results').addEventListener('click', function(e) {
+            if (e.target.classList.contains('list-group-item-action')) {
+                const memberId = e.target.getAttribute('data-member-id');
+                const memberLabel = e.target.getAttribute('data-member-label');
+                document.getElementById('modal_delegate_search').value = memberLabel;
+                document.getElementById('modal_delegated_to').value = memberId;
+                document.getElementById('modal_delegate_search_results').style.display = 'none';
             }
         });
         

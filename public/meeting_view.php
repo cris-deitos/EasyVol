@@ -55,6 +55,10 @@ $printTemplates = $printController->getAll([
 $meetingTypeName = MeetingController::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? ucfirst(str_replace('_', ' ', $meeting['meeting_type']));
 $meetingDateFormatted = date('d/m/Y', strtotime($meeting['meeting_date']));
 $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
+
+// Load active members for delegate autocomplete
+$activeMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
+$activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registration_number FROM junior_members WHERE member_status = 'attivo' ORDER BY last_name, first_name");
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -316,7 +320,7 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                                                         </th>
                                                     <?php endif; ?>
                                                     <th>Nome</th>
-                                                    <th>Qualifica</th>
+                                                    <th>Ruolo</th>
                                                     <th>Presenza</th>
                                                     <th>Note</th>
                                                     <?php if ($app->checkPermission('meetings', 'edit')): ?>
@@ -358,7 +362,22 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                                                             echo htmlspecialchars($memberName);
                                                             ?>
                                                         </td>
-                                                        <td><?php echo htmlspecialchars($participant['role'] ?? '-'); ?></td>
+                                                        <td>
+                                                            <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                                <select class="form-select form-select-sm participant-role-select" 
+                                                                        data-participant-id="<?php echo $participant['id']; ?>"
+                                                                        onchange="updateRole(<?php echo $participant['id']; ?>, this.value)">
+                                                                    <option value="" <?php echo empty($participant['role']) ? 'selected' : ''; ?>>-</option>
+                                                                    <option value="Presidente" <?php echo ($participant['role'] ?? '') === 'Presidente' ? 'selected' : ''; ?>>Presidente</option>
+                                                                    <option value="Segretario" <?php echo ($participant['role'] ?? '') === 'Segretario' ? 'selected' : ''; ?>>Segretario</option>
+                                                                    <option value="Uditore" <?php echo ($participant['role'] ?? '') === 'Uditore' ? 'selected' : ''; ?>>Uditore</option>
+                                                                    <option value="Scrutatore" <?php echo ($participant['role'] ?? '') === 'Scrutatore' ? 'selected' : ''; ?>>Scrutatore</option>
+                                                                    <option value="Presidente del Seggio Elettorale" <?php echo ($participant['role'] ?? '') === 'Presidente del Seggio Elettorale' ? 'selected' : ''; ?>>Pres. Seggio Elettorale</option>
+                                                                </select>
+                                                            <?php else: ?>
+                                                                <?php echo htmlspecialchars($participant['role'] ?? '-'); ?>
+                                                            <?php endif; ?>
+                                                        </td>
                                                         <td>
                                                             <?php 
                                                             $attendance = $participant['attendance_status'] ?? 'invited';
@@ -394,6 +413,11 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
                                                                             onclick="updateAttendance(<?php echo $participant['id']; ?>, 'absent')"
                                                                             title="Segna come Assente">
                                                                         <i class="bi bi-x-circle"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-warning" 
+                                                                            onclick="showDelegateModal(<?php echo $participant['id']; ?>, '<?php echo htmlspecialchars(addslashes($memberName ?? '')); ?>')"
+                                                                            title="Inserisci Delega">
+                                                                        <i class="bi bi-person-check"></i>
                                                                     </button>
                                                                 </div>
                                                             </td>
@@ -478,8 +502,44 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
         </div>
     </div>
     
+    <!-- Modal Delega Partecipante -->
+    <div class="modal fade" id="delegateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Inserisci Delega</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="delegate_participant_id">
+                    <p>Delegante: <strong id="delegate_participant_name"></strong></p>
+                    
+                    <div class="mb-3 position-relative">
+                        <label class="form-label">Delegato a</label>
+                        <input type="text" class="form-control" id="delegate_search" 
+                               placeholder="Digita nome, cognome o matricola..." 
+                               autocomplete="off">
+                        <input type="hidden" id="delegate_member_id">
+                        <div id="delegate_search_results" class="list-group position-absolute" style="z-index: 1050; max-height: 300px; overflow-y: auto; display: none; width: 100%;"></div>
+                        <small class="form-text text-muted">Inizia a digitare per cercare un socio o cadetto</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-warning" onclick="saveDelegation()">
+                        <i class="bi bi-person-check"></i> Salva Delega
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Member data for delegate autocomplete
+        const activeMembersData = <?php echo json_encode($activeMembers, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS); ?>;
+        const activeJuniorMembersData = <?php echo json_encode($activeJuniorMembers, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS); ?>;
+        let delegateSearchTimeout = null;
         // Print functionality
         function printById(templateId) {
             const url = 'print_preview.php?template_id=' + templateId + '&record_id=<?php echo $meeting['id']; ?>&entity=meetings';
@@ -528,6 +588,137 @@ $pageTitle = $meetingTypeName . ' - ' . $meetingDateFormatted;
             .catch(error => {
                 console.error('Error:', error);
                 alert('Errore durante l\'aggiornamento dello stato');
+            });
+        }
+        
+        // Update participant role
+        function updateRole(participantId, role) {
+            const formData = new FormData();
+            formData.append('participant_id', participantId);
+            formData.append('role', role);
+            
+            fetch('meeting_update_role.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert('Errore: ' + (data.message || 'Impossibile aggiornare il ruolo'));
+                    // Reload to revert
+                    window.location.href = window.location.pathname + '?id=<?php echo $meetingId; ?>#participants';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante l\'aggiornamento del ruolo');
+            });
+        }
+        
+        // Show delegate modal
+        function showDelegateModal(participantId, participantName) {
+            document.getElementById('delegate_participant_id').value = participantId;
+            document.getElementById('delegate_participant_name').textContent = participantName;
+            document.getElementById('delegate_search').value = '';
+            document.getElementById('delegate_member_id').value = '';
+            document.getElementById('delegate_search_results').style.display = 'none';
+            const modal = new bootstrap.Modal(document.getElementById('delegateModal'));
+            modal.show();
+        }
+        
+        // Delegate search autocomplete
+        document.getElementById('delegate_search').addEventListener('input', function() {
+            clearTimeout(delegateSearchTimeout);
+            const search = this.value.trim();
+            const resultsDiv = document.getElementById('delegate_search_results');
+            
+            if (search.length < 1) {
+                resultsDiv.style.display = 'none';
+                document.getElementById('delegate_member_id').value = '';
+                return;
+            }
+            
+            delegateSearchTimeout = setTimeout(function() {
+                // Search in both adult and junior members
+                const allMembers = activeMembersData.concat(activeJuniorMembersData);
+                const filtered = allMembers.filter(function(m) {
+                    const fullName = ((m.last_name || '') + ' ' + (m.first_name || '') + ' ' + (m.registration_number || '')).toLowerCase();
+                    return fullName.includes(search.toLowerCase());
+                });
+                
+                if (filtered.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nessun socio trovato</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = filtered.slice(0, 20).map(function(member) {
+                    const label = member.last_name + ' ' + member.first_name + ' (' + member.registration_number + ')';
+                    return '<button type="button" class="list-group-item list-group-item-action" data-member-id="' + member.id + '" data-member-label="' + escapeHtml(label) + '">' +
+                        escapeHtml(label) +
+                        '</button>';
+                }).join('');
+                resultsDiv.style.display = 'block';
+            }, 300);
+        });
+        
+        // Event delegation for delegate selection
+        document.getElementById('delegate_search_results').addEventListener('click', function(e) {
+            if (e.target.classList.contains('list-group-item-action')) {
+                const memberId = e.target.getAttribute('data-member-id');
+                const memberLabel = e.target.getAttribute('data-member-label');
+                document.getElementById('delegate_search').value = memberLabel;
+                document.getElementById('delegate_member_id').value = memberId;
+                document.getElementById('delegate_search_results').style.display = 'none';
+            }
+        });
+        
+        // Close delegate search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#delegate_search') && !e.target.closest('#delegate_search_results')) {
+                document.getElementById('delegate_search_results').style.display = 'none';
+            }
+        });
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Save delegation
+        function saveDelegation() {
+            const participantId = document.getElementById('delegate_participant_id').value;
+            const delegatedTo = document.getElementById('delegate_member_id').value;
+            
+            if (!delegatedTo) {
+                alert('Seleziona un delegato dalla lista');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('participant_id', participantId);
+            formData.append('status', 'delegated');
+            formData.append('delegated_to', delegatedTo);
+            
+            fetch('meeting_update_attendance.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('delegateModal'));
+                    modal.hide();
+                    alert('Delega salvata con successo');
+                    window.location.href = window.location.pathname + '?id=<?php echo $meetingId; ?>#participants';
+                } else {
+                    alert('Errore: ' + (data.message || 'Impossibile salvare la delega'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Errore durante il salvataggio della delega');
             });
         }
         

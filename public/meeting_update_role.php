@@ -1,8 +1,8 @@
 <?php
 /**
- * Update Meeting Participant Attendance Status
+ * Update Meeting Participant Role
  * 
- * AJAX endpoint to update the attendance status of a participant
+ * AJAX endpoint to update the role of a participant
  */
 
 require_once __DIR__ . '/../src/Autoloader.php';
@@ -35,8 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Ottieni parametri
 $participantId = isset($_POST['participant_id']) ? intval($_POST['participant_id']) : 0;
-$status = isset($_POST['status']) ? trim($_POST['status']) : '';
-$delegatedTo = !empty($_POST['delegated_to']) ? intval($_POST['delegated_to']) : null;
+$role = isset($_POST['role']) ? trim($_POST['role']) : '';
 
 // Valida parametri
 if ($participantId <= 0) {
@@ -44,9 +43,10 @@ if ($participantId <= 0) {
     exit;
 }
 
-// Validate status - allow all valid statuses for flexibility (currently frontend only sends 'present' and 'absent')
-if (!in_array($status, ['invited', 'present', 'absent', 'delegated'])) {
-    echo json_encode(['success' => false, 'message' => 'Stato non valido']);
+// Validate role
+$validRoles = ['', 'Presidente', 'Segretario', 'Uditore', 'Scrutatore', 'Presidente del Seggio Elettorale'];
+if (!in_array($role, $validRoles)) {
+    echo json_encode(['success' => false, 'message' => 'Ruolo non valido']);
     exit;
 }
 
@@ -55,15 +55,15 @@ try {
     $config = $app->getConfig();
     $controller = new MeetingController($db, $config);
     
-    // Update attendance
-    $result = $controller->updateAttendance($participantId, $status, $delegatedTo);
+    // Update role
+    $result = $controller->updateParticipantRole($participantId, $role ?: null);
     
     if ($result) {
-        echo json_encode(['success' => true, 'message' => 'Stato aggiornato con successo']);
+        echo json_encode(['success' => true, 'message' => 'Ruolo aggiornato con successo']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Errore durante l\'aggiornamento']);
     }
 } catch (Exception $e) {
-    error_log("Errore aggiornamento presenza: " . $e->getMessage());
+    error_log("Errore aggiornamento ruolo: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Errore interno del server']);
 }
