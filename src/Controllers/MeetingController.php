@@ -172,6 +172,26 @@ class MeetingController {
     }
     
     /**
+     * Format convocator field for display: "Nome Cognome (matricola) | ruolo"
+     * @param string $convocator The convocator field value
+     * @return string Formatted convocator display string
+     */
+    public function formatConvocatorDisplay($convocator) {
+        $data = $this->parseConvocator($convocator);
+        if (!$data['member_id']) {
+            return '-';
+        }
+        
+        $memberSql = "SELECT first_name, last_name, registration_number FROM members WHERE id = ?";
+        $member = $this->db->fetchOne($memberSql, [$data['member_id']]);
+        if ($member) {
+            return trim($member['first_name'] . ' ' . $member['last_name']) . ' (' . $member['registration_number'] . ') | ' . $data['role'];
+        }
+        
+        return $data['member_id'] . ' | ' . $data['role'];
+    }
+    
+    /**
      * Crea nuova riunione
      */
     public function create($data, $userId) {

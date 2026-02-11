@@ -202,7 +202,7 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                                     ?>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($meeting['location'] ?? '-'); ?></td>
-                                                <td><?php echo htmlspecialchars($meeting['convocator'] ?? '-'); ?></td>
+                                                <td><?php echo htmlspecialchars($controller->formatConvocatorDisplay($meeting['convocator'] ?? '')); ?></td>
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <a href="meeting_view.php?id=<?php echo $meeting['id']; ?>" 
