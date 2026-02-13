@@ -1183,7 +1183,105 @@ class ReportController {
         if ($format === 'csv') {
             return $this->exportToCSV($data);
         } else {
-            $this->exportToExcel($data, 'Soci', 'elenco_soci_' . date('Y-m-d') . '.xlsx');
+            $this->exportMembersMultiSheet($data);
+        }
+    }
+    
+    /**
+     * Export members to a multi-sheet Excel file:
+     * Sheet 1: Tabella Generale (all members, all columns)
+     * Sheet 2: Solo Operativi (volunteer_status = 'operativo')
+     * Sheet 3: Solo In Formazione (volunteer_status = 'in_formazione')
+     * Sheet 4: Solo Non Operativi (volunteer_status = 'non_operativo')
+     */
+    private function exportMembersMultiSheet($allData) {
+        if (empty($allData)) {
+            throw new \Exception('Nessun dato da esportare');
+        }
+        
+        $filename = 'elenco_soci_' . date('Y-m-d') . '.xlsx';
+        
+        // Query for filtered sheets (by volunteer_status) with specific columns
+        $filteredSql = "SELECT 
+                    m.registration_number as numero_matricola,
+                    m.first_name as nome,
+                    m.last_name as cognome,
+                    m.tax_code as codice_fiscale,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare
+                FROM members m
+                WHERE m.volunteer_status = ?
+                ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+        
+        $operativi = $this->db->fetchAll($filteredSql, ['operativo']);
+        $inFormazione = $this->db->fetchAll($filteredSql, ['in_formazione']);
+        $nonOperativi = $this->db->fetchAll($filteredSql, ['non_operativo']);
+        
+        $spreadsheet = new Spreadsheet();
+        
+        // Sheet 1: Tabella Generale
+        $this->fillSheet($spreadsheet->getActiveSheet(), 'Tabella Generale', $allData);
+        
+        // Sheet 2: Solo Operativi
+        $sheet2 = $spreadsheet->createSheet(1);
+        $this->fillSheet($sheet2, 'Operativi', $operativi);
+        
+        // Sheet 3: Solo In Formazione
+        $sheet3 = $spreadsheet->createSheet(2);
+        $this->fillSheet($sheet3, 'In Formazione', $inFormazione);
+        
+        // Sheet 4: Solo Non Operativi
+        $sheet4 = $spreadsheet->createSheet(3);
+        $this->fillSheet($sheet4, 'Non Operativi', $nonOperativi);
+        
+        $spreadsheet->setActiveSheetIndex(0);
+        
+        // Output
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+    
+    /**
+     * Fill a worksheet with data (headers + rows + auto-size)
+     */
+    private function fillSheet($sheet, $title, $data) {
+        $sheet->setTitle($title);
+        
+        if (empty($data)) {
+            $sheet->setCellValue('A1', 'Nessun dato disponibile');
+            $sheet->getStyle('A1')->getFont()->setBold(true);
+            return;
+        }
+        
+        // Header
+        $headers = array_keys($data[0]);
+        $colIndex = 1;
+        foreach ($headers as $header) {
+            $sheet->setCellValue([$colIndex, 1], ucfirst(str_replace('_', ' ', $header)));
+            $sheet->getStyle([$colIndex, 1])->getFont()->setBold(true);
+            $colIndex++;
+        }
+        
+        // Data rows
+        $row = 2;
+        foreach ($data as $record) {
+            $colIndex = 1;
+            foreach ($record as $value) {
+                $sheet->setCellValue([$colIndex, $row], $value);
+                $colIndex++;
+            }
+            $row++;
+        }
+        
+        // Auto-size columns
+        $numColumns = count($headers);
+        for ($i = 1; $i <= $numColumns; $i++) {
+            $sheet->getColumnDimensionByColumn($i)->setAutoSize(true);
         }
     }
     
