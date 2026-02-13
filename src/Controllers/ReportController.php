@@ -1190,9 +1190,9 @@ class ReportController {
     /**
      * Export members to a multi-sheet Excel file:
      * Sheet 1: Tabella Generale (all members, all columns)
-     * Sheet 2: Solo Operativi (volunteer_status = 'operativo')
-     * Sheet 3: Solo In Formazione (volunteer_status = 'in_formazione')
-     * Sheet 4: Solo Non Operativi (volunteer_status = 'non_operativo')
+     * Sheet 2: Solo Operativi (volunteer_status = 'operativo' AND member_status = 'attivo')
+     * Sheet 3: Solo In Formazione (volunteer_status = 'in_formazione' AND member_status = 'attivo')
+     * Sheet 4: Solo Non Operativi (volunteer_status = 'non_operativo' AND member_status = 'attivo')
      */
     private function exportMembersMultiSheet($allData) {
         if (empty($allData)) {
@@ -1201,7 +1201,7 @@ class ReportController {
         
         $filename = 'elenco_soci_' . date('Y-m-d') . '.xlsx';
         
-        // Query for filtered sheets (by volunteer_status) with specific columns
+        // Query for filtered sheets (by volunteer_status and member_status = 'attivo') with specific columns
         $filteredSql = "SELECT 
                     m.registration_number as numero_matricola,
                     m.first_name as nome,
@@ -1210,7 +1210,7 @@ class ReportController {
                     (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
                     (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare
                 FROM members m
-                WHERE m.volunteer_status = ?
+                WHERE m.volunteer_status = ? AND m.member_status = 'attivo'
                 ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
         
         $operativi = $this->db->fetchAll($filteredSql, ['operativo']);
