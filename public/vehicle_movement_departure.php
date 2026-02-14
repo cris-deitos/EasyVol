@@ -334,11 +334,10 @@ $pageTitle = 'Registra Uscita Veicolo';
                             <option value="<?php echo $trailer['id']; ?>"
                                     data-license="<?php echo htmlspecialchars($trailer['license_type'] ?? ''); ?>">
                                 <?php 
-                                echo htmlspecialchars($trailer['name']);
-                                if ($trailer['license_plate']) {
-                                    echo ' - ' . htmlspecialchars($trailer['license_plate']);
-                                } elseif ($trailer['serial_number']) {
-                                    echo ' - ' . htmlspecialchars($trailer['serial_number']);
+                                $identifier = $trailer['license_plate'] ?: ($trailer['serial_number'] ?: $trailer['name']);
+                                echo htmlspecialchars($identifier);
+                                if (!empty($trailer['brand']) || !empty($trailer['model'])) {
+                                    echo ' - ' . htmlspecialchars(trim($trailer['brand'] . ' ' . $trailer['model']));
                                 }
                                 if ($trailer['license_type']) {
                                     echo ' (Patente: ' . htmlspecialchars($trailer['license_type']) . ')';

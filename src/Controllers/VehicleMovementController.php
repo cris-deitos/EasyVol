@@ -90,7 +90,10 @@ class VehicleMovementController {
                 LEFT JOIN vehicle_movements vmt ON v.id = vmt.trailer_id
                     AND vmt.status = 'in_mission'
                 WHERE $whereClause
-                ORDER BY v.license_plate, v.serial_number";
+                ORDER BY 
+                    FIELD(v.status, 'operativo', 'in_manutenzione', 'fuori_servizio'),
+                    FIELD(v.vehicle_type, 'veicolo', 'natante', 'rimorchio'),
+                    v.license_plate, v.serial_number";
         
         return $this->db->fetchAll($sql, $params);
     }
@@ -873,7 +876,7 @@ class VehicleMovementController {
      * Get available trailers (rimorchi not in mission and not fuori_servizio)
      */
     public function getAvailableTrailers() {
-        $sql = "SELECT v.id, v.name, v.license_plate, v.serial_number, v.status, v.license_type
+        $sql = "SELECT v.id, v.name, v.license_plate, v.serial_number, v.status, v.license_type, v.brand, v.model
                 FROM vehicles v
                 WHERE v.vehicle_type = 'rimorchio' 
                 AND v.status != 'fuori_servizio'
