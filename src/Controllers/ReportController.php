@@ -1190,9 +1190,10 @@ class ReportController {
     /**
      * Export members to a multi-sheet Excel file:
      * Sheet 1: Tabella Generale (all members, all columns)
-     * Sheet 2: Solo Operativi (volunteer_status = 'operativo' AND member_status = 'attivo')
-     * Sheet 3: Solo In Formazione (volunteer_status = 'in_formazione' AND member_status = 'attivo')
-     * Sheet 4: Solo Non Operativi (volunteer_status = 'non_operativo' AND member_status = 'attivo')
+     * Sheet 2: Soci Attivi (member_status = 'attivo', simplified columns)
+     * Sheet 3: Solo Operativi (volunteer_status = 'operativo' AND member_status = 'attivo')
+     * Sheet 4: Solo In Formazione (volunteer_status = 'in_formazione' AND member_status = 'attivo')
+     * Sheet 5: Solo Non Operativi (volunteer_status = 'non_operativo' AND member_status = 'attivo')
      */
     private function exportMembersMultiSheet($allData) {
         if (empty($allData)) {
@@ -1200,6 +1201,20 @@ class ReportController {
         }
         
         $filename = 'elenco_soci_' . date('Y-m-d') . '.xlsx';
+        
+        // Query for active members sheet (member_status = 'attivo') with specific columns
+        $activeSql = "SELECT 
+                    m.registration_number as numero_matricola,
+                    m.first_name as nome,
+                    m.last_name as cognome,
+                    m.tax_code as codice_fiscale,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare
+                FROM members m
+                WHERE m.member_status = 'attivo'
+                ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+        
+        $sociAttivi = $this->db->fetchAll($activeSql);
         
         // Query for filtered sheets (by volunteer_status and member_status = 'attivo') with specific columns
         $filteredSql = "SELECT 
@@ -1222,17 +1237,21 @@ class ReportController {
         // Sheet 1: Tabella Generale
         $this->fillSheet($spreadsheet->getActiveSheet(), 'Tabella Generale', $allData);
         
-        // Sheet 2: Solo Operativi
-        $sheet2 = $spreadsheet->createSheet(1);
-        $this->fillSheet($sheet2, 'Operativi', $operativi);
+        // Sheet 2: Soci Attivi
+        $sheetAttivi = $spreadsheet->createSheet(1);
+        $this->fillSheet($sheetAttivi, 'Soci Attivi', $sociAttivi);
         
-        // Sheet 3: Solo In Formazione
+        // Sheet 3: Solo Operativi
         $sheet3 = $spreadsheet->createSheet(2);
-        $this->fillSheet($sheet3, 'In Formazione', $inFormazione);
+        $this->fillSheet($sheet3, 'Operativi', $operativi);
         
-        // Sheet 4: Solo Non Operativi
+        // Sheet 4: Solo In Formazione
         $sheet4 = $spreadsheet->createSheet(3);
-        $this->fillSheet($sheet4, 'Non Operativi', $nonOperativi);
+        $this->fillSheet($sheet4, 'In Formazione', $inFormazione);
+        
+        // Sheet 5: Solo Non Operativi
+        $sheet5 = $spreadsheet->createSheet(4);
+        $this->fillSheet($sheet5, 'Non Operativi', $nonOperativi);
         
         $spreadsheet->setActiveSheetIndex(0);
         
@@ -1315,8 +1334,57 @@ class ReportController {
         if ($format === 'csv') {
             return $this->exportToCSV($data);
         } else {
-            $this->exportToExcel($data, 'Cadetti', 'elenco_cadetti_' . date('Y-m-d') . '.xlsx');
+            $this->exportJuniorMembersMultiSheet($data);
         }
+    }
+    
+    /**
+     * Export junior members to a multi-sheet Excel file:
+     * Sheet 1: Tabella Generale (all junior members, all columns)
+     * Sheet 2: Attivi (member_status = 'attivo', simplified columns)
+     */
+    private function exportJuniorMembersMultiSheet($allData) {
+        if (empty($allData)) {
+            throw new \Exception('Nessun dato da esportare');
+        }
+        
+        $filename = 'elenco_cadetti_' . date('Y-m-d') . '.xlsx';
+        
+        // Query for active junior members with specific columns
+        $activeSql = "SELECT 
+                    jm.registration_number as numero_matricola,
+                    jm.first_name as nome,
+                    jm.last_name as cognome,
+                    jm.tax_code as codice_fiscale,
+                    (SELECT value FROM junior_member_contacts WHERE junior_member_id = jm.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM junior_member_contacts WHERE junior_member_id = jm.id AND contact_type = 'cellulare' LIMIT 1) as cellulare
+                FROM junior_members jm
+                WHERE jm.member_status = 'attivo'
+                ORDER BY CASE WHEN jm.registration_number LIKE 'C-%' 
+                         THEN CAST(SUBSTRING(jm.registration_number, 3) AS UNSIGNED) 
+                         ELSE 0 END ASC, jm.registration_number ASC";
+        
+        $attivi = $this->db->fetchAll($activeSql);
+        
+        $spreadsheet = new Spreadsheet();
+        
+        // Sheet 1: Tabella Generale
+        $this->fillSheet($spreadsheet->getActiveSheet(), 'Tabella Generale', $allData);
+        
+        // Sheet 2: Attivi
+        $sheet2 = $spreadsheet->createSheet(1);
+        $this->fillSheet($sheet2, 'Attivi', $attivi);
+        
+        $spreadsheet->setActiveSheetIndex(0);
+        
+        // Output
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
     
     /**
@@ -1953,5 +2021,187 @@ class ReportController {
         $html .= '</body></html>';
         
         return $html;
+    }
+    
+    /**
+     * Export members filtered by status to Excel
+     */
+    public function exportMembersByStatusExcel($status) {
+        $sql = "SELECT 
+                    m.registration_number as numero_matricola,
+                    m.first_name as nome,
+                    m.last_name as cognome,
+                    m.tax_code as codice_fiscale,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                    m.member_status as stato
+                FROM members m
+                WHERE m.member_status = ?
+                ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+        
+        $data = $this->db->fetchAll($sql, [$status]);
+        $filename = 'soci_stato_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($status)) . '_' . date('Y-m-d') . '.xlsx';
+        $this->exportToExcel($data, 'Soci - ' . ucfirst($status), $filename);
+    }
+    
+    /**
+     * Export members filtered by status to PDF
+     */
+    public function exportMembersByStatusPdf($status) {
+        $sql = "SELECT 
+                    m.registration_number as numero_matricola,
+                    m.first_name as nome,
+                    m.last_name as cognome,
+                    m.tax_code as codice_fiscale,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                    m.member_status as stato
+                FROM members m
+                WHERE m.member_status = ?
+                ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+        
+        $data = $this->db->fetchAll($sql, [$status]);
+        $title = 'Elenco Soci - Stato: ' . ucfirst($status);
+        $filename = 'soci_stato_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($status)) . '_' . date('Y-m-d') . '.pdf';
+        $this->exportMembersListPdf($data, $title, $filename);
+    }
+    
+    /**
+     * Export members filtered by qualification/role to Excel
+     */
+    public function exportMembersByQualificationExcel($qualification) {
+        if ($qualification === 'Non assegnato') {
+            $sql = "SELECT 
+                        m.registration_number as numero_matricola,
+                        m.first_name as nome,
+                        m.last_name as cognome,
+                        m.tax_code as codice_fiscale,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                        'Non assegnato' as mansione
+                    FROM members m
+                    WHERE m.id NOT IN (
+                        SELECT DISTINCT member_id FROM member_roles 
+                        WHERE end_date IS NULL OR end_date >= CURDATE()
+                    )
+                    ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+            $data = $this->db->fetchAll($sql);
+        } else {
+            $sql = "SELECT 
+                        m.registration_number as numero_matricola,
+                        m.first_name as nome,
+                        m.last_name as cognome,
+                        m.tax_code as codice_fiscale,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                        mr.role_name as mansione
+                    FROM members m
+                    INNER JOIN member_roles mr ON m.id = mr.member_id 
+                        AND (mr.end_date IS NULL OR mr.end_date >= CURDATE())
+                    WHERE mr.role_name = ?
+                    ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+            $data = $this->db->fetchAll($sql, [$qualification]);
+        }
+        
+        $filename = 'soci_mansione_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($qualification)) . '_' . date('Y-m-d') . '.xlsx';
+        $sheetName = mb_substr('Soci - ' . ucfirst($qualification), 0, 31);
+        $this->exportToExcel($data, $sheetName, $filename);
+    }
+    
+    /**
+     * Export members filtered by qualification/role to PDF
+     */
+    public function exportMembersByQualificationPdf($qualification) {
+        if ($qualification === 'Non assegnato') {
+            $sql = "SELECT 
+                        m.registration_number as numero_matricola,
+                        m.first_name as nome,
+                        m.last_name as cognome,
+                        m.tax_code as codice_fiscale,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                        'Non assegnato' as mansione
+                    FROM members m
+                    WHERE m.id NOT IN (
+                        SELECT DISTINCT member_id FROM member_roles 
+                        WHERE end_date IS NULL OR end_date >= CURDATE()
+                    )
+                    ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+            $data = $this->db->fetchAll($sql);
+        } else {
+            $sql = "SELECT 
+                        m.registration_number as numero_matricola,
+                        m.first_name as nome,
+                        m.last_name as cognome,
+                        m.tax_code as codice_fiscale,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                        (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                        mr.role_name as mansione
+                    FROM members m
+                    INNER JOIN member_roles mr ON m.id = mr.member_id 
+                        AND (mr.end_date IS NULL OR mr.end_date >= CURDATE())
+                    WHERE mr.role_name = ?
+                    ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+            $data = $this->db->fetchAll($sql, [$qualification]);
+        }
+        
+        $title = 'Elenco Soci - Mansione: ' . ucfirst($qualification);
+        $filename = 'soci_mansione_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($qualification)) . '_' . date('Y-m-d') . '.pdf';
+        $this->exportMembersListPdf($data, $title, $filename);
+    }
+    
+    /**
+     * Generate a PDF with a list of members
+     */
+    private function exportMembersListPdf($data, $title, $filename) {
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4-L',
+            'margin_left' => 10,
+            'margin_right' => 10,
+            'margin_top' => 20,
+            'margin_bottom' => 15,
+            'margin_header' => 10,
+            'margin_footer' => 10,
+        ]);
+        
+        $html = '<!DOCTYPE html><html><head><style>
+            body { font-family: Arial, sans-serif; font-size: 11px; }
+            h1 { font-size: 16px; text-align: center; margin-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background-color: #2c3e50; color: white; padding: 6px 8px; text-align: left; font-size: 10px; }
+            td { padding: 5px 8px; border-bottom: 1px solid #ddd; font-size: 10px; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer { text-align: center; font-size: 8px; color: #999; margin-top: 20px; }
+        </style></head><body>';
+        
+        $html .= '<h1>' . htmlspecialchars($title) . '</h1>';
+        
+        if (empty($data)) {
+            $html .= '<p style="text-align:center;">Nessun dato disponibile</p>';
+        } else {
+            $html .= '<table><thead><tr>';
+            $headers = array_keys($data[0]);
+            foreach ($headers as $header) {
+                $html .= '<th>' . htmlspecialchars(ucfirst(str_replace('_', ' ', $header))) . '</th>';
+            }
+            $html .= '</tr></thead><tbody>';
+            
+            foreach ($data as $row) {
+                $html .= '<tr>';
+                foreach ($row as $value) {
+                    $html .= '<td>' . htmlspecialchars($value ?? '') . '</td>';
+                }
+                $html .= '</tr>';
+            }
+            $html .= '</tbody></table>';
+        }
+        
+        $html .= '<div class="footer">Report generato il ' . date('d/m/Y H:i') . ' da EasyVol</div>';
+        $html .= '</body></html>';
+        
+        $mpdf->WriteHTML($html);
+        $mpdf->Output($filename, \Mpdf\Output\Destination::DOWNLOAD);
+        exit;
     }
 }

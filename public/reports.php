@@ -332,7 +332,7 @@ $pageTitle = 'Report e Statistiche';
                                             <tbody>
                                                 <?php foreach ($membersByStatus as $item): ?>
                                                     <tr>
-                                                        <td><?php echo ucfirst(htmlspecialchars($item['status'])); ?></td>
+                                                        <td><a href="#" class="text-decoration-none" onclick="showDownloadModal('members_by_status', '<?php echo htmlspecialchars($item['status'], ENT_QUOTES); ?>', '<?php echo ucfirst(htmlspecialchars($item['status'], ENT_QUOTES)); ?>'); return false;"><?php echo ucfirst(htmlspecialchars($item['status'])); ?></a></td>
                                                         <td class="text-end"><?php echo number_format($item['count']); ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
@@ -357,7 +357,7 @@ $pageTitle = 'Report e Statistiche';
                                             <tbody>
                                                 <?php foreach ($membersByQualification as $item): ?>
                                                     <tr>
-                                                        <td><?php echo htmlspecialchars($item['qualification'] ?? 'Non specificato'); ?></td>
+                                                        <td><a href="#" class="text-decoration-none" onclick="showDownloadModal('members_by_qualification', '<?php echo htmlspecialchars($item['qualification'] ?? 'Non assegnato', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($item['qualification'] ?? 'Non assegnato', ENT_QUOTES); ?>'); return false;"><?php echo htmlspecialchars($item['qualification'] ?? 'Non specificato'); ?></a></td>
                                                         <td class="text-end"><?php echo number_format($item['count']); ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
@@ -612,6 +612,29 @@ $pageTitle = 'Report e Statistiche';
         </div>
     </div>
     
+    <!-- Modal per scelta formato download elenco soci -->
+    <div class="modal fade" id="downloadFormatModal" tabindex="-1" aria-labelledby="downloadFormatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="downloadFormatModalLabel">Scarica Elenco</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p id="downloadModalDescription" class="mb-3"></p>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-danger" id="btnDownloadPdf">
+                            <i class="bi bi-file-earmark-pdf"></i> Scarica PDF
+                        </button>
+                        <button type="button" class="btn btn-success" id="btnDownloadExcel">
+                            <i class="bi bi-file-earmark-excel"></i> Scarica Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function downloadReport(reportType) {
@@ -627,6 +650,24 @@ $pageTitle = 'Report e Statistiche';
             
             // Apri in nuova finestra per avviare il download
             window.location.href = url;
+        }
+        
+        function showDownloadModal(reportType, filterValue, displayLabel) {
+            document.getElementById('downloadModalDescription').textContent = 'Scegli il formato per: ' + displayLabel;
+            
+            const year = document.getElementById('reportYear').value || new Date().getFullYear();
+            const baseUrl = 'report_download.php?type=' + encodeURIComponent(reportType) + '&value=' + encodeURIComponent(filterValue) + '&year=' + encodeURIComponent(year);
+            
+            document.getElementById('btnDownloadPdf').onclick = function() {
+                window.location.href = baseUrl + '&format=pdf';
+                bootstrap.Modal.getInstance(document.getElementById('downloadFormatModal')).hide();
+            };
+            document.getElementById('btnDownloadExcel').onclick = function() {
+                window.location.href = baseUrl + '&format=excel';
+                bootstrap.Modal.getInstance(document.getElementById('downloadFormatModal')).hide();
+            };
+            
+            new bootstrap.Modal(document.getElementById('downloadFormatModal')).show();
         }
     </script>
 </body>
