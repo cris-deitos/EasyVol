@@ -34,6 +34,21 @@ class ReportController {
     }
     
     /**
+     * Report soci attivi per stato volontario (Operativo, In Formazione, Non Operativo)
+     */
+    public function membersByVolunteerStatus() {
+        $sql = "SELECT 
+                    volunteer_status as status,
+                    COUNT(*) as count
+                FROM members
+                WHERE member_status = 'attivo'
+                GROUP BY volunteer_status
+                ORDER BY volunteer_status";
+        
+        return $this->db->fetchAll($sql);
+    }
+    
+    /**
      * Report soci per qualifica
      */
     public function membersByQualification() {
@@ -1191,9 +1206,6 @@ class ReportController {
      * Export members to a multi-sheet Excel file:
      * Sheet 1: Tabella Generale (all members, all columns)
      * Sheet 2: Soci Attivi (member_status = 'attivo', simplified columns)
-     * Sheet 3: Solo Operativi (volunteer_status = 'operativo' AND member_status = 'attivo')
-     * Sheet 4: Solo In Formazione (volunteer_status = 'in_formazione' AND member_status = 'attivo')
-     * Sheet 5: Solo Non Operativi (volunteer_status = 'non_operativo' AND member_status = 'attivo')
      */
     private function exportMembersMultiSheet($allData) {
         if (empty($allData)) {
@@ -1216,22 +1228,6 @@ class ReportController {
         
         $sociAttivi = $this->db->fetchAll($activeSql);
         
-        // Query for filtered sheets (by volunteer_status and member_status = 'attivo') with specific columns
-        $filteredSql = "SELECT 
-                    m.registration_number as numero_matricola,
-                    m.first_name as nome,
-                    m.last_name as cognome,
-                    m.tax_code as codice_fiscale,
-                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
-                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare
-                FROM members m
-                WHERE m.volunteer_status = ? AND m.member_status = 'attivo'
-                ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
-        
-        $operativi = $this->db->fetchAll($filteredSql, ['operativo']);
-        $inFormazione = $this->db->fetchAll($filteredSql, ['in_formazione']);
-        $nonOperativi = $this->db->fetchAll($filteredSql, ['non_operativo']);
-        
         $spreadsheet = new Spreadsheet();
         
         // Sheet 1: Tabella Generale
@@ -1240,18 +1236,6 @@ class ReportController {
         // Sheet 2: Soci Attivi
         $sheetAttivi = $spreadsheet->createSheet(1);
         $this->fillSheet($sheetAttivi, 'Soci Attivi', $sociAttivi);
-        
-        // Sheet 3: Solo Operativi
-        $sheet3 = $spreadsheet->createSheet(2);
-        $this->fillSheet($sheet3, 'Operativi', $operativi);
-        
-        // Sheet 4: Solo In Formazione
-        $sheet4 = $spreadsheet->createSheet(3);
-        $this->fillSheet($sheet4, 'In Formazione', $inFormazione);
-        
-        // Sheet 5: Solo Non Operativi
-        $sheet5 = $spreadsheet->createSheet(4);
-        $this->fillSheet($sheet5, 'Non Operativi', $nonOperativi);
         
         $spreadsheet->setActiveSheetIndex(0);
         
@@ -2147,6 +2131,63 @@ class ReportController {
         
         $title = 'Elenco Soci - Mansione: ' . ucfirst($qualification);
         $filename = 'soci_mansione_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($qualification)) . '_' . date('Y-m-d') . '.pdf';
+        $this->exportMembersListPdf($data, $title, $filename);
+    }
+    
+    /**
+     * Export active members filtered by volunteer status to Excel
+     */
+    public function exportMembersByVolunteerStatusExcel($volunteerStatus) {
+        $volunteerStatusLabels = [
+            'operativo' => 'Operativo',
+            'in_formazione' => 'In Formazione',
+            'non_operativo' => 'Non Operativo'
+        ];
+        $label = $volunteerStatusLabels[$volunteerStatus] ?? ucfirst($volunteerStatus);
+        
+        $sql = "SELECT 
+                    m.registration_number as numero_matricola,
+                    m.first_name as nome,
+                    m.last_name as cognome,
+                    m.tax_code as codice_fiscale,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                    m.volunteer_status as stato_volontario
+                FROM members m
+                WHERE m.volunteer_status = ? AND m.member_status = 'attivo'
+                ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+        
+        $data = $this->db->fetchAll($sql, [$volunteerStatus]);
+        $filename = 'soci_attivi_stato_vol_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($volunteerStatus)) . '_' . date('Y-m-d') . '.xlsx';
+        $this->exportToExcel($data, 'Soci Attivi - ' . $label, $filename);
+    }
+    
+    /**
+     * Export active members filtered by volunteer status to PDF
+     */
+    public function exportMembersByVolunteerStatusPdf($volunteerStatus) {
+        $volunteerStatusLabels = [
+            'operativo' => 'Operativo',
+            'in_formazione' => 'In Formazione',
+            'non_operativo' => 'Non Operativo'
+        ];
+        $label = $volunteerStatusLabels[$volunteerStatus] ?? ucfirst($volunteerStatus);
+        
+        $sql = "SELECT 
+                    m.registration_number as numero_matricola,
+                    m.first_name as nome,
+                    m.last_name as cognome,
+                    m.tax_code as codice_fiscale,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'email' LIMIT 1) as email,
+                    (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
+                    m.volunteer_status as stato_volontario
+                FROM members m
+                WHERE m.volunteer_status = ? AND m.member_status = 'attivo'
+                ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
+        
+        $data = $this->db->fetchAll($sql, [$volunteerStatus]);
+        $title = 'Elenco Soci Attivi - Stato Volontario: ' . $label;
+        $filename = 'soci_attivi_stato_vol_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($volunteerStatus)) . '_' . date('Y-m-d') . '.pdf';
         $this->exportMembersListPdf($data, $title, $filename);
     }
     

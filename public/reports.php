@@ -33,6 +33,7 @@ $dashboardStats = $controller->getDashboardStats();
 
 // Report soci
 $membersByStatus = $controller->membersByStatus();
+$membersByVolunteerStatus = $controller->membersByVolunteerStatus();
 $membersByQualification = $controller->membersByQualification();
 
 // Report eventi (ultimi 12 mesi)
@@ -333,6 +334,36 @@ $pageTitle = 'Report e Statistiche';
                                                 <?php foreach ($membersByStatus as $item): ?>
                                                     <tr>
                                                         <td><a href="#" class="text-decoration-none" onclick="showDownloadModal('members_by_status', '<?php echo htmlspecialchars($item['status'], ENT_QUOTES); ?>', '<?php echo ucfirst(htmlspecialchars($item['status'], ENT_QUOTES)); ?>'); return false;"><?php echo ucfirst(htmlspecialchars($item['status'])); ?></a></td>
+                                                        <td class="text-end"><?php echo number_format($item['count']); ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Stato Volontario (Soci Attivi)</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Stato Volontario</th>
+                                                    <th class="text-end">Numero</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php 
+                                                $volunteerStatusLabels = [
+                                                    'operativo' => 'Operativo',
+                                                    'in_formazione' => 'In Formazione',
+                                                    'non_operativo' => 'Non Operativo'
+                                                ];
+                                                ?>
+                                                <?php foreach ($membersByVolunteerStatus as $item): ?>
+                                                    <tr>
+                                                        <td><a href="#" class="text-decoration-none" onclick="showDownloadModal('members_by_volunteer_status', '<?php echo htmlspecialchars($item['status'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($volunteerStatusLabels[$item['status']] ?? ucfirst($item['status']), ENT_QUOTES); ?>'); return false;"><?php echo htmlspecialchars($volunteerStatusLabels[$item['status']] ?? ucfirst($item['status'])); ?></a></td>
                                                         <td class="text-end"><?php echo number_format($item['count']); ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
