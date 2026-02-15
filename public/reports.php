@@ -357,7 +357,7 @@ $pageTitle = 'Report e Statistiche';
                                             <tbody>
                                                 <?php foreach ($membersByQualification as $item): ?>
                                                     <tr>
-                                                        <td><a href="#" class="text-decoration-none" onclick="showDownloadModal('members_by_qualification', '<?php echo htmlspecialchars($item['qualification'] ?? 'Non assegnato', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($item['qualification'] ?? 'Non assegnato', ENT_QUOTES); ?>'); return false;"><?php echo htmlspecialchars($item['qualification'] ?? 'Non specificato'); ?></a></td>
+                                                        <td><a href="#" class="text-decoration-none" onclick="showDownloadModal('members_by_qualification', '<?php echo htmlspecialchars($item['qualification'] ?? 'Non assegnato', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($item['qualification'] ?? 'Non assegnato', ENT_QUOTES); ?>'); return false;"><?php echo htmlspecialchars($item['qualification'] ?? 'Non assegnato'); ?></a></td>
                                                         <td class="text-end"><?php echo number_format($item['count']); ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
