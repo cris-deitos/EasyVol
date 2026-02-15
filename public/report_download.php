@@ -158,13 +158,28 @@ try {
             }
             break;
             
+        case 'members_by_volunteer_status':
+            $filterValue = $_GET['value'] ?? '';
+            $downloadFormat = $_GET['format'] ?? 'excel';
+            if (empty($filterValue)) {
+                http_response_code(400);
+                die('Valore stato volontario non specificato');
+            }
+            AutoLogger::logActivity('reports', 'export', null, "Export soci attivi per stato volontario: {$filterValue} - formato {$downloadFormat}");
+            if ($downloadFormat === 'pdf') {
+                $controller->exportMembersByVolunteerStatusPdf($filterValue);
+            } else {
+                $controller->exportMembersByVolunteerStatusExcel($filterValue);
+            }
+            break;
+            
         default:
             http_response_code(400);
             die('Tipo di report non valido');
     }
     
     // Per i report Excel, verifica che ci siano dati
-    if (!in_array($reportType, ['annual_association_report', 'mantenimento_requisiti', 'members_by_status', 'members_by_qualification'])) {
+    if (!in_array($reportType, ['annual_association_report', 'mantenimento_requisiti', 'members_by_status', 'members_by_qualification', 'members_by_volunteer_status'])) {
         if (empty($data)) {
             http_response_code(404);
             die('Nessun dato disponibile per il periodo selezionato');
