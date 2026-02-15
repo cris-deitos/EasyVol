@@ -128,13 +128,43 @@ try {
             $controller->generateMantenimentoRequisitiReportPDF($year, $associationData);
             break;
             
+        case 'members_by_status':
+            $filterValue = $_GET['value'] ?? '';
+            $downloadFormat = $_GET['format'] ?? 'excel';
+            if (empty($filterValue)) {
+                http_response_code(400);
+                die('Valore stato non specificato');
+            }
+            AutoLogger::logActivity('reports', 'export', null, "Export soci per stato: {$filterValue} - formato {$downloadFormat}");
+            if ($downloadFormat === 'pdf') {
+                $controller->exportMembersByStatusPdf($filterValue);
+            } else {
+                $controller->exportMembersByStatusExcel($filterValue);
+            }
+            break;
+            
+        case 'members_by_qualification':
+            $filterValue = $_GET['value'] ?? '';
+            $downloadFormat = $_GET['format'] ?? 'excel';
+            if (empty($filterValue)) {
+                http_response_code(400);
+                die('Valore mansione non specificato');
+            }
+            AutoLogger::logActivity('reports', 'export', null, "Export soci per mansione: {$filterValue} - formato {$downloadFormat}");
+            if ($downloadFormat === 'pdf') {
+                $controller->exportMembersByQualificationPdf($filterValue);
+            } else {
+                $controller->exportMembersByQualificationExcel($filterValue);
+            }
+            break;
+            
         default:
             http_response_code(400);
             die('Tipo di report non valido');
     }
     
     // Per i report Excel, verifica che ci siano dati
-    if ($reportType !== 'annual_association_report' && $reportType !== 'mantenimento_requisiti') {
+    if (!in_array($reportType, ['annual_association_report', 'mantenimento_requisiti', 'members_by_status', 'members_by_qualification'])) {
         if (empty($data)) {
             http_response_code(404);
             die('Nessun dato disponibile per il periodo selezionato');
