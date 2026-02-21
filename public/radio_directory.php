@@ -89,6 +89,55 @@ $pageTitle = 'Rubrica Radio';
                         <a href="radio_assignment_history.php" class="btn btn-sm btn-outline-info me-2">
                             <i class="bi bi-clock-history"></i> Storico Assegnazioni
                         </a>
+
+                        <!-- Export: Assigned radios -->
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download"></i> Radio Assegnate
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="radio_export_pdf.php?type=assigned">
+                                    <i class="bi bi-file-earmark-pdf text-danger"></i> Scarica PDF
+                                </a></li>
+                                <li><a class="dropdown-item" href="radio_export_excel.php?type=assigned">
+                                    <i class="bi bi-file-earmark-spreadsheet text-success"></i> Scarica Excel
+                                </a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Export: Unassigned radios -->
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download"></i> Radio Non Assegnate
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="radio_export_pdf.php?type=unassigned">
+                                    <i class="bi bi-file-earmark-pdf text-danger"></i> Scarica PDF
+                                </a></li>
+                                <li><a class="dropdown-item" href="radio_export_excel.php?type=unassigned">
+                                    <i class="bi bi-file-earmark-spreadsheet text-success"></i> Scarica Excel
+                                </a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Export: All radios -->
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download"></i> Elenco Completo
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="radio_export_pdf.php?type=all">
+                                    <i class="bi bi-file-earmark-pdf text-danger"></i> Scarica PDF
+                                </a></li>
+                                <li><a class="dropdown-item" href="radio_export_excel.php?type=all">
+                                    <i class="bi bi-file-earmark-spreadsheet text-success"></i> Scarica Excel
+                                </a></li>
+                            </ul>
+                        </div>
+
                         <?php if ($app->checkPermission('operations_center', 'create')): ?>
                             <a href="radio_edit.php" class="btn btn-sm btn-primary">
                                 <i class="bi bi-plus-circle"></i> Nuova Radio
