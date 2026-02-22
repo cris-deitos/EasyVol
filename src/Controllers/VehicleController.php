@@ -221,13 +221,10 @@ class VehicleController {
             // Sincronizza scadenze con lo scadenziario
             $syncController = new SchedulerSyncController($this->db, $this->config);
             
-            // Get old values to check if expiry dates changed
-            $oldVehicle = $this->db->fetchOne("SELECT insurance_expiry, inspection_expiry FROM vehicles WHERE id = ?", [$id]);
-            
-            // Sync or remove insurance expiry
+            // Sync or remove insurance expiry (reuse $oldVehicleData already fetched above)
             if (!empty($data['insurance_expiry'])) {
                 $syncController->syncInsuranceExpiry($id);
-            } elseif ($oldVehicle && !empty($oldVehicle['insurance_expiry'])) {
+            } elseif ($oldVehicleData && !empty($oldVehicleData['insurance_expiry'])) {
                 // Insurance expiry was removed, delete scheduler item
                 $syncController->removeSchedulerItem('insurance', $id);
             }
@@ -235,7 +232,7 @@ class VehicleController {
             // Sync or remove inspection expiry
             if (!empty($data['inspection_expiry'])) {
                 $syncController->syncInspectionExpiry($id);
-            } elseif ($oldVehicle && !empty($oldVehicle['inspection_expiry'])) {
+            } elseif ($oldVehicleData && !empty($oldVehicleData['inspection_expiry'])) {
                 // Inspection expiry was removed, delete scheduler item
                 $syncController->removeSchedulerItem('inspection', $id);
             }
