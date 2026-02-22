@@ -2595,14 +2595,14 @@ INSERT INTO `print_templates` (
 </div>
 
 <div class="verbale-intro">
-<p>L''anno <strong>{{meeting_year}}</strong>, il giorno <strong>{{meeting_day}}</strong> del mese di <strong>{{meeting_month}}</strong>, 
-alle ore <strong>{{start_time}}</strong>, presso <strong>{{location}}</strong>{{#if location_address}} ({{location_address}}){{/if}}, 
-si è riunita {{meeting_type_article}} <strong>{{meeting_type}}</strong> {{#if title}}avente ad oggetto: <em>{{title}}</em>{{/if}}.</p>
+<p>L''anno <strong>{{meeting_year}}</strong>, il giorno <strong>{{meeting_day}}</strong> del mese di <strong>{{meeting_month}}</strong>,
+alle ore <strong>{{start_time_hhmm}}</strong>, presso <strong>{{location}}</strong>{{#if location_address}} ({{location_address}}){{/if}},
+si è riunita la <strong>{{meeting_type_label}}</strong>{{#if title}} avente ad oggetto: <em>{{title}}</em>{{/if}}.</p>
 
-<p>La riunione è stata convocata da <strong>{{convocator}}</strong>.</p>
+<p>La riunione è stata convocata da <strong>{{convocator_full}}</strong>.</p>
 
 {{#if online_details}}
-<p>Modalità di partecipazione: <strong>{{location_type}}</strong><br>
+<p>Modalità di partecipazione: <strong>{{location_type_label}}</strong><br>
 Dettagli connessione: {{online_details}}</p>
 {{/if}}
 </div>
@@ -2620,12 +2620,10 @@ Dettagli connessione: {{online_details}}</p>
     <tbody>
         {{#each participants}}
         <tr>
-            <td>{{participant_name}}</td>
+            <td>{{participant_full_name}}</td>
             <td>{{role}}</td>
-            <td class="center">
-                {{#if present}}Presente{{else}}{{#if is_delegated}}Delegato{{else}}Assente{{/if}}{{/if}}
-            </td>
-            <td>{{#if delegated_to_name}}{{delegated_to_name}}{{/if}}</td>
+            <td class="center">{{attendance_label}}</td>
+            <td>{{delegated_to_full_name}}</td>
         </tr>
         {{/each}}
     </tbody>
@@ -2648,18 +2646,18 @@ Dettagli connessione: {{online_details}}</p>
 <h2>Svolgimento della Riunione</h2>
 {{#each agenda}}
 <div class="discussione-item">
-    <h3>Punto {{order_number}}: {{subject}}</h3>
+    <h3><strong>Punto {{order_number}}</strong>: {{subject}}</h3>
     {{#if discussion}}
     <div class="discussion-text">{{discussion}}</div>
     {{else}}
     <div class="discussion-placeholder">[Discussione non registrata]</div>
     {{/if}}
-    
+
     {{#if has_voting}}
     <div class="votazione">
         <p><strong>VOTAZIONE:</strong></p>
         <p>Votanti: {{voting_total}} | Favorevoli: {{voting_in_favor}} | Contrari: {{voting_against}} | Astenuti: {{voting_abstained}}</p>
-        <p>Esito: <strong>{{#if voting_approved}}APPROVATO{{else}}NON APPROVATO{{/if}}</strong></p>
+        <p>Esito: <strong>{{voting_outcome_label}}</strong></p>
     </div>
     {{/if}}
 </div>
@@ -2668,12 +2666,12 @@ Dettagli connessione: {{online_details}}</p>
 {{#if minutes_content}}
 <h2>Verbale Dettagliato</h2>
 <div class="minutes-content">
-{{{minutes_content}}}
+{{minutes_content}}
 </div>
 {{/if}}
 
 <div class="chiusura">
-<p>Non essendovi altro da discutere, la seduta viene sciolta alle ore <strong>{{end_time}}</strong>.</p>
+<p>Non essendovi altro da discutere, la seduta viene sciolta alle ore <strong>{{end_time_hhmm}}</strong> del giorno <strong>{{meeting_date}}</strong>.</p>
 
 <p>Del che è verbale.</p>
 </div>
@@ -2684,19 +2682,15 @@ Dettagli connessione: {{online_details}}</p>
         <td class="firma-col">
             <p>Il Segretario</p>
             <div class="firma-line"></div>
-            <p class="firma-nome">_______________________</p>
+            <p class="firma-nome">{{secretary_full_name}}</p>
         </td>
         <td class="firma-col">
             <p>Il Presidente</p>
             <div class="firma-line"></div>
-            <p class="firma-nome">_______________________</p>
+            <p class="firma-nome">{{president_full_name}}</p>
         </td>
     </tr>
 </table>
-</div>
-
-<div class="footer">
-<p>Verbale generato il {{current_date}}</p>
 </div>
 </div>',
     'body {
@@ -2788,16 +2782,7 @@ ol.odg-list li { margin-bottom: 8px; }
 .firme-table { width: 100%; }
 .firma-col { width: 50%; text-align: center; vertical-align: bottom; padding: 20px; }
 .firma-line { border-bottom: 1px solid #333; width: 80%; margin: 30px auto 5px auto; }
-.firma-nome { font-size: 9pt; color: #666; }
-
-.footer {
-    margin-top: 30px;
-    text-align: center;
-    font-size: 8pt;
-    color: #999;
-    padding: 5px 0;
-    border-top: 1px solid #ddd;
-}
+.firma-nome { font-size: 10pt; color: #333; }
 
 @media print {
     body { margin: 0; }
