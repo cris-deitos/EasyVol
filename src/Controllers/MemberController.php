@@ -137,8 +137,9 @@ class MemberController {
                 $this->addCorsoBaseToMemberCourses($memberId, $data['corso_base_anno'], $userId);
             }
             
-            // Log attività
-            $this->logActivity($userId, 'member', 'create', $memberId, 'Creato nuovo socio: ' . $data['first_name'] . ' ' . $data['last_name']);
+            // Log attività con dati del nuovo socio
+            $newMemberData = $this->db->fetchOne("SELECT * FROM members WHERE id = ?", [$memberId]);
+            $this->logActivity($userId, 'member', 'create', $memberId, 'Creato nuovo socio: ' . $data['first_name'] . ' ' . $data['last_name'], null, $newMemberData);
             
             $this->db->commit();
             
@@ -165,8 +166,8 @@ class MemberController {
         try {
             $this->db->beginTransaction();
             
-            // Ottieni lo stato precedente del membro
-            $previousMember = $this->get($id);
+            // Ottieni lo stato precedente del membro (solo campi principali per il log)
+            $previousMember = $this->db->fetchOne("SELECT * FROM members WHERE id = ?", [$id]);
             $previousStatus = $previousMember ? $previousMember['member_status'] : null;
             $newStatus = $data['member_status'] ?? 'attivo';
             
@@ -225,8 +226,9 @@ class MemberController {
                 }
             }
             
-            // Log attività
-            $this->logActivity($userId, 'member', 'update', $id, 'Aggiornato socio');
+            // Log attività con dati prima e dopo
+            $newMemberData = $this->db->fetchOne("SELECT * FROM members WHERE id = ?", [$id]);
+            $this->logActivity($userId, 'member', 'update', $id, 'Aggiornato socio', $previousMember, $newMemberData);
             
             $this->db->commit();
             
@@ -250,14 +252,17 @@ class MemberController {
      */
     public function delete($id, $userId) {
         try {
+            // Cattura i dati del socio prima dell'eliminazione
+            $oldMemberData = $this->db->fetchOne("SELECT * FROM members WHERE id = ?", [$id]);
+            
             $sql = "UPDATE members SET 
                     member_status = 'dimesso'
                     WHERE id = ?";
             
             $this->db->execute($sql, [$id]);
             
-            // Log attività
-            $this->logActivity($userId, 'member', 'delete', $id, 'Eliminato socio');
+            // Log attività con i dati del socio eliminato
+            $this->logActivity($userId, 'member', 'delete', $id, 'Eliminato socio', $oldMemberData, null);
             
             return true;
             
@@ -485,11 +490,11 @@ class MemberController {
      * @param int $recordId ID record
      * @param string $details Dettagli
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -498,7 +503,9 @@ class MemberController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);

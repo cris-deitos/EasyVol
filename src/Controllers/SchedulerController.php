@@ -168,8 +168,9 @@ class SchedulerController {
             if (!empty($data['is_recurring'])) {
                 $recurrenceInfo = ' (Ricorrente: ' . $data['recurrence_type'] . ')';
             }
+            $newItemData = $this->db->fetchOne("SELECT * FROM scheduler_items WHERE id = ?", [$itemId]);
             $this->logActivity($userId, 'scheduler', 'create', $itemId, 
-                "Creata scadenza: {$data['title']}{$recurrenceInfo}");
+                "Creata scadenza: {$data['title']}{$recurrenceInfo}", null, $newItemData);
             
             $this->db->commit();
             return $itemId;
@@ -215,6 +216,9 @@ class SchedulerController {
     public function update($id, $data, $userId) {
         try {
             $this->db->beginTransaction();
+            
+            // Cattura dati precedenti per il log
+            $oldItemData = $this->db->fetchOne("SELECT * FROM scheduler_items WHERE id = ?", [$id]);
             
             // Check if completing
             $completedAt = null;
@@ -269,8 +273,9 @@ class SchedulerController {
             if (!empty($data['is_recurring'])) {
                 $recurrenceInfo = ' (Ricorrente: ' . $data['recurrence_type'] . ')';
             }
+            $newItemData = $this->db->fetchOne("SELECT * FROM scheduler_items WHERE id = ?", [$id]);
             $this->logActivity($userId, 'scheduler', 'update', $id, 
-                "Aggiornata scadenza: {$data['title']}{$recurrenceInfo}");
+                "Aggiornata scadenza: {$data['title']}{$recurrenceInfo}", $oldItemData, $newItemData);
             
             $this->db->commit();
             return true;
@@ -287,14 +292,14 @@ class SchedulerController {
     public function delete($id, $userId) {
         try {
             // Get item for log
-            $item = $this->get($id);
+            $item = $this->db->fetchOne("SELECT * FROM scheduler_items WHERE id = ?", [$id]);
             
             $sql = "DELETE FROM scheduler_items WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
-            // Log activity
+            // Log activity with old data
             $this->logActivity($userId, 'scheduler', 'delete', $id, 
-                "Eliminata scadenza: {$item['title']}");
+                "Eliminata scadenza: {$item['title']}", $item, null);
             
             return ['success' => true];
         } catch (\Exception $e) {
@@ -534,10 +539,14 @@ class SchedulerController {
     /**
      * Log activity
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
-        $sql = "INSERT INTO activity_logs (user_id, module, action, record_id, description, created_at) 
-                VALUES (?, ?, ?, ?, ?, NOW())";
-        $this->db->execute($sql, [$userId, $module, $action, $recordId, $details]);
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
+        $sql = "INSERT INTO activity_logs (user_id, module, action, record_id, description, old_data, new_data, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+        $this->db->execute($sql, [
+            $userId, $module, $action, $recordId, $details,
+            is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+            is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
+        ]);
     }
     
     /**

@@ -165,7 +165,8 @@ class VehicleController {
             }
             
             $vehicleIdent = VehicleIdentifier::build($data);
-            $this->logActivity($userId, 'vehicle', 'create', $vehicleId, "Creato nuovo mezzo: $vehicleIdent");
+            $newVehicleData = $this->db->fetchOne("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+            $this->logActivity($userId, 'vehicle', 'create', $vehicleId, "Creato nuovo mezzo: $vehicleIdent", null, $newVehicleData);
             
             $this->db->commit();
             return $vehicleId;
@@ -183,6 +184,9 @@ class VehicleController {
     public function update($id, $data, $userId) {
         try {
             $this->db->beginTransaction();
+            
+            // Cattura dati precedenti per il log
+            $oldVehicleData = $this->db->fetchOne("SELECT * FROM vehicles WHERE id = ?", [$id]);
             
             $this->validateVehicleData($data, $id);
             
@@ -217,13 +221,10 @@ class VehicleController {
             // Sincronizza scadenze con lo scadenziario
             $syncController = new SchedulerSyncController($this->db, $this->config);
             
-            // Get old values to check if expiry dates changed
-            $oldVehicle = $this->db->fetchOne("SELECT insurance_expiry, inspection_expiry FROM vehicles WHERE id = ?", [$id]);
-            
-            // Sync or remove insurance expiry
+            // Sync or remove insurance expiry (reuse $oldVehicleData already fetched above)
             if (!empty($data['insurance_expiry'])) {
                 $syncController->syncInsuranceExpiry($id);
-            } elseif ($oldVehicle && !empty($oldVehicle['insurance_expiry'])) {
+            } elseif ($oldVehicleData && !empty($oldVehicleData['insurance_expiry'])) {
                 // Insurance expiry was removed, delete scheduler item
                 $syncController->removeSchedulerItem('insurance', $id);
             }
@@ -231,12 +232,13 @@ class VehicleController {
             // Sync or remove inspection expiry
             if (!empty($data['inspection_expiry'])) {
                 $syncController->syncInspectionExpiry($id);
-            } elseif ($oldVehicle && !empty($oldVehicle['inspection_expiry'])) {
+            } elseif ($oldVehicleData && !empty($oldVehicleData['inspection_expiry'])) {
                 // Inspection expiry was removed, delete scheduler item
                 $syncController->removeSchedulerItem('inspection', $id);
             }
             
-            $this->logActivity($userId, 'vehicle', 'update', $id, 'Aggiornato mezzo');
+            $newVehicleData = $this->db->fetchOne("SELECT * FROM vehicles WHERE id = ?", [$id]);
+            $this->logActivity($userId, 'vehicle', 'update', $id, 'Aggiornato mezzo', $oldVehicleData, $newVehicleData);
             
             $this->db->commit();
             return true;
@@ -253,6 +255,9 @@ class VehicleController {
      */
     public function delete($id, $userId) {
         try {
+            // Cattura i dati del mezzo prima dell'eliminazione
+            $oldVehicleData = $this->db->fetchOne("SELECT * FROM vehicles WHERE id = ?", [$id]);
+            
             $sql = "UPDATE vehicles SET status = 'dismesso', updated_at = NOW() WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
@@ -261,7 +266,7 @@ class VehicleController {
             $syncController->removeSchedulerItem('insurance', $id);
             $syncController->removeSchedulerItem('inspection', $id);
             
-            $this->logActivity($userId, 'vehicle', 'delete', $id, 'Eliminato/dismesso mezzo');
+            $this->logActivity($userId, 'vehicle', 'delete', $id, 'Eliminato/dismesso mezzo', $oldVehicleData, null);
             
             return true;
         } catch (\Exception $e) {
@@ -573,11 +578,11 @@ class VehicleController {
     /**
      * Registra attività nel log
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -586,7 +591,9 @@ class VehicleController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);

@@ -1621,11 +1621,11 @@ class ApplicationController {
     /**
      * Registra attività nel log
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -1634,7 +1634,9 @@ class ApplicationController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);

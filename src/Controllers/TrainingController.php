@@ -173,7 +173,8 @@ class TrainingController {
             $this->db->execute($sql, $params);
             $courseId = $this->db->lastInsertId();
             
-            $this->logActivity($userId, 'training', 'create', $courseId, 'Creato nuovo corso: ' . $data['course_name']);
+            $newCourseData = $this->db->fetchOne("SELECT * FROM training_courses WHERE id = ?", [$courseId]);
+            $this->logActivity($userId, 'training', 'create', $courseId, 'Creato nuovo corso: ' . $data['course_name'], null, $newCourseData);
             
             $this->db->commit();
             return $courseId;
@@ -190,6 +191,9 @@ class TrainingController {
      */
     public function update($id, $data, $userId) {
         try {
+            // Cattura dati precedenti per il log
+            $oldCourseData = $this->db->fetchOne("SELECT * FROM training_courses WHERE id = ?", [$id]);
+            
             $sql = "UPDATE training_courses SET
                 course_name = ?, course_type = ?, sspc_course_code = ?, sspc_edition_code = ?, description = ?, location = ?,
                 start_date = ?, end_date = ?, instructor = ?, max_participants = ?,
@@ -213,7 +217,8 @@ class TrainingController {
             
             $this->db->execute($sql, $params);
             
-            $this->logActivity($userId, 'training', 'update', $id, 'Aggiornato corso');
+            $newCourseData = $this->db->fetchOne("SELECT * FROM training_courses WHERE id = ?", [$id]);
+            $this->logActivity($userId, 'training', 'update', $id, 'Aggiornato corso', $oldCourseData, $newCourseData);
             
             return true;
             
@@ -228,6 +233,9 @@ class TrainingController {
      */
     public function delete($id, $userId) {
         try {
+            // Cattura i dati del corso prima dell'eliminazione
+            $oldCourseData = $this->db->fetchOne("SELECT * FROM training_courses WHERE id = ?", [$id]);
+            
             // Verifica se ci sono partecipanti
             $sql = "SELECT COUNT(*) as count FROM training_participants WHERE course_id = ?";
             $result = $this->db->fetchOne($sql, [$id]);
@@ -240,7 +248,7 @@ class TrainingController {
             $sql = "DELETE FROM training_courses WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
-            $this->logActivity($userId, 'training', 'delete', $id, 'Eliminato corso');
+            $this->logActivity($userId, 'training', 'delete', $id, 'Eliminato corso', $oldCourseData, null);
             
             return true;
             
@@ -457,11 +465,11 @@ class TrainingController {
     /**
      * Registra attività nel log
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -470,7 +478,9 @@ class TrainingController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);

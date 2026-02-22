@@ -442,7 +442,7 @@ private function loadEmailConfigFromDatabase() {
         }
     }
     
-    public function logActivity($action, $module = null, $recordId = null, $description = null) {
+    public function logActivity($action, $module = null, $recordId = null, $description = null, $oldData = null, $newData = null) {
         if (!$this->isInstalled()) {
             return;
         }
@@ -457,6 +457,8 @@ private function loadEmailConfigFromDatabase() {
             'description' => $description,
             'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'old_data' => is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+            'new_data' => is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
         ];
         
         try {

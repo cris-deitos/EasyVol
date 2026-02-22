@@ -159,7 +159,8 @@ class WarehouseController {
             $itemId = $this->db->lastInsertId();
             error_log("Item inserted with ID: " . $itemId);
             
-            $this->logActivity($userId, 'warehouse_item', 'create', $itemId, 'Creato nuovo articolo: ' . $data['name']);
+            $newItemData = $this->db->fetchOne("SELECT * FROM warehouse_items WHERE id = ?", [$itemId]);
+            $this->logActivity($userId, 'warehouse_item', 'create', $itemId, 'Creato nuovo articolo: ' . $data['name'], null, $newItemData);
             error_log("Activity logged");
             
             $this->db->commit();
@@ -183,6 +184,9 @@ class WarehouseController {
     public function update($id, $data, $userId) {
         try {
             $this->db->beginTransaction();
+            
+            // Cattura dati precedenti per il log
+            $oldItemData = $this->db->fetchOne("SELECT * FROM warehouse_items WHERE id = ?", [$id]);
             
             $this->validateItemData($data, $id);
             
@@ -208,7 +212,8 @@ class WarehouseController {
             
             $this->db->execute($sql, $params);
             
-            $this->logActivity($userId, 'warehouse_item', 'update', $id, 'Aggiornato articolo');
+            $newItemData = $this->db->fetchOne("SELECT * FROM warehouse_items WHERE id = ?", [$id]);
+            $this->logActivity($userId, 'warehouse_item', 'update', $id, 'Aggiornato articolo', $oldItemData, $newItemData);
             
             $this->db->commit();
             return true;
@@ -354,11 +359,11 @@ class WarehouseController {
     /**
      * Registra attività nel log
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -367,7 +372,9 @@ class WarehouseController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);
@@ -382,8 +389,7 @@ class WarehouseController {
     public function delete($id, $userId) {
         try {
             // Get item details for log
-            $sql = "SELECT item_name FROM warehouse_items WHERE id = ?";
-            $item = $this->db->fetchOne($sql, [$id]);
+            $item = $this->db->fetchOne("SELECT * FROM warehouse_items WHERE id = ?", [$id]);
             
             if (!$item) {
                 return ['success' => false, 'message' => 'Articolo non trovato'];
@@ -401,8 +407,8 @@ class WarehouseController {
             $sql = "DELETE FROM warehouse_items WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
-            // Log activity
-            $this->logActivity($userId, 'warehouse', 'delete', $id, "Eliminato articolo: {$item['item_name']}");
+            // Log activity with old data
+            $this->logActivity($userId, 'warehouse', 'delete', $id, "Eliminato articolo: {$item['name']}", $item, null);
             
             return ['success' => true];
         } catch (\Exception $e) {

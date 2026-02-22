@@ -77,6 +77,8 @@ $sql = "SELECT
             al.description,
             al.ip_address,
             al.user_agent,
+            al.old_data,
+            al.new_data,
             al.created_at,
             u.username,
             u.full_name,
@@ -387,6 +389,80 @@ function formatRecordInfo($log) {
     return $output;
 }
 
+/**
+ * Render a comparison table for old_data vs new_data JSON fields
+ * Returns HTML string with a Bootstrap diff table
+ */
+function renderDataDiff($oldJson, $newJson) {
+    $old = $oldJson ? json_decode($oldJson, true) : null;
+    $new = $newJson ? json_decode($newJson, true) : null;
+    
+    if (!$old && !$new) {
+        return '';
+    }
+    
+    // Fields to exclude from display (internal/noisy)
+    $exclude = ['password', 'remember_token', 'updated_at', 'created_at', 'updated_by', 'created_by', 'photo_path'];
+    
+    $html = '';
+    
+    if ($old && $new) {
+        // UPDATE: show changed fields only
+        $allKeys = array_unique(array_merge(array_keys($old), array_keys($new)));
+        $changedRows = '';
+        foreach ($allKeys as $key) {
+            if (in_array($key, $exclude)) continue;
+            $oldVal = $old[$key] ?? null;
+            $newVal = $new[$key] ?? null;
+            if ($oldVal == $newVal) continue; // Skip unchanged
+            $changedRows .= '<tr>'
+                . '<td class="data-diff-key">' . htmlspecialchars($key) . '</td>'
+                . '<td class="data-diff-old">' . htmlspecialchars((string)($oldVal ?? '')) . '</td>'
+                . '<td class="data-diff-new">' . htmlspecialchars((string)($newVal ?? '')) . '</td>'
+                . '</tr>';
+        }
+        if ($changedRows) {
+            $html = '<table class="table table-bordered data-diff-table mt-1 mb-0">'
+                . '<thead><tr><th>Campo</th><th class="data-diff-old">Prima</th><th class="data-diff-new">Dopo</th></tr></thead>'
+                . '<tbody>' . $changedRows . '</tbody></table>';
+        }
+    } elseif ($new) {
+        // CREATE: show new data
+        $rows = '';
+        foreach ($new as $key => $val) {
+            if (in_array($key, $exclude)) continue;
+            if ($val === null || $val === '') continue;
+            $rows .= '<tr>'
+                . '<td class="data-diff-key">' . htmlspecialchars($key) . '</td>'
+                . '<td class="data-diff-new">' . htmlspecialchars((string)$val) . '</td>'
+                . '</tr>';
+        }
+        if ($rows) {
+            $html = '<table class="table table-bordered data-diff-table mt-1 mb-0">'
+                . '<thead><tr><th>Campo</th><th class="data-diff-new">Dati Aggiunti</th></tr></thead>'
+                . '<tbody>' . $rows . '</tbody></table>';
+        }
+    } elseif ($old) {
+        // DELETE: show old data
+        $rows = '';
+        foreach ($old as $key => $val) {
+            if (in_array($key, $exclude)) continue;
+            if ($val === null || $val === '') continue;
+            $rows .= '<tr>'
+                . '<td class="data-diff-key">' . htmlspecialchars($key) . '</td>'
+                . '<td class="data-diff-old">' . htmlspecialchars((string)$val) . '</td>'
+                . '</tr>';
+        }
+        if ($rows) {
+            $html = '<table class="table table-bordered data-diff-table mt-1 mb-0">'
+                . '<thead><tr><th>Campo</th><th class="data-diff-old">Dati Eliminati</th></tr></thead>'
+                . '<tbody>' . $rows . '</tbody></table>';
+        }
+    }
+    
+    return $html;
+}
+
 // Get statistics - optimized queries for better index usage
 $stats = [];
 $stats['total_logs'] = $totalRecords;
@@ -424,6 +500,15 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
             white-space: normal;
             overflow: visible;
         }
+        .data-diff-table td, .data-diff-table th {
+            font-size: 0.82rem;
+            padding: 0.25rem 0.4rem;
+            vertical-align: top;
+        }
+        .data-diff-old { background-color: #fff3cd; }
+        .data-diff-new { background-color: #d1e7dd; }
+        .data-diff-key { font-weight: 600; color: #495057; min-width: 130px; }
+        .btn-details { font-size: 0.75rem; padding: 0.1rem 0.4rem; }
         .badge-action {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
@@ -700,11 +785,26 @@ $stats['unique_users'] = $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count 
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
+                                                    <?php if ($log['old_data'] || $log['new_data']): ?>
+                                                        <button class="btn btn-outline-secondary btn-details mt-1" type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#diff-<?= $log['id'] ?>"
+                                                            aria-expanded="false">
+                                                            <i class="bi bi-chevron-down"></i> Dettagli
+                                                        </button>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <small class="text-muted"><?= htmlspecialchars($log['ip_address'] ?? '-') ?></small>
                                                 </td>
                                             </tr>
+                                            <?php if ($log['old_data'] || $log['new_data']): ?>
+                                            <tr class="collapse" id="diff-<?= $log['id'] ?>">
+                                                <td colspan="8" class="p-2 bg-light">
+                                                    <?= renderDataDiff($log['old_data'], $log['new_data']) ?>
+                                                </td>
+                                            </tr>
+                                            <?php endif; ?>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
