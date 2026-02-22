@@ -107,6 +107,9 @@ class MeetingController {
         // Carica ordine del giorno
         $meeting['agenda'] = $this->getAgenda($id);
         
+        // Carica allegati
+        $meeting['attachments'] = $this->getAttachments($id);
+        
         // Compute convened_by, president, and secretary from participants and convocator field
         $meeting['convened_by'] = '-';
         $meeting['president'] = '-';
@@ -275,6 +278,80 @@ class MeetingController {
         }
     }
     
+    /**
+     * Ottieni allegati riunione
+     */
+    public function getAttachments($meetingId) {
+        $sql = "SELECT * FROM meeting_attachments WHERE meeting_id = ? ORDER BY attachment_type DESC, progressive_number ASC, uploaded_at ASC";
+        return $this->db->fetchAll($sql, [$meetingId]);
+    }
+
+    /**
+     * Aggiungi allegato alla riunione
+     * @param int $meetingId
+     * @param array $data Keys: attachment_type, file_name, file_path, file_type, title, description, progressive_number
+     * @param int $userId
+     * @return int|false ID del nuovo allegato, o false in caso di errore
+     */
+    public function addAttachment($meetingId, $data, $userId) {
+        try {
+            $sql = "INSERT INTO meeting_attachments 
+                    (meeting_id, attachment_type, file_name, file_path, file_type, title, description, progressive_number, uploaded_by)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $params = [
+                $meetingId,
+                $data['attachment_type'],
+                $data['file_name'],
+                $data['file_path'],
+                $data['file_type'] ?? null,
+                $data['title'] ?? null,
+                $data['description'] ?? null,
+                isset($data['progressive_number']) ? intval($data['progressive_number']) : null,
+                $userId
+            ];
+            $this->db->execute($sql, $params);
+            $attachmentId = $this->db->lastInsertId();
+            $this->logActivity($userId, 'meeting', 'add_attachment', $meetingId,
+                'Aggiunto allegato: ' . $data['file_name']);
+            return $attachmentId;
+        } catch (\Exception $e) {
+            error_log("Errore aggiunta allegato riunione: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Elimina allegato riunione
+     * @param int $attachmentId
+     * @param int $userId
+     * @return array ['success' => bool, 'file_path' => string|null, 'message' => string|null]
+     */
+    public function deleteAttachment($attachmentId, $userId) {
+        try {
+            $sql = "SELECT * FROM meeting_attachments WHERE id = ?";
+            $attachment = $this->db->fetchOne($sql, [$attachmentId]);
+            if (!$attachment) {
+                return ['success' => false, 'message' => 'Allegato non trovato'];
+            }
+            $this->db->execute("DELETE FROM meeting_attachments WHERE id = ?", [$attachmentId]);
+            $this->logActivity($userId, 'meeting', 'delete_attachment', $attachment['meeting_id'],
+                'Eliminato allegato: ' . $attachment['file_name']);
+            return ['success' => true, 'file_path' => $attachment['file_path']];
+        } catch (\Exception $e) {
+            error_log("Errore eliminazione allegato riunione: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
+
+    /**
+     * Ottieni il prossimo numero progressivo per gli allegati di una riunione
+     */
+    public function getNextAttachmentNumber($meetingId) {
+        $sql = "SELECT COALESCE(MAX(progressive_number), 0) + 1 as next_number FROM meeting_attachments WHERE meeting_id = ? AND attachment_type = 'allegato'";
+        $result = $this->db->fetchOne($sql, [$meetingId]);
+        return $result['next_number'] ?? 1;
+    }
+
     /**
      * Ottieni partecipanti riunione
      */

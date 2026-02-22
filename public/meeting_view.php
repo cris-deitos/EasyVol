@@ -136,6 +136,16 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                             <i class="bi bi-list-ol"></i> Ordine del Giorno
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="documenti-tab" data-bs-toggle="tab" data-bs-target="#documenti" type="button">
+                            <i class="bi bi-paperclip"></i> Documenti
+                            <?php 
+                            $attachmentCount = count($meeting['attachments'] ?? []);
+                            if ($attachmentCount > 0): ?>
+                                <span class="badge bg-secondary ms-1"><?php echo $attachmentCount; ?></span>
+                            <?php endif; ?>
+                        </button>
+                    </li>
                 </ul>
                 
                 <div class="tab-content" id="meetingTabContent">
@@ -500,11 +510,211 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                             </div>
                         </div>
                     </div>
+
+                    <!-- Tab Documenti -->
+                    <div class="tab-pane fade" id="documenti" role="tabpanel">
+                        <?php
+                        $verbali = array_filter($meeting['attachments'] ?? [], fn($a) => $a['attachment_type'] === 'verbale');
+                        $allegati = array_filter($meeting['attachments'] ?? [], fn($a) => $a['attachment_type'] === 'allegato');
+                        $csrfToken = \EasyVol\Middleware\CsrfProtection::generateToken();
+                        ?>
+
+                        <!-- Verbale Firmato -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-file-earmark-check"></i> Verbale Firmato</h5>
+                                    <?php if ($app->checkPermission('meetings', 'edit') && empty($verbali)): ?>
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#uploadVerbaleModal">
+                                            <i class="bi bi-upload"></i> Carica Verbale
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($verbali)): ?>
+                                    <?php foreach ($verbali as $verbale): ?>
+                                        <div class="d-flex align-items-center justify-content-between p-2 border rounded mb-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
+                                                <div>
+                                                    <div class="fw-bold"><?php echo htmlspecialchars($verbale['file_name']); ?></div>
+                                                    <small class="text-muted">
+                                                        Caricato il <?php echo date('d/m/Y H:i', strtotime($verbale['uploaded_at'])); ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <a href="meeting_attachment_download.php?id=<?php echo $verbale['id']; ?>" 
+                                                   class="btn btn-sm btn-outline-primary" title="Scarica">
+                                                    <i class="bi bi-download"></i> Scarica
+                                                </a>
+                                                <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                    <a href="meeting_attachment_delete.php?id=<?php echo $verbale['id']; ?>&meeting_id=<?php echo $meetingId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
+                                                       class="btn btn-sm btn-outline-danger"
+                                                       onclick="return confirm('Eliminare il verbale firmato?')" title="Elimina">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-bs-toggle="modal" data-bs-target="#uploadVerbaleModal">
+                                            <i class="bi bi-upload"></i> Sostituisci Verbale
+                                        </button>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <p class="text-muted mb-0">Nessun verbale firmato caricato.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Allegati -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-files"></i> Allegati</h5>
+                                    <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#uploadAllegatoModal">
+                                            <i class="bi bi-plus-circle"></i> Aggiungi Allegato
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($allegati)): ?>
+                                    <div class="list-group">
+                                        <?php foreach ($allegati as $allegato): ?>
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between align-items-start">
+                                                    <div class="d-flex align-items-start gap-2">
+                                                        <span class="badge bg-secondary fs-6 mt-1"><?php echo intval($allegato['progressive_number']); ?></span>
+                                                        <div>
+                                                            <h6 class="mb-1">
+                                                                <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                                                <?php echo htmlspecialchars($allegato['title'] ?? $allegato['file_name']); ?>
+                                                            </h6>
+                                                            <?php if (!empty($allegato['description'])): ?>
+                                                                <p class="mb-1 text-muted small"><?php echo nl2br(htmlspecialchars($allegato['description'])); ?></p>
+                                                            <?php endif; ?>
+                                                            <small class="text-muted">
+                                                                <?php echo htmlspecialchars($allegato['file_name']); ?> &mdash;
+                                                                Caricato il <?php echo date('d/m/Y H:i', strtotime($allegato['uploaded_at'])); ?>
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex gap-2 ms-2">
+                                                        <a href="meeting_attachment_download.php?id=<?php echo $allegato['id']; ?>"
+                                                           class="btn btn-sm btn-outline-primary" title="Scarica">
+                                                            <i class="bi bi-download"></i>
+                                                        </a>
+                                                        <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                            <a href="meeting_attachment_delete.php?id=<?php echo $allegato['id']; ?>&meeting_id=<?php echo $meetingId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
+                                                               class="btn btn-sm btn-outline-danger"
+                                                               onclick="return confirm('Eliminare questo allegato?')" title="Elimina">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted mb-0">Nessun allegato caricato.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
-    
+
+    <!-- Modal Upload Verbale Firmato -->
+    <div class="modal fade" id="uploadVerbaleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-file-earmark-check"></i> Carica Verbale Firmato</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="meeting_attachment_upload.php" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" name="meeting_id" value="<?php echo $meetingId; ?>">
+                        <input type="hidden" name="attachment_type" value="verbale">
+                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+
+                        <div class="mb-3">
+                            <label for="verbale_pdf_file" class="form-label">File PDF <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="verbale_pdf_file" name="pdf_file" accept=".pdf,application/pdf" required>
+                            <div class="form-text">Solo file PDF, max 20MB</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="verbale_description" class="form-label">Note</label>
+                            <textarea class="form-control" id="verbale_description" name="description" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload"></i> Carica
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Upload Allegato -->
+    <div class="modal fade" id="uploadAllegatoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-files"></i> Aggiungi Allegato</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="meeting_attachment_upload.php" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" name="meeting_id" value="<?php echo $meetingId; ?>">
+                        <input type="hidden" name="attachment_type" value="allegato">
+                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+
+                        <div class="mb-3">
+                            <label class="form-label">Numero Progressivo</label>
+                            <input type="text" class="form-control" value="<?php echo $controller->getNextAttachmentNumber($meetingId); ?>" disabled>
+                            <div class="form-text">Assegnato automaticamente</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="allegato_title" class="form-label">Titolo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="allegato_title" name="title" maxlength="255" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="allegato_description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="allegato_description" name="description" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="allegato_pdf_file" class="form-label">File PDF <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="allegato_pdf_file" name="pdf_file" accept=".pdf,application/pdf" required>
+                            <div class="form-text">Solo file PDF, max 20MB</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload"></i> Carica
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Delega Partecipante -->
     <div class="modal fade" id="delegateModal" tabindex="-1">
         <div class="modal-dialog">
@@ -774,6 +984,9 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
             } else if (hash === '#agenda') {
                 const agendaTab = new bootstrap.Tab(document.getElementById('agenda-tab'));
                 agendaTab.show();
+            } else if (hash === '#documenti') {
+                const documentiTab = new bootstrap.Tab(document.getElementById('documenti-tab'));
+                documentiTab.show();
             }
             
             // Handle checkbox selection

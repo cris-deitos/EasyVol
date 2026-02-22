@@ -753,13 +753,19 @@ CREATE TABLE IF NOT EXISTS `meeting_minutes` (
 CREATE TABLE IF NOT EXISTS `meeting_attachments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `meeting_id` int(11) NOT NULL,
+  `attachment_type` ENUM('verbale', 'allegato') NOT NULL DEFAULT 'allegato' COMMENT 'verbale = signed minutes, allegato = numbered attachment',
   `file_name` varchar(255) NOT NULL,
   `file_path` varchar(255) NOT NULL,
   `file_type` varchar(100),
+  `title` varchar(255) DEFAULT NULL COMMENT 'Title for allegato type',
+  `description` text DEFAULT NULL COMMENT 'Description for allegato type',
+  `progressive_number` int(11) DEFAULT NULL COMMENT 'Progressive number for allegato type',
+  `uploaded_by` int(11) DEFAULT NULL,
   `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `meeting_id` (`meeting_id`),
-  FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE
+  FOREIGN KEY (`meeting_id`) REFERENCES `meetings`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`uploaded_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
