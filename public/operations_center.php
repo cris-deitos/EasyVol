@@ -154,6 +154,49 @@ $pageTitle = 'Centrale Operativa';
                     </div>
                 </div>
 
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-lightning"></i> Azioni Rapide</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <?php if ($app->checkPermission('events', 'create')): ?>
+                                        <div class="col-md-3 mb-2">
+                                            <a href="event_edit.php" class="btn btn-danger w-100">
+                                                <i class="bi bi-exclamation-triangle"></i> Nuovo Evento
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($app->checkPermission('operations_center', 'view')): ?>
+                                        <div class="col-md-3 mb-2">
+                                            <a href="radio_directory.php" class="btn btn-primary w-100">
+                                                <i class="bi bi-broadcast"></i> Rubrica Radio
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($app->checkPermission('vehicles', 'view')): ?>
+                                        <div class="col-md-3 mb-2">
+                                            <a href="vehicles.php" class="btn btn-info w-100">
+                                                <i class="bi bi-truck"></i> Gestione Mezzi
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($app->checkPermission('members', 'view')): ?>
+                                        <div class="col-md-3 mb-2">
+                                            <a href="members.php" class="btn btn-success w-100">
+                                                <i class="bi bi-people"></i> Rubrica Soci
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Main Dashboard -->
                 <div class="row">
                     <!-- Active Events -->
@@ -351,49 +394,6 @@ $pageTitle = 'Centrale Operativa';
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-lightning"></i> Azioni Rapide</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <?php if ($app->checkPermission('events', 'create')): ?>
-                                        <div class="col-md-3 mb-2">
-                                            <a href="event_edit.php" class="btn btn-danger w-100">
-                                                <i class="bi bi-exclamation-triangle"></i> Nuovo Evento
-                                            </a>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($app->checkPermission('operations_center', 'view')): ?>
-                                        <div class="col-md-3 mb-2">
-                                            <a href="radio_directory.php" class="btn btn-primary w-100">
-                                                <i class="bi bi-broadcast"></i> Rubrica Radio
-                                            </a>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($app->checkPermission('vehicles', 'view')): ?>
-                                        <div class="col-md-3 mb-2">
-                                            <a href="vehicles.php" class="btn btn-info w-100">
-                                                <i class="bi bi-truck"></i> Gestione Mezzi
-                                            </a>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($app->checkPermission('members', 'view')): ?>
-                                        <div class="col-md-3 mb-2">
-                                            <a href="members.php" class="btn btn-success w-100">
-                                                <i class="bi bi-people"></i> Rubrica Soci
-                                            </a>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
                             </div>
                         </div>
                     </div>

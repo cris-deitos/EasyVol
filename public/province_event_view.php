@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 
 use EasyVol\Database;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Services\TelegramService;
 
 // This is a public page, so we don't check for authentication
 // Instead, we use token-based access
@@ -51,6 +52,27 @@ if (empty($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
                     session_start();
                 }
                 $_SESSION['province_token_' . $token] = true;
+                
+                // Send Telegram notification about province office access
+                try {
+                    $telegramService = new TelegramService($db, $config);
+                    $eventTypeLabels = [
+                        'emergenza' => 'Emergenza',
+                        'esercitazione' => 'Esercitazione',
+                        'attivita' => 'Attività',
+                        'servizio' => 'Servizio'
+                    ];
+                    $eventTypeLabel = $eventTypeLabels[$event['event_type']] ?? $event['event_type'];
+                    $message = "🏛 <b>Accesso Portale Provincia</b>\n\n"
+                        . "L'Ufficio di Protezione Civile della Provincia ha effettuato l'accesso al portale tramite password dedicata.\n\n"
+                        . "📋 <b>Evento:</b> " . htmlspecialchars($event['title']) . "\n"
+                        . "🏷 <b>Tipo:</b> " . htmlspecialchars($eventTypeLabel) . "\n"
+                        . "📅 <b>Data:</b> " . date('d/m/Y H:i', strtotime($event['start_date'])) . "\n"
+                        . "🕐 <b>Ora accesso:</b> " . date('d/m/Y H:i');
+                    $telegramService->sendNotification('province_access', $message, ['parse_mode' => 'HTML']);
+                } catch (\Exception $e) {
+                    error_log("province_event_view: Failed to send Telegram notification: " . $e->getMessage());
+                }
             } else {
                 $error = 'Codice di accesso non valido';
             }

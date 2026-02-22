@@ -58,6 +58,7 @@ class ReportController {
                 FROM members m
                 LEFT JOIN member_roles mr ON m.id = mr.member_id 
                     AND (mr.end_date IS NULL OR mr.end_date >= CURDATE())
+                WHERE m.member_status = 'attivo'
                 GROUP BY mr.role_name
                 ORDER BY count DESC";
         
@@ -2064,7 +2065,8 @@ class ReportController {
                         (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
                         'Non assegnato' as mansione
                     FROM members m
-                    WHERE m.id NOT IN (
+                    WHERE m.member_status = 'attivo'
+                      AND m.id NOT IN (
                         SELECT DISTINCT member_id FROM member_roles 
                         WHERE end_date IS NULL OR end_date >= CURDATE()
                     )
@@ -2082,7 +2084,7 @@ class ReportController {
                     FROM members m
                     INNER JOIN member_roles mr ON m.id = mr.member_id 
                         AND (mr.end_date IS NULL OR mr.end_date >= CURDATE())
-                    WHERE mr.role_name = ?
+                    WHERE m.member_status = 'attivo' AND mr.role_name = ?
                     ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
             $data = $this->db->fetchAll($sql, [$qualification]);
         }
@@ -2106,7 +2108,8 @@ class ReportController {
                         (SELECT value FROM member_contacts WHERE member_id = m.id AND contact_type = 'cellulare' LIMIT 1) as cellulare,
                         'Non assegnato' as mansione
                     FROM members m
-                    WHERE m.id NOT IN (
+                    WHERE m.member_status = 'attivo'
+                      AND m.id NOT IN (
                         SELECT DISTINCT member_id FROM member_roles 
                         WHERE end_date IS NULL OR end_date >= CURDATE()
                     )
@@ -2124,7 +2127,7 @@ class ReportController {
                     FROM members m
                     INNER JOIN member_roles mr ON m.id = mr.member_id 
                         AND (mr.end_date IS NULL OR mr.end_date >= CURDATE())
-                    WHERE mr.role_name = ?
+                    WHERE m.member_status = 'attivo' AND mr.role_name = ?
                     ORDER BY COALESCE(CAST(NULLIF(m.registration_number, '') AS UNSIGNED), 0) ASC, m.registration_number ASC";
             $data = $this->db->fetchAll($sql, [$qualification]);
         }

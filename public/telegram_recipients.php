@@ -159,7 +159,8 @@ $actionLabels = [
     'license_expiry' => 'Scadenze patenti soci',
     'qualification_expiry' => 'Scadenze qualifiche soci',
     'course_expiry' => 'Scadenze corsi soci',
-    'health_surveillance_expiry' => 'Scadenze sorveglianza sanitaria'
+    'health_surveillance_expiry' => 'Scadenze sorveglianza sanitaria',
+    'province_access' => 'Accesso portale Ufficio Protezione Civile Provincia'
 ];
 
 $pageTitle = 'Gestione Destinatari Notifiche Telegram';
