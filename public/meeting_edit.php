@@ -68,6 +68,12 @@ $convocatorData = $controller->parseConvocator($meeting['convocator'] ?? '');
 $convocatorMemberId = $convocatorData['member_id'];
 $convocatorRole = $convocatorData['role'];
 
+// Pre-compute next progressive numbers for each meeting type (for new meetings)
+$nextProgressiveNumbers = [];
+foreach (array_keys(MeetingController::MEETING_TYPE_NAMES) as $type) {
+    $nextProgressiveNumbers[$type] = $controller->getNextProgressiveNumber($type);
+}
+
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verifica CSRF
@@ -84,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $data = [
             'meeting_type' => $_POST['meeting_type'] ?? 'consiglio_direttivo',
+            'progressive_number' => trim($_POST['progressive_number'] ?? ''),
             'meeting_date' => $_POST['meeting_date'] ?? '',
             'start_time' => $_POST['start_time'] ?? '',
             'end_time' => $_POST['end_time'] ?? '',
@@ -100,15 +107,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($isEdit) {
                 // Update meeting
-                $db->query("UPDATE meetings SET meeting_type = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, location_type = ?, online_details = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
-                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['location_type'], $data['online_details'], $data['convocator'], $data['description'], $meetingId]);
+                $db->query("UPDATE meetings SET meeting_type = ?, progressive_number = ?, meeting_date = ?, start_time = ?, end_time = ?, location = ?, location_type = ?, online_details = ?, convocator = ?, description = ?, updated_at = NOW() WHERE id = ?",
+                    [$data['meeting_type'], !empty($data['progressive_number']) ? intval($data['progressive_number']) : null, $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['location_type'], $data['online_details'], $data['convocator'], $data['description'], $meetingId]);
                 
                 // In edit mode, do NOT modify participants or agenda items.
                 // They are managed separately via meeting_participants.php and meeting_agenda_edit.php.
             } else {
                 // Create new meeting
-                $db->query("INSERT INTO meetings (meeting_type, meeting_date, start_time, end_time, location, location_type, online_details, convocator, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                    [$data['meeting_type'], $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['location_type'], $data['online_details'], $data['convocator'], $data['description']]);
+                $db->query("INSERT INTO meetings (meeting_type, progressive_number, meeting_date, start_time, end_time, location, location_type, online_details, convocator, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [$data['meeting_type'], !empty($data['progressive_number']) ? intval($data['progressive_number']) : null, $data['meeting_date'], $data['start_time'], $data['end_time'], $data['location'], $data['location_type'], $data['online_details'], $data['convocator'], $data['description']]);
                 $meetingId = $db->lastInsertId();
             }
             
@@ -226,7 +233,7 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-12 mb-3">
+                                <div class="col-md-9 mb-3">
                                     <label for="meeting_type" class="form-label">Tipo <span class="text-danger">*</span></label>
                                     <select class="form-select" id="meeting_type" name="meeting_type" required>
                                         <option value="assemblea_ordinaria" <?php echo ($meeting['meeting_type'] ?? '') === 'assemblea_ordinaria' ? 'selected' : ''; ?>>Assemblea dei Soci Ordinaria</option>
@@ -235,6 +242,13 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
                                         <option value="riunione_capisquadra" <?php echo ($meeting['meeting_type'] ?? '') === 'riunione_capisquadra' ? 'selected' : ''; ?>>Riunione dei Capisquadra</option>
                                         <option value="riunione_nucleo" <?php echo ($meeting['meeting_type'] ?? '') === 'riunione_nucleo' ? 'selected' : ''; ?>>Riunione di Nucleo</option>
                                     </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="progressive_number" class="form-label">N° Progressivo</label>
+                                    <input type="number" class="form-control" id="progressive_number" name="progressive_number" min="1"
+                                           value="<?php echo htmlspecialchars($meeting['progressive_number'] ?? ''); ?>"
+                                           placeholder="Es. 1">
+                                    <small class="form-text text-muted">Numero progressivo per tipo di riunione</small>
                                 </div>
                             </div>
                             
@@ -891,13 +905,32 @@ $pageTitle = $isEdit ? 'Modifica Riunione' : 'Nuova Riunione';
         }
     }
     
-    // Initialize on page load
+    // Initialize on page load and add event listener to location_type dropdown
+    document.getElementById('location_type').addEventListener('change', toggleOnlineDetails);
+    
+    <?php if (!$isEdit): ?>
+    // Auto-suggest progressive number when meeting type changes (new meetings only)
+    const nextProgressiveNumbers = <?= json_encode($nextProgressiveNumbers) ?>;
+    
+    function updateProgressiveNumberSuggestion() {
+        const meetingType = document.getElementById('meeting_type').value;
+        const progressiveInput = document.getElementById('progressive_number');
+        if (progressiveInput.value === '') {
+            progressiveInput.value = nextProgressiveNumbers[meetingType] || 1;
+        }
+    }
+    
+    document.getElementById('meeting_type').addEventListener('change', updateProgressiveNumberSuggestion);
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleOnlineDetails();
+        updateProgressiveNumberSuggestion();
+    });
+    <?php else: ?>
     document.addEventListener('DOMContentLoaded', function() {
         toggleOnlineDetails();
     });
-    
-    // Add event listener to location_type dropdown
-    document.getElementById('location_type').addEventListener('change', toggleOnlineDetails);
+    <?php endif; ?>
     </script>
 </body>
 </html>

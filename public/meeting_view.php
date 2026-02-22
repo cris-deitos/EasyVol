@@ -166,6 +166,9 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                     <span class="badge bg-<?php echo $class; ?>">
                                                         <?php echo htmlspecialchars($type); ?>
                                                     </span>
+                                                    <?php if (!empty($meeting['progressive_number'])): ?>
+                                                        <span class="ms-1 text-muted">n. <?php echo intval($meeting['progressive_number']); ?></span>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                             <tr>

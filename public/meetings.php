@@ -170,6 +170,7 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                             <table class="table table-striped table-hover">
                                 <thead>
                                     <tr>
+                                        <th>N°</th>
                                         <th>Tipo</th>
                                         <th>Data</th>
                                         <th>Luogo</th>
@@ -180,13 +181,16 @@ $pageTitle = 'Gestione Riunioni e Assemblee';
                                 <tbody>
                                     <?php if (empty($meetings)): ?>
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted">
+                                            <td colspan="6" class="text-center text-muted">
                                                 Nessuna riunione trovata
                                             </td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($meetings as $meeting): ?>
                                             <tr>
+                                                <td class="text-muted">
+                                                    <?php echo !empty($meeting['progressive_number']) ? intval($meeting['progressive_number']) : '-'; ?>
+                                                </td>
                                                 <td>
                                                     <i class="bi bi-people"></i>
                                                     <?php 

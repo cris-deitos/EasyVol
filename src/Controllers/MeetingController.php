@@ -159,6 +159,15 @@ class MeetingController {
     }
     
     /**
+     * Ottieni il prossimo numero progressivo per il tipo di riunione
+     */
+    public function getNextProgressiveNumber($meetingType) {
+        $sql = "SELECT COALESCE(MAX(progressive_number), 0) + 1 as next_number FROM meetings WHERE meeting_type = ?";
+        $result = $this->db->fetchOne($sql, [$meetingType]);
+        return $result['next_number'] ?? 1;
+    }
+    
+    /**
      * Parse convocator field into member ID and role
      * @param string $convocator The convocator field value
      * @return array Array with keys 'member_id' and 'role', or empty array if invalid
@@ -199,11 +208,12 @@ class MeetingController {
             $this->db->beginTransaction();
             
             $sql = "INSERT INTO meetings (
-                meeting_type, meeting_date, location, convocator, description, created_at
-            ) VALUES (?, ?, ?, ?, ?, NOW())";
+                meeting_type, progressive_number, meeting_date, location, convocator, description, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['meeting_type'],
+                !empty($data['progressive_number']) ? intval($data['progressive_number']) : null,
                 $data['meeting_date'],
                 $data['location'] ?? null,
                 $data['convocator'] ?? null,
@@ -238,12 +248,13 @@ class MeetingController {
             $oldMeetingData = $this->db->fetchOne("SELECT * FROM meetings WHERE id = ?", [$id]);
             
             $sql = "UPDATE meetings SET
-                meeting_type = ?, meeting_date = ?, location = ?,
+                meeting_type = ?, progressive_number = ?, meeting_date = ?, location = ?,
                 convocator = ?, description = ?, updated_at = NOW()
                 WHERE id = ?";
             
             $params = [
                 $data['meeting_type'],
+                !empty($data['progressive_number']) ? intval($data['progressive_number']) : null,
                 $data['meeting_date'],
                 $data['location'] ?? null,
                 $data['convocator'] ?? null,
