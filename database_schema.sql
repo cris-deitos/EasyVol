@@ -678,6 +678,7 @@ CREATE TABLE IF NOT EXISTS `fee_payment_reminders` (
 CREATE TABLE IF NOT EXISTS `meetings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `meeting_type` enum('assemblea_ordinaria', 'assemblea_straordinaria', 'consiglio_direttivo', 'riunione_capisquadra', 'riunione_nucleo', 'altra_riunione') NOT NULL,
+  `progressive_number` int(11) DEFAULT NULL COMMENT 'Numero progressivo della riunione/assemblea per tipo',
   `title` varchar(255) DEFAULT NULL,
   `meeting_date` date NOT NULL,
   `start_time` time,
@@ -692,7 +693,8 @@ CREATE TABLE IF NOT EXISTS `meetings` (
   `convocation_sent_at` timestamp NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_meeting_type_progressive` (`meeting_type`, `progressive_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `meeting_participants` (
