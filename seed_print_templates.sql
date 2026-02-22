@@ -2620,8 +2620,8 @@ Dettagli connessione: {{online_details}}</p>
     <tbody>
         {{#each participants}}
         <tr>
-            <td>{{participant_full_name}}</td>
-            <td>{{role}}</td>
+            <td>{{full_name}}</td>
+            <td>{{role_label}}</td>
             <td class="center">{{attendance_label}}</td>
             <td>{{delegated_to_full_name}}</td>
         </tr>

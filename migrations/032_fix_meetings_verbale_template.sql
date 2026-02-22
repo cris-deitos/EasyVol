@@ -6,7 +6,7 @@
 --   - location_type_label (formatted location type, e.g. "In presenza")
 --   - start_time_hhmm / end_time_hhmm (HH:mm without seconds)
 --   - convocator_full (Name Surname (Role) from DB lookup)
---   - participant_full_name, attendance_label, delegated_to_full_name (enriched participant data)
+--   - full_name, role_label, attendance_label, delegated_to_full_name (enriched participant data)
 --   - present_count, absent_count, delegated_count (correct aggregates)
 --   - president_full_name, secretary_full_name (for signature block)
 --   - voting_outcome_label (APPROVATO / NON APPROVATO / VOTAZIONE NON EFFETTUATA)
@@ -48,8 +48,8 @@ Dettagli connessione: {{online_details}}</p>
     <tbody>
         {{#each participants}}
         <tr>
-            <td>{{participant_full_name}}</td>
-            <td>{{role}}</td>
+            <td>{{full_name}}</td>
+            <td>{{role_label}}</td>
             <td class="center">{{attendance_label}}</td>
             <td>{{delegated_to_full_name}}</td>
         </tr>
