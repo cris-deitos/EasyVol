@@ -959,11 +959,16 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
             foreach ($record['participants'] as &$participant) {
                 // Resolve full name
                 $fullName = '';
-                if (!empty($participant['participant_name'])) {
-                    $fullName = $participant['participant_name'];
-                } elseif (($participant['member_type'] ?? '') === 'junior'
-                    && !empty($participant['junior_member_id'])
-                ) {
+                $memberType = $participant['member_type'] ?? '';
+                if ($memberType === 'adult' && !empty($participant['member_id'])) {
+                    $m = $this->db->fetchOne(
+                        "SELECT first_name, last_name FROM members WHERE id = ?",
+                        [$participant['member_id']]
+                    );
+                    if ($m) {
+                        $fullName = trim($m['first_name'] . ' ' . $m['last_name']);
+                    }
+                } elseif (!empty($participant['junior_member_id'])) {
                     $jm = $this->db->fetchOne(
                         "SELECT first_name, last_name FROM junior_members WHERE id = ?",
                         [$participant['junior_member_id']]
@@ -980,12 +985,19 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                         $fullName = trim($m['first_name'] . ' ' . $m['last_name']);
                     }
                 }
+                // Fallback to participant_name if DB lookup yielded nothing
+                if ($fullName === '' && !empty($participant['participant_name'])) {
+                    $fullName = $participant['participant_name'];
+                }
                 $participant['participant_full_name'] = $fullName;
+                $participant['full_name'] = $fullName;
 
                 // Attendance label and counts
                 $status = $participant['attendance_status'] ?? 'invited';
                 if ($status === 'present') {
                     $participant['attendance_label'] = 'Presente';
+                    $participant['delegated_to_full_name'] = '';
+                    $participant['delegated_to_name'] = '';
                     $presentCount++;
                 } elseif ($status === 'delegated') {
                     $participant['attendance_label'] = 'Assente con Delega';
@@ -1004,13 +1016,19 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
                             );
                         }
                     }
+                    $participant['delegated_to_name'] = $participant['delegated_to_full_name'];
                 } else {
                     $participant['attendance_label'] = 'Assente';
+                    $participant['delegated_to_full_name'] = '';
+                    $participant['delegated_to_name'] = '';
                     $absentCount++;
                 }
 
-                // Identify Presidente and Segretario
+                // Role label (with fallback)
                 $role = $participant['role'] ?? '';
+                $participant['role_label'] = $role !== '' ? $role : '-';
+
+                // Identify Presidente and Segretario
                 if (strcasecmp($role, 'Presidente') === 0 && $presidentFullName === '') {
                     $presidentFullName = $fullName;
                 }
