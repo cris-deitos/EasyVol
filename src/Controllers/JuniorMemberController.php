@@ -276,8 +276,9 @@ class JuniorMemberController {
                 $this->db->execute($guardianSql, $guardianParams);
             }
             
-            // Log attività
-            $this->logActivity($userId, 'junior_member', 'create', $memberId, 'Creato nuovo socio minorenne: ' . $data['first_name'] . ' ' . $data['last_name']);
+            // Log attività con dati del nuovo socio minorenne
+            $newMemberData = $this->db->fetchOne("SELECT * FROM junior_members WHERE id = ?", [$memberId]);
+            $this->logActivity($userId, 'junior_member', 'create', $memberId, 'Creato nuovo socio minorenne: ' . $data['first_name'] . ' ' . $data['last_name'], null, $newMemberData);
             
             $this->db->commit();
             
@@ -303,6 +304,9 @@ class JuniorMemberController {
     public function update($id, $data, $userId) {
         try {
             $this->db->beginTransaction();
+            
+            // Cattura dati precedenti per il log
+            $oldMemberData = $this->db->fetchOne("SELECT * FROM junior_members WHERE id = ?", [$id]);
             
             // Force uppercase on text fields
             $data = $this->uppercaseTextFields($data);
@@ -383,8 +387,9 @@ class JuniorMemberController {
                 }
             }
             
-            // Log attività
-            $this->logActivity($userId, 'junior_member', 'update', $id, 'Aggiornato socio minorenne');
+            // Log attività con dati prima e dopo
+            $newMemberData = $this->db->fetchOne("SELECT * FROM junior_members WHERE id = ?", [$id]);
+            $this->logActivity($userId, 'junior_member', 'update', $id, 'Aggiornato socio minorenne', $oldMemberData, $newMemberData);
             
             $this->db->commit();
             
@@ -408,6 +413,9 @@ class JuniorMemberController {
      */
     public function delete($id, $userId) {
         try {
+            // Cattura i dati del socio minorenne prima dell'eliminazione
+            $oldMemberData = $this->db->fetchOne("SELECT * FROM junior_members WHERE id = ?", [$id]);
+            
             $sql = "UPDATE junior_members SET 
                     member_status = 'decaduto',
                     updated_at = NOW()
@@ -415,8 +423,8 @@ class JuniorMemberController {
             
             $this->db->execute($sql, [$id]);
             
-            // Log attività
-            $this->logActivity($userId, 'junior_member', 'delete', $id, 'Eliminato socio minorenne');
+            // Log attività con i dati del socio eliminato
+            $this->logActivity($userId, 'junior_member', 'delete', $id, 'Eliminato socio minorenne', $oldMemberData, null);
             
             return true;
             
@@ -701,11 +709,11 @@ class JuniorMemberController {
      * @param int $recordId ID record
      * @param string $details Dettagli
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -714,7 +722,9 @@ class JuniorMemberController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);

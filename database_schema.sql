@@ -124,6 +124,8 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   `description` text,
   `ip_address` varchar(45),
   `user_agent` text,
+  `old_data` longtext COMMENT 'JSON: record data before the change (for update/delete)',
+  `new_data` longtext COMMENT 'JSON: record data after the change (for create/update)',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),

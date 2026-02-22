@@ -737,9 +737,13 @@ class OperationsCenterController {
     /**
      * Log activity
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
-        $sql = "INSERT INTO activity_logs (user_id, module, action, record_id, description, created_at) 
-                VALUES (?, ?, ?, ?, ?, NOW())";
-        $this->db->execute($sql, [$userId, $module, $action, $recordId, $details]);
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
+        $sql = "INSERT INTO activity_logs (user_id, module, action, record_id, description, old_data, new_data, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+        $this->db->execute($sql, [
+            $userId, $module, $action, $recordId, $details,
+            is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+            is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
+        ]);
     }
 }

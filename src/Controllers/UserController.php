@@ -143,7 +143,8 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             $this->db->execute($sql, $params);
             $userId = $this->db->lastInsertId();
             
-            $this->logActivity($creatorId, 'users', 'create', $userId, 'Creato utente: ' . $data['username']);
+            $newUserData = $this->db->fetchOne("SELECT id, username, email, full_name, member_id, role_id, is_active, is_operations_center_user, created_at FROM users WHERE id = ?", [$userId]);
+            $this->logActivity($creatorId, 'users', 'create', $userId, 'Creato utente: ' . $data['username'], null, $newUserData);
             
             $this->db->commit();
             
@@ -179,6 +180,9 @@ public function index($filters = [], $page = 1, $perPage = 20) {
      */
     public function update($id, $data, $updaterId) {
         try {
+            // Cattura dati precedenti per il log (escludi password)
+            $oldUserData = $this->db->fetchOne("SELECT id, username, email, full_name, member_id, role_id, is_active, is_operations_center_user FROM users WHERE id = ?", [$id]);
+            
             // Verifica username univoco (escludi utente corrente)
             $stmt = $this->db->getConnection()->prepare("SELECT id FROM users WHERE username = :username AND id != :id");
             $stmt->execute([':username' => $data['username'], ':id' => (int)$id]);
@@ -212,7 +216,8 @@ public function index($filters = [], $page = 1, $perPage = 20) {
                 ':id' => (int)$id
             ]);
             
-            $this->logActivity($updaterId, 'users', 'update', $id, 'Aggiornato utente');
+            $newUserData = $this->db->fetchOne("SELECT id, username, email, full_name, member_id, role_id, is_active, is_operations_center_user FROM users WHERE id = ?", [$id]);
+            $this->logActivity($updaterId, 'users', 'update', $id, 'Aggiornato utente', $oldUserData, $newUserData);
             
             return true;
             
@@ -252,6 +257,9 @@ public function index($filters = [], $page = 1, $perPage = 20) {
                 return ['error' => 'Non puoi eliminare il tuo stesso account'];
             }
             
+            // Cattura i dati dell'utente prima dell'eliminazione (escludi password)
+            $oldUserData = $this->db->fetchOne("SELECT id, username, email, full_name, member_id, role_id, is_active, is_operations_center_user, created_at FROM users WHERE id = ?", [$id]);
+            
             // Verifica se l'utente è l'unico admin
             $user = $this->get($id);
             
@@ -269,7 +277,7 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             $sql = "DELETE FROM users WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
-            $this->logActivity($deleterId, 'users', 'delete', $id, 'Eliminato utente');
+            $this->logActivity($deleterId, 'users', 'delete', $id, 'Eliminato utente', $oldUserData, null);
             
             return true;
             
@@ -579,11 +587,11 @@ public function index($filters = [], $page = 1, $perPage = 20) {
     /**
      * Registra attività nel log
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -592,7 +600,9 @@ public function index($filters = [], $page = 1, $perPage = 20) {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);

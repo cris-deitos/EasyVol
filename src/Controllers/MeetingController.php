@@ -216,7 +216,8 @@ class MeetingController {
             // Generate meeting type name for log
             $meetingName = self::MEETING_TYPE_NAMES[$data['meeting_type']] ?? $data['meeting_type'];
             
-            $this->logActivity($userId, 'meeting', 'create', $meetingId, 'Creata nuova riunione: ' . $meetingName);
+            $newMeetingData = $this->db->fetchOne("SELECT * FROM meetings WHERE id = ?", [$meetingId]);
+            $this->logActivity($userId, 'meeting', 'create', $meetingId, 'Creata nuova riunione: ' . $meetingName, null, $newMeetingData);
             
             $this->db->commit();
             return $meetingId;
@@ -233,6 +234,9 @@ class MeetingController {
      */
     public function update($id, $data, $userId) {
         try {
+            // Cattura dati precedenti per il log
+            $oldMeetingData = $this->db->fetchOne("SELECT * FROM meetings WHERE id = ?", [$id]);
+            
             $sql = "UPDATE meetings SET
                 meeting_type = ?, meeting_date = ?, location = ?,
                 convocator = ?, description = ?, updated_at = NOW()
@@ -249,7 +253,8 @@ class MeetingController {
             
             $this->db->execute($sql, $params);
             
-            $this->logActivity($userId, 'meeting', 'update', $id, 'Aggiornata riunione');
+            $newMeetingData = $this->db->fetchOne("SELECT * FROM meetings WHERE id = ?", [$id]);
+            $this->logActivity($userId, 'meeting', 'update', $id, 'Aggiornata riunione', $oldMeetingData, $newMeetingData);
             
             return true;
             
@@ -286,11 +291,11 @@ class MeetingController {
     /**
      * Registra attività nel log
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -299,7 +304,9 @@ class MeetingController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);
@@ -314,7 +321,7 @@ class MeetingController {
     public function delete($id, $userId) {
         try {
             // Get meeting details for log
-            $meeting = $this->get($id);
+            $meeting = $this->db->fetchOne("SELECT * FROM meetings WHERE id = ?", [$id]);
             if (!$meeting) {
                 return ['success' => false, 'message' => 'Riunione non trovata'];
             }
@@ -337,9 +344,9 @@ class MeetingController {
             
             $this->db->commit();
             
-            // Log activity
+            // Log activity with old data
             $meetingName = self::MEETING_TYPE_NAMES[$meeting['meeting_type']] ?? $meeting['meeting_type'];
-            $this->logActivity($userId, 'meetings', 'delete', $id, "Eliminata riunione: {$meetingName}");
+            $this->logActivity($userId, 'meetings', 'delete', $id, "Eliminata riunione: {$meetingName}", $meeting, null);
             
             return ['success' => true];
         } catch (\Exception $e) {

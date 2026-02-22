@@ -139,7 +139,8 @@ class EventController {
             $this->db->execute($sql, $params);
             $eventId = $this->db->lastInsertId();
             
-            $this->logActivity($userId, 'event', 'create', $eventId, 'Creato nuovo evento: ' . $data['title']);
+            $newEventData = $this->db->fetchOne("SELECT * FROM events WHERE id = ?", [$eventId]);
+            $this->logActivity($userId, 'event', 'create', $eventId, 'Creato nuovo evento: ' . $data['title'], null, $newEventData);
             
             // Send Telegram notification for new event
             try {
@@ -224,6 +225,9 @@ class EventController {
                 }
             }
             
+            // Cattura dati precedenti per il log
+            $oldEventData = $this->db->fetchOne("SELECT * FROM events WHERE id = ?", [$id]);
+            
             $sql = "UPDATE events SET
                 event_type = ?, title = ?, description = ?, start_date = ?,
                 end_date = ?, location = ?, status = ?, updated_at = NOW(),
@@ -249,7 +253,8 @@ class EventController {
             
             $this->db->execute($sql, $params);
             
-            $this->logActivity($userId, 'event', 'update', $id, 'Aggiornato evento');
+            $newEventData = $this->db->fetchOne("SELECT * FROM events WHERE id = ?", [$id]);
+            $this->logActivity($userId, 'event', 'update', $id, 'Aggiornato evento', $oldEventData, $newEventData);
             
             return true;
             
@@ -301,11 +306,11 @@ class EventController {
     /**
      * Registra attività nel log
      */
-    private function logActivity($userId, $module, $action, $recordId, $details) {
+    private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
             $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $userId,
@@ -314,7 +319,9 @@ class EventController {
                 $recordId,
                 $details,
                 $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
+                is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
             
             $this->db->execute($sql, $params);
@@ -329,7 +336,7 @@ class EventController {
     public function delete($id, $userId) {
         try {
             // Get event details for log
-            $event = $this->get($id);
+            $event = $this->db->fetchOne("SELECT * FROM events WHERE id = ?", [$id]);
             if (!$event) {
                 return ['success' => false, 'message' => 'Evento non trovato'];
             }
@@ -338,8 +345,8 @@ class EventController {
             $sql = "UPDATE events SET status = 'annullato' WHERE id = ?";
             $this->db->execute($sql, [$id]);
             
-            // Log activity
-            $this->logActivity($userId, 'events', 'delete', $id, "Eliminato evento: {$event['title']}");
+            // Log activity with old data
+            $this->logActivity($userId, 'events', 'delete', $id, "Eliminato evento: {$event['title']}", $event, null);
             
             return ['success' => true];
         } catch (\Exception $e) {
