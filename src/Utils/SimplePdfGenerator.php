@@ -861,9 +861,214 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
             }
         }
         
+        // Prepare entity-specific computed fields
+        if ($entityType === 'meetings') {
+            $record = $this->prepareMeetingData($record);
+        }
+        
         return $record;
     }
     
+    /**
+     * Prepare enriched data fields for the 'meetings' entity type.
+     *
+     * Adds human-readable labels, formatted times, participant details, and
+     * aggregated counts so the verbale template does not need helpers.
+     *
+     * @param array $record The meeting record (with 'participants' and 'agenda' sub-arrays)
+     * @return array Enriched record
+     */
+    private function prepareMeetingData(array $record): array {
+        // Meeting type names map (mirrors MeetingController::MEETING_TYPE_NAMES)
+        $meetingTypeNames = [
+            'assemblea_ordinaria'    => 'Assemblea dei Soci Ordinaria',
+            'assemblea_straordinaria' => 'Assemblea dei Soci Straordinaria',
+            'consiglio_direttivo'    => 'Consiglio Direttivo',
+            'riunione_capisquadra'   => 'Riunione dei Capisquadra',
+            'riunione_nucleo'        => 'Riunione di Nucleo',
+            'altra_riunione'         => 'Altra Riunione',
+        ];
+
+        $meetingType = $record['meeting_type'] ?? '';
+        $record['meeting_type_label'] = $meetingTypeNames[$meetingType]
+            ?? ucwords(str_replace('_', ' ', $meetingType));
+        $record['meeting_type_upper'] = strtoupper($record['meeting_type_label']);
+
+        // Location type label
+        $locationTypeMap = [
+            'fisico' => 'In presenza',
+            'online' => 'Online',
+        ];
+        $locationType = $record['location_type'] ?? '';
+        $record['location_type_label'] = $locationTypeMap[$locationType]
+            ?? ucfirst($locationType);
+
+        // Formatted times HH:mm (strip seconds)
+        $record['start_time_hhmm'] = !empty($record['start_time'])
+            ? substr($record['start_time'], 0, 5) : '';
+        $record['end_time_hhmm'] = !empty($record['end_time'])
+            ? substr($record['end_time'], 0, 5) : '';
+
+        // Derive meeting_year, meeting_day, meeting_month from meeting_date if missing
+        if (!empty($record['meeting_date'])) {
+            $ts = strtotime($record['meeting_date']);
+            if ($ts) {
+                if (empty($record['meeting_year'])) {
+                    $record['meeting_year'] = date('Y', $ts);
+                }
+                if (empty($record['meeting_day'])) {
+                    $record['meeting_day'] = date('j', $ts);
+                }
+                if (empty($record['meeting_month'])) {
+                    $record['meeting_month'] = $this->italianMonthName((int)date('n', $ts));
+                }
+            }
+        }
+
+        // Convocator: parse "memberId|role" and look up member name
+        $record['convocator_full'] = '';
+        $convocator = $record['convocator'] ?? '';
+        if (!empty($convocator)) {
+            if (strpos($convocator, '|') !== false) {
+                [$memberId, $role] = explode('|', $convocator, 2);
+                $memberId = trim($memberId);
+                $role = trim($role);
+                $memberData = $this->db->fetchOne(
+                    "SELECT first_name, last_name FROM members WHERE id = ?",
+                    [$memberId]
+                );
+                if ($memberData) {
+                    $record['convocator_full'] = trim($memberData['first_name'] . ' ' . $memberData['last_name'])
+                        . ' (' . $role . ')';
+                } else {
+                    $record['convocator_full'] = $role;
+                }
+            } else {
+                $record['convocator_full'] = $convocator;
+            }
+        }
+
+        // Enrich participants: names, attendance labels, delegate names, counts
+        $presentCount   = 0;
+        $absentCount    = 0;
+        $delegatedCount = 0;
+        $presidentFullName  = '';
+        $secretaryFullName  = '';
+
+        if (isset($record['participants']) && is_array($record['participants'])) {
+            foreach ($record['participants'] as &$participant) {
+                // Resolve full name
+                $fullName = '';
+                if (!empty($participant['participant_name'])) {
+                    $fullName = $participant['participant_name'];
+                } elseif (($participant['member_type'] ?? '') === 'junior'
+                    && !empty($participant['junior_member_id'])
+                ) {
+                    $jm = $this->db->fetchOne(
+                        "SELECT first_name, last_name FROM junior_members WHERE id = ?",
+                        [$participant['junior_member_id']]
+                    );
+                    if ($jm) {
+                        $fullName = trim($jm['first_name'] . ' ' . $jm['last_name']);
+                    }
+                } elseif (!empty($participant['member_id'])) {
+                    $m = $this->db->fetchOne(
+                        "SELECT first_name, last_name FROM members WHERE id = ?",
+                        [$participant['member_id']]
+                    );
+                    if ($m) {
+                        $fullName = trim($m['first_name'] . ' ' . $m['last_name']);
+                    }
+                }
+                $participant['participant_full_name'] = $fullName;
+
+                // Attendance label and counts
+                $status = $participant['attendance_status'] ?? 'invited';
+                if ($status === 'present') {
+                    $participant['attendance_label'] = 'Presente';
+                    $presentCount++;
+                } elseif ($status === 'delegated') {
+                    $participant['attendance_label'] = 'Assente con Delega';
+                    $delegatedCount++;
+                    // Resolve delegate name
+                    $delegatedToId = $participant['delegated_to'] ?? null;
+                    $participant['delegated_to_full_name'] = '';
+                    if ($delegatedToId) {
+                        $delegateMember = $this->db->fetchOne(
+                            "SELECT first_name, last_name FROM members WHERE id = ?",
+                            [$delegatedToId]
+                        );
+                        if ($delegateMember) {
+                            $participant['delegated_to_full_name'] = trim(
+                                $delegateMember['first_name'] . ' ' . $delegateMember['last_name']
+                            );
+                        }
+                    }
+                } else {
+                    $participant['attendance_label'] = 'Assente';
+                    $absentCount++;
+                }
+
+                // Identify Presidente and Segretario
+                $role = $participant['role'] ?? '';
+                if (strcasecmp($role, 'Presidente') === 0 && $presidentFullName === '') {
+                    $presidentFullName = $fullName;
+                }
+                if (strcasecmp($role, 'Segretario') === 0 && $secretaryFullName === '') {
+                    $secretaryFullName = $fullName;
+                }
+            }
+            unset($participant);
+        }
+
+        $record['present_count']        = $presentCount;
+        $record['absent_count']         = $absentCount;
+        $record['delegated_count']      = $delegatedCount;
+        $record['president_full_name']  = $presidentFullName;
+        $record['secretary_full_name']  = $secretaryFullName;
+
+        // Enrich agenda items: voting outcome label, voting_approved flag, voting_abstained alias
+        if (isset($record['agenda']) && is_array($record['agenda'])) {
+            foreach ($record['agenda'] as &$agendaItem) {
+                $votingResult = $agendaItem['voting_result'] ?? 'non_votato';
+                if ($votingResult === 'approvato') {
+                    $agendaItem['voting_outcome_label'] = 'APPROVATO';
+                    $agendaItem['voting_approved']      = true;
+                } elseif ($votingResult === 'respinto') {
+                    $agendaItem['voting_outcome_label'] = 'NON APPROVATO';
+                    $agendaItem['voting_approved']      = false;
+                } else {
+                    // non_votato or any unknown value
+                    $agendaItem['voting_outcome_label'] = 'VOTAZIONE NON EFFETTUATA';
+                    $agendaItem['voting_approved']      = false;
+                }
+                // Alias: the DB column is voting_abstentions, template may use voting_abstained
+                if (!isset($agendaItem['voting_abstained'])) {
+                    $agendaItem['voting_abstained'] = $agendaItem['voting_abstentions'] ?? 0;
+                }
+            }
+            unset($agendaItem);
+        }
+
+        return $record;
+    }
+
+    /**
+     * Return the Italian month name for a given month number (1–12).
+     *
+     * @param int $month Month number
+     * @return string Italian month name (lowercase)
+     */
+    private function italianMonthName(int $month): string {
+        $months = [
+            1 => 'gennaio', 2 => 'febbraio', 3 => 'marzo',
+            4 => 'aprile',  5 => 'maggio',   6 => 'giugno',
+            7 => 'luglio',  8 => 'agosto',   9 => 'settembre',
+            10 => 'ottobre', 11 => 'novembre', 12 => 'dicembre',
+        ];
+        return $months[$month] ?? '';
+    }
+
     /**
      * Process template HTML with data
      * 
