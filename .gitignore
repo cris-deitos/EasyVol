@@ -27,6 +27,9 @@
 /uploads/privacy_consents/*
 !/uploads/privacy_consents/.gitkeep
 !/uploads/privacy_consents/.htaccess
+!/uploads/meetings/
+/uploads/meetings/*
+!/uploads/meetings/.gitkeep
 
 # Vendor (if using Composer)
 /vendor/
