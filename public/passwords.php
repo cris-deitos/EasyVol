@@ -67,6 +67,31 @@ $pageTitle = 'Gestione Password';
         .password-reveal-btn:hover {
             color: #0d6efd;
         }
+        .copy-btn {
+            cursor: pointer;
+            color: #6c757d;
+            transition: color 0.3s;
+            padding: 0;
+            border: none;
+            background: none;
+            margin-left: 8px;
+        }
+        .copy-btn:hover {
+            color: #28a745;
+        }
+        .copy-btn.copied {
+            color: #28a745;
+        }
+        .username-field {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .password-field-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
     </style>
 </head>
 <body>
@@ -171,15 +196,39 @@ $pageTitle = 'Gestione Password';
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><?php echo !empty($pwd['username']) ? htmlspecialchars($pwd['username']) : '<span class="text-muted">-</span>'; ?></td>
                                                 <td>
-                                                    <span class="password-field password-dots" id="password-<?php echo $pwd['id']; ?>">
-                                                        ••••••••••••
-                                                    </span>
-                                                    <i class="bi bi-eye password-reveal-btn ms-2" 
-                                                       data-password-id="<?php echo $pwd['id']; ?>"
-                                                       onclick="togglePasswordVisibility(<?php echo $pwd['id']; ?>)"
-                                                       title="Mostra/Nascondi password"></i>
+                                                    <?php if (!empty($pwd['username'])): ?>
+                                                        <div class="username-field">
+                                                            <span><?php echo htmlspecialchars($pwd['username']); ?></span>
+                                                            <button type="button" 
+                                                                    class="copy-btn" 
+                                                                    onclick="copyToClipboard('<?php echo htmlspecialchars(addslashes($pwd['username'])); ?>', this)"
+                                                                    title="Copia nome utente">
+                                                                <i class="bi bi-clipboard"></i>
+                                                            </button>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <div class="password-field-wrapper">
+                                                        <span class="password-field password-dots" id="password-<?php echo $pwd['id']; ?>">
+                                                            ••••••••••••
+                                                        </span>
+                                                        <i class="bi bi-eye password-reveal-btn" 
+                                                           data-password-id="<?php echo $pwd['id']; ?>"
+                                                           onclick="togglePasswordVisibility(<?php echo $pwd['id']; ?>)"
+                                                           title="Mostra/Nascondi password"></i>
+                                                        <button type="button" 
+                                                                class="copy-btn" 
+                                                                id="copy-btn-<?php echo $pwd['id']; ?>"
+                                                                onclick="copyPasswordToClipboard(<?php echo $pwd['id']; ?>, this)"
+                                                                title="Copia password"
+                                                                style="display: none;">
+                                                            <i class="bi bi-clipboard"></i>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <small class="text-muted">
@@ -261,6 +310,7 @@ $pageTitle = 'Gestione Password';
         function togglePasswordVisibility(passwordId) {
             const passwordField = document.getElementById('password-' + passwordId);
             const icon = document.querySelector(`[data-password-id="${passwordId}"]`);
+            const copyBtn = document.getElementById('copy-btn-' + passwordId);
             
             if (revealedPasswords[passwordId]) {
                 // Hide password
@@ -268,6 +318,7 @@ $pageTitle = 'Gestione Password';
                 passwordField.classList.add('password-dots');
                 icon.classList.remove('bi-eye-slash');
                 icon.classList.add('bi-eye');
+                if (copyBtn) copyBtn.style.display = 'none';
                 delete revealedPasswords[passwordId];
             } else {
                 // Show password - fetch from server
@@ -279,6 +330,7 @@ $pageTitle = 'Gestione Password';
                             passwordField.classList.remove('password-dots');
                             icon.classList.remove('bi-eye');
                             icon.classList.add('bi-eye-slash');
+                            if (copyBtn) copyBtn.style.display = 'inline-block';
                             revealedPasswords[passwordId] = data.password;
                         } else {
                             alert('Errore: ' + (data.message || 'Impossibile recuperare la password'));
@@ -289,6 +341,46 @@ $pageTitle = 'Gestione Password';
                         alert('Errore di rete durante il recupero della password');
                     });
             }
+        }
+        
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show feedback
+                const originalIcon = button.innerHTML;
+                button.classList.add('copied');
+                button.innerHTML = '<i class="bi bi-check"></i>';
+                
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Errore copia negli appunti:', err);
+                alert('Errore durante la copia negli appunti');
+            });
+        }
+        
+        function copyPasswordToClipboard(passwordId, button) {
+            const password = revealedPasswords[passwordId];
+            if (!password) {
+                alert('Password non disponibile');
+                return;
+            }
+            
+            navigator.clipboard.writeText(password).then(() => {
+                // Show feedback
+                const originalIcon = button.innerHTML;
+                button.classList.add('copied');
+                button.innerHTML = '<i class="bi bi-check"></i>';
+                
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Errore copia negli appunti:', err);
+                alert('Errore durante la copia negli appunti');
+            });
         }
         
         function deletePassword(passwordId) {
