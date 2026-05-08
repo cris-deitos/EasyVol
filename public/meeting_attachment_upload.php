@@ -94,9 +94,37 @@ if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] === UPLOAD_ERR_N
     // Validate allegato-specific fields
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
+    $progressiveNumber = null;
 
     if ($attachmentType === 'allegato' && empty($title)) {
         $errors[] = 'Il titolo è obbligatorio per gli allegati';
+    }
+
+    // Handle progressive number for allegati
+    if ($attachmentType === 'allegato') {
+        $providedNumber = isset($_POST['progressive_number']) ? trim($_POST['progressive_number']) : '';
+        
+        if (!empty($providedNumber)) {
+            // User provided a number
+            if (!is_numeric($providedNumber) || intval($providedNumber) <= 0) {
+                $errors[] = 'Il numero progressivo deve essere un numero positivo';
+            } else {
+                $progressiveNumber = intval($providedNumber);
+                
+                // Check if this number already exists for this meeting
+                $existing = $db->fetchOne(
+                    "SELECT id FROM meeting_attachments WHERE meeting_id = ? AND attachment_type = 'allegato' AND progressive_number = ?",
+                    [$meetingId, $progressiveNumber]
+                );
+                
+                if ($existing) {
+                    $errors[] = 'Il numero progressivo ' . $progressiveNumber . ' è già in uso. Elimina l\'allegato esistente prima di ricaricare con lo stesso numero.';
+                }
+            }
+        } else {
+            // Auto-generate next number
+            $progressiveNumber = $controller->getNextAttachmentNumber($meetingId);
+        }
     }
 
     if (empty($errors)) {
@@ -116,11 +144,6 @@ if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] === UPLOAD_ERR_N
             $filepath = $uploadDir . '/' . $filename;
 
             if (move_uploaded_file($file['tmp_name'], $filepath)) {
-                $progressiveNumber = null;
-                if ($attachmentType === 'allegato') {
-                    $progressiveNumber = $controller->getNextAttachmentNumber($meetingId);
-                }
-
                 $data = [
                     'attachment_type' => $attachmentType,
                     'file_name' => $file['name'],
