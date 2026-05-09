@@ -213,6 +213,14 @@ $pageTitle = 'Dettaglio Socio Minorenne: ' . $member['first_name'] . ' ' . $memb
                                 <?php if ($hasPhoto): ?>
                                     <img src="download.php?type=junior_member_photo&id=<?php echo $member['id']; ?>" 
                                          alt="Foto socio" class="img-fluid rounded mb-3" style="max-width: 200px;">
+										 
+										<div class="mt-2">
+											<a href="download.php?type=junior_member_photo&id=<?php echo $member['id']; ?>"
+											class="btn btn-sm btn-outline-primary"
+												download>
+												<i class="bi bi-download"></i> Scarica Foto
+											</a>
+										</div>
                                 <?php else: ?>
                                     <div class="bg-secondary text-white rounded mb-3 d-inline-flex align-items-center justify-content-center" 
                                          style="width: 200px; height: 250px;">
