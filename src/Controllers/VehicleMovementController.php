@@ -1055,24 +1055,20 @@ class VehicleMovementController {
                 LEFT JOIN member_roles mr ON m.id = mr.member_id 
                     AND (mr.end_date IS NULL OR mr.end_date >= CURDATE())
                 WHERE m.member_status = 'attivo'
-                AND (m.registration_number LIKE ? OR m.last_name LIKE ?)
+                AND (m.registration_number LIKE ? OR m.last_name LIKE ? OR m.first_name LIKE ?)
                 GROUP BY m.id
                 LIMIT 10";
         
-        $members = $this->db->fetchAll($sql, [$searchTerm, $searchTerm]);
+        $members = $this->db->fetchAll($sql, [$searchTerm, $searchTerm, $searchTerm]);
         
         // Filter only drivers
-        return array_filter($members, function($member) {
-            $roles = $member['roles'] ?? '';
-            if ($roles) {
-                $roleList = explode(',', $roles);
-                foreach ($roleList as $role) {
-                    if (stripos($role, 'AUTISTA') !== false || stripos($role, 'PILOTA') !== false) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        });
+return array_values(array_filter($members, function($member) {
+    $roles = strtolower(trim($member['roles'] ?? ''));
+
+    return $roles && (
+        strpos($roles, 'autista') !== false ||
+        strpos($roles, 'pilota') !== false
+    );
+}));
     }
 }
