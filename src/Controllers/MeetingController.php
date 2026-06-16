@@ -2,6 +2,7 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use EasyVol\Utils\PDFSignatureExtractor;
 
 /**
  * Meeting Controller
@@ -295,9 +296,16 @@ class MeetingController {
      */
     public function addAttachment($meetingId, $data, $userId) {
         try {
+            // Extract signature information if file exists
+            $signatureInfo = null;
+            $filePath = __DIR__ . '/../../' . $data['file_path'];
+            if (file_exists($filePath)) {
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+            }
+            
             $sql = "INSERT INTO meeting_attachments 
-                    (meeting_id, attachment_type, file_name, file_path, file_type, title, description, progressive_number, uploaded_by)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    (meeting_id, attachment_type, file_name, file_path, file_type, title, description, progressive_number, uploaded_by, has_signature, signature_format, signature_count, signature_data, signature_validity, signature_checked_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             $params = [
                 $meetingId,
                 $data['attachment_type'],
@@ -307,7 +315,12 @@ class MeetingController {
                 $data['title'] ?? null,
                 $data['description'] ?? null,
                 isset($data['progressive_number']) ? intval($data['progressive_number']) : null,
-                $userId
+                $userId,
+                $signatureInfo['has_signature'] ? 1 : 0,
+                $signatureInfo['format'] ?? null,
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown'
             ];
             $this->db->execute($sql, $params);
             $attachmentId = $this->db->lastInsertId();
