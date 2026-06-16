@@ -12,6 +12,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\MeetingController;
 use EasyVol\Controllers\PrintTemplateController;
+use EasyVol\Utils\PDFSignatureExtractor;
 
 $app = App::getInstance();
 
@@ -385,7 +386,7 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                                     <option value="Segretario" <?php echo ($participant['role'] ?? '') === 'Segretario' ? 'selected' : ''; ?>>Segretario</option>
                                                                     <option value="Uditore" <?php echo ($participant['role'] ?? '') === 'Uditore' ? 'selected' : ''; ?>>Uditore</option>
                                                                     <option value="Scrutatore" <?php echo ($participant['role'] ?? '') === 'Scrutatore' ? 'selected' : ''; ?>>Scrutatore</option>
-                                                                    <option value="Presidente del Seggio Elettorale" <?php echo ($participant['role'] ?? '') === 'Presidente del Seggio Elettorale' ? 'selected' : ''; ?>>Pres. Seggio Elettorale</option>
+                                                                    <option value="Presidente del Seggio Elettorale" <?php echo ($participant['role'] ?? '') === 'Presidente del Seggio Elettorale' ? 'selected' : ''; ?>>Presidente del Seggio Elettorale</option>
                                                                 </select>
                                                             <?php else: ?>
                                                                 <?php echo htmlspecialchars($participant['role'] ?? '-'); ?>
@@ -538,10 +539,34 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
                                                 <div>
-                                                    <div class="fw-bold"><?php echo htmlspecialchars($verbale['file_name']); ?></div>
+                                                    <div class="fw-bold">
+                                                        <?php echo htmlspecialchars($verbale['file_name']); ?>
+                                                        <?php if ($verbale['has_signature']): ?>
+                                                            <span class="badge bg-success ms-2" title="Documento firmato">
+                                                                <i class="bi bi-check-circle"></i> Firmato
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </div>
                                                     <small class="text-muted">
                                                         Caricato il <?php echo date('d/m/Y H:i', strtotime($verbale['uploaded_at'])); ?>
                                                     </small>
+                                                    <?php if ($verbale['has_signature'] && !empty($verbale['signature_data'])): ?>
+                                                        <div class="mt-1 small">
+                                                            <?php 
+                                                            $sigData = json_decode($verbale['signature_data'], true);
+                                                            if (!empty($sigData)): ?>
+                                                                <strong>Firma:</strong>
+                                                                <?php foreach ($sigData as $sig): ?>
+                                                                    <div class="text-muted">
+                                                                        • <?php echo htmlspecialchars($sig['signer_name'] ?? 'Sconosciuto'); ?>
+                                                                        <?php if (!empty($sig['signature_date'])): ?>
+                                                                            - <?php echo htmlspecialchars($sig['signature_date']); ?>
+                                                                        <?php endif; ?>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div class="d-flex gap-2">
@@ -594,6 +619,11 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                             <h6 class="mb-1">
                                                                 <i class="bi bi-file-earmark-pdf text-danger"></i>
                                                                 <?php echo htmlspecialchars($allegato['title'] ?? $allegato['file_name']); ?>
+                                                                <?php if ($allegato['has_signature']): ?>
+                                                                    <span class="badge bg-success ms-2" title="Documento firmato">
+                                                                        <i class="bi bi-check-circle"></i>
+                                                                    </span>
+                                                                <?php endif; ?>
                                                             </h6>
                                                             <?php if (!empty($allegato['description'])): ?>
                                                                 <p class="mb-1 text-muted small"><?php echo nl2br(htmlspecialchars($allegato['description'])); ?></p>
@@ -602,6 +632,23 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                                 <?php echo htmlspecialchars($allegato['file_name']); ?> &mdash;
                                                                 Caricato il <?php echo date('d/m/Y H:i', strtotime($allegato['uploaded_at'])); ?>
                                                             </small>
+                                                            <?php if ($allegato['has_signature'] && !empty($allegato['signature_data'])): ?>
+                                                                <div class="mt-1 small">
+                                                                    <?php 
+                                                                    $sigData = json_decode($allegato['signature_data'], true);
+                                                                    if (!empty($sigData)): ?>
+                                                                        <strong>Firma:</strong>
+                                                                        <?php foreach ($sigData as $sig): ?>
+                                                                            <div class="text-muted">
+                                                                                • <?php echo htmlspecialchars($sig['signer_name'] ?? 'Sconosciuto'); ?>
+                                                                                <?php if (!empty($sig['signature_date'])): ?>
+                                                                                    - <?php echo htmlspecialchars($sig['signature_date']); ?>
+                                                                                <?php endif; ?>
+                                                                            </div>
+                                                                        <?php endforeach; ?>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            <?php endif; ?>
                                                         </div>
                                                     </div>
                                                     <div class="d-flex gap-2 ms-2">
@@ -683,9 +730,10 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
 
                         <div class="mb-3">
-                            <label class="form-label">Numero Progressivo</label>
-                            <input type="text" class="form-control" value="<?php echo $controller->getNextAttachmentNumber($meetingId); ?>" disabled>
-                            <div class="form-text">Assegnato automaticamente</div>
+                            <label for="allegato_progressive_number" class="form-label">Numero Progressivo <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="allegato_progressive_number" name="progressive_number" 
+                                   value="<?php echo $controller->getNextAttachmentNumber($meetingId); ?>" min="1" required>
+                            <div class="form-text">Modifica se necessario (es. dopo eliminazione di un allegato)</div>
                         </div>
 
                         <div class="mb-3">
