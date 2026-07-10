@@ -239,6 +239,12 @@ class PDFSignatureExtractor {
             }
         }
         
+        // If PKCS#7 blobs were found but openssl couldn't process any of them,
+        // fall back to PDF dictionary parsing to at least get basic signature info
+        if (empty($signatures)) {
+            $signatures = self::fallbackPdfParsing($pdfContent);
+        }
+        
         // Also extract PDF-level metadata (/M date, /Reason, /Location) and merge
         self::mergePdfMetadata($pdfContent, $signatures);
         
@@ -323,20 +329,22 @@ class PDFSignatureExtractor {
     private static function runOpenSslCms($filePath) {
         $escapedPath = escapeshellarg($filePath);
         
-        $cmd = "openssl cms -inform DER -in {$escapedPath} -cmsout -print 2>/dev/null";
-        $output = null;
-        $returnCode = 0;
-        exec($cmd, $outputLines, $returnCode);
+        // First try: extract certificates using -verify -noverify (standard CMS cert extraction)
+        $outputLines2 = [];
+        $returnCode2 = 0;
+        exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -print_certs -text 2>/dev/null", $outputLines2, $returnCode2);
         
-        if ($returnCode !== 0 || empty($outputLines)) {
-            return null;
+        if ($returnCode2 === 0 && !empty($outputLines2)) {
+            $certOutput = implode("\n", $outputLines2);
+            if (strpos($certOutput, 'Subject:') !== false) {
+                return $certOutput;
+            }
         }
         
-        $cmsOutput = implode("\n", $outputLines);
-        
-        // Try to extract certificates from the CMS structure
+        // Second try: use -noout -print_certs for older/different CMS structures
         $outputLines3 = [];
-        exec("openssl cms -inform DER -in {$escapedPath} -cmsout -print_certs -text 2>/dev/null", $outputLines3, $returnCode);
+        $returnCode3 = 0;
+        exec("openssl cms -inform DER -in {$escapedPath} -noout -print_certs -text 2>/dev/null", $outputLines3, $returnCode3);
         
         if (!empty($outputLines3)) {
             $certOutput = implode("\n", $outputLines3);
@@ -344,6 +352,17 @@ class PDFSignatureExtractor {
                 return $certOutput;
             }
         }
+        
+        // Fallback: dump CMS structure and parse signer info from it
+        $outputLines = [];
+        $returnCode = 0;
+        exec("openssl cms -inform DER -in {$escapedPath} -cmsout -print 2>/dev/null", $outputLines, $returnCode);
+        
+        if ($returnCode !== 0 || empty($outputLines)) {
+            return null;
+        }
+        
+        $cmsOutput = implode("\n", $outputLines);
         
         // Parse signer info from CMS print output
         return self::extractSignerInfoFromCmsPrint($cmsOutput);
