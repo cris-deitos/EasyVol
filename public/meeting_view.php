@@ -556,18 +556,30 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                            <?php 
                                                            $sigValidity = $verbale['signature_validity'] ?? 'unknown';
                                                            $badgeClass = $sigValidity === 'valid' ? 'bg-success' : ($sigValidity === 'invalid' ? 'bg-danger' : 'bg-warning text-dark');
-                                                           $badgeText = $sigValidity === 'valid' ? 'Firmato' : ($sigValidity === 'invalid' ? 'Firma Scaduta' : 'Firmato');
+                                                           $badgeText = $sigValidity === 'valid' ? 'Firmato digitalmente' : ($sigValidity === 'invalid' ? 'Firma non valida' : 'Firma da verificare');
+                                                           $badgeIcon = $sigValidity === 'valid' ? 'bi-patch-check-fill' : ($sigValidity === 'invalid' ? 'bi-exclamation-triangle-fill' : 'bi-patch-question');
                                                            ?>
-                                                           <span class="badge <?php echo $badgeClass; ?> ms-2" title="Documento firmato digitalmente (<?php echo htmlspecialchars($verbale['signature_format'] ?? ''); ?>)">
-                                                               <i class="bi bi-check-circle"></i> <?php echo $badgeText; ?>
+                                                           <span class="badge <?php echo $badgeClass; ?> ms-2" title="Firma digitale presente (<?php echo htmlspecialchars($verbale['signature_format'] ?? ''); ?>) — Validità: <?php echo htmlspecialchars($sigValidity); ?>">
+                                                               <i class="bi <?php echo $badgeIcon; ?>"></i> <?php echo $badgeText; ?>
                                                                <?php if (!empty($verbale['signature_format']) && $verbale['signature_format'] !== 'UNKNOWN'): ?>
                                                                    <small>(<?php echo htmlspecialchars($verbale['signature_format']); ?>)</small>
                                                                <?php endif; ?>
+                                                           </span>
+                                                        <?php elseif (!empty($verbale['signature_checked_at'])): ?>
+                                                           <span class="badge bg-secondary ms-2" title="Nessuna firma digitale rilevata — Verificato il <?php echo date('d/m/Y H:i', strtotime($verbale['signature_checked_at'])); ?>">
+                                                               <i class="bi bi-shield-x"></i> Non firmato
+                                                           </span>
+                                                        <?php else: ?>
+                                                           <span class="badge bg-light text-dark border ms-2" title="La firma digitale non è ancora stata verificata">
+                                                               <i class="bi bi-question-circle"></i> Non verificato
                                                            </span>
                                                         <?php endif; ?>
                                                     </div>
                                                     <small class="text-muted">
                                                         Caricato il <?php echo date('d/m/Y H:i', strtotime($verbale['uploaded_at'])); ?>
+                                                        <?php if (!empty($verbale['signature_checked_at'])): ?>
+                                                            &mdash; <i class="bi bi-shield-check"></i> Firma verificata il <?php echo date('d/m/Y H:i', strtotime($verbale['signature_checked_at'])); ?>
+                                                        <?php endif; ?>
                                                     </small>
                                                     <?php if ($verbale['has_signature'] && !empty($verbale['signature_data'])): ?>
                                                         <div class="mt-1 small">
@@ -664,13 +676,22 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                                     <?php 
                                                                     $sigValidity = $allegato['signature_validity'] ?? 'unknown';
                                                                     $badgeClass = $sigValidity === 'valid' ? 'bg-success' : ($sigValidity === 'invalid' ? 'bg-danger' : 'bg-warning text-dark');
-                                                                    $badgeText = $sigValidity === 'valid' ? 'Firmato' : ($sigValidity === 'invalid' ? 'Firma Scaduta' : 'Firmato');
+                                                                    $badgeText = $sigValidity === 'valid' ? 'Firmato digitalmente' : ($sigValidity === 'invalid' ? 'Firma non valida' : 'Firma da verificare');
+                                                                    $badgeIcon = $sigValidity === 'valid' ? 'bi-patch-check-fill' : ($sigValidity === 'invalid' ? 'bi-exclamation-triangle-fill' : 'bi-patch-question');
                                                                     ?>
-                                                                    <span class="badge <?php echo $badgeClass; ?> ms-2" title="Documento firmato digitalmente (<?php echo htmlspecialchars($allegato['signature_format'] ?? ''); ?>)">
-                                                                        <i class="bi bi-check-circle"></i> <?php echo $badgeText; ?>
+                                                                    <span class="badge <?php echo $badgeClass; ?> ms-2" title="Firma digitale presente (<?php echo htmlspecialchars($allegato['signature_format'] ?? ''); ?>) — Validità: <?php echo htmlspecialchars($sigValidity); ?>">
+                                                                        <i class="bi <?php echo $badgeIcon; ?>"></i> <?php echo $badgeText; ?>
                                                                         <?php if (!empty($allegato['signature_format']) && $allegato['signature_format'] !== 'UNKNOWN'): ?>
                                                                             <small>(<?php echo htmlspecialchars($allegato['signature_format']); ?>)</small>
                                                                         <?php endif; ?>
+                                                                    </span>
+                                                                <?php elseif (!empty($allegato['signature_checked_at'])): ?>
+                                                                    <span class="badge bg-secondary ms-2" title="Nessuna firma digitale rilevata — Verificato il <?php echo date('d/m/Y H:i', strtotime($allegato['signature_checked_at'])); ?>">
+                                                                        <i class="bi bi-shield-x"></i> Non firmato
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span class="badge bg-light text-dark border ms-2" title="La firma digitale non è ancora stata verificata">
+                                                                        <i class="bi bi-question-circle"></i> Non verificato
                                                                     </span>
                                                                 <?php endif; ?>
                                                             </h6>
@@ -680,6 +701,9 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                             <small class="text-muted">
                                                                 <?php echo htmlspecialchars($allegato['file_name']); ?> &mdash;
                                                                 Caricato il <?php echo date('d/m/Y H:i', strtotime($allegato['uploaded_at'])); ?>
+                                                                <?php if (!empty($allegato['signature_checked_at'])): ?>
+                                                                    &mdash; <i class="bi bi-shield-check"></i> Firma verificata il <?php echo date('d/m/Y H:i', strtotime($allegato['signature_checked_at'])); ?>
+                                                                <?php endif; ?>
                                                             </small>
                                                             <?php if ($allegato['has_signature'] && !empty($allegato['signature_data'])): ?>
                                                                 <div class="mt-1 small">
