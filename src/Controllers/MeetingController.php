@@ -375,7 +375,8 @@ class MeetingController {
             $filePath = __DIR__ . '/../../' . $attachment['file_path'];
             $realPath = realpath($filePath);
             $uploadsDir = realpath(__DIR__ . '/../../uploads');
-            if ($realPath === false || $uploadsDir === false || strpos($realPath, $uploadsDir) !== 0) {
+            if ($realPath === false || $uploadsDir === false 
+                || (strpos($realPath, $uploadsDir . DIRECTORY_SEPARATOR) !== 0 && $realPath !== $uploadsDir)) {
                 return ['success' => false, 'message' => 'Percorso file non valido', 'has_signature' => false];
             }
 

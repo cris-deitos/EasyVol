@@ -992,7 +992,11 @@ class PDFSignatureExtractor {
         foreach ($patterns as $pattern) {
             $matches = [];
             $result = @preg_match_all($pattern, $pdfContent, $matches, PREG_OFFSET_CAPTURE);
-            if ($result === false || $result === 0) {
+            if ($result === false) {
+                error_log("PDFSignatureExtractor: PCRE error with pattern $pattern: " . preg_last_error());
+                continue;
+            }
+            if ($result === 0) {
                 continue;
             }
             
