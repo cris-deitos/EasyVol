@@ -82,13 +82,17 @@ if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] === UPLOAD_ERR_N
         $errors[] = 'Il file supera la dimensione massima di 20MB';
     }
 
-    // Only PDF is allowed
+    // Accept PDF and P7M (CAdES signed) files
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mimeType = finfo_file($finfo, $file['tmp_name']);
     finfo_close($finfo);
 
-    if ($mimeType !== 'application/pdf') {
-        $errors[] = 'Solo file PDF sono ammessi';
+    $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowedMimes = ['application/pdf', 'application/pkcs7-mime', 'application/x-pkcs7-mime', 'application/octet-stream'];
+    $isP7m = ($fileExtension === 'p7m');
+
+    if (!in_array($mimeType, $allowedMimes) && !$isP7m) {
+        $errors[] = 'Solo file PDF o P7M (firma digitale CAdES) sono ammessi';
     }
 
     // Validate allegato-specific fields
@@ -137,8 +141,8 @@ if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] === UPLOAD_ERR_N
 
             // Generate unique filename preserving extension
             $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            if ($extension !== 'pdf') {
-                $extension = 'pdf';
+            if (!in_array($extension, ['pdf', 'p7m'])) {
+                throw new \Exception('Estensione file non valida. Solo .pdf e .p7m sono ammessi.');
             }
             $filename = uniqid($attachmentType . '_', true) . '.' . $extension;
             $filepath = $uploadDir . '/' . $filename;

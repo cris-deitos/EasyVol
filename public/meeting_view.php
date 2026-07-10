@@ -542,9 +542,17 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                     <div class="fw-bold">
                                                         <?php echo htmlspecialchars($verbale['file_name']); ?>
                                                         <?php if ($verbale['has_signature']): ?>
-                                                            <span class="badge bg-success ms-2" title="Documento firmato">
-                                                                <i class="bi bi-check-circle"></i> Firmato
-                                                            </span>
+                                                           <?php 
+                                                           $sigValidity = $verbale['signature_validity'] ?? 'unknown';
+                                                           $badgeClass = $sigValidity === 'valid' ? 'bg-success' : ($sigValidity === 'invalid' ? 'bg-danger' : 'bg-warning text-dark');
+                                                           $badgeText = $sigValidity === 'valid' ? 'Firmato' : ($sigValidity === 'invalid' ? 'Firma Scaduta' : 'Firmato');
+                                                           ?>
+                                                           <span class="badge <?php echo $badgeClass; ?> ms-2" title="Documento firmato digitalmente (<?php echo htmlspecialchars($verbale['signature_format'] ?? ''); ?>)">
+                                                               <i class="bi bi-check-circle"></i> <?php echo $badgeText; ?>
+                                                               <?php if (!empty($verbale['signature_format']) && $verbale['signature_format'] !== 'UNKNOWN'): ?>
+                                                                   <small>(<?php echo htmlspecialchars($verbale['signature_format']); ?>)</small>
+                                                               <?php endif; ?>
+                                                           </span>
                                                         <?php endif; ?>
                                                     </div>
                                                     <small class="text-muted">
@@ -552,19 +560,37 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                     </small>
                                                     <?php if ($verbale['has_signature'] && !empty($verbale['signature_data'])): ?>
                                                         <div class="mt-1 small">
-                                                            <?php 
-                                                            $sigData = json_decode($verbale['signature_data'], true);
-                                                            if (!empty($sigData)): ?>
-                                                                <strong>Firma:</strong>
-                                                                <?php foreach ($sigData as $sig): ?>
-                                                                    <div class="text-muted">
-                                                                        • <?php echo htmlspecialchars($sig['signer_name'] ?? 'Sconosciuto'); ?>
-                                                                        <?php if (!empty($sig['signature_date'])): ?>
-                                                                            - <?php echo htmlspecialchars($sig['signature_date']); ?>
-                                                                        <?php endif; ?>
-                                                                    </div>
-                                                                <?php endforeach; ?>
-                                                            <?php endif; ?>
+                                                           <?php 
+                                                           $sigData = json_decode($verbale['signature_data'], true);
+                                                           if (!empty($sigData)): ?>
+                                                               <strong>Firma<?php echo count($sigData) > 1 ? ' (' . count($sigData) . ' firme)' : ''; ?>:</strong>
+                                                               <?php foreach ($sigData as $sig): ?>
+                                                                   <div class="text-muted ms-2">
+                                                                       • <strong><?php echo htmlspecialchars($sig['signer_name'] ?? 'Sconosciuto'); ?></strong>
+                                                                       <?php if (!empty($sig['signer_organization'])): ?>
+                                                                           <span class="text-secondary">(<?php echo htmlspecialchars($sig['signer_organization']); ?>)</span>
+                                                                       <?php endif; ?>
+                                                                       <?php if (!empty($sig['signature_date'])): ?>
+                                                                           <br><small><i class="bi bi-calendar-event"></i> <?php echo htmlspecialchars($sig['signature_date']); ?></small>
+                                                                       <?php endif; ?>
+                                                                       <?php if (!empty($sig['ca_provider'])): ?>
+                                                                           <br><small><i class="bi bi-shield-check"></i> CA: <?php echo htmlspecialchars($sig['ca_provider']); ?></small>
+                                                                       <?php endif; ?>
+                                                                       <?php if (!empty($sig['fiscal_code'])): ?>
+                                                                           <br><small><i class="bi bi-person-badge"></i> CF: <?php echo htmlspecialchars($sig['fiscal_code']); ?></small>
+                                                                       <?php endif; ?>
+                                                                       <?php if (!empty($sig['certificate_valid_from']) && !empty($sig['certificate_valid_to'])): ?>
+                                                                           <br><small><i class="bi bi-clock-history"></i> Certificato valido: <?php echo htmlspecialchars(date('d/m/Y', strtotime($sig['certificate_valid_from']))); ?> - <?php echo htmlspecialchars(date('d/m/Y', strtotime($sig['certificate_valid_to']))); ?></small>
+                                                                       <?php endif; ?>
+                                                                       <?php if (!empty($sig['reason'])): ?>
+                                                                           <br><small><i class="bi bi-chat-left-text"></i> <?php echo htmlspecialchars($sig['reason']); ?></small>
+                                                                       <?php endif; ?>
+                                                                       <?php if (!empty($sig['location'])): ?>
+                                                                           <br><small><i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($sig['location']); ?></small>
+                                                                       <?php endif; ?>
+                                                                   </div>
+                                                               <?php endforeach; ?>
+                                                           <?php endif; ?>
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
@@ -620,8 +646,15 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                                 <i class="bi bi-file-earmark-pdf text-danger"></i>
                                                                 <?php echo htmlspecialchars($allegato['title'] ?? $allegato['file_name']); ?>
                                                                 <?php if ($allegato['has_signature']): ?>
-                                                                    <span class="badge bg-success ms-2" title="Documento firmato">
+                                                                    <?php 
+                                                                    $sigValidity = $allegato['signature_validity'] ?? 'unknown';
+                                                                    $badgeClass = $sigValidity === 'valid' ? 'bg-success' : ($sigValidity === 'invalid' ? 'bg-danger' : 'bg-warning text-dark');
+                                                                    ?>
+                                                                    <span class="badge <?php echo $badgeClass; ?> ms-2" title="Documento firmato digitalmente (<?php echo htmlspecialchars($allegato['signature_format'] ?? ''); ?>)">
                                                                         <i class="bi bi-check-circle"></i>
+                                                                        <?php if (!empty($allegato['signature_format']) && $allegato['signature_format'] !== 'UNKNOWN'): ?>
+                                                                            <small>(<?php echo htmlspecialchars($allegato['signature_format']); ?>)</small>
+                                                                        <?php endif; ?>
                                                                     </span>
                                                                 <?php endif; ?>
                                                             </h6>
@@ -637,12 +670,30 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                                     <?php 
                                                                     $sigData = json_decode($allegato['signature_data'], true);
                                                                     if (!empty($sigData)): ?>
-                                                                        <strong>Firma:</strong>
+                                                                        <strong>Firma<?php echo count($sigData) > 1 ? ' (' . count($sigData) . ' firme)' : ''; ?>:</strong>
                                                                         <?php foreach ($sigData as $sig): ?>
-                                                                            <div class="text-muted">
-                                                                                • <?php echo htmlspecialchars($sig['signer_name'] ?? 'Sconosciuto'); ?>
+                                                                            <div class="text-muted ms-2">
+                                                                                • <strong><?php echo htmlspecialchars($sig['signer_name'] ?? 'Sconosciuto'); ?></strong>
+                                                                                <?php if (!empty($sig['signer_organization'])): ?>
+                                                                                    <span class="text-secondary">(<?php echo htmlspecialchars($sig['signer_organization']); ?>)</span>
+                                                                                <?php endif; ?>
                                                                                 <?php if (!empty($sig['signature_date'])): ?>
-                                                                                    - <?php echo htmlspecialchars($sig['signature_date']); ?>
+                                                                                    <br><small><i class="bi bi-calendar-event"></i> <?php echo htmlspecialchars($sig['signature_date']); ?></small>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($sig['ca_provider'])): ?>
+                                                                                    <br><small><i class="bi bi-shield-check"></i> CA: <?php echo htmlspecialchars($sig['ca_provider']); ?></small>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($sig['fiscal_code'])): ?>
+                                                                                    <br><small><i class="bi bi-person-badge"></i> CF: <?php echo htmlspecialchars($sig['fiscal_code']); ?></small>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($sig['certificate_valid_from']) && !empty($sig['certificate_valid_to'])): ?>
+                                                                                    <br><small><i class="bi bi-clock-history"></i> Certificato valido: <?php echo htmlspecialchars(date('d/m/Y', strtotime($sig['certificate_valid_from']))); ?> - <?php echo htmlspecialchars(date('d/m/Y', strtotime($sig['certificate_valid_to']))); ?></small>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($sig['reason'])): ?>
+                                                                                    <br><small><i class="bi bi-chat-left-text"></i> <?php echo htmlspecialchars($sig['reason']); ?></small>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($sig['location'])): ?>
+                                                                                    <br><small><i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($sig['location']); ?></small>
                                                                                 <?php endif; ?>
                                                                             </div>
                                                                         <?php endforeach; ?>
@@ -695,8 +746,8 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
 
                         <div class="mb-3">
                             <label for="verbale_pdf_file" class="form-label">File PDF <span class="text-danger">*</span></label>
-                            <input type="file" class="form-control" id="verbale_pdf_file" name="pdf_file" accept=".pdf,application/pdf" required>
-                            <div class="form-text">Solo file PDF, max 20MB</div>
+                            <input type="file" class="form-control" id="verbale_pdf_file" name="pdf_file" accept=".pdf,.p7m,application/pdf,application/pkcs7-mime" required>
+                            <div class="form-text">File PDF o P7M (firmato digitalmente), max 20MB</div>
                         </div>
 
                         <div class="mb-3">
@@ -748,8 +799,8 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
 
                         <div class="mb-3">
                             <label for="allegato_pdf_file" class="form-label">File PDF <span class="text-danger">*</span></label>
-                            <input type="file" class="form-control" id="allegato_pdf_file" name="pdf_file" accept=".pdf,application/pdf" required>
-                            <div class="form-text">Solo file PDF, max 20MB</div>
+                            <input type="file" class="form-control" id="allegato_pdf_file" name="pdf_file" accept=".pdf,.p7m,application/pdf,application/pkcs7-mime" required>
+                            <div class="form-text">File PDF o P7M (firmato digitalmente), max 20MB</div>
                         </div>
                     </div>
                     <div class="modal-footer">
