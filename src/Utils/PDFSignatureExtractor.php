@@ -20,19 +20,28 @@ class PDFSignatureExtractor {
     const SIGNATURE_VALIDITY_UNKNOWN = 'unknown';
     
     /**
-     * Extract signature information from a PDF or P7M file.
+     * Get default empty result structure for signature extraction.
      * 
-     * @param string $filePath Path to PDF or P7M file
-     * @return array ['has_signature' => bool, 'format' => string, 'count' => int, 'signatures' => array, 'validity' => string]
+     * @return array Default result with no signatures
      */
-    public static function extractSignatures($filePath) {
-        $result = [
+    public static function getEmptyResult() {
+        return [
             'has_signature' => false,
             'format' => self::SIGNATURE_FORMAT_UNKNOWN,
             'count' => 0,
             'signatures' => [],
             'validity' => self::SIGNATURE_VALIDITY_UNKNOWN
         ];
+    }
+    
+    /**
+     * Extract signature information from a PDF or P7M file.
+     * 
+     * @param string $filePath Path to PDF or P7M file
+     * @return array ['has_signature' => bool, 'format' => string, 'count' => int, 'signatures' => array, 'validity' => string]
+     */
+    public static function extractSignatures($filePath) {
+        $result = self::getEmptyResult();
         
         if (!file_exists($filePath) || !is_readable($filePath)) {
             error_log("PDFSignatureExtractor: File not readable: $filePath");
@@ -187,9 +196,7 @@ class PDFSignatureExtractor {
                     $hexChunk = trim($hexChunk, " \r\n\t<>");
                     // Remove any whitespace inside hex
                     $hexChunk = preg_replace('/\s+/', '', $hexChunk);
-                    // Strip trailing zeros (padding)
-                    $hexChunk = rtrim($hexChunk, '0');
-                    // Ensure even length
+                    // Ensure even length for hex2bin
                     if (strlen($hexChunk) % 2 !== 0) {
                         $hexChunk .= '0';
                     }
@@ -219,7 +226,7 @@ class PDFSignatureExtractor {
         
         $escapedPath = escapeshellarg($filePath);
         
-        $cmd = "openssl pkcs7 -inform " . $inform . " -in {$escapedPath} -print_certs -text 2>/dev/null";
+        $cmd = "openssl pkcs7 -inform " . escapeshellarg($inform) . " -in {$escapedPath} -print_certs -text 2>/dev/null";
         $output = null;
         $returnCode = 0;
         exec($cmd, $outputLines, $returnCode);
@@ -255,10 +262,7 @@ class PDFSignatureExtractor {
         
         $cmsOutput = implode("\n", $outputLines);
         
-        // Try to extract certificates - first verify, then print certs (separate calls)
-        $outputLines2 = [];
-        exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -signer /dev/null -out /dev/null 2>/dev/null", $outputLines2, $returnCode);
-        
+        // Try to extract certificates from the CMS structure
         $outputLines3 = [];
         exec("openssl cms -inform DER -in {$escapedPath} -cmsout -print_certs -text 2>/dev/null", $outputLines3, $returnCode);
         

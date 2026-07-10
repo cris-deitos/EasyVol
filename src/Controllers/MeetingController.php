@@ -297,13 +297,7 @@ class MeetingController {
     public function addAttachment($meetingId, $data, $userId) {
         try {
             // Extract signature information if file exists
-            $signatureInfo = [
-                'has_signature' => false,
-                'format' => null,
-                'count' => 0,
-                'signatures' => [],
-                'validity' => 'unknown'
-            ];
+            $signatureInfo = PDFSignatureExtractor::getEmptyResult();
             $filePath = __DIR__ . '/../../' . $data['file_path'];
             if (file_exists($filePath)) {
                 $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
