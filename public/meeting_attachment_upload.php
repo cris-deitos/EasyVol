@@ -142,7 +142,8 @@ if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] === UPLOAD_ERR_N
             // Generate unique filename preserving extension
             $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             if (!in_array($extension, ['pdf', 'p7m'])) {
-                $extension = 'pdf';
+                $errors[] = 'Estensione file non valida. Solo .pdf e .p7m sono ammessi.';
+                throw new \Exception('Invalid file extension');
             }
             $filename = uniqid($attachmentType . '_', true) . '.' . $extension;
             $filepath = $uploadDir . '/' . $filename;

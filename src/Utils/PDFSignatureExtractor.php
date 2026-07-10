@@ -123,7 +123,11 @@ class PDFSignatureExtractor {
         }
         
         foreach ($pkcs7Blobs as $index => $blobHex) {
-            $blobBin = @hex2bin($blobHex);
+            // Validate hex string before conversion
+            if (!preg_match('/^[0-9a-fA-F]+$/', $blobHex)) {
+                continue;
+            }
+            $blobBin = hex2bin($blobHex);
             if ($blobBin === false || strlen($blobBin) < 64) {
                 continue;
             }
@@ -132,6 +136,8 @@ class PDFSignatureExtractor {
             if ($tmpFile === false) {
                 continue;
             }
+            // Restrict permissions on temp file containing signature data
+            chmod($tmpFile, 0600);
             
             try {
                 file_put_contents($tmpFile, $blobBin);
@@ -146,7 +152,9 @@ class PDFSignatureExtractor {
                     $signatures = array_merge($signatures, $parsed);
                 }
             } finally {
-                @unlink($tmpFile);
+                if (!unlink($tmpFile)) {
+                    error_log("PDFSignatureExtractor: Failed to remove temp file: $tmpFile");
+                }
             }
         }
         
@@ -203,10 +211,15 @@ class PDFSignatureExtractor {
      * @return string|null Certificate text output or null on failure
      */
     private static function runOpenSslPkcs7($filePath, $inform = 'DER') {
-        $escapedPath = escapeshellarg($filePath);
-        $escapedInform = escapeshellarg($inform);
+        // Whitelist validation for inform parameter
+        if (!in_array($inform, ['DER', 'PEM'], true)) {
+            error_log("PDFSignatureExtractor: Invalid inform format: $inform");
+            return null;
+        }
         
-        $cmd = "openssl pkcs7 -inform {$escapedInform} -in {$escapedPath} -print_certs -text 2>/dev/null";
+        $escapedPath = escapeshellarg($filePath);
+        
+        $cmd = "openssl pkcs7 -inform " . $inform . " -in {$escapedPath} -print_certs -text 2>/dev/null";
         $output = null;
         $returnCode = 0;
         exec($cmd, $outputLines, $returnCode);
@@ -242,15 +255,15 @@ class PDFSignatureExtractor {
         
         $cmsOutput = implode("\n", $outputLines);
         
-        // Now try to extract certificates from the CMS structure
-        $cmd2 = "openssl cms -inform DER -in {$escapedPath} -verify -noverify -signer /dev/null -out /dev/null 2>/dev/null; " .
-                "openssl cms -inform DER -in {$escapedPath} -cmsout -print_certs -text 2>/dev/null";
-        
+        // Try to extract certificates - first verify, then print certs (separate calls)
         $outputLines2 = [];
-        exec($cmd2, $outputLines2, $returnCode);
+        exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -signer /dev/null -out /dev/null 2>/dev/null", $outputLines2, $returnCode);
         
-        if (!empty($outputLines2)) {
-            $certOutput = implode("\n", $outputLines2);
+        $outputLines3 = [];
+        exec("openssl cms -inform DER -in {$escapedPath} -cmsout -print_certs -text 2>/dev/null", $outputLines3, $returnCode);
+        
+        if (!empty($outputLines3)) {
+            $certOutput = implode("\n", $outputLines3);
             if (strpos($certOutput, 'Subject:') !== false) {
                 return $certOutput;
             }
@@ -460,9 +473,52 @@ class PDFSignatureExtractor {
             return $result;
         }
         
-        // Handle both ", " and "/" separators
-        // openssl uses ", " for Subject lines and sometimes "/"
-        $parts = preg_split('/\s*[,\/]\s*/', $dn);
+        // Use openssl_x509_parse-style parsing: split on ", " but not inside quoted strings
+        // openssl uses ", " as separator in Subject/Issuer lines
+        // Also handle "/" separator used in some openssl output formats
+        $parts = [];
+        $current = '';
+        $inEscape = false;
+        
+        for ($i = 0; $i < strlen($dn); $i++) {
+            $ch = $dn[$i];
+            
+            if ($inEscape) {
+                $current .= $ch;
+                $inEscape = false;
+                continue;
+            }
+            
+            if ($ch === '\\') {
+                $inEscape = true;
+                $current .= $ch;
+                continue;
+            }
+            
+            // Split on ", " or "/" separators
+            if ($ch === '/' && ($i === 0 || $dn[$i-1] !== '\\')) {
+                if (!empty(trim($current))) {
+                    $parts[] = trim($current);
+                }
+                $current = '';
+                continue;
+            }
+            
+            if ($ch === ',' && $i + 1 < strlen($dn) && $dn[$i + 1] === ' ') {
+                if (!empty(trim($current))) {
+                    $parts[] = trim($current);
+                }
+                $current = '';
+                $i++; // skip the space after comma
+                continue;
+            }
+            
+            $current .= $ch;
+        }
+        if (!empty(trim($current))) {
+            $parts[] = trim($current);
+        }
+        
         foreach ($parts as $part) {
             $part = trim($part);
             if (strpos($part, '=') !== false) {
@@ -770,7 +826,8 @@ class PDFSignatureExtractor {
     private static function decodePdfString($str) {
         // Handle PDF hex strings
         if (preg_match('/^<([0-9A-Fa-f]+)>$/', $str, $m)) {
-            return hex2bin($m[1]) ?: $str;
+            $decoded = hex2bin($m[1]);
+            return $decoded !== false ? $decoded : $str;
         }
         
         // Handle octal escapes
@@ -863,7 +920,10 @@ class PDFSignatureExtractor {
         }
         
         // Check binary content for PKCS#7 signedData OID
-        $content = @file_get_contents($filePath, false, null, 0, 256);
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            return false;
+        }
+        $content = file_get_contents($filePath, false, null, 0, 256);
         if ($content !== false) {
             // OID 1.2.840.113549.1.7.2 (signedData) in DER encoding
             if (strpos($content, "\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02") !== false) {
