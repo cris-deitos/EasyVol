@@ -330,24 +330,24 @@ class PDFSignatureExtractor {
         $escapedPath = escapeshellarg($filePath);
         
         // First try: extract certificates using -verify -noverify (standard CMS cert extraction)
-        $outputLines2 = [];
-        $returnCode2 = 0;
-        exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -print_certs -text 2>/dev/null", $outputLines2, $returnCode2);
+        $verifyOutputLines = [];
+        $verifyReturnCode = 0;
+        exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -print_certs -text 2>/dev/null", $verifyOutputLines, $verifyReturnCode);
         
-        if ($returnCode2 === 0 && !empty($outputLines2)) {
-            $certOutput = implode("\n", $outputLines2);
+        if ($verifyReturnCode === 0 && !empty($verifyOutputLines)) {
+            $certOutput = implode("\n", $verifyOutputLines);
             if (strpos($certOutput, 'Subject:') !== false) {
                 return $certOutput;
             }
         }
         
         // Second try: use -noout -print_certs for older/different CMS structures
-        $outputLines3 = [];
-        $returnCode3 = 0;
-        exec("openssl cms -inform DER -in {$escapedPath} -noout -print_certs -text 2>/dev/null", $outputLines3, $returnCode3);
+        $nooutOutputLines = [];
+        $nooutReturnCode = 0;
+        exec("openssl cms -inform DER -in {$escapedPath} -noout -print_certs -text 2>/dev/null", $nooutOutputLines, $nooutReturnCode);
         
-        if (!empty($outputLines3)) {
-            $certOutput = implode("\n", $outputLines3);
+        if ($nooutReturnCode === 0 && !empty($nooutOutputLines)) {
+            $certOutput = implode("\n", $nooutOutputLines);
             if (strpos($certOutput, 'Subject:') !== false) {
                 return $certOutput;
             }
