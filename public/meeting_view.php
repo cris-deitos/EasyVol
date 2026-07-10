@@ -556,10 +556,10 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                            <?php 
                                                            $sigValidity = $verbale['signature_validity'] ?? 'unknown';
                                                            $badgeClass = $sigValidity === 'valid' ? 'bg-success' : ($sigValidity === 'invalid' ? 'bg-danger' : 'bg-warning text-dark');
-                                                           $badgeText = $sigValidity === 'valid' ? 'Firmato digitalmente' : ($sigValidity === 'invalid' ? 'Firma non valida' : 'Firmato');
-                                                           $badgeIcon = $sigValidity === 'valid' ? 'bi-patch-check-fill' : ($sigValidity === 'invalid' ? 'bi-exclamation-triangle-fill' : 'bi-patch-check');
+                                                           $badgeText = $sigValidity === 'valid' ? 'Firmato digitalmente' : ($sigValidity === 'invalid' ? 'Firma non valida' : 'Firma da verificare');
+                                                           $badgeIcon = $sigValidity === 'valid' ? 'bi-patch-check-fill' : ($sigValidity === 'invalid' ? 'bi-exclamation-triangle-fill' : 'bi-patch-question');
                                                            ?>
-                                                           <span class="badge <?php echo $badgeClass; ?> ms-2" title="Documento firmato digitalmente (<?php echo htmlspecialchars($verbale['signature_format'] ?? ''); ?>)">
+                                                           <span class="badge <?php echo $badgeClass; ?> ms-2" title="Firma digitale presente (<?php echo htmlspecialchars($verbale['signature_format'] ?? ''); ?>) — Validità: <?php echo htmlspecialchars($sigValidity); ?>">
                                                                <i class="bi <?php echo $badgeIcon; ?>"></i> <?php echo $badgeText; ?>
                                                                <?php if (!empty($verbale['signature_format']) && $verbale['signature_format'] !== 'UNKNOWN'): ?>
                                                                    <small>(<?php echo htmlspecialchars($verbale['signature_format']); ?>)</small>
@@ -676,10 +676,10 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                                     <?php 
                                                                     $sigValidity = $allegato['signature_validity'] ?? 'unknown';
                                                                     $badgeClass = $sigValidity === 'valid' ? 'bg-success' : ($sigValidity === 'invalid' ? 'bg-danger' : 'bg-warning text-dark');
-                                                                    $badgeText = $sigValidity === 'valid' ? 'Firmato digitalmente' : ($sigValidity === 'invalid' ? 'Firma non valida' : 'Firmato');
-                                                                    $badgeIcon = $sigValidity === 'valid' ? 'bi-patch-check-fill' : ($sigValidity === 'invalid' ? 'bi-exclamation-triangle-fill' : 'bi-patch-check');
+                                                                    $badgeText = $sigValidity === 'valid' ? 'Firmato digitalmente' : ($sigValidity === 'invalid' ? 'Firma non valida' : 'Firma da verificare');
+                                                                    $badgeIcon = $sigValidity === 'valid' ? 'bi-patch-check-fill' : ($sigValidity === 'invalid' ? 'bi-exclamation-triangle-fill' : 'bi-patch-question');
                                                                     ?>
-                                                                    <span class="badge <?php echo $badgeClass; ?> ms-2" title="Documento firmato digitalmente (<?php echo htmlspecialchars($allegato['signature_format'] ?? ''); ?>)">
+                                                                    <span class="badge <?php echo $badgeClass; ?> ms-2" title="Firma digitale presente (<?php echo htmlspecialchars($allegato['signature_format'] ?? ''); ?>) — Validità: <?php echo htmlspecialchars($sigValidity); ?>">
                                                                         <i class="bi <?php echo $badgeIcon; ?>"></i> <?php echo $badgeText; ?>
                                                                         <?php if (!empty($allegato['signature_format']) && $allegato['signature_format'] !== 'UNKNOWN'): ?>
                                                                             <small>(<?php echo htmlspecialchars($allegato['signature_format']); ?>)</small>
