@@ -109,7 +109,79 @@ class PDFSignatureExtractor {
             $signatures = self::parseCertificateOutput($pkcs7Output);
         }
         
+        // Extract actual signing times from CMS signerInfo attributes
+        // The certificate Not Before date is NOT the signing date; the real
+        // signing date lives in the signingTime authenticated attribute.
+        $signingTimes = self::extractCmsSigningTimes($filePath);
+        if (!empty($signingTimes)) {
+            $singleMatch = (count($signingTimes) === 1 && count($signatures) === 1);
+            foreach ($signatures as $idx => &$sig) {
+                if (isset($signingTimes[$idx])) {
+                    $sig['signature_date'] = $signingTimes[$idx];
+                } elseif ($singleMatch) {
+                    $sig['signature_date'] = reset($signingTimes);
+                }
+            }
+            unset($sig);
+        }
+        
         return $signatures;
+    }
+    
+    /**
+     * Extract signingTime values from CMS signerInfo blocks.
+     * 
+     * Uses "openssl cms -cmsout -print" to read the CMS structure and
+     * parses signingTime (OID 1.2.840.113549.1.9.5) from each signerInfo.
+     * 
+     * @param string $filePath Path to .p7m / DER CMS file
+     * @return array Indexed array of signing date strings (Y-m-d H:i:s)
+     */
+    private static function extractCmsSigningTimes($filePath) {
+        $escapedPath = escapeshellarg($filePath);
+        $outputLines = [];
+        $returnCode = 0;
+        
+        exec("openssl cms -inform DER -in {$escapedPath} -cmsout -print 2>/dev/null", $outputLines, $returnCode);
+        if ($returnCode !== 0 || empty($outputLines)) {
+            return [];
+        }
+        
+        $cmsText = implode("\n", $outputLines);
+        $signingTimes = [];
+        
+        // Match UTCTIME or GENERALIZEDTIME values that follow a signingTime object line.
+        // Expected openssl cms -cmsout -print format:
+        //   object: signingTime (1.2.840.113549.1.9.5)
+        //   set:
+        //     UTCTIME:Jul  5 12:30:00 2025 GMT
+        // or  GENERALIZEDTIME:20250705123000Z
+        if (preg_match_all('/signingTime[^\n]*\n\s*set:\s*\n\s*(UTCTIME|GENERALIZEDTIME)\s*:\s*(.+)/i', $cmsText, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $timeType = strtoupper(trim($m[1]));
+                $timeVal = trim($m[2]);
+                
+                $ts = false;
+                if ($timeType === 'GENERALIZEDTIME') {
+                    // Format: YYYYMMDDHHmmSSZ or similar
+                    $ts = strtotime($timeVal);
+                    if ($ts === false && preg_match('/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/', $timeVal, $gm)) {
+                        $ts = strtotime("{$gm[1]}-{$gm[2]}-{$gm[3]} {$gm[4]}:{$gm[5]}:{$gm[6]} UTC");
+                    }
+                } else {
+                    // UTCTIME: "Jul  5 12:30:00 2025 GMT" or similar
+                    $ts = strtotime($timeVal);
+                }
+                
+                if ($ts !== false) {
+                    $signingTimes[] = date('Y-m-d H:i:s', $ts);
+                } else {
+                    error_log("PDFSignatureExtractor: Failed to parse signingTime ({$timeType}): {$timeVal}");
+                }
+            }
+        }
+        
+        return $signingTimes;
     }
     
     /**
