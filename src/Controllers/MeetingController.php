@@ -357,6 +357,85 @@ class MeetingController {
     }
 
     /**
+     * Re-check digital signatures for an existing attachment.
+     * Re-extracts signature information from the uploaded file and updates the database.
+     * 
+     * @param int $attachmentId
+     * @param int $userId
+     * @return array ['success' => bool, 'message' => string, 'has_signature' => bool]
+     */
+    public function recheckAttachmentSignatures($attachmentId, $userId) {
+        try {
+            $sql = "SELECT * FROM meeting_attachments WHERE id = ?";
+            $attachment = $this->db->fetchOne($sql, [$attachmentId]);
+            if (!$attachment) {
+                return ['success' => false, 'message' => 'Allegato non trovato', 'has_signature' => false];
+            }
+
+            $filePath = __DIR__ . '/../../' . $attachment['file_path'];
+            if (!file_exists($filePath)) {
+                return ['success' => false, 'message' => 'File non trovato sul server', 'has_signature' => false];
+            }
+
+            $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+
+            $updateSql = "UPDATE meeting_attachments SET 
+                has_signature = ?, signature_format = ?, signature_count = ?,
+                signature_data = ?, signature_validity = ?, signature_checked_at = NOW()
+                WHERE id = ?";
+            $this->db->execute($updateSql, [
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $signatureInfo['format'] ?? null,
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown',
+                $attachmentId
+            ]);
+
+            $this->logActivity($userId, 'meeting', 'recheck_signature', $attachment['meeting_id'],
+                'Ricontrollata firma allegato: ' . $attachment['file_name']);
+
+            return [
+                'success' => true,
+                'message' => !empty($signatureInfo['has_signature'])
+                    ? 'Firma digitale rilevata (' . ($signatureInfo['format'] ?? 'sconosciuto') . ', ' . ($signatureInfo['count'] ?? 0) . ' firme)'
+                    : 'Nessuna firma digitale rilevata nel documento',
+                'has_signature' => !empty($signatureInfo['has_signature'])
+            ];
+        } catch (\Throwable $e) {
+            error_log("Errore ricontrollo firma allegato: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante il controllo delle firme', 'has_signature' => false];
+        }
+    }
+
+    /**
+     * Re-check digital signatures for ALL attachments of a meeting.
+     * 
+     * @param int $meetingId
+     * @param int $userId
+     * @return array ['success' => bool, 'checked' => int, 'signatures_found' => int]
+     */
+    public function recheckAllAttachmentSignatures($meetingId, $userId) {
+        $attachments = $this->getAttachments($meetingId);
+        $checked = 0;
+        $signaturesFound = 0;
+
+        foreach ($attachments as $attachment) {
+            $result = $this->recheckAttachmentSignatures($attachment['id'], $userId);
+            $checked++;
+            if (!empty($result['has_signature'])) {
+                $signaturesFound++;
+            }
+        }
+
+        return [
+            'success' => true,
+            'checked' => $checked,
+            'signatures_found' => $signaturesFound
+        ];
+    }
+
+    /**
      * Ottieni il prossimo numero progressivo per gli allegati di una riunione
      */
     public function getNextAttachmentNumber($meetingId) {
