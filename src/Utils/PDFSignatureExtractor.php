@@ -305,6 +305,9 @@ class PDFSignatureExtractor {
      * DER data is shorter. This method parses the DER header to determine the
      * actual data length and strips the padding.
      * 
+     * All internal calculations use byte counts; conversion to hex string
+     * positions (2 hex chars per byte) happens at the final substr() call.
+     * 
      * @param string $hex Hex-encoded DER data (possibly with trailing zero padding)
      * @return string Trimmed hex string containing only the actual DER structure
      */
@@ -313,37 +316,37 @@ class PDFSignatureExtractor {
             return $hex;
         }
         
-        // DER format: Tag (1 byte = 2 hex chars) + Length + Content
-        // Read the length encoding starting at offset 2 (after the tag byte)
-        $lenByte = hexdec(substr($hex, 2, 2));
+        // DER format: Tag (1 byte) + Length (1..N bytes) + Content
+        // All lengths below are in BYTES (not hex chars).
+        $lenByte = hexdec(substr($hex, 2, 2)); // 2nd byte (offset 2 in hex)
         
         if ($lenByte < 0x80) {
             // Short form: length is the byte value itself
-            $headerLen = 2; // 1 byte tag + 1 byte length
-            $contentLen = $lenByte;
+            $headerBytes = 2; // 1 byte tag + 1 byte length
+            $contentBytes = $lenByte;
         } elseif ($lenByte === 0x80) {
             // Indefinite length - can't trim, return as-is
             return $hex;
         } else {
-            // Long form: lower 7 bits = number of bytes encoding the length
+            // Long form: lower 7 bits = number of subsequent bytes encoding the length
             $numLenBytes = $lenByte & 0x7F;
             if ($numLenBytes > 4 || $numLenBytes === 0) {
                 // Unreasonable length encoding, return as-is
                 return $hex;
             }
-            $headerLen = 2 + $numLenBytes; // 1 byte tag + 1 byte len-of-len + N bytes length
-            $contentLen = 0;
+            $headerBytes = 1 + 1 + $numLenBytes; // tag + len-of-len + N length bytes
+            $contentBytes = 0;
             for ($i = 0; $i < $numLenBytes; $i++) {
-                $offset = 4 + ($i * 2); // start after tag(2) + len-of-len(2)
-                if ($offset + 2 > strlen($hex)) {
+                $hexOffset = 4 + ($i * 2); // skip tag(2 hex) + len-of-len(2 hex)
+                if ($hexOffset + 2 > strlen($hex)) {
                     return $hex; // hex too short to read length
                 }
-                $contentLen = ($contentLen << 8) | hexdec(substr($hex, $offset, 2));
+                $contentBytes = ($contentBytes << 8) | hexdec(substr($hex, $hexOffset, 2));
             }
         }
         
-        $totalBytes = $headerLen + $contentLen;
-        $totalHexChars = $totalBytes * 2;
+        // Convert total byte count to hex char count (2 hex chars per byte)
+        $totalHexChars = ($headerBytes + $contentBytes) * 2;
         
         if ($totalHexChars > 0 && $totalHexChars <= strlen($hex)) {
             return substr($hex, 0, $totalHexChars);
@@ -1007,12 +1010,12 @@ class PDFSignatureExtractor {
                     $objStart += 4; // skip " obj"
                 }
                 
-                // Use offset as dedup key (round to nearest 100 to catch overlapping matches)
-                $dedup = intval($objStart / 100);
-                if (isset($seen[$dedup])) {
+                // Deduplicate by object start offset — multiple patterns
+                // may match different keywords in the same PDF object
+                if (isset($seen[$objStart])) {
                     continue;
                 }
-                $seen[$dedup] = true;
+                $seen[$objStart] = true;
                 
                 // Verify this is actually a signature dictionary (must have /ByteRange or /Contents)
                 if (strpos($text, '/ByteRange') !== false || strpos($text, '/Contents') !== false) {

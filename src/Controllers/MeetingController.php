@@ -373,8 +373,10 @@ class MeetingController {
             }
 
             $filePath = __DIR__ . '/../../' . $attachment['file_path'];
-            if (!file_exists($filePath)) {
-                return ['success' => false, 'message' => 'File non trovato sul server', 'has_signature' => false];
+            $realPath = realpath($filePath);
+            $uploadsDir = realpath(__DIR__ . '/../../uploads');
+            if ($realPath === false || $uploadsDir === false || strpos($realPath, $uploadsDir) !== 0) {
+                return ['success' => false, 'message' => 'Percorso file non valido', 'has_signature' => false];
             }
 
             $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
