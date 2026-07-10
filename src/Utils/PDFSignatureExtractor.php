@@ -262,7 +262,13 @@ class PDFSignatureExtractor {
         
         // Find ByteRange entries (each indicates a signature)
         // The signature hex blob sits between the two covered ranges
-        if (preg_match_all('/\/ByteRange\s*\[\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*\]/', $pdfContent, $brMatches, PREG_SET_ORDER)) {
+        $result = @preg_match_all('/\/ByteRange\s*\[\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*\]/', $pdfContent, $brMatches, PREG_SET_ORDER);
+        if ($result === false) {
+            error_log("PDFSignatureExtractor: PCRE error searching ByteRange in PDF");
+            return $blobs;
+        }
+        
+        if ($result > 0) {
             foreach ($brMatches as $br) {
                 $gapStart = (int)$br[1] + (int)$br[2]; // end of first range
                 $gapEnd = (int)$br[3];                  // start of second range
@@ -278,6 +284,9 @@ class PDFSignatureExtractor {
                     if (strlen($hexChunk) % 2 !== 0) {
                         $hexChunk .= '0';
                     }
+                    // Strip trailing zero-padding (PDF /Contents fields are pre-allocated
+                    // and padded with zeros; the actual PKCS#7 DER data is shorter)
+                    $hexChunk = self::trimHexDerPadding($hexChunk);
                     if (strlen($hexChunk) >= 128) {
                         $blobs[] = $hexChunk;
                     }
@@ -286,6 +295,64 @@ class PDFSignatureExtractor {
         }
         
         return $blobs;
+    }
+    
+    /**
+     * Trim trailing zero-padding from a hex-encoded DER structure.
+     * 
+     * PDF signature /Contents fields are typically pre-allocated to a fixed size
+     * (e.g. 8192 or 16384 bytes) and padded with trailing zeros. The actual PKCS#7
+     * DER data is shorter. This method parses the DER header to determine the
+     * actual data length and strips the padding.
+     * 
+     * All internal calculations use byte counts; conversion to hex string
+     * positions (2 hex chars per byte) happens at the final substr() call.
+     * 
+     * @param string $hex Hex-encoded DER data (possibly with trailing zero padding)
+     * @return string Trimmed hex string containing only the actual DER structure
+     */
+    private static function trimHexDerPadding($hex) {
+        if (strlen($hex) < 4) {
+            return $hex;
+        }
+        
+        // DER format: Tag (1 byte) + Length (1..N bytes) + Content
+        // All lengths below are in BYTES (not hex chars).
+        $lenByte = hexdec(substr($hex, 2, 2)); // 2nd byte (offset 2 in hex)
+        
+        if ($lenByte < 0x80) {
+            // Short form: length is the byte value itself
+            $headerBytes = 2; // 1 byte tag + 1 byte length
+            $contentBytes = $lenByte;
+        } elseif ($lenByte === 0x80) {
+            // Indefinite length - can't trim, return as-is
+            return $hex;
+        } else {
+            // Long form: lower 7 bits = number of subsequent bytes encoding the length
+            $numLenBytes = $lenByte & 0x7F;
+            if ($numLenBytes > 4 || $numLenBytes === 0) {
+                // Unreasonable length encoding, return as-is
+                return $hex;
+            }
+            $headerBytes = 1 + 1 + $numLenBytes; // tag + len-of-len + N length bytes
+            $contentBytes = 0;
+            for ($i = 0; $i < $numLenBytes; $i++) {
+                $hexOffset = 4 + ($i * 2); // skip tag(2 hex) + len-of-len(2 hex)
+                if ($hexOffset + 2 > strlen($hex)) {
+                    return $hex; // hex too short to read length
+                }
+                $contentBytes = ($contentBytes << 8) | hexdec(substr($hex, $hexOffset, 2));
+            }
+        }
+        
+        // Convert total byte count to hex char count (2 hex chars per byte)
+        $totalHexChars = ($headerBytes + $contentBytes) * 2;
+        
+        if ($totalHexChars > 0 && $totalHexChars <= strlen($hex)) {
+            return substr($hex, 0, $totalHexChars);
+        }
+        
+        return $hex;
     }
     
     /**
@@ -746,10 +813,10 @@ class PDFSignatureExtractor {
         $pdfMeta = [];
         
         // Find signature value objects that contain /M, /Reason, /Location, /Name
-        // These are in the /Sig or /Value dictionaries
-        $sigDictPattern = '/\/Type\s*\/Sig.*?(?=endobj)/s';
-        if (preg_match_all($sigDictPattern, $pdfContent, $dictMatches)) {
-            foreach ($dictMatches[0] as $idx => $dict) {
+        // Uses improved detection that handles PDFs without /Type /Sig
+        $sigDicts = self::findSignatureDictionaries($pdfContent);
+        if (!empty($sigDicts)) {
+            foreach ($sigDicts as $idx => $dict) {
                 $meta = [];
                 
                 // /M date
@@ -819,14 +886,20 @@ class PDFSignatureExtractor {
         $signatures = [];
         
         // Look for ByteRange entries which confirm signatures exist
-        $hasByteRange = preg_match_all('/\/ByteRange\s*\[/', $pdfContent, $brMatches);
+        $hasByteRange = @preg_match_all('/\/ByteRange\s*\[/', $pdfContent, $brMatches);
+        if ($hasByteRange === false) {
+            $hasByteRange = 0;
+        }
         
-        // Find signature dictionaries  
-        $sigDictPattern = '/\/Type\s*\/Sig.*?(?=endobj)/s';
+        // Find signature dictionaries using multiple patterns:
+        // 1. /Type /Sig (standard but optional per PDF spec)
+        // 2. /Filter /Adobe.PPKLite (common PAdES filter)
+        // 3. /SubFilter /adbe.pkcs7 or /ETSI.CAdES (signature sub-filters)
+        $sigDicts = self::findSignatureDictionaries($pdfContent);
         $sigCount = 0;
         
-        if (preg_match_all($sigDictPattern, $pdfContent, $dictMatches)) {
-            foreach ($dictMatches[0] as $idx => $dict) {
+        if (!empty($sigDicts)) {
+            foreach ($sigDicts as $dict) {
                 $sigCount++;
                 $info = [
                     'number' => $sigCount,
@@ -867,7 +940,7 @@ class PDFSignatureExtractor {
             }
         }
         
-        // If no /Type /Sig found but ByteRange exists, there are signatures we can't fully parse
+        // If no signature dictionaries found but ByteRange exists, there are signatures we can't fully parse
         if (empty($signatures) && $hasByteRange) {
             for ($i = 0; $i < $hasByteRange; $i++) {
                 $signatures[] = [
@@ -889,6 +962,73 @@ class PDFSignatureExtractor {
         }
         
         return $signatures;
+    }
+    
+    /**
+     * Find signature dictionaries in PDF content using multiple detection patterns.
+     * 
+     * The /Type /Sig key is optional per the PDF specification. Many signing tools
+     * (especially Italian qualified signature tools) omit it. This method also
+     * detects signatures via /Filter and /SubFilter entries.
+     * 
+     * @param string $pdfContent Raw PDF content
+     * @return array Array of matched dictionary text blocks
+     */
+    private static function findSignatureDictionaries($pdfContent) {
+        $dicts = [];
+        $seen = []; // Track start offsets to avoid duplicates
+        
+        // Pattern 1: /Type /Sig (standard)
+        $patterns = [
+            '/\/Type\s*\/Sig[^a-zA-Z].*?(?=endobj)/s',
+            '/\/Filter\s*\/Adobe\.PPKLite.*?(?=endobj)/s',
+            '/\/Filter\s*\/Adobe\.PPKMS.*?(?=endobj)/s',
+            '/\/SubFilter\s*\/adbe\.pkcs7\.detached.*?(?=endobj)/s',
+            '/\/SubFilter\s*\/adbe\.pkcs7\.sha1.*?(?=endobj)/s',
+            '/\/SubFilter\s*\/ETSI\.CAdES\.detached.*?(?=endobj)/s',
+            '/\/SubFilter\s*\/ETSI\.RFC3161.*?(?=endobj)/s',
+        ];
+        
+        foreach ($patterns as $pattern) {
+            $matches = [];
+            $result = @preg_match_all($pattern, $pdfContent, $matches, PREG_OFFSET_CAPTURE);
+            if ($result === false) {
+                error_log("PDFSignatureExtractor: PCRE error with pattern $pattern: " . preg_last_error());
+                continue;
+            }
+            if ($result === 0) {
+                continue;
+            }
+            
+            foreach ($matches[0] as $match) {
+                $text = $match[0];
+                $offset = $match[1];
+                
+                // Find the object start (scan backwards for "obj" keyword)
+                // to get the full dictionary context
+                $objStart = strrpos(substr($pdfContent, 0, $offset), ' obj');
+                if ($objStart === false) {
+                    $objStart = $offset;
+                } else {
+                    // Extend to include content from after " obj" to endobj
+                    $objStart += 4; // skip " obj"
+                }
+                
+                // Deduplicate by object start offset — multiple patterns
+                // may match different keywords in the same PDF object
+                if (isset($seen[$objStart])) {
+                    continue;
+                }
+                $seen[$objStart] = true;
+                
+                // Verify this is actually a signature dictionary (must have /ByteRange or /Contents)
+                if (strpos($text, '/ByteRange') !== false || strpos($text, '/Contents') !== false) {
+                    $dicts[] = $text;
+                }
+            }
+        }
+        
+        return $dicts;
     }
     
     /**

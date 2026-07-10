@@ -520,6 +520,17 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                         $csrfToken = \EasyVol\Middleware\CsrfProtection::generateToken();
                         ?>
 
+                        <?php if ($app->checkPermission('meetings', 'edit') && (!empty($verbali) || !empty($allegati))): ?>
+                            <div class="mb-3 text-end">
+                                <a href="meeting_attachment_recheck.php?meeting_id=<?php echo $meetingId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
+                                   class="btn btn-sm btn-outline-info"
+                                   onclick="return confirm('Ricontrollare le firme digitali di tutti i documenti?')"
+                                   title="Ri-analizza tutti i documenti per estrarre informazioni sulle firme digitali PAdES/CAdES">
+                                    <i class="bi bi-shield-check"></i> Ricontrolla Firme Digitali
+                                </a>
+                            </div>
+                        <?php endif; ?>
+
                         <!-- Verbale Firmato -->
                         <div class="card mb-3">
                             <div class="card-header">
@@ -601,6 +612,10 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                     <i class="bi bi-download"></i> Scarica
                                                 </a>
                                                 <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                    <a href="meeting_attachment_recheck.php?id=<?php echo $verbale['id']; ?>&meeting_id=<?php echo $meetingId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
+                                                       class="btn btn-sm btn-outline-info" title="Ricontrolla firma digitale">
+                                                        <i class="bi bi-shield-check"></i>
+                                                    </a>
                                                     <a href="meeting_attachment_delete.php?id=<?php echo $verbale['id']; ?>&meeting_id=<?php echo $meetingId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
                                                        class="btn btn-sm btn-outline-danger"
                                                        onclick="return confirm('Eliminare il verbale firmato?')" title="Elimina">
@@ -709,6 +724,10 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                             <i class="bi bi-download"></i>
                                                         </a>
                                                         <?php if ($app->checkPermission('meetings', 'edit')): ?>
+                                                            <a href="meeting_attachment_recheck.php?id=<?php echo $allegato['id']; ?>&meeting_id=<?php echo $meetingId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
+                                                               class="btn btn-sm btn-outline-info" title="Ricontrolla firma digitale">
+                                                                <i class="bi bi-shield-check"></i>
+                                                            </a>
                                                             <a href="meeting_attachment_delete.php?id=<?php echo $allegato['id']; ?>&meeting_id=<?php echo $meetingId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
                                                                class="btn btn-sm btn-outline-danger"
                                                                onclick="return confirm('Eliminare questo allegato?')" title="Elimina">
