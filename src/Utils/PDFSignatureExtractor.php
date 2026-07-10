@@ -79,7 +79,7 @@ class PDFSignatureExtractor {
                 }
             }
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("PDFSignatureExtractor: Error - " . $e->getMessage());
         }
         

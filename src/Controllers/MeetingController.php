@@ -327,7 +327,7 @@ class MeetingController {
             $this->logActivity($userId, 'meeting', 'add_attachment', $meetingId,
                 'Aggiunto allegato: ' . $data['file_name']);
             return $attachmentId;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Errore aggiunta allegato riunione: " . $e->getMessage());
             return false;
         }
@@ -350,7 +350,7 @@ class MeetingController {
             $this->logActivity($userId, 'meeting', 'delete_attachment', $attachment['meeting_id'],
                 'Eliminato allegato: ' . $attachment['file_name']);
             return ['success' => true, 'file_path' => $attachment['file_path']];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Errore eliminazione allegato riunione: " . $e->getMessage());
             return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
         }

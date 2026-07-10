@@ -174,7 +174,7 @@ if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] === UPLOAD_ERR_N
             } else {
                 $errors[] = 'Errore durante il salvataggio del file';
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Errore caricamento allegato riunione: " . $e->getMessage());
             $_SESSION['error'] = 'Errore durante il caricamento del documento';
         }
