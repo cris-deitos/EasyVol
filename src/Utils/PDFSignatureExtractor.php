@@ -114,11 +114,11 @@ class PDFSignatureExtractor {
         // signing date lives in the signingTime authenticated attribute.
         $signingTimes = self::extractCmsSigningTimes($filePath);
         if (!empty($signingTimes)) {
+            $singleMatch = (count($signingTimes) === 1 && count($signatures) === 1);
             foreach ($signatures as $idx => &$sig) {
                 if (isset($signingTimes[$idx])) {
                     $sig['signature_date'] = $signingTimes[$idx];
-                } elseif (count($signingTimes) === 1 && count($signatures) === 1) {
-                    // Single signer: map the only signing time
+                } elseif ($singleMatch) {
                     $sig['signature_date'] = reset($signingTimes);
                 }
             }
@@ -150,13 +150,13 @@ class PDFSignatureExtractor {
         $cmsText = implode("\n", $outputLines);
         $signingTimes = [];
         
-        // Match UTCTIME or GENERALIZEDTIME values that follow a signingTime object line
-        // Typical CMS -print output:
+        // Match UTCTIME or GENERALIZEDTIME values that follow a signingTime object line.
+        // Expected openssl cms -cmsout -print format:
         //   object: signingTime (1.2.840.113549.1.9.5)
         //   set:
         //     UTCTIME:Jul  5 12:30:00 2025 GMT
         // or  GENERALIZEDTIME:20250705123000Z
-        if (preg_match_all('/signingTime.*?\n\s*set:\s*\n\s*(UTCTIME|GENERALIZEDTIME)\s*:\s*(.+)/i', $cmsText, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all('/signingTime[^\n]*\n\s*set:\s*\n\s*(UTCTIME|GENERALIZEDTIME)\s*:\s*(.+)/i', $cmsText, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $m) {
                 $timeType = strtoupper(trim($m[1]));
                 $timeVal = trim($m[2]);
@@ -175,6 +175,8 @@ class PDFSignatureExtractor {
                 
                 if ($ts !== false) {
                     $signingTimes[] = date('Y-m-d H:i:s', $ts);
+                } else {
+                    error_log("PDFSignatureExtractor: Failed to parse signingTime ({$timeType}): {$timeVal}");
                 }
             }
         }
