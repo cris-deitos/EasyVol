@@ -649,9 +649,10 @@ $activeJuniorMembers = $db->fetchAll("SELECT id, first_name, last_name, registra
                                                                     <?php 
                                                                     $sigValidity = $allegato['signature_validity'] ?? 'unknown';
                                                                     $badgeClass = $sigValidity === 'valid' ? 'bg-success' : ($sigValidity === 'invalid' ? 'bg-danger' : 'bg-warning text-dark');
+                                                                    $badgeText = $sigValidity === 'valid' ? 'Firmato' : ($sigValidity === 'invalid' ? 'Firma Scaduta' : 'Firmato');
                                                                     ?>
                                                                     <span class="badge <?php echo $badgeClass; ?> ms-2" title="Documento firmato digitalmente (<?php echo htmlspecialchars($allegato['signature_format'] ?? ''); ?>)">
-                                                                        <i class="bi bi-check-circle"></i>
+                                                                        <i class="bi bi-check-circle"></i> <?php echo $badgeText; ?>
                                                                         <?php if (!empty($allegato['signature_format']) && $allegato['signature_format'] !== 'UNKNOWN'): ?>
                                                                             <small>(<?php echo htmlspecialchars($allegato['signature_format']); ?>)</small>
                                                                         <?php endif; ?>
