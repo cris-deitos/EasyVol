@@ -207,6 +207,31 @@ $months = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','
                 </div>
             </div>
             
+            <!-- Report PDF -->
+            <div class="card mb-3" id="report-pdf">
+                <div class="card-header"><strong><i class="bi bi-file-earmark-pdf"></i> Genera Report PDF</strong></div>
+                <div class="card-body">
+                    <form action="convention_report_pdf.php" method="GET" class="row g-2 align-items-end">
+                        <input type="hidden" name="convention_id" value="<?= $item['id'] ?>">
+                        <div class="col-md-3">
+                            <label class="form-label">Anno</label>
+                            <select name="year" class="form-select form-select-sm">
+                                <?php
+                                $startYear = (int)date('Y', strtotime($item['start_date']));
+                                $endYear = $item['end_date'] ? (int)date('Y', strtotime($item['end_date'])) : (int)date('Y');
+                                for ($y = $startYear; $y <= $endYear; $y++):
+                                ?>
+                                <option value="<?= $y ?>"><?= $y ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-file-earmark-pdf"></i> Genera Report PDF</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
             <!-- Allegati -->
             <div class="card mb-3" id="allegati">
                 <div class="card-header d-flex justify-content-between align-items-center">
