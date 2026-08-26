@@ -46,6 +46,7 @@ include '../src/Views/includes/navbar.php';
     <title><?= htmlspecialchars($pageTitle) ?> - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../assets/css/main.css" rel="stylesheet">
 </head>
 <body>
 <div class="container-fluid">
@@ -94,6 +95,37 @@ include '../src/Views/includes/navbar.php';
                     <?php if (!empty($item['description'])): ?>
                     <div class="row mt-3">
                         <div class="col-12"><strong>Descrizione:</strong><br><?= nl2br(htmlspecialchars($item['description'])) ?></div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Amounts -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>Importo Convenzione</strong></div>
+                <div class="card-body">
+                    <?php if (empty($item['amounts'])): ?>
+                    <p class="text-muted">Nessun importo registrato</p>
+                    <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Anno</th>
+                                    <th>Importo</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($item['amounts'] as $amount): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($amount['year']) ?></td>
+                                    <td>€ <?= number_format((float)$amount['amount'], 2, ',', '.') ?></td>
+                                    <td><?= htmlspecialchars($amount['notes'] ?? '-') ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                     <?php endif; ?>
                 </div>

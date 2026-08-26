@@ -52,8 +52,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'start_date' => $_POST['start_date'] ?? '',
             'end_date' => $_POST['end_date'] ?? '',
             'entities' => [],
-            'deadlines' => []
+            'deadlines' => [],
+            'amounts' => []
         ];
+        
+        // Parse amounts
+        if (!empty($_POST['amount_year'])) {
+            foreach ($_POST['amount_year'] as $i => $year) {
+                if (empty($year)) continue;
+                $data['amounts'][] = [
+                    'year' => (int)$year,
+                    'amount' => (float)($_POST['amount_value'][$i] ?? 0),
+                    'notes' => trim($_POST['amount_notes'][$i] ?? '')
+                ];
+            }
+        }
         
         // Parse entities
         if (!empty($_POST['entity_denomination'])) {
@@ -124,6 +137,7 @@ include '../src/Views/includes/navbar.php';
     <title><?= $pageTitle ?> - EasyVol</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../assets/css/main.css" rel="stylesheet">
 </head>
 <body>
 <div class="container-fluid">
@@ -171,6 +185,42 @@ include '../src/Views/includes/navbar.php';
                                 <textarea class="form-control" name="description" rows="3"><?= htmlspecialchars($item['description'] ?? $_POST['description'] ?? '') ?></textarea>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Amounts -->
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>Importo Convenzione</strong>
+                        <button type="button" class="btn btn-sm btn-success" onclick="addAmount()"><i class="bi bi-plus"></i> Aggiungi Anno</button>
+                    </div>
+                    <div class="card-body" id="amounts-container">
+                        <?php 
+                        $amounts = $item['amounts'] ?? [];
+                        if (empty($amounts)) $amounts = [['year' => date('Y'), 'amount' => '']];
+                        foreach ($amounts as $idx => $amount): 
+                        ?>
+                        <div class="amount-row border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong>Anno #<?= $idx + 1 ?></strong>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.amount-row').remove()"><i class="bi bi-trash"></i></button>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label">Anno</label>
+                                    <input type="number" class="form-control" name="amount_year[]" min="2000" max="2099" value="<?= htmlspecialchars($amount['year'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label">Importo (€)</label>
+                                    <input type="number" class="form-control" name="amount_value[]" step="0.01" min="0" value="<?= htmlspecialchars($amount['amount'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label">Note</label>
+                                    <input type="text" class="form-control" name="amount_notes[]" value="<?= htmlspecialchars($amount['notes'] ?? '') ?>">
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
                 
@@ -303,6 +353,24 @@ include '../src/Views/includes/navbar.php';
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+function addAmount() {
+    const container = document.getElementById('amounts-container');
+    const count = container.querySelectorAll('.amount-row').length + 1;
+    const currentYear = new Date().getFullYear();
+    const html = `<div class="amount-row border rounded p-3 mb-3">
+        <div class="d-flex justify-content-between mb-2">
+            <strong>Anno #${count}</strong>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.amount-row').remove()"><i class="bi bi-trash"></i></button>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-2"><label class="form-label">Anno</label><input type="number" class="form-control" name="amount_year[]" min="2000" max="2099" value="${currentYear + count - 1}"></div>
+            <div class="col-md-4 mb-2"><label class="form-label">Importo (€)</label><input type="number" class="form-control" name="amount_value[]" step="0.01" min="0"></div>
+            <div class="col-md-4 mb-2"><label class="form-label">Note</label><input type="text" class="form-control" name="amount_notes[]"></div>
+        </div>
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+}
+
 function addEntity() {
     const container = document.getElementById('entities-container');
     const count = container.querySelectorAll('.entity-row').length + 1;
