@@ -363,7 +363,7 @@ function addAmount() {
             <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.amount-row').remove()"><i class="bi bi-trash"></i></button>
         </div>
         <div class="row">
-            <div class="col-md-4 mb-2"><label class="form-label">Anno</label><input type="number" class="form-control" name="amount_year[]" min="2000" max="2099" value="${currentYear + count - 1}"></div>
+            <div class="col-md-4 mb-2"><label class="form-label">Anno</label><input type="number" class="form-control" name="amount_year[]" min="2000" max="2099" value="${currentYear}"></div>
             <div class="col-md-4 mb-2"><label class="form-label">Importo (€)</label><input type="number" class="form-control" name="amount_value[]" step="0.01" min="0"></div>
             <div class="col-md-4 mb-2"><label class="form-label">Note</label><input type="text" class="form-control" name="amount_notes[]"></div>
         </div>

@@ -287,7 +287,7 @@ class ConventionController {
                 VALUES (?, ?, ?, ?)";
         
         foreach ($amounts as $amount) {
-            if (empty($amount['year'])) continue;
+            if (empty($amount['year']) || (empty($amount['amount']) && $amount['amount'] !== '0')) continue;
             $params = [
                 $conventionId,
                 (int)$amount['year'],
