@@ -396,27 +396,50 @@ class PDFSignatureExtractor {
     private static function runOpenSslCms($filePath) {
         $escapedPath = escapeshellarg($filePath);
         
-        // First try: extract certificates using -verify -noverify (standard CMS cert extraction)
-        $verifyOutputLines = [];
-        $verifyReturnCode = 0;
-        exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -print_certs -text 2>/dev/null", $verifyOutputLines, $verifyReturnCode);
-        
-        if ($verifyReturnCode === 0 && !empty($verifyOutputLines)) {
-            $certOutput = implode("\n", $verifyOutputLines);
-            if (strpos($certOutput, 'Subject:') !== false) {
-                return $certOutput;
-            }
-        }
-        
-        // Second try: use -noout -print_certs for older/different CMS structures
-        $nooutOutputLines = [];
-        $nooutReturnCode = 0;
-        exec("openssl cms -inform DER -in {$escapedPath} -noout -print_certs -text 2>/dev/null", $nooutOutputLines, $nooutReturnCode);
-        
-        if ($nooutReturnCode === 0 && !empty($nooutOutputLines)) {
-            $certOutput = implode("\n", $nooutOutputLines);
-            if (strpos($certOutput, 'Subject:') !== false) {
-                return $certOutput;
+        // First try: extract certificates to a temp PEM file using -certsout,
+        // then convert them back to a PKCS#7 bundle so we can use the reliable
+        // "openssl pkcs7 -print_certs -text" output format.
+        // Note: "openssl cms -print_certs" is NOT a valid flag in OpenSSL 3.x;
+        // only "openssl pkcs7" supports -print_certs.
+        // The -verify -noverify may return a non-zero exit code for detached
+        // signatures (no content provided), but still writes the certificates.
+        $tmpCerts = @tempnam(sys_get_temp_dir(), 'easyvol_certs_');
+        if ($tmpCerts !== false) {
+            chmod($tmpCerts, 0600);
+            try {
+                $escapedCerts = escapeshellarg($tmpCerts);
+                exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -certsout {$escapedCerts} 2>/dev/null");
+                
+                if (file_exists($tmpCerts) && filesize($tmpCerts) > 0) {
+                    // Step 1: Convert extracted PEM certs to a PKCS#7 bundle
+                    $tmpP7b = @tempnam(sys_get_temp_dir(), 'easyvol_p7b_');
+                    if ($tmpP7b !== false) {
+                        chmod($tmpP7b, 0600);
+                        try {
+                            $escapedP7b = escapeshellarg($tmpP7b);
+                            $crl2Rc = 0;
+                            exec("openssl crl2pkcs7 -nocrl -certfile {$escapedCerts} -out {$escapedP7b} 2>/dev/null", $ignoreOut, $crl2Rc);
+                            
+                            if ($crl2Rc === 0 && file_exists($tmpP7b) && filesize($tmpP7b) > 0) {
+                                // Step 2: Parse the PKCS#7 bundle with pkcs7 -print_certs -text
+                                $certOutputLines = [];
+                                $certReturnCode = 0;
+                                exec("openssl pkcs7 -in {$escapedP7b} -print_certs -text 2>/dev/null", $certOutputLines, $certReturnCode);
+                                
+                                if ($certReturnCode === 0 && !empty($certOutputLines)) {
+                                    $certOutput = implode("\n", $certOutputLines);
+                                    if (strpos($certOutput, 'Subject:') !== false) {
+                                        return $certOutput;
+                                    }
+                                }
+                            }
+                        } finally {
+                            @unlink($tmpP7b);
+                        }
+                    }
+                }
+            } finally {
+                @unlink($tmpCerts);
             }
         }
         
@@ -1021,9 +1044,18 @@ class PDFSignatureExtractor {
                 }
                 $seen[$objStart] = true;
                 
+                // Build the full object text from objStart to endobj,
+                // not just from the matched pattern keyword. PDF dictionary
+                // keys can appear in any order, so /ByteRange and /Contents
+                // may precede the matched keyword (/Filter, /SubFilter, /Type).
+                $endObjPos = strpos($pdfContent, 'endobj', $offset);
+                $fullObjText = ($endObjPos !== false)
+                    ? substr($pdfContent, $objStart, $endObjPos - $objStart)
+                    : substr($pdfContent, $objStart, strlen($text) + ($offset - $objStart));
+                
                 // Verify this is actually a signature dictionary (must have /ByteRange or /Contents)
-                if (strpos($text, '/ByteRange') !== false || strpos($text, '/Contents') !== false) {
-                    $dicts[] = $text;
+                if (strpos($fullObjText, '/ByteRange') !== false || strpos($fullObjText, '/Contents') !== false) {
+                    $dicts[] = $fullObjText;
                 }
             }
         }
