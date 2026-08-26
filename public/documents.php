@@ -163,6 +163,11 @@ $pageTitle = 'Archivio Documenti';
                                                 <td>
                                                     <i class="bi bi-file-earmark-text text-primary"></i>
                                                     <strong><?php echo htmlspecialchars($doc['title']); ?></strong>
+                                                    <?php if (!empty($doc['has_signature'])): ?>
+                                                        <span class="badge bg-success ms-1" title="Firmato digitalmente (<?php echo htmlspecialchars($doc['signature_format'] ?? ''); ?>)">
+                                                            <i class="bi bi-shield-check"></i> <?php echo (int)$doc['signature_count']; ?>
+                                                        </span>
+                                                    <?php endif; ?>
                                                     <?php if ($doc['description']): ?>
                                                         <br><small class="text-muted"><?php echo htmlspecialchars(substr($doc['description'], 0, 100)); ?><?php echo strlen($doc['description']) > 100 ? '...' : ''; ?></small>
                                                     <?php endif; ?>
