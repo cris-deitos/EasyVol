@@ -212,7 +212,7 @@ $months = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Allegati (<?= count($item['attachments'] ?? []) ?>)</strong>
                     <?php if ($app->checkPermission('conventions', 'edit')): ?>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#uploadForm">
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#uploadForm" aria-expanded="false" aria-controls="uploadForm">
                         <i class="bi bi-upload"></i> Carica Allegato
                     </button>
                     <?php endif; ?>
@@ -353,5 +353,27 @@ $months = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+// Fallback: explicitly initialize Bootstrap dropdowns and collapse if data-api didn't auto-init
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all dropdowns
+    var dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+    dropdownElements.forEach(function(el) {
+        new bootstrap.Dropdown(el);
+    });
+    // Initialize all collapse triggers
+    var collapseButtons = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    collapseButtons.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            var target = document.querySelector(btn.getAttribute('data-bs-target'));
+            if (target) {
+                var bsCollapse = bootstrap.Collapse.getOrCreateInstance(target);
+                bsCollapse.toggle();
+            }
+        });
+    });
+});
+</script>
 </body>
 </html>

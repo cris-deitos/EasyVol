@@ -25,7 +25,7 @@ $user = $app->getCurrentUser();
                     $notifications = \EasyVol\Utils\NotificationHelper::getNotifications();
                     $notificationCount = \EasyVol\Utils\NotificationHelper::getNotificationCount();
                     ?>
-                    <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-bell"></i>
                         <?php if ($notificationCount > 0): ?>
                             <span class="badge bg-danger rounded-pill"><?= $notificationCount ?></span>
@@ -50,7 +50,7 @@ $user = $app->getCurrentUser();
                     </ul>
                 </li>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle"></i> <?= htmlspecialchars($user['full_name'] ?? $user['username']) ?>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
