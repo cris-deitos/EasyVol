@@ -6,6 +6,7 @@ require_once '../src/App.php';
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\ConventionController;
+use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
 
@@ -197,6 +198,148 @@ $months = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','
                                     <td><?= htmlspecialchars($dl['description']) ?></td>
                                     <td><?= htmlspecialchars($dl['notify_to'] ?? '-') ?></td>
                                     <td><?= $dl['advance_days'] ?> giorni</td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Allegati -->
+            <div class="card mb-3" id="allegati">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Allegati (<?= count($item['attachments'] ?? []) ?>)</strong>
+                    <?php if ($app->checkPermission('conventions', 'edit')): ?>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#uploadForm">
+                        <i class="bi bi-upload"></i> Carica Allegato
+                    </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <?= htmlspecialchars($_SESSION['success']) ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['success']); endif; ?>
+                    <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <?= htmlspecialchars($_SESSION['error']) ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['error']); endif; ?>
+
+                    <?php if ($app->checkPermission('conventions', 'edit')): ?>
+                    <div class="collapse mb-3" id="uploadForm">
+                        <form action="convention_attachment_upload.php" method="POST" enctype="multipart/form-data" class="border rounded p-3 bg-light">
+                            <input type="hidden" name="csrf_token" value="<?= CsrfProtection::getToken() ?>">
+                            <input type="hidden" name="convention_id" value="<?= $item['id'] ?>">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">File <small class="text-muted">(PDF, P7M, Word, immagini, max 20MB)</small></label>
+                                    <input type="file" name="attachment_file" class="form-control form-control-sm" required
+                                           accept=".pdf,.p7m,.doc,.docx,.odt,.rtf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.tif,.webp,.xls,.xlsx,.csv,.txt">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Titolo</label>
+                                    <input type="text" name="title" class="form-control form-control-sm" placeholder="Titolo allegato">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Descrizione</label>
+                                    <input type="text" name="description" class="form-control form-control-sm" placeholder="Descrizione opzionale">
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-upload"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (empty($item['attachments'])): ?>
+                    <p class="text-muted">Nessun allegato caricato</p>
+                    <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Titolo</th>
+                                    <th>Firma Digitale</th>
+                                    <th>Caricato da</th>
+                                    <th>Data</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($item['attachments'] as $att): ?>
+                                <tr>
+                                    <td>
+                                        <?php
+                                        $ext = strtolower(pathinfo($att['file_name'], PATHINFO_EXTENSION));
+                                        $iconClass = 'bi-file-earmark';
+                                        if ($ext === 'pdf' || $ext === 'p7m') $iconClass = 'bi-file-earmark-pdf';
+                                        elseif (in_array($ext, ['doc','docx','odt','rtf'])) $iconClass = 'bi-file-earmark-word';
+                                        elseif (in_array($ext, ['jpg','jpeg','png','gif','bmp','tiff','tif','webp'])) $iconClass = 'bi-file-earmark-image';
+                                        elseif (in_array($ext, ['xls','xlsx','csv'])) $iconClass = 'bi-file-earmark-spreadsheet';
+                                        ?>
+                                        <i class="bi <?= $iconClass ?>"></i>
+                                        <a href="convention_attachment_download.php?id=<?= $att['id'] ?>"><?= htmlspecialchars($att['file_name']) ?></a>
+                                        <?php if ($att['file_size'] > 0): ?>
+                                        <small class="text-muted">(<?= number_format($att['file_size'] / 1024, 0) ?> KB)</small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($att['title'] ?? '-') ?></td>
+                                    <td>
+                                        <?php if ($att['has_signature']): ?>
+                                            <?php
+                                            $validityBadge = 'bg-secondary';
+                                            $validityText = 'Sconosciuta';
+                                            if ($att['signature_validity'] === 'valid') { $validityBadge = 'bg-success'; $validityText = 'Valida'; }
+                                            elseif ($att['signature_validity'] === 'invalid') { $validityBadge = 'bg-danger'; $validityText = 'Non valida'; }
+                                            ?>
+                                            <span class="badge bg-info"><?= htmlspecialchars($att['signature_format']) ?></span>
+                                            <span class="badge <?= $validityBadge ?>"><?= $validityText ?></span>
+                                            <br>
+                                            <?php
+                                            $signatures = json_decode($att['signature_data'] ?? '[]', true);
+                                            if (!empty($signatures)):
+                                                foreach ($signatures as $sig): ?>
+                                                <small class="d-block text-muted">
+                                                    <i class="bi bi-pen"></i>
+                                                    <?= htmlspecialchars($sig['signer_name'] ?? $sig['common_name'] ?? 'Sconosciuto') ?>
+                                                    <?php if (!empty($sig['signing_date'])): ?>
+                                                     - <?= htmlspecialchars($sig['signing_date']) ?>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($sig['organization'])): ?>
+                                                     (<?= htmlspecialchars($sig['organization']) ?>)
+                                                    <?php endif; ?>
+                                                </small>
+                                                <?php endforeach;
+                                            endif; ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($att['uploaded_by_name'] ?? '-') ?></td>
+                                    <td><?= date('d/m/Y H:i', strtotime($att['uploaded_at'])) ?></td>
+                                    <td>
+                                        <a href="convention_attachment_download.php?id=<?= $att['id'] ?>" class="btn btn-sm btn-outline-primary" title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <?php if ($app->checkPermission('conventions', 'edit')): ?>
+                                        <form action="convention_attachment_delete.php" method="POST" class="d-inline" onsubmit="return confirm('Eliminare questo allegato?')">
+                                            <input type="hidden" name="csrf_token" value="<?= CsrfProtection::getToken() ?>">
+                                            <input type="hidden" name="attachment_id" value="<?= $att['id'] ?>">
+                                            <input type="hidden" name="convention_id" value="<?= $item['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
