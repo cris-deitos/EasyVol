@@ -126,7 +126,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Modifica Convenzione';
-include '../src/Views/includes/navbar.php';
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -139,6 +138,7 @@ include '../src/Views/includes/navbar.php';
     <link href="../assets/css/main.css" rel="stylesheet">
 </head>
 <body>
+    <?php include __DIR__ . '/../src/Views/includes/navbar.php'; ?>
 <div class="container-fluid">
     <div class="row">
         <?php include '../src/Views/includes/sidebar.php'; ?>
