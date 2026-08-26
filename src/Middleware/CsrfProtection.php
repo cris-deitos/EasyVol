@@ -85,7 +85,7 @@ class CsrfProtection {
      * 
      * @return string
      */
-    public function getToken() {
+    public static function getToken() {
         return self::generateToken();
     }
     
