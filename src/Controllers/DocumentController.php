@@ -2,6 +2,7 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use EasyVol\Utils\PDFSignatureExtractor;
 
 /**
  * Document Controller
@@ -118,10 +119,20 @@ class DocumentController {
         try {
             $this->db->beginTransaction();
             
+            // Extract digital signature info
+            $signatureInfo = PDFSignatureExtractor::getEmptyResult();
+            $filePath = __DIR__ . '/../../' . $data['file_path'];
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            
+            if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+            }
+            
             $sql = "INSERT INTO documents (
                 category, title, description, file_name, file_path, 
-                file_size, mime_type, tags, uploaded_by, uploaded_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                file_size, mime_type, tags, uploaded_by, uploaded_at,
+                has_signature, signature_format, signature_count, signature_data, signature_validity, signature_checked_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, NOW())";
             
             $params = [
                 $data['category'],
@@ -132,7 +143,12 @@ class DocumentController {
                 $data['file_size'] ?? null,
                 $data['mime_type'] ?? null,
                 $data['tags'] ?? null,
-                $userId
+                $userId,
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $signatureInfo['format'] ?? null,
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown'
             ];
             
             $this->db->execute($sql, $params);
@@ -289,6 +305,46 @@ class DocumentController {
         $sql = "SELECT id FROM documents WHERE file_name = ?";
         $result = $this->db->fetchOne($sql, [$fileName]);
         return (bool)$result;
+    }
+    
+    /**
+     * Ri-verifica firme digitali di un documento
+     */
+    public function recheckSignatures($id, $userId) {
+        try {
+            $document = $this->get($id);
+            if (!$document) {
+                return ['success' => false, 'message' => 'Documento non trovato'];
+            }
+            
+            $filePath = __DIR__ . '/../../' . $document['file_path'];
+            if (!file_exists($filePath)) {
+                return ['success' => false, 'message' => 'File non trovato'];
+            }
+            
+            $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+            
+            $sql = "UPDATE documents SET
+                    has_signature = ?, signature_format = ?, signature_count = ?,
+                    signature_data = ?, signature_validity = ?, signature_checked_at = NOW()
+                    WHERE id = ?";
+            
+            $this->db->execute($sql, [
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $signatureInfo['format'] ?? null,
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown',
+                $id
+            ]);
+            
+            $this->logActivity($userId, 'documents', 'recheck_signature', $id, 'Ri-verificate firme digitali documento: ' . $document['title']);
+            
+            return ['success' => true, 'has_signature' => !empty($signatureInfo['has_signature'])];
+        } catch (\Exception $e) {
+            error_log("Errore ri-verifica firma documento: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante la verifica'];
+        }
     }
     
     /**

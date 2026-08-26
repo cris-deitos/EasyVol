@@ -167,6 +167,74 @@ $pageTitle = 'Documento: ' . $document['title'];
                         
                         <!-- Anteprima (se possibile) -->
                         <?php 
+                        // Digital signature information
+                        $hasSignature = !empty($document['has_signature']);
+                        $signatureData = [];
+                        if ($hasSignature && !empty($document['signature_data'])) {
+                            $signatureData = json_decode($document['signature_data'], true) ?: [];
+                        }
+                        ?>
+                        
+                        <?php if ($hasSignature): ?>
+                        <div class="card mb-3 border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-shield-check"></i> Firme Digitali
+                                    <span class="badge bg-light text-success ms-2"><?php echo (int)$document['signature_count']; ?> firma/e</span>
+                                    <span class="badge bg-light text-dark ms-1"><?php echo htmlspecialchars($document['signature_format'] ?? ''); ?></span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($signatureData)): ?>
+                                    <?php foreach ($signatureData as $idx => $sig): ?>
+                                        <div class="border rounded p-3 mb-2">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <strong><i class="bi bi-person-badge"></i> Firmatario:</strong>
+                                                    <div><?php echo htmlspecialchars($sig['signer_name'] ?? $sig['common_name'] ?? 'N/D'); ?></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <strong><i class="bi bi-building"></i> Organizzazione:</strong>
+                                                    <div><?php echo htmlspecialchars($sig['organization'] ?? 'N/D'); ?></div>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-2">
+                                                <div class="col-md-6">
+                                                    <strong><i class="bi bi-calendar-event"></i> Data Firma:</strong>
+                                                    <div><?php echo htmlspecialchars($sig['signature_date'] ?? $sig['signing_time'] ?? 'N/D'); ?></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <strong><i class="bi bi-award"></i> CA Emittente:</strong>
+                                                    <div><?php echo htmlspecialchars($sig['issuer'] ?? $sig['issuer_organization'] ?? 'N/D'); ?></div>
+                                                </div>
+                                            </div>
+                                            <?php if (!empty($sig['serial_number'])): ?>
+                                                <div class="mt-2">
+                                                    <small class="text-muted"><strong>Serial:</strong> <?php echo htmlspecialchars($sig['serial_number']); ?></small>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <strong>Validità:</strong> 
+                                        <?php 
+                                        $validity = $document['signature_validity'] ?? 'unknown';
+                                        if ($validity === 'valid') echo '<span class="text-success">Valida</span>';
+                                        elseif ($validity === 'invalid') echo '<span class="text-danger">Non valida</span>';
+                                        else echo '<span class="text-warning">Non verificabile</span>';
+                                        ?>
+                                        <?php if (!empty($document['signature_checked_at'])): ?>
+                                            | <strong>Verificata il:</strong> <?php echo date('d/m/Y H:i', strtotime($document['signature_checked_at'])); ?>
+                                        <?php endif; ?>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php 
                         $ext = strtolower(pathinfo($document['file_name'], PATHINFO_EXTENSION));
                         $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
                         $pdfExts = ['pdf'];
@@ -215,6 +283,15 @@ $pageTitle = 'Documento: ' . $document['title'];
                                        class="btn btn-outline-secondary">
                                         <i class="bi bi-folder"></i> Vedi Categoria
                                     </a>
+                                    <?php 
+                                    $ext2 = strtolower(pathinfo($document['file_name'], PATHINFO_EXTENSION));
+                                    if (in_array($ext2, ['pdf', 'p7m'])): 
+                                    ?>
+                                        <a href="document_recheck_signature.php?id=<?php echo $document['id']; ?>" 
+                                           class="btn btn-outline-info">
+                                            <i class="bi bi-shield-check"></i> Verifica Firme Digitali
+                                        </a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

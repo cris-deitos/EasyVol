@@ -77,7 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $allowedMimeTypes = array_merge(
                 FileUploader::getDocumentMimeTypes(),
                 FileUploader::getImageMimeTypes(),
-                ['application/zip', 'application/x-rar-compressed', 'application/x-zip-compressed']
+                ['application/zip', 'application/x-rar-compressed', 'application/x-zip-compressed',
+                 'application/pkcs7-mime', 'application/x-pkcs7-mime']
             );
             
             $uploader = new FileUploader(__DIR__ . '/../uploads/documents/', $allowedMimeTypes, 50 * 1024 * 1024);
@@ -208,8 +209,8 @@ $pageTitle = $isEdit ? 'Modifica Documento' : 'Carica Documento';
                                     </label>
                                     <input type="file" class="form-control" id="document_file" name="document_file" required>
                                     <div class="form-text">
-                                        Formati supportati: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG, GIF, ZIP, RAR. 
-                                        Dimensione massima: 50 MB
+                                        Formati supportati: PDF, P7M, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG, GIF, ZIP, RAR. 
+                                        Dimensione massima: 50 MB. I file PDF e P7M firmati digitalmente verranno analizzati automaticamente.
                                     </div>
                                 </div>
                             <?php endif; ?>
