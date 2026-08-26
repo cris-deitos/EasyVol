@@ -117,8 +117,8 @@ class EventController {
             
             $sql = "INSERT INTO events (
                 event_type, title, description, start_date, end_date, location, status, created_by, created_at,
-                latitude, longitude, full_address, municipality, legal_benefits_recognized
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)";
+                latitude, longitude, full_address, municipality, legal_benefits_recognized, convention_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)";
             
             $params = [
                 $data['event_type'],
@@ -133,7 +133,8 @@ class EventController {
                 $data['longitude'] ?? null,
                 $data['full_address'] ?? null,
                 $data['municipality'] ?? null,
-                $data['legal_benefits_recognized'] ?? 'no'
+                $data['legal_benefits_recognized'] ?? 'no',
+                !empty($data['convention_id']) ? intval($data['convention_id']) : null
             ];
             
             $this->db->execute($sql, $params);
@@ -232,7 +233,7 @@ class EventController {
                 event_type = ?, title = ?, description = ?, start_date = ?,
                 end_date = ?, location = ?, status = ?, updated_at = NOW(),
                 latitude = ?, longitude = ?, full_address = ?, municipality = ?,
-                legal_benefits_recognized = ?
+                legal_benefits_recognized = ?, convention_id = ?
                 WHERE id = ?";
             
             $params = [
@@ -248,6 +249,7 @@ class EventController {
                 $data['full_address'] ?? null,
                 $data['municipality'] ?? null,
                 $data['legal_benefits_recognized'] ?? 'no',
+                !empty($data['convention_id']) ? intval($data['convention_id']) : null,
                 $id
             ];
             

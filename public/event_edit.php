@@ -71,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'full_address' => trim($_POST['full_address'] ?? ''),
             'municipality' => trim($_POST['municipality'] ?? ''),
             'legal_benefits_recognized' => $_POST['legal_benefits_recognized'] ?? 'no',
+            'convention_id' => $_POST['convention_id'] ?? null,
             'send_province_email' => !$isEdit && isset($_POST['send_province_email']) ? true : false
         ];
         
@@ -243,6 +244,25 @@ $pageTitle = $isEdit ? 'Modifica Evento' : 'Nuovo Evento';
                                         <option value="si" <?php echo ($event['legal_benefits_recognized'] ?? '') === 'si' ? 'selected' : ''; ?>>SI</option>
                                     </select>
                                     <small class="form-text text-muted">Art. 39 e 40 D. Lgs. n. 1 del 2018</small>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label for="convention_id" class="form-label">Convenzione</label>
+                                    <select class="form-select" id="convention_id" name="convention_id">
+                                        <option value="">Nessuna Convenzione</option>
+                                        <?php
+                                        // Load active conventions based on event start date
+                                        $convStartDate = $event['start_date'] ?? date('Y-m-d');
+                                        $conventionsSql = "SELECT id, name FROM conventions WHERE start_date <= ? AND (end_date IS NULL OR end_date >= ?) ORDER BY name";
+                                        $conventions = $db->fetchAll($conventionsSql, [$convStartDate, $convStartDate]);
+                                        foreach ($conventions as $conv):
+                                        ?>
+                                            <option value="<?php echo $conv['id']; ?>" <?php echo (isset($event['convention_id']) && $event['convention_id'] == $conv['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($conv['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                             </div>
                         </div>
