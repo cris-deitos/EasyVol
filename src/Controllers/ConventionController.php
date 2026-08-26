@@ -2,6 +2,7 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use EasyVol\Utils\PDFSignatureExtractor;
 
 /**
  * Convention Controller
@@ -102,6 +103,7 @@ class ConventionController {
             $convention['entities'] = $this->getEntities($id);
             $convention['deadlines'] = $this->getDeadlines($id);
             $convention['amounts'] = $this->getAmounts($id);
+            $convention['attachments'] = $this->getAttachments($id);
         }
         
         return $convention;
@@ -319,6 +321,117 @@ class ConventionController {
         }
     }
     
+    /**
+     * Ottieni allegati di una convenzione
+     */
+    public function getAttachments($conventionId) {
+        $sql = "SELECT ca.*, u.full_name as uploaded_by_name
+                FROM convention_attachments ca
+                LEFT JOIN users u ON ca.uploaded_by = u.id
+                WHERE ca.convention_id = ?
+                ORDER BY ca.uploaded_at DESC";
+        return $this->db->fetchAll($sql, [$conventionId]);
+    }
+
+    /**
+     * Aggiungi allegato a una convenzione con rilevamento firma digitale
+     */
+    public function addAttachment($conventionId, $data, $userId) {
+        try {
+            $signatureInfo = PDFSignatureExtractor::getEmptyResult();
+            $filePath = __DIR__ . '/../../' . $data['file_path'];
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+            if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+            }
+
+            $sql = "INSERT INTO convention_attachments
+                    (convention_id, file_name, file_path, file_type, file_size, title, description, uploaded_by,
+                     has_signature, signature_format, signature_count, signature_data, signature_validity, signature_checked_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            $params = [
+                $conventionId,
+                $data['file_name'],
+                $data['file_path'],
+                $data['file_type'] ?? null,
+                $data['file_size'] ?? 0,
+                $data['title'] ?? null,
+                $data['description'] ?? null,
+                $userId,
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $signatureInfo['format'] ?? null,
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown'
+            ];
+            $this->db->execute($sql, $params);
+            $attachmentId = $this->db->lastInsertId();
+
+            $this->logActivity($userId, 'conventions', 'add_attachment', $conventionId,
+                'Aggiunto allegato: ' . $data['file_name']);
+
+            return $attachmentId;
+        } catch (\Throwable $e) {
+            error_log("Errore aggiunta allegato convenzione: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Elimina allegato convenzione
+     */
+    public function deleteAttachment($attachmentId, $userId) {
+        try {
+            $sql = "SELECT * FROM convention_attachments WHERE id = ?";
+            $attachment = $this->db->fetchOne($sql, [$attachmentId]);
+            if (!$attachment) {
+                return ['success' => false, 'message' => 'Allegato non trovato'];
+            }
+            $this->db->execute("DELETE FROM convention_attachments WHERE id = ?", [$attachmentId]);
+            $this->logActivity($userId, 'conventions', 'delete_attachment', $attachment['convention_id'],
+                'Eliminato allegato: ' . $attachment['file_name']);
+            return ['success' => true, 'file_path' => $attachment['file_path']];
+        } catch (\Throwable $e) {
+            error_log("Errore eliminazione allegato convenzione: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
+
+    /**
+     * Ri-verifica firme digitali di un allegato
+     */
+    public function recheckAttachmentSignatures($attachmentId, $userId) {
+        try {
+            $sql = "SELECT * FROM convention_attachments WHERE id = ?";
+            $attachment = $this->db->fetchOne($sql, [$attachmentId]);
+            if (!$attachment) {
+                return ['success' => false, 'message' => 'Allegato non trovato'];
+            }
+
+            $filePath = __DIR__ . '/../../' . $attachment['file_path'];
+            $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+
+            $updateSql = "UPDATE convention_attachments SET
+                          has_signature = ?, signature_format = ?, signature_count = ?,
+                          signature_data = ?, signature_validity = ?, signature_checked_at = NOW()
+                          WHERE id = ?";
+            $this->db->execute($updateSql, [
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $signatureInfo['format'] ?? null,
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown',
+                $attachmentId
+            ]);
+
+            return ['success' => true, 'has_signature' => !empty($signatureInfo['has_signature'])];
+        } catch (\Throwable $e) {
+            error_log("Errore ri-verifica firma: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante la verifica'];
+        }
+    }
+
     /**
      * Log attività
      */
