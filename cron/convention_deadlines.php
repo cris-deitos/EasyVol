@@ -40,10 +40,10 @@ try {
         // Build the due date for current year
         $dueDate = sprintf('%04d-%02d-%02d', $currentYear, $dl['month'], $dl['day_of_month']);
         
-        // Skip dates in the past (more than advance_days ago)
-        $checkDate = date('Y-m-d', strtotime($dueDate . ' -' . ($dl['advance_days'] + 30) . ' days'));
-        if ($checkDate > $today) {
-            continue; // Too far in the future still
+        // Skip deadlines whose notification window hasn't started yet
+        $advanceDate = date('Y-m-d', strtotime($dueDate . ' -' . $dl['advance_days'] . ' days'));
+        if ($advanceDate > $today) {
+            continue;
         }
         if ($dueDate < date('Y-m-d', strtotime('-30 days'))) {
             continue; // Already well past

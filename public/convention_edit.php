@@ -35,7 +35,7 @@ $success = false;
 
 // Load item if editing
 if ($isEdit) {
-    $item = $controller->get($_GET['id']);
+    $item = $controller->get((int)$_GET['id']);
     if (!$item) {
         die('Convenzione non trovata');
     }
