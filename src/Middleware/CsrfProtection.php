@@ -81,6 +81,15 @@ class CsrfProtection {
     }
     
     /**
+     * Alias per generateToken() - restituisce il token CSRF corrente
+     * 
+     * @return string
+     */
+    public function getToken() {
+        return self::generateToken();
+    }
+    
+    /**
      * Genera meta tag per AJAX
      * 
      * @return string HTML
