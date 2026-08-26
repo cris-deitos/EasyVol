@@ -411,15 +411,30 @@ class PDFSignatureExtractor {
                 exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -certsout {$escapedCerts} 2>/dev/null");
                 
                 if (file_exists($tmpCerts) && filesize($tmpCerts) > 0) {
-                    // Convert extracted PEM certs to PKCS#7 bundle, then parse with pkcs7
-                    $certOutputLines = [];
-                    $certReturnCode = 0;
-                    exec("openssl crl2pkcs7 -nocrl -certfile {$escapedCerts} 2>/dev/null | openssl pkcs7 -print_certs -text 2>/dev/null", $certOutputLines, $certReturnCode);
-                    
-                    if ($certReturnCode === 0 && !empty($certOutputLines)) {
-                        $certOutput = implode("\n", $certOutputLines);
-                        if (strpos($certOutput, 'Subject:') !== false) {
-                            return $certOutput;
+                    // Step 1: Convert extracted PEM certs to a PKCS#7 bundle
+                    $tmpP7b = @tempnam(sys_get_temp_dir(), 'easyvol_p7b_');
+                    if ($tmpP7b !== false) {
+                        chmod($tmpP7b, 0600);
+                        try {
+                            $escapedP7b = escapeshellarg($tmpP7b);
+                            $crl2Rc = 0;
+                            exec("openssl crl2pkcs7 -nocrl -certfile {$escapedCerts} -out {$escapedP7b} 2>/dev/null", $ignoreOut, $crl2Rc);
+                            
+                            if ($crl2Rc === 0 && file_exists($tmpP7b) && filesize($tmpP7b) > 0) {
+                                // Step 2: Parse the PKCS#7 bundle with pkcs7 -print_certs -text
+                                $certOutputLines = [];
+                                $certReturnCode = 0;
+                                exec("openssl pkcs7 -in {$escapedP7b} -print_certs -text 2>/dev/null", $certOutputLines, $certReturnCode);
+                                
+                                if ($certReturnCode === 0 && !empty($certOutputLines)) {
+                                    $certOutput = implode("\n", $certOutputLines);
+                                    if (strpos($certOutput, 'Subject:') !== false) {
+                                        return $certOutput;
+                                    }
+                                }
+                            }
+                        } finally {
+                            @unlink($tmpP7b);
                         }
                     }
                 }
