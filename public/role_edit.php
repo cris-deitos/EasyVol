@@ -203,6 +203,7 @@ $pageTitle = $isEdit ? 'Modifica Ruolo' : 'Nuovo Ruolo';
                                     'warehouse' => 'Magazzino',
                                     'training' => 'Corsi',
                                     'events' => 'Eventi',
+                                    'conventions' => 'Convenzioni',
                                     'documents' => 'Documenti',
                                     'scheduler' => 'Scadenziario',
                                     'operations_center' => 'Centrale Operativa',
