@@ -16,7 +16,7 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-if (!$app->checkPermission('documents', 'view')) {
+if (!$app->checkPermission('documents', 'edit')) {
     die('Accesso negato');
 }
 
