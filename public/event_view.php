@@ -267,6 +267,19 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                     <br><small class="text-muted">Art. 39 e 40 D. Lgs. n. 1 del 2018</small>
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <th>Convenzione:</th>
+                                                <td>
+                                                    <?php 
+                                                    if (!empty($event['convention_id'])) {
+                                                        $convention = $db->fetchOne("SELECT name FROM conventions WHERE id = ?", [$event['convention_id']]);
+                                                        echo '<span class="badge bg-primary">' . htmlspecialchars($convention['name'] ?? 'N/A') . '</span>';
+                                                    } else {
+                                                        echo '<span class="badge bg-secondary">Nessuna Convenzione</span>';
+                                                    }
+                                                    ?>
+                                                </td>
+                                            </tr>
                                         </table>
                                     </div>
                                 </div>
