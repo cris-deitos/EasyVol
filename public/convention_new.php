@@ -16,14 +16,7 @@ if (!$app->isLoggedIn()) {
     exit;
 }
 
-$isEdit = isset($_GET['id']);
-
-if (!$isEdit) {
-    header('Location: convention_new.php');
-    exit;
-}
-
-if (!$app->checkPermission('conventions', 'edit')) {
+if (!$app->checkPermission('conventions', 'create')) {
     die('Accesso negato');
 }
 
@@ -36,14 +29,6 @@ $csrf = new CsrfProtection();
 $item = null;
 $errors = [];
 $success = false;
-
-// Load item if editing
-if ($isEdit) {
-    $item = $controller->get((int)$_GET['id']);
-    if (!$item) {
-        die('Convenzione non trovata');
-    }
-}
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -113,10 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if (empty($errors)) {
-            $result = $controller->update($item['id'], $data, $_SESSION['user_id']);
+            $result = $controller->create($data, $_SESSION['user_id']);
             
             if ($result) {
-                header('Location: convention_view.php?id=' . $item['id'] . '&saved=1');
+                header('Location: convention_view.php?id=' . $result . '&saved=1');
                 exit;
             } else {
                 $errors[] = 'Errore durante il salvataggio';
@@ -125,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Modifica Convenzione';
+$pageTitle = 'Nuova Convenzione';
 include '../src/Views/includes/navbar.php';
 ?>
 <!DOCTYPE html>

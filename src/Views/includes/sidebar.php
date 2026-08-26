@@ -121,7 +121,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             
             <?php if ($app->checkPermission('conventions', 'view')): ?>
             <li class="nav-item">
-                <a class="nav-link <?= in_array($currentPage, ['conventions.php', 'convention_edit.php', 'convention_view.php']) ? 'active' : '' ?>" href="conventions.php">
+                <a class="nav-link <?= in_array($currentPage, ['conventions.php', 'convention_edit.php', 'convention_new.php', 'convention_view.php']) ? 'active' : '' ?>" href="conventions.php">
                     <i class="bi bi-file-earmark-text"></i> Convenzioni
                 </a>
             </li>

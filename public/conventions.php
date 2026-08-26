@@ -73,7 +73,7 @@ include '../src/Views/includes/navbar.php';
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2"><i class="bi bi-file-earmark-text"></i> Convenzioni</h1>
                 <?php if ($app->checkPermission('conventions', 'create')): ?>
-                <a href="convention_edit.php" class="btn btn-primary">
+                <a href="convention_new.php" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> Nuova Convenzione
                 </a>
                 <?php endif; ?>
