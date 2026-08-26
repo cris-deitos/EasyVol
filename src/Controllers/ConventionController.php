@@ -101,6 +101,7 @@ class ConventionController {
         if ($convention) {
             $convention['entities'] = $this->getEntities($id);
             $convention['deadlines'] = $this->getDeadlines($id);
+            $convention['amounts'] = $this->getAmounts($id);
         }
         
         return $convention;
@@ -119,6 +120,14 @@ class ConventionController {
      */
     public function getDeadlines($conventionId) {
         $sql = "SELECT * FROM convention_deadlines WHERE convention_id = ? ORDER BY month, day_of_month";
+        return $this->db->fetchAll($sql, [$conventionId]);
+    }
+    
+    /**
+     * Ottieni importi annuali di una convenzione
+     */
+    public function getAmounts($conventionId) {
+        $sql = "SELECT * FROM convention_amounts WHERE convention_id = ? ORDER BY year";
         return $this->db->fetchAll($sql, [$conventionId]);
     }
     
@@ -146,6 +155,11 @@ class ConventionController {
             // Add entities
             if (!empty($data['entities'])) {
                 $this->saveEntities($conventionId, $data['entities']);
+            }
+            
+            // Add amounts
+            if (!empty($data['amounts'])) {
+                $this->saveAmounts($conventionId, $data['amounts']);
             }
             
             // Add deadlines
@@ -190,6 +204,12 @@ class ConventionController {
             $this->db->execute("DELETE FROM convention_entities WHERE convention_id = ?", [$id]);
             if (!empty($data['entities'])) {
                 $this->saveEntities($id, $data['entities']);
+            }
+            
+            // Replace amounts
+            $this->db->execute("DELETE FROM convention_amounts WHERE convention_id = ?", [$id]);
+            if (!empty($data['amounts'])) {
+                $this->saveAmounts($id, $data['amounts']);
             }
             
             // Replace deadlines
@@ -254,6 +274,25 @@ class ConventionController {
                 $entity['pec'] ?? null,
                 $entity['contact_person'] ?? null,
                 $entity['notes'] ?? null
+            ];
+            $this->db->execute($sql, $params);
+        }
+    }
+    
+    /**
+     * Salva importi annuali
+     */
+    private function saveAmounts($conventionId, $amounts) {
+        $sql = "INSERT INTO convention_amounts (convention_id, year, amount, notes)
+                VALUES (?, ?, ?, ?)";
+        
+        foreach ($amounts as $amount) {
+            if (empty($amount['year']) || (empty($amount['amount']) && $amount['amount'] !== '0')) continue;
+            $params = [
+                $conventionId,
+                (int)$amount['year'],
+                (float)($amount['amount'] ?? 0),
+                $amount['notes'] ?? null
             ];
             $this->db->execute($sql, $params);
         }
