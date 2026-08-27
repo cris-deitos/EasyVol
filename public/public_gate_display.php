@@ -320,7 +320,7 @@ $totalCount = $controller->getTotalPeopleCount();
                 <!-- Table Section -->
                 <div class="table-section">
                     <button class="toggle-unmanaged-btn active" id="toggle-unmanaged" title="Mostra/Nascondi varchi non gestiti" onclick="toggleUnmanaged()">
-                        <i class="bi bi-eye"></i> Non gestiti
+                        <i class="bi bi-eye"></i>
                     </button>
                     <?php if (empty($gates)): ?>
                         <div class="no-gates">
