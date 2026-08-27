@@ -2,12 +2,18 @@
 namespace EasyVol\Utils;
 
 /**
- * PDF Digital Signature Extractor
- * 
- * Extracts digital signature information from PDF and P7M files.
- * Supports both PAdES (PDF embedded) and CAdES (.p7m) formats.
- * Uses openssl CLI to parse PKCS#7/CMS certificate data for accurate
- * signer identification (name, organization, CA, signing date).
+ * PDF Digital Signature Extractor – 100% PHP native implementation
+ *
+ * Extracts digital signature information from PDF (PAdES) and P7M (CAdES) files
+ * using only PHP's built-in openssl_* functions and pure-PHP parsing. No exec(),
+ * shell_exec(), proc_open(), popen() or any other OS-level call is used, making
+ * this suitable for shared-hosting environments where those functions are disabled.
+ *
+ * Validity note: "valid" means the signing certificate was not expired at the
+ * time of extraction. This is NOT a full cryptographic verification of the
+ * document's integrity or the trust chain. A complete signature validation
+ * would require a trusted CA store and content digest verification, which is
+ * beyond the scope of this utility.
  */
 class PDFSignatureExtractor {
     
@@ -87,122 +93,357 @@ class PDFSignatureExtractor {
     }
     
     /**
-     * Extract signatures from a CAdES .p7m file using openssl.
-     * 
+     * Extract signatures from a CAdES .p7m file using native PHP openssl functions.
+     *
      * @param string $filePath Path to .p7m file
      * @return array Array of signature info
      */
     private static function extractCadesSignatures($filePath) {
         $signatures = [];
-        
-        // Try DER format first (most common for Italian .p7m), then PEM
-        $pkcs7Output = self::runOpenSslPkcs7($filePath, 'DER');
-        if ($pkcs7Output === null) {
-            $pkcs7Output = self::runOpenSslPkcs7($filePath, 'PEM');
+
+        $raw = @file_get_contents($filePath);
+        if ($raw === false || strlen($raw) < 16) {
+            error_log("PDFSignatureExtractor: Cannot read CAdES file: $filePath");
+            return $signatures;
         }
-        // Also try cms command as fallback
-        if ($pkcs7Output === null) {
-            $pkcs7Output = self::runOpenSslCms($filePath);
+
+        $pem = self::derToPkcs7Pem($raw);
+        if ($pem === null) {
+            error_log("PDFSignatureExtractor: Could not convert CAdES to PEM: $filePath");
+            return $signatures;
         }
-        
-        if ($pkcs7Output !== null) {
-            $signatures = self::parseCertificateOutput($pkcs7Output);
+
+        $certs = [];
+        if (!@openssl_pkcs7_read($pem, $certs) || empty($certs)) {
+            error_log("PDFSignatureExtractor: openssl_pkcs7_read failed for: $filePath");
+            // Try to extract x509 certs directly from the DER blob as last resort
+            $signatures = self::extractCertsFromDer($raw, 0);
+        } else {
+            $signatures = self::certsToSignatures($certs, 0);
         }
-        
-        // Extract actual signing times from CMS signerInfo attributes
-        // The certificate Not Before date is NOT the signing date; the real
-        // signing date lives in the signingTime authenticated attribute.
-        $signingTimes = self::extractCmsSigningTimes($filePath);
+
+        // Inject signingTime from ASN.1 mini-parser
+        $signingTimes = self::extractSigningTimesFromDer($raw);
         if (!empty($signingTimes)) {
-            $singleMatch = (count($signingTimes) === 1 && count($signatures) === 1);
+            $single = (count($signingTimes) === 1 && count($signatures) === 1);
             foreach ($signatures as $idx => &$sig) {
                 if (isset($signingTimes[$idx])) {
                     $sig['signature_date'] = $signingTimes[$idx];
-                } elseif ($singleMatch) {
+                } elseif ($single) {
                     $sig['signature_date'] = reset($signingTimes);
                 }
             }
             unset($sig);
         }
-        
+
         return $signatures;
     }
     
     /**
-     * Extract signingTime values from CMS signerInfo blocks.
-     * 
-     * Uses "openssl cms -cmsout -print" to read the CMS structure and
-     * parses signingTime (OID 1.2.840.113549.1.9.5) from each signerInfo.
-     * 
-     * @param string $filePath Path to .p7m / DER CMS file
-     * @return array Indexed array of signing date strings (Y-m-d H:i:s)
+     * Convert raw bytes (DER or already-PEM or base64 text) to a PKCS#7 PEM block.
+     *
+     * @param string $raw Raw file bytes
+     * @return string|null PEM string or null on failure
      */
-    private static function extractCmsSigningTimes($filePath) {
-        $escapedPath = escapeshellarg($filePath);
-        $outputLines = [];
-        $returnCode = 0;
-        
-        exec("openssl cms -inform DER -in {$escapedPath} -cmsout -print 2>/dev/null", $outputLines, $returnCode);
-        if ($returnCode !== 0 || empty($outputLines)) {
-            return [];
+    private static function derToPkcs7Pem($raw) {
+        // Already a PEM block?
+        if (strpos($raw, '-----BEGIN') !== false) {
+            // Normalise: if it's a CERTIFICATE block wrap it into PKCS7
+            if (strpos($raw, '-----BEGIN PKCS7-----') !== false
+                || strpos($raw, '-----BEGIN PKCS #7-----') !== false) {
+                return $raw;
+            }
+            // May already be passable to openssl_pkcs7_read as-is
+            return $raw;
         }
-        
-        $cmsText = implode("\n", $outputLines);
-        $signingTimes = [];
-        
-        // Match UTCTIME or GENERALIZEDTIME values that follow a signingTime object line.
-        // Expected openssl cms -cmsout -print format:
-        //   object: signingTime (1.2.840.113549.1.9.5)
-        //   set:
-        //     UTCTIME:Jul  5 12:30:00 2025 GMT
-        // or  GENERALIZEDTIME:20250705123000Z
-        if (preg_match_all('/signingTime[^\n]*\n\s*set:\s*\n\s*(UTCTIME|GENERALIZEDTIME)\s*:\s*(.+)/i', $cmsText, $matches, PREG_SET_ORDER)) {
-            foreach ($matches as $m) {
-                $timeType = strtoupper(trim($m[1]));
-                $timeVal = trim($m[2]);
-                
-                $ts = false;
-                if ($timeType === 'GENERALIZEDTIME') {
-                    // Format: YYYYMMDDHHmmSSZ or similar
-                    $ts = strtotime($timeVal);
-                    if ($ts === false && preg_match('/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/', $timeVal, $gm)) {
-                        $ts = strtotime("{$gm[1]}-{$gm[2]}-{$gm[3]} {$gm[4]}:{$gm[5]}:{$gm[6]} UTC");
-                    }
-                } else {
-                    // UTCTIME: "Jul  5 12:30:00 2025 GMT" or similar
-                    $ts = strtotime($timeVal);
-                }
-                
-                if ($ts !== false) {
-                    $signingTimes[] = date('Y-m-d H:i:s', $ts);
-                } else {
-                    error_log("PDFSignatureExtractor: Failed to parse signingTime ({$timeType}): {$timeVal}");
-                }
+
+        // Is the whole file base64 text (some tools export it this way)?
+        $stripped = preg_replace('/\s+/', '', $raw);
+        if (preg_match('/^[A-Za-z0-9+\/]+=*$/', $stripped)) {
+            $decoded = base64_decode($stripped, true);
+            if ($decoded !== false && strlen($decoded) > 16) {
+                $raw = $decoded;
             }
         }
-        
-        return $signingTimes;
+
+        // Wrap DER as PKCS7 PEM
+        $b64 = chunk_split(base64_encode($raw), 64, "\n");
+        return "-----BEGIN PKCS7-----\n" . $b64 . "-----END PKCS7-----\n";
+    }
+
+    /**
+     * Convert an array of PEM certificate strings (from openssl_pkcs7_read) into
+     * the signature info array format.
+     *
+     * @param string[] $pemCerts Array of PEM certificate strings
+     * @param int $startIndex Starting signature number offset
+     * @return array Signature info array
+     */
+    private static function certsToSignatures(array $pemCerts, $startIndex = 0) {
+        $certs = [];
+        foreach ($pemCerts as $pem) {
+            $parsed = @openssl_x509_parse($pem, true);
+            if ($parsed === false || empty($parsed)) {
+                continue;
+            }
+            $certs[] = $parsed;
+        }
+
+        // Filter: keep only end-entity (signer) certs, not CA / intermediate
+        $signerCerts = self::filterSignerCertificatesParsed($certs);
+
+        $signatures = [];
+        $sigNum = $startIndex;
+        foreach ($signerCerts as $cert) {
+            $sigNum++;
+
+            $subject  = $cert['subject']  ?? [];
+            $issuer   = $cert['issuer']   ?? [];
+
+            $cn   = $subject['CN']   ?? $subject['commonName']   ?? null;
+            $org  = $subject['O']    ?? $subject['organizationName'] ?? null;
+            $serialAttr = $subject['serialNumber'] ?? $subject['SERIALNUMBER'] ?? null;
+
+            $signerName  = $cn ?? $org ?? 'Sconosciuto';
+            $fiscalCode  = self::extractFiscalCodeFromArray($subject, $serialAttr);
+
+            $issuerCN  = $issuer['CN'] ?? $issuer['commonName']   ?? null;
+            $issuerOrg = $issuer['O']  ?? $issuer['organizationName'] ?? null;
+
+            // Build full issuer DN string for identifyCAProvider
+            $issuerDn = self::buildDnString($issuer);
+
+            $caProvider = self::identifyCAProvider($issuerOrg, $issuerCN, $issuerDn);
+
+            $certValidFrom = isset($cert['validFrom_time_t'])
+                ? date('Y-m-d H:i:s', (int)$cert['validFrom_time_t']) : null;
+            $certValidTo   = isset($cert['validTo_time_t'])
+                ? date('Y-m-d H:i:s', (int)$cert['validTo_time_t'])   : null;
+
+            $serialHex = $cert['serialNumberHex'] ?? ($cert['serialNumber'] ?? null);
+
+            $signatures[] = [
+                'number'               => $sigNum,
+                'signer_name'          => $signerName,
+                'common_name'          => $cn,
+                'signer_organization'  => $org,
+                'organization'         => $org,
+                'fiscal_code'          => $fiscalCode,
+                'signature_date'       => null, // filled later by signingTime or /M
+                'signing_time'         => null,
+                'signing_date'         => null,
+                'reason'               => null,
+                'location'             => null,
+                'ca_provider'          => $caProvider,
+                'issuer'               => $issuerCN ?? $issuerOrg ?? $issuerDn,
+                'issuer_organization'  => $issuerOrg,
+                'certificate_valid_from' => $certValidFrom,
+                'certificate_valid_to'   => $certValidTo,
+                'serial_number'          => $serialHex,
+                'certificate_info'       => [
+                    'subject' => self::buildDnString($subject),
+                    'issuer'  => $issuerDn,
+                ],
+            ];
+        }
+
+        return $signatures;
+    }
+
+    /**
+     * Try to extract X.509 certificates directly from a raw DER blob by scanning
+     * for SEQUENCE markers. Used as last-resort fallback when openssl_pkcs7_read fails.
+     *
+     * @param string $der Binary DER data
+     * @param int $startIndex Starting number offset
+     * @return array Signature info array (may be empty)
+     */
+    private static function extractCertsFromDer($der, $startIndex = 0) {
+        $signatures = [];
+        $len = strlen($der);
+        $i = 0;
+        while ($i < $len - 4) {
+            // Look for SEQUENCE (0x30) which may be a certificate
+            if (ord($der[$i]) !== 0x30) {
+                $i++;
+                continue;
+            }
+            // Read DER length
+            $lenInfo = self::readDerLength($der, $i + 1);
+            if ($lenInfo === null) {
+                $i++;
+                continue;
+            }
+            [$contentLen, $headerLen] = $lenInfo;
+            $totalLen = $headerLen + $contentLen;
+            if ($i + $totalLen > $len || $totalLen < 64) {
+                $i++;
+                continue;
+            }
+            $candidate = substr($der, $i, $totalLen);
+            $pem = "-----BEGIN CERTIFICATE-----\n"
+                 . chunk_split(base64_encode($candidate), 64, "\n")
+                 . "-----END CERTIFICATE-----\n";
+            $parsed = @openssl_x509_parse($pem, true);
+            if ($parsed !== false && !empty($parsed['subject'])) {
+                $sigs = self::certsToSignatures([$pem], $startIndex + count($signatures));
+                if (!empty($sigs)) {
+                    $signatures = array_merge($signatures, $sigs);
+                }
+                $i += $totalLen;
+                continue;
+            }
+            $i++;
+        }
+        return $signatures;
+    }
+
+    /**
+     * Mini ASN.1 DER parser: scan a PKCS#7/CMS DER blob for signingTime attributes.
+     *
+     * signingTime OID (1.2.840.113549.1.9.5) in DER:
+     *   06 09 2A 86 48 86 F7 0D 01 09 05
+     *
+     * Immediately following the OID we expect a SET containing a UTCTIME (0x17)
+     * or GENERALIZEDTIME (0x18) value.
+     *
+     * @param string $der Binary DER data
+     * @return array Array of signing date strings (Y-m-d H:i:s)
+     */
+    private static function extractSigningTimesFromDer($der) {
+        $times = [];
+        $signingTimeOid = "\x06\x09\x2A\x86\x48\x86\xF7\x0D\x01\x09\x05";
+        $oidLen = strlen($signingTimeOid);
+        $len = strlen($der);
+        $pos = 0;
+
+        while (($pos = strpos($der, $signingTimeOid, $pos)) !== false) {
+            $pos += $oidLen;
+            // Skip optional SET/SEQUENCE wrapper(s) to get to the time tag
+            $attempts = 0;
+            while ($pos < $len - 2 && $attempts < 4) {
+                $tag = ord($der[$pos]);
+                if ($tag === 0x17 || $tag === 0x18) {
+                    break; // found UTCTIME or GENERALIZEDTIME
+                }
+                // Skip over wrapper tag + length + (maybe zero-length)
+                if ($pos + 1 >= $len) {
+                    break;
+                }
+                $lenInfo = self::readDerLength($der, $pos + 1);
+                if ($lenInfo === null) {
+                    break;
+                }
+                // If the wrapper length covers a time tag inside, enter it
+                $pos += 1 + $lenInfo[1]; // move past tag+header into content
+                $attempts++;
+            }
+            if ($pos >= $len - 2) {
+                continue;
+            }
+            $tag = ord($der[$pos]);
+            if ($tag !== 0x17 && $tag !== 0x18) {
+                continue;
+            }
+            $lenInfo = self::readDerLength($der, $pos + 1);
+            if ($lenInfo === null) {
+                continue;
+            }
+            [$valueLen, $headerLen] = $lenInfo;
+            $valueStart = $pos + 1 + $headerLen;
+            if ($valueStart + $valueLen > $len) {
+                continue;
+            }
+            $timeStr = substr($der, $valueStart, $valueLen);
+            $ts = self::parseAsn1Time($tag, $timeStr);
+            if ($ts !== false) {
+                $times[] = date('Y-m-d H:i:s', $ts);
+            } else {
+                error_log("PDFSignatureExtractor: Failed to parse ASN.1 time tag=0x" . dechex($tag) . " val=" . bin2hex($timeStr));
+            }
+            $pos = $valueStart + $valueLen;
+        }
+
+        return $times;
+    }
+
+    /**
+     * Read a DER length field starting at $offset in $data.
+     *
+     * @param string $data Binary data
+     * @param int $offset Byte offset of the length field
+     * @return array|null [contentLength, headerBytes] or null on error
+     */
+    private static function readDerLength($data, $offset) {
+        $len = strlen($data);
+        if ($offset >= $len) {
+            return null;
+        }
+        $first = ord($data[$offset]);
+        if ($first < 0x80) {
+            return [$first, 1];
+        }
+        if ($first === 0x80) {
+            return null; // indefinite length not supported here
+        }
+        $numBytes = $first & 0x7F;
+        if ($numBytes > 4 || $offset + $numBytes >= $len) {
+            return null;
+        }
+        $value = 0;
+        for ($i = 1; $i <= $numBytes; $i++) {
+            $value = ($value << 8) | ord($data[$offset + $i]);
+        }
+        return [$value, 1 + $numBytes];
+    }
+
+    /**
+     * Parse an ASN.1 UTCTIME (0x17) or GENERALIZEDTIME (0x18) byte string into a Unix timestamp.
+     *
+     * @param int $tag 0x17 or 0x18
+     * @param string $value Raw bytes of the time value
+     * @return int|false Unix timestamp or false on failure
+     */
+    private static function parseAsn1Time($tag, $value) {
+        // Strip any trailing Z or timezone suffix for initial matching
+        $s = rtrim($value, "Z \x00");
+        if ($tag === 0x17) {
+            // UTCTIME: YYMMDDHHMMSS[Z]
+            if (preg_match('/^(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/', $s, $m)) {
+                $year = (int)$m[1];
+                $year += ($year >= 50) ? 1900 : 2000;
+                return gmmktime((int)$m[4], (int)$m[5], (int)$m[6], (int)$m[2], (int)$m[3], $year);
+            }
+        } else {
+            // GENERALIZEDTIME: YYYYMMDDHHMMSS[.frac][Z]
+            if (preg_match('/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/', $s, $m)) {
+                return gmmktime((int)$m[4], (int)$m[5], (int)$m[6], (int)$m[2], (int)$m[3], (int)$m[1]);
+            }
+        }
+        // Last resort: let PHP try
+        $ts = @strtotime($value . ' UTC');
+        return ($ts !== false && $ts > 0) ? $ts : false;
     }
     
     /**
-     * Extract PAdES signatures from PDF content.
-     * Locates PKCS#7 signature blobs in the PDF ByteRange structure
-     * and parses certificates with openssl.
-     * 
+     * Extract PAdES signatures from PDF content using native PHP openssl functions.
+     * Locates PKCS#7 signature blobs in the PDF ByteRange structure and parses
+     * certificates with openssl_pkcs7_read() / openssl_x509_parse().
+     *
      * @param string $pdfContent Raw PDF binary content
-     * @param string $filePath Original file path (for temp file extraction)
+     * @param string $filePath Original file path (unused, kept for API compatibility)
      * @return array Array of signature info
      */
     private static function extractPadesSignatures($pdfContent, $filePath) {
         $signatures = [];
         $pkcs7Blobs = self::extractPkcs7FromPdf($pdfContent);
-        
+
         if (empty($pkcs7Blobs)) {
             // Fallback: check /Name fields in signature dictionaries
             $signatures = self::fallbackPdfParsing($pdfContent);
             return $signatures;
         }
-        
+
         foreach ($pkcs7Blobs as $index => $blobHex) {
             // Validate hex string before conversion
             if (!preg_match('/^[0-9a-fA-F]+$/', $blobHex)) {
@@ -212,42 +453,49 @@ class PDFSignatureExtractor {
             if ($blobBin === false || strlen($blobBin) < 64) {
                 continue;
             }
-            
-            $tmpFile = tempnam(sys_get_temp_dir(), 'easyvol_sig_');
-            if ($tmpFile === false) {
+
+            // Convert DER blob to PKCS7 PEM
+            $pem = self::derToPkcs7Pem($blobBin);
+            if ($pem === null) {
                 continue;
             }
-            // Restrict permissions on temp file containing signature data
-            chmod($tmpFile, 0600);
-            
-            try {
-                file_put_contents($tmpFile, $blobBin);
-                
-                $certOutput = self::runOpenSslPkcs7($tmpFile, 'DER');
-                if ($certOutput === null) {
-                    $certOutput = self::runOpenSslCms($tmpFile);
+
+            $certs = [];
+            $parsed = [];
+            if (@openssl_pkcs7_read($pem, $certs) && !empty($certs)) {
+                $parsed = self::certsToSignatures($certs, $index);
+            } else {
+                // Fallback: try to find raw X.509 certs inside the DER blob
+                $parsed = self::extractCertsFromDer($blobBin, $index);
+            }
+
+            if (!empty($parsed)) {
+                // Inject signingTime from this blob's DER
+                $signingTimes = self::extractSigningTimesFromDer($blobBin);
+                if (!empty($signingTimes)) {
+                    $single = (count($signingTimes) === 1 && count($parsed) === 1);
+                    foreach ($parsed as $idx => &$sig) {
+                        if (isset($signingTimes[$idx])) {
+                            $sig['signature_date'] = $signingTimes[$idx];
+                        } elseif ($single) {
+                            $sig['signature_date'] = reset($signingTimes);
+                        }
+                    }
+                    unset($sig);
                 }
-                
-                if ($certOutput !== null) {
-                    $parsed = self::parseCertificateOutput($certOutput, $index);
-                    $signatures = array_merge($signatures, $parsed);
-                }
-            } finally {
-                if (!unlink($tmpFile)) {
-                    error_log("PDFSignatureExtractor: Failed to remove temp file: $tmpFile");
-                }
+                $signatures = array_merge($signatures, $parsed);
             }
         }
-        
+
         // If PKCS#7 blobs were found but openssl couldn't process any of them,
         // fall back to PDF dictionary parsing to at least get basic signature info
         if (empty($signatures)) {
             $signatures = self::fallbackPdfParsing($pdfContent);
         }
-        
+
         // Also extract PDF-level metadata (/M date, /Reason, /Location) and merge
         self::mergePdfMetadata($pdfContent, $signatures);
-        
+
         return $signatures;
     }
     
@@ -356,367 +604,103 @@ class PDFSignatureExtractor {
     }
     
     /**
-     * Run openssl pkcs7 command to extract certificate information.
-     * 
-     * @param string $filePath Path to PKCS#7 file
-     * @param string $inform Input format: 'DER' or 'PEM'
-     * @return string|null Certificate text output or null on failure
+     * Build a flat DN string from an associative array (as returned by openssl_x509_parse).
+     *
+     * @param array $dn Associative DN array
+     * @return string DN string, e.g. "CN=Mario Rossi, O=Aruba PEC S.p.A., C=IT"
      */
-    private static function runOpenSslPkcs7($filePath, $inform = 'DER') {
-        // Whitelist validation for inform parameter
-        if (!in_array($inform, ['DER', 'PEM'], true)) {
-            error_log("PDFSignatureExtractor: Invalid inform format: $inform");
-            return null;
-        }
-        
-        $escapedPath = escapeshellarg($filePath);
-        
-        $cmd = "openssl pkcs7 -inform " . escapeshellarg($inform) . " -in {$escapedPath} -print_certs -text 2>/dev/null";
-        $output = null;
-        $returnCode = 0;
-        exec($cmd, $outputLines, $returnCode);
-        
-        if ($returnCode === 0 && !empty($outputLines)) {
-            $output = implode("\n", $outputLines);
-            // Verify we actually got certificate data
-            if (strpos($output, 'Subject:') !== false || strpos($output, 'Issuer:') !== false) {
-                return $output;
+    private static function buildDnString(array $dn) {
+        $parts = [];
+        foreach ($dn as $k => $v) {
+            if (is_array($v)) {
+                $v = implode('/', $v);
             }
+            $parts[] = $k . '=' . $v;
         }
-        
-        return null;
+        return implode(', ', $parts);
     }
-    
-    /**
-     * Run openssl cms command as fallback for newer CMS/CAdES formats.
-     * 
-     * @param string $filePath Path to CMS file
-     * @return string|null Certificate text output or null on failure
-     */
-    private static function runOpenSslCms($filePath) {
-        $escapedPath = escapeshellarg($filePath);
-        
-        // First try: extract certificates to a temp PEM file using -certsout,
-        // then convert them back to a PKCS#7 bundle so we can use the reliable
-        // "openssl pkcs7 -print_certs -text" output format.
-        // Note: "openssl cms -print_certs" is NOT a valid flag in OpenSSL 3.x;
-        // only "openssl pkcs7" supports -print_certs.
-        // The -verify -noverify may return a non-zero exit code for detached
-        // signatures (no content provided), but still writes the certificates.
-        $tmpCerts = @tempnam(sys_get_temp_dir(), 'easyvol_certs_');
-        if ($tmpCerts !== false) {
-            chmod($tmpCerts, 0600);
-            try {
-                $escapedCerts = escapeshellarg($tmpCerts);
-                exec("openssl cms -inform DER -in {$escapedPath} -verify -noverify -certsout {$escapedCerts} 2>/dev/null");
-                
-                if (file_exists($tmpCerts) && filesize($tmpCerts) > 0) {
-                    // Step 1: Convert extracted PEM certs to a PKCS#7 bundle
-                    $tmpP7b = @tempnam(sys_get_temp_dir(), 'easyvol_p7b_');
-                    if ($tmpP7b !== false) {
-                        chmod($tmpP7b, 0600);
-                        try {
-                            $escapedP7b = escapeshellarg($tmpP7b);
-                            $crl2Rc = 0;
-                            exec("openssl crl2pkcs7 -nocrl -certfile {$escapedCerts} -out {$escapedP7b} 2>/dev/null", $ignoreOut, $crl2Rc);
-                            
-                            if ($crl2Rc === 0 && file_exists($tmpP7b) && filesize($tmpP7b) > 0) {
-                                // Step 2: Parse the PKCS#7 bundle with pkcs7 -print_certs -text
-                                $certOutputLines = [];
-                                $certReturnCode = 0;
-                                exec("openssl pkcs7 -in {$escapedP7b} -print_certs -text 2>/dev/null", $certOutputLines, $certReturnCode);
-                                
-                                if ($certReturnCode === 0 && !empty($certOutputLines)) {
-                                    $certOutput = implode("\n", $certOutputLines);
-                                    if (strpos($certOutput, 'Subject:') !== false) {
-                                        return $certOutput;
-                                    }
-                                }
-                            }
-                        } finally {
-                            @unlink($tmpP7b);
-                        }
-                    }
-                }
-            } finally {
-                @unlink($tmpCerts);
-            }
-        }
-        
-        // Fallback: dump CMS structure and parse signer info from it
-        $outputLines = [];
-        $returnCode = 0;
-        exec("openssl cms -inform DER -in {$escapedPath} -cmsout -print 2>/dev/null", $outputLines, $returnCode);
-        
-        if ($returnCode !== 0 || empty($outputLines)) {
-            return null;
-        }
-        
-        $cmsOutput = implode("\n", $outputLines);
-        
-        // Parse signer info from CMS print output
-        return self::extractSignerInfoFromCmsPrint($cmsOutput);
-    }
-    
-    /**
-     * Parse signer info from openssl cms -print output when certificate extraction fails.
-     * 
-     * @param string $cmsOutput Output from openssl cms -cmsout -print
-     * @return string|null Pseudo certificate output or null
-     */
-    private static function extractSignerInfoFromCmsPrint($cmsOutput) {
-        // Look for issuer and serial info in signer info blocks
-        if (preg_match_all('/issuer:\s*\n(.*?)(?=\n\s*\n|\n\s*[a-z])/si', $cmsOutput, $matches)) {
-            $result = '';
-            foreach ($matches[1] as $issuerBlock) {
-                $result .= "Subject: " . trim($issuerBlock) . "\n";
-            }
-            if (!empty($result)) {
-                return $result;
-            }
-        }
-        return null;
-    }
-    
-    /**
-     * Parse openssl certificate text output to extract signer details.
-     * 
-     * @param string $certOutput Output from openssl pkcs7/cms -print_certs -text
-     * @param int $startIndex Starting index for signature numbering
-     * @return array Array of signature info arrays
-     */
-    private static function parseCertificateOutput($certOutput, $startIndex = 0) {
-        $signatures = [];
-        
-        // Split by certificate blocks
-        $certBlocks = preg_split('/-----BEGIN CERTIFICATE-----/', $certOutput);
-        
-        // Collect all subject/issuer pairs first
-        $certs = [];
-        
-        // Also try parsing without PEM markers (when using -text)
-        if (preg_match_all('/Subject:\s*(.+)/i', $certOutput, $subjectMatches)) {
-            $issuerMatches = [];
-            preg_match_all('/Issuer:\s*(.+)/i', $certOutput, $issuerMatches);
-            
-            $validityNotBefore = [];
-            preg_match_all('/Not Before\s*:\s*(.+)/i', $certOutput, $validityNotBefore);
-            
-            $validityNotAfter = [];
-            preg_match_all('/Not After\s*:\s*(.+)/i', $certOutput, $validityNotAfter);
-            
-            $serialMatches = [];
-            preg_match_all('/Serial Number\s*:\s*\n?\s*(.+)/i', $certOutput, $serialMatches);
-            
-            for ($i = 0; $i < count($subjectMatches[1]); $i++) {
-                $subject = trim($subjectMatches[1][$i]);
-                $issuer = isset($issuerMatches[1][$i]) ? trim($issuerMatches[1][$i]) : '';
-                $notBefore = isset($validityNotBefore[1][$i]) ? trim($validityNotBefore[1][$i]) : '';
-                $notAfter = isset($validityNotAfter[1][$i]) ? trim($validityNotAfter[1][$i]) : '';
-                $serial = isset($serialMatches[1][$i]) ? trim($serialMatches[1][$i]) : '';
-                
-                $certs[] = [
-                    'subject' => $subject,
-                    'issuer' => $issuer,
-                    'not_before' => $notBefore,
-                    'not_after' => $notAfter,
-                    'serial' => $serial,
-                ];
-            }
-        }
-        
-        // Filter: keep only end-entity (signer) certificates, not CA certificates
-        // A CA cert is one whose Subject appears as Issuer of another cert, or is self-signed
-        $signerCerts = self::filterSignerCertificates($certs);
-        
-        $sigNum = $startIndex;
-        foreach ($signerCerts as $cert) {
-            $sigNum++;
-            $parsed = self::parseDN($cert['subject']);
-            $issuerParsed = self::parseDN($cert['issuer']);
-            
-            $signerName = $parsed['CN'] ?? $parsed['O'] ?? 'Sconosciuto';
-            $organization = $parsed['O'] ?? null;
-            $serialNumber = $parsed['serialNumber'] ?? $parsed['SERIALNUMBER'] ?? null;
-            $fiscalCode = self::extractFiscalCode($cert['subject'], $serialNumber);
-            
-            $issuerOrg = $issuerParsed['O'] ?? null;
-            $issuerCN = $issuerParsed['CN'] ?? null;
-            
-            // Determine CA provider name
-            $caProvider = self::identifyCAProvider($issuerOrg, $issuerCN, $cert['issuer']);
-            
-            // Parse signing date from certificate validity
-            $sigDate = null;
-            if (!empty($cert['not_before'])) {
-                $ts = strtotime($cert['not_before']);
-                if ($ts !== false) {
-                    $sigDate = date('Y-m-d H:i:s', $ts);
-                }
-            }
-            
-            // Certificate validity period
-            $certValidFrom = null;
-            $certValidTo = null;
-            if (!empty($cert['not_before'])) {
-                $ts = strtotime($cert['not_before']);
-                if ($ts !== false) {
-                    $certValidFrom = date('Y-m-d H:i:s', $ts);
-                }
-            }
-            if (!empty($cert['not_after'])) {
-                $ts = strtotime($cert['not_after']);
-                if ($ts !== false) {
-                    $certValidTo = date('Y-m-d H:i:s', $ts);
-                }
-            }
-            
-            $signatures[] = [
-                'number' => $sigNum,
-                'signer_name' => $signerName,
-                'signer_organization' => $organization,
-                'fiscal_code' => $fiscalCode,
-                'signature_date' => $sigDate,
-                'reason' => null,
-                'location' => null,
-                'ca_provider' => $caProvider,
-                'issuer' => $issuerCN ?? $issuerOrg ?? $cert['issuer'],
-                'certificate_valid_from' => $certValidFrom,
-                'certificate_valid_to' => $certValidTo,
-                'serial_number' => $cert['serial'] ?: null,
-                'certificate_info' => [
-                    'subject' => $cert['subject'],
-                    'issuer' => $cert['issuer'],
-                ]
-            ];
-        }
-        
-        return $signatures;
-    }
-    
+
     /**
      * Filter out CA/intermediate certificates, keeping only end-entity signer certs.
-     * 
-     * @param array $certs Array of cert arrays with 'subject' and 'issuer'
-     * @return array Filtered array of signer certificates
+     * Works on the parsed arrays returned by openssl_x509_parse().
+     *
+     * @param array $certs Array of parsed cert arrays (each has 'subject' and 'issuer' arrays)
+     * @return array Filtered array
      */
-    private static function filterSignerCertificates($certs) {
+    private static function filterSignerCertificatesParsed(array $certs) {
         if (empty($certs)) {
             return [];
         }
-        
-        // Collect all subjects
-        $subjects = array_column($certs, 'subject');
-        
+
+        // Precompute both subject and issuer DN strings to avoid O(n²) re-computation
+        $subjectDns = [];
+        $issuerDns  = [];
+        foreach ($certs as $idx => $cert) {
+            $subjectDns[$idx] = self::buildDnString($cert['subject'] ?? []);
+            $issuerDns[$idx]  = self::buildDnString($cert['issuer']  ?? []);
+        }
+
         $signerCerts = [];
-        foreach ($certs as $cert) {
+        foreach ($certs as $idx => $cert) {
+            $subjectDn = $subjectDns[$idx];
+            $issuerDn  = $issuerDns[$idx];
+
             // Skip self-signed certs (CA root)
-            if ($cert['subject'] === $cert['issuer']) {
+            if ($subjectDn === $issuerDn) {
                 continue;
             }
-            
-            // Skip certs whose subject is the issuer of another cert (intermediate CA)
+
+            // Skip if this cert's subject is the issuer of another cert
             $isIssuer = false;
-            foreach ($certs as $other) {
-                if ($other['issuer'] === $cert['subject'] && $other['subject'] !== $cert['subject']) {
+            foreach ($issuerDns as $otherIdx => $otherIssuerDn) {
+                if ($otherIssuerDn === $subjectDn && $subjectDns[$otherIdx] !== $subjectDn) {
                     $isIssuer = true;
                     break;
                 }
             }
-            
             if (!$isIssuer) {
                 $signerCerts[] = $cert;
             }
         }
-        
-        // If filtering removed everything, return all non-self-signed
+
         if (empty($signerCerts)) {
-            foreach ($certs as $cert) {
-                if ($cert['subject'] !== $cert['issuer']) {
+            foreach ($certs as $idx => $cert) {
+                if ($subjectDns[$idx] !== $issuerDns[$idx]) {
                     $signerCerts[] = $cert;
                 }
             }
         }
-        
-        // If still empty, return all certs
-        if (empty($signerCerts)) {
-            $signerCerts = $certs;
-        }
-        
-        return $signerCerts;
+
+        return !empty($signerCerts) ? $signerCerts : $certs;
     }
-    
+
     /**
-     * Parse a Distinguished Name (DN) string into key-value pairs.
-     * 
-     * @param string $dn DN string like "CN = Mario Rossi, O = Aruba PEC S.p.A., ..."
-     * @return array Associative array of DN components
+     * Extract Italian fiscal code from an openssl_x509_parse subject array.
+     *
+     * @param array $subject Subject array from openssl_x509_parse
+     * @param string|null $serialAttr serialNumber attribute value (if any)
+     * @return string|null
      */
-    private static function parseDN($dn) {
-        $result = [];
-        if (empty($dn)) {
-            return $result;
+    private static function extractFiscalCodeFromArray(array $subject, $serialAttr = null) {
+        $pattern = '/\b([A-Z]{6}\d{2}[A-EHLMPRST]\d{2}[A-Z]\d{3}[A-Z])\b/i';
+
+        if (!empty($serialAttr) && preg_match($pattern, $serialAttr, $m)) {
+            return strtoupper($m[1]);
         }
-        
-        // Use openssl_x509_parse-style parsing: split on ", " but not inside quoted strings
-        // openssl uses ", " as separator in Subject/Issuer lines
-        // Also handle "/" separator used in some openssl output formats
-        $parts = [];
-        $current = '';
-        $inEscape = false;
-        
-        for ($i = 0; $i < strlen($dn); $i++) {
-            $ch = $dn[$i];
-            
-            if ($inEscape) {
-                $current .= $ch;
-                $inEscape = false;
-                continue;
-            }
-            
-            if ($ch === '\\') {
-                $inEscape = true;
-                $current .= $ch;
-                continue;
-            }
-            
-            // Split on ", " or "/" separators
-            if ($ch === '/' && ($i === 0 || $dn[$i-1] !== '\\')) {
-                if (!empty(trim($current))) {
-                    $parts[] = trim($current);
-                }
-                $current = '';
-                continue;
-            }
-            
-            if ($ch === ',' && $i + 1 < strlen($dn) && $dn[$i + 1] === ' ') {
-                if (!empty(trim($current))) {
-                    $parts[] = trim($current);
-                }
-                $current = '';
-                $i++; // skip the space after comma
-                continue;
-            }
-            
-            $current .= $ch;
-        }
-        if (!empty(trim($current))) {
-            $parts[] = trim($current);
-        }
-        
-        foreach ($parts as $part) {
-            $part = trim($part);
-            if (strpos($part, '=') !== false) {
-                list($key, $value) = explode('=', $part, 2);
-                $key = trim($key);
-                $value = trim($value);
-                // Handle OID-based keys (e.g., 2.5.4.5 = serialNumber)
-                $key = self::resolveOID($key);
-                $result[$key] = $value;
+
+        // TINIT- prefix (common in Italian qualified certs)
+        foreach ($subject as $v) {
+            if (is_string($v) && preg_match('/TINIT-([A-Z]{6}\d{2}[A-EHLMPRST]\d{2}[A-Z]\d{3}[A-Z])/i', $v, $m)) {
+                return strtoupper($m[1]);
             }
         }
-        
-        return $result;
+
+        $flatSubject = implode(' ', array_map(function($v) { return is_string($v) ? $v : ''; }, $subject));
+        if (preg_match($pattern, $flatSubject, $m)) {
+            return strtoupper($m[1]);
+        }
+
+        return null;
     }
     
     /**
@@ -875,25 +859,34 @@ class PDFSignatureExtractor {
         foreach ($signatures as $idx => &$sig) {
             if (isset($pdfMeta[$idx])) {
                 $meta = $pdfMeta[$idx];
-                
+
                 // Use PDF /M date if we don't have a signing date from the cert
                 if (empty($sig['signature_date']) && !empty($meta['signature_date'])) {
                     $sig['signature_date'] = $meta['signature_date'];
+                    $sig['signing_time']   = $meta['signature_date'];
+                    $sig['signing_date']   = $meta['signature_date'];
                 }
-                
+
                 if (empty($sig['reason']) && !empty($meta['reason'])) {
                     $sig['reason'] = $meta['reason'];
                 }
-                
+
                 if (empty($sig['location']) && !empty($meta['location'])) {
                     $sig['location'] = $meta['location'];
                 }
-                
+
                 // Use PDF /Name only if signer_name is still unknown
                 if (($sig['signer_name'] === 'Sconosciuto' || empty($sig['signer_name']))
                     && !empty($meta['pdf_name'])) {
                     $sig['signer_name'] = $meta['pdf_name'];
+                    $sig['common_name'] = $sig['common_name'] ?? $meta['pdf_name'];
                 }
+            }
+
+            // Sync alias fields from primary fields if not already set
+            if (empty($sig['signing_time']) && !empty($sig['signature_date'])) {
+                $sig['signing_time'] = $sig['signature_date'];
+                $sig['signing_date'] = $sig['signature_date'];
             }
         }
         unset($sig);
@@ -927,13 +920,18 @@ class PDFSignatureExtractor {
                 $info = [
                     'number' => $sigCount,
                     'signer_name' => 'Sconosciuto',
+                    'common_name' => null,
                     'signer_organization' => null,
+                    'organization' => null,
                     'fiscal_code' => null,
                     'signature_date' => null,
+                    'signing_time' => null,
+                    'signing_date' => null,
                     'reason' => null,
                     'location' => null,
                     'ca_provider' => null,
                     'issuer' => null,
+                    'issuer_organization' => null,
                     'certificate_valid_from' => null,
                     'certificate_valid_to' => null,
                     'serial_number' => null,
@@ -969,13 +967,18 @@ class PDFSignatureExtractor {
                 $signatures[] = [
                     'number' => $i + 1,
                     'signer_name' => 'Sconosciuto',
+                    'common_name' => null,
                     'signer_organization' => null,
+                    'organization' => null,
                     'fiscal_code' => null,
                     'signature_date' => null,
+                    'signing_time' => null,
+                    'signing_date' => null,
                     'reason' => 'Firma digitale',
                     'location' => null,
                     'ca_provider' => null,
                     'issuer' => null,
+                    'issuer_organization' => null,
                     'certificate_valid_from' => null,
                     'certificate_valid_to' => null,
                     'serial_number' => null,
