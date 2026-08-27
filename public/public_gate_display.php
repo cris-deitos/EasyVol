@@ -365,10 +365,10 @@ $totalCount = $controller->getTotalPeopleCount();
             const btn = document.getElementById('toggle-unmanaged');
             if (showUnmanaged) {
                 btn.classList.add('active');
-                btn.innerHTML = '<i class="bi bi-eye"></i> Non gestiti';
+                btn.innerHTML = '<i class="bi bi-eye"></i>';
             } else {
                 btn.classList.remove('active');
-                btn.innerHTML = '<i class="bi bi-eye-slash"></i> Non gestiti';
+                btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
             }
             updateTable(allGates);
             updateMap(allGates);
