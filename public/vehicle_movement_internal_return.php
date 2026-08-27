@@ -280,12 +280,12 @@ $pageTitle = 'Registra Rientro Veicolo';
                                 <div class="col-md-6">
                                     <label for="return_fuel_level" class="form-label">Livello Carburante al Rientro</label>
                                     <select class="form-select" id="return_fuel_level" name="return_fuel_level">
-                                        <option value="">Non specificato</option>
-                                        <option value="pieno">Pieno</option>
-                                        <option value="3/4">3/4</option>
-                                        <option value="1/2">1/2</option>
-                                        <option value="1/4">1/4</option>
-                                        <option value="riserva">Riserva</option>
+<option value="">Non specificato</option>
+<option value="empty">Vuoto</option>
+<option value="1/4">1/4</option>
+<option value="1/2">1/2</option>
+<option value="3/4">3/4</option>
+<option value="full">Pieno</option>
                                     </select>
                                 </div>
                             </div>
@@ -398,10 +398,10 @@ $pageTitle = 'Registra Rientro Veicolo';
                                 data.drivers.forEach(driver => {
                                     if (!selectedDrivers.has(driver.id)) {
                                         html += `<div class="search-result-item" data-id="${driver.id}" data-name="${driver.first_name} ${driver.last_name}" data-reg="${driver.registration_number}">
-                                            <strong>${driver.first_name} ${driver.last_name}</strong> 
-                                            (${driver.registration_number})
-                                            <br><small class="text-muted">${driver.roles || 'Nessuna qualifica'}</small>
-                                        </div>`;
+    <strong>${driver.first_name} ${driver.last_name}</strong> 
+    (${driver.registration_number})
+    <br><small class="text-muted">${driver.roles || 'Nessuna qualifica'}</small>
+</div>`;
                                     }
                                 });
                                 
