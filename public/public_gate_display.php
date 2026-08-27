@@ -116,6 +116,7 @@ $totalCount = $controller->getTotalPeopleCount();
             padding: 15px;
             overflow-y:  auto;
             box-shadow:  0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
         }
         
         .map-section {
@@ -255,6 +256,30 @@ $totalCount = $controller->getTotalPeopleCount();
             font-size: 20px;
             line-height: 1.6;
         }
+
+        .toggle-unmanaged-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 20;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 8px;
+            border: 1px solid #9e9e9e;
+            background: #f5f5f5;
+            color: #555;
+            cursor: pointer;
+            opacity: 0.85;
+            transition: opacity 0.2s, background 0.2s;
+        }
+        .toggle-unmanaged-btn:hover {
+            opacity: 1;
+            background: #e0e0e0;
+        }
+        .toggle-unmanaged-btn.active {
+            background: #9e9e9e;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -294,6 +319,9 @@ $totalCount = $controller->getTotalPeopleCount();
             <div class="content">
                 <!-- Table Section -->
                 <div class="table-section">
+                    <button class="toggle-unmanaged-btn active" id="toggle-unmanaged" title="Mostra/Nascondi varchi non gestiti" onclick="toggleUnmanaged()">
+                        <i class="bi bi-eye"></i> Non gestiti
+                    </button>
                     <?php if (empty($gates)): ?>
                         <div class="no-gates">
                             <i class="bi bi-inbox" style="font-size: 48px; display: block; margin-bottom: 20px;"></i>
@@ -328,7 +356,29 @@ $totalCount = $controller->getTotalPeopleCount();
     <script>
         let map;
         let markers = [];
+        let allGates = [];
+        let showUnmanaged = true;
         const systemActive = <?php echo $systemStatus['is_active'] ?  'true' : 'false'; ?>;
+
+        function toggleUnmanaged() {
+            showUnmanaged = !showUnmanaged;
+            const btn = document.getElementById('toggle-unmanaged');
+            if (showUnmanaged) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="bi bi-eye"></i> Non gestiti';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="bi bi-eye-slash"></i> Non gestiti';
+            }
+            updateTable(allGates);
+            updateMap(allGates);
+        }
+
+        function filterGates(gates) {
+            if (!gates) return [];
+            if (showUnmanaged) return gates;
+            return gates.filter(g => g.status !== 'non_gestito');
+        }
 
         // Initialize map
         function initMap() {
@@ -346,6 +396,7 @@ $totalCount = $controller->getTotalPeopleCount();
                 .then(response => response. json())
                 .then(data => {
                     if (data.success) {
+                        allGates = data.gates;
                         updateTable(data.gates);
                         updateMap(data.gates);
                         updateTotalCount();
@@ -358,13 +409,15 @@ $totalCount = $controller->getTotalPeopleCount();
         function updateTable(gates) {
             const tbody = document.getElementById('gates-tbody');
             if (!tbody) return;
+
+            const filtered = filterGates(gates);
             
-            if (! gates || gates.length === 0) {
+            if (! filtered || filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="no-gates">Nessun varco configurato</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = gates.map(gate => {
+            tbody.innerHTML = filtered.map(gate => {
                 const currentLimit = getCurrentLimit(gate);
                 const isExceeded = gate.people_count > currentLimit;
                 const rowClass = isExceeded ? 'limit-exceeded' : '';
@@ -394,10 +447,11 @@ $totalCount = $controller->getTotalPeopleCount();
             markers.forEach(marker => map.removeLayer(marker));
             markers = [];
 
-            if (!gates || gates.length === 0) return;
+            const filtered = filterGates(gates);
+            if (!filtered || filtered.length === 0) return;
 
             let bounds = [];
-            gates.forEach(gate => {
+            filtered.forEach(gate => {
                 if (gate.latitude && gate.longitude) {
                     const lat = parseFloat(gate.latitude);
                     const lng = parseFloat(gate.longitude);
