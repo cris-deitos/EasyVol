@@ -544,10 +544,10 @@ $pageTitle = 'Registra Uscita Veicolo';
                                 data.drivers.forEach(driver => {
                                     if (!selectedDrivers.has(driver.id)) {
                                         html += `<div class="search-result-item" data-id="${driver.id}" data-name="${driver.first_name} ${driver.last_name}" data-reg="${driver.registration_number}">
-                                            <strong>${driver.first_name} ${driver.last_name}</strong> 
-                                            (${driver.registration_number})
-                                            <br><small class="text-muted">${driver.roles || 'Nessuna qualifica'}</small>
-                                        </div>`;
+    <strong>${driver.first_name} ${driver.last_name}</strong> 
+    (${driver.registration_number})
+    <br><small class="text-muted">${driver.roles || 'Nessuna qualifica'}</small>
+</div>`;
                                     }
                                 });
                                 
