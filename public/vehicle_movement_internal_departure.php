@@ -313,11 +313,11 @@ $pageTitle = 'Registra Uscita Veicolo';
                                     <label for="departure_fuel_level" class="form-label">Livello Carburante</label>
                                     <select class="form-select" id="departure_fuel_level" name="departure_fuel_level">
                                         <option value="">Non specificato</option>
-                                        <option value="pieno">Pieno</option>
-                                        <option value="3/4">3/4</option>
-                                        <option value="1/2">1/2</option>
+                                        <option value="empty">Vuoto</option>
                                         <option value="1/4">1/4</option>
-                                        <option value="riserva">Riserva</option>
+                                        <option value="1/2">1/2</option>
+                                        <option value="3/4">3/4</option>
+                                        <option value="full">Pieno</option>
                                     </select>
                                 </div>
                                 
