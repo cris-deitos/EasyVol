@@ -320,7 +320,7 @@ $totalCount = $controller->getTotalPeopleCount();
                 <!-- Table Section -->
                 <div class="table-section">
                     <button class="toggle-unmanaged-btn active" id="toggle-unmanaged" title="Mostra/Nascondi varchi non gestiti" onclick="toggleUnmanaged()">
-                        <i class="bi bi-eye-slash"></i> Non gestiti
+                        <i class="bi bi-eye"></i> Non gestiti
                     </button>
                     <?php if (empty($gates)): ?>
                         <div class="no-gates">
@@ -365,10 +365,10 @@ $totalCount = $controller->getTotalPeopleCount();
             const btn = document.getElementById('toggle-unmanaged');
             if (showUnmanaged) {
                 btn.classList.add('active');
-                btn.innerHTML = '<i class="bi bi-eye-slash"></i> Non gestiti';
+                btn.innerHTML = '<i class="bi bi-eye"></i> Non gestiti';
             } else {
                 btn.classList.remove('active');
-                btn.innerHTML = '<i class="bi bi-eye"></i> Non gestiti';
+                btn.innerHTML = '<i class="bi bi-eye-slash"></i> Non gestiti';
             }
             updateTable(allGates);
             updateMap(allGates);
