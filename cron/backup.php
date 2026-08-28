@@ -253,16 +253,21 @@ try {
     echo "Backup creato con successo: {$filename} (" . round($filesize / 1024 / 1024, 2) . " MB)\n";
 
     // Delete old backups (keep last 30 days) per file .sql e .sql.gz
-    $files = array_unique(array_merge(
+    $plainSqlFiles = array_values(array_filter(
         glob($backupDir . '/backup_*.sql') ?: [],
-        glob($backupDir . '/backup_*.sql.gz') ?: []
+        static fn(string $file): bool => str_ends_with($file, '.sql')
     ));
+    $compressedSqlFiles = glob($backupDir . '/backup_*.sql.gz') ?: [];
+    $files = array_unique(array_merge($plainSqlFiles, $compressedSqlFiles));
     $now = time();
 
     foreach ($files as $file) {
         if ($now - filemtime($file) >= 30 * 24 * 60 * 60) {
-            unlink($file);
-            echo "Deleted old backup: " . basename($file) . "\n";
+            if (unlink($file)) {
+                echo "Deleted old backup: " . basename($file) . "\n";
+            } else {
+                error_log("Impossibile eliminare vecchio backup: {$file}");
+            }
         }
     }
 
@@ -285,7 +290,9 @@ try {
     }
 
     if (isset($filepath) && is_file($filepath)) {
-        unlink($filepath);
+        if (!unlink($filepath)) {
+            error_log("Impossibile eliminare backup parziale: {$filepath}");
+        }
     }
 
     if (defined('CRON_JOB_NAME')) {
