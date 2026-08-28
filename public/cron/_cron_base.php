@@ -99,7 +99,7 @@ function validateCronRequest() {
         
         return ['success' => true, 'message' => 'Authentication successful'];
         
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         error_log('Cron validation error: ' . $e->getMessage());
         return [
             'success' => false,
@@ -138,15 +138,27 @@ function executeCronJob($cronFilePath) {
             'message' => 'Cron job executed successfully'
         ];
         
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
+        $capturedOutput = ob_get_contents();
+        if ($capturedOutput === false) {
+            $capturedOutput = '';
+        }
+
         ob_end_clean();
         
         error_log('Cron execution error: ' . $e->getMessage());
+
+        $errorOutput = rtrim($capturedOutput);
+        if ($errorOutput !== '') {
+            $errorOutput .= "\n";
+        }
+        $errorOutput .= 'Error: ' . $e->getMessage();
         
         return [
             'success' => false,
-            'output' => '',
-            'message' => 'Cron job execution failed: ' . $e->getMessage()
+            'output' => $errorOutput,
+            'message' => 'Cron job execution failed: ' . $e->getMessage(),
+            'error' => $e->getMessage()
         ];
     }
 }

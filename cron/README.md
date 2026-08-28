@@ -130,7 +130,7 @@ wget -q -O /dev/null "https://tuosito.com/public/cron/email_queue.php?token=IL_T
 ### 8. Database Backup
 **File**: `backup.php`
 **Frequenza**: Giornaliero alle 2:00
-**Descrizione**: Crea backup automatico del database (mantiene ultimi 30 giorni)
+**Descrizione**: Crea backup automatico del database in PHP/PDO puro (mantiene ultimi 30 giorni, output `.sql.gz` se zlib disponibile altrimenti `.sql`)
 
 **Esecuzione CLI (metodo tradizionale):**
 ```bash
@@ -272,8 +272,6 @@ chown www-data:www-data /var/www/easyvol/backups
 ### Per esecuzione CLI (metodo tradizionale)
 - PHP CLI installato
 - Accesso al database MySQL/MariaDB
-- mysqldump disponibile per i backup
-- gzip disponibile per la compressione backup
 - Permessi di scrittura sulle directory necessarie
 
 ### Per esecuzione HTTPS (hosting condiviso come Aruba)
@@ -281,6 +279,7 @@ chown www-data:www-data /var/www/easyvol/backups
 - Token segreto configurato in `config/config.php`
 - wget o curl disponibile nel pannello cron
 - Nessun requisito PHP CLI necessario
+- Backup DB `cron/backup.php` eseguibile in PHP puro via PDO/MySQL (non richiede `exec`, `mysqldump` o gzip da shell)
 
 ## Verifica Funzionamento
 
@@ -474,8 +473,8 @@ grep email_queue /var/log/easyvol/email_queue.log
 ### Backup non vengono creati
 
 1. Verifica permessi directory backup
-2. Controlla che mysqldump sia disponibile: `which mysqldump`
-3. Verifica credenziali database
+2. Verifica credenziali database
+3. Verifica estensione zlib (se vuoi file `.sql.gz`): `php -m | grep zlib`
 4. Controlla log: `tail -f /var/log/easyvol/backup.log`
 
 ### Cron non si eseguono

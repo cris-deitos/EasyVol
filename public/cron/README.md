@@ -74,7 +74,7 @@ https://tuosito.com/public/cron/NOME_CRON.php?token=IL_TUO_TOKEN_SEGRETO
 | `member_expiry_alerts.php` | Alert scadenze soci | Giornaliero (08:00) |
 | `health_surveillance_alerts.php` | Alert visite mediche | Giornaliero (08:00) |
 | `annual_member_verification.php` | Verifica annuale soci | 7 gennaio (09:00) |
-| `backup.php` | Backup database | Giornaliero (02:00) |
+| `backup.php` | Backup database (PHP/PDO puro, senza CLI) | Giornaliero (02:00) |
 | `sync_all_expiry_dates.php` | Sincronizza scadenze | Settimanale |
 
 ## Configurazione su Aruba Hosting
@@ -229,6 +229,12 @@ Il sistema usa `hash_equals()` per prevenire timing attacks. Per ulteriore prote
 2. Controlla i log del pannello Aruba per errori di esecuzione
 3. Testa manualmente l'endpoint con curl
 4. Verifica che HTTPS sia configurato correttamente
+
+### Problema: Backup DB (`backup.php`) fallisce su hosting condiviso
+**Note**:
+- Il backup usa solo PHP + PDO/MySQL, senza `exec`, `mysqldump` o `gzip` da shell
+- Se zlib non è disponibile, viene creato automaticamente un file `.sql` non compresso
+- In caso di errore, la risposta JSON dell'endpoint include ora il messaggio reale nel campo `output`
 
 ## Differenze tra CLI e Web
 
