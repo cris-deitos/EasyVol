@@ -243,6 +243,7 @@ try {
     } else {
         fclose($handle);
     }
+    $handle = null;
 
     if (!file_exists($filepath) || filesize($filepath) === 0) {
         throw new \Exception('Backup creato ma file vuoto o non trovato: ' . $filepath);
@@ -275,11 +276,11 @@ try {
     error_log("Backup cron error: " . $e->getMessage());
     echo "Error: " . $e->getMessage() . "\n";
 
-    if (isset($handle)) {
-        if (isset($useGzip) && $useGzip && is_resource($handle)) {
-            gzclose($handle);
-        } elseif (is_resource($handle)) {
-            fclose($handle);
+    if (isset($handle) && $handle !== null) {
+        if (isset($useGzip) && $useGzip) {
+            @gzclose($handle);
+        } else {
+            @fclose($handle);
         }
     }
 
