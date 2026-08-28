@@ -191,7 +191,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         const map = L.map('weatherMap', {
             zoomControl: true,
             attributionControl: true
-        }).setView([45.4667, 10.5333], 11);
+        }).setView([45.4667, 10.5333], 10);
 
         // Add base map layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -239,27 +239,24 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 const tileUrl = `${radarHost}${frame.path}/${optionTileSize}/{z}/{x}/{y}/${optionColorScheme}/${optionSmoothData}_${optionSnowColors}.${optionExtension}`;
                 
                 const layer = L.tileLayer(tileUrl, {
-                    opacity: 0,
-                    maxZoom: 19,
-                    zIndex: frame.time,
-                    attribution: '&copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
+    opacity: 0,
+    maxZoom: 19,
+    maxNativeZoom: 7,
+    zIndex: frame.time,
+    // PNG 1x1 trasparente: evita l'icona di immagine rotta sui tile 404 (zone senza pioggia)
+    errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    attribution: '&copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
+});
+            // I 404 sui tile senza pioggia sono normali: li logghiamo solo in console,
+            // senza mostrare avvisi né sovrascrivere il messaggio "Dati disponibili".
+            layer.on('tileerror', (event) => {
+                const failedUrl = (event && event.tile && (event.tile.currentSrc || event.tile.src)) || tileUrl;
+                console.debug('RainViewer tile 404 (zona senza pioggia o non coperta):', {
+                    url: failedUrl,
+                    framePath: frame.path,
+                    coords: event ? event.coords : null
                 });
-                let visibleLayerTileErrorShown = false;
-
-                layer.on('tileerror', (event) => {
-                    const failedUrl = (event && event.tile && (event.tile.currentSrc || event.tile.src)) || tileUrl;
-                    console.error('RainViewer tile load error:', {
-                        url: failedUrl,
-                        framePath: frame.path,
-                        coords: event ? event.coords : null
-                    });
-
-                    if (!visibleLayerTileErrorShown && visibleFramePath === frame.path) {
-                        visibleLayerTileErrorShown = true;
-                        document.getElementById('radarInfo').innerHTML =
-                            '<small><i class="bi bi-exclamation-triangle text-warning"></i> Alcuni tile radar non sono stati caricati.<br>Riprova con "Aggiorna".</small>';
-                    }
-                });
+            });
                 
                 // Add load event listener if callback provided
                 if (onLoad) {
