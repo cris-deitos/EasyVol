@@ -228,6 +228,14 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 const radarHost = (apiData.host || '')
                     .replace(/^http:\/\//i, 'https://')
                     .replace(/^\/\//, 'https://');
+                if (!radarHost) {
+                    console.error('RainViewer host missing in API response, cannot build tile URL', {
+                        framePath: frame.path
+                    });
+                    document.getElementById('radarInfo').innerHTML =
+                        '<small><i class="bi bi-x-circle text-danger"></i> Errore API RainViewer: host tile non disponibile.<br>Riprova con "Aggiorna".</small>';
+                    return null;
+                }
                 const tileUrl = `${radarHost}${frame.path}/${optionTileSize}/{z}/{x}/{y}/${optionColorScheme}/${optionSmoothData}_${optionSnowColors}.${optionExtension}`;
                 
                 const layer = L.tileLayer(tileUrl, {
@@ -275,10 +283,12 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         // isInitialLoad: if true, auto-start animation after successful load
         async function loadRadarData(isInitialLoad = false) {
             document.getElementById('loadingIndicator').style.display = 'block';
+            let rainViewerApiUnavailable = false;
             
             try {
                 const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
                 if (!response.ok) {
+                    rainViewerApiUnavailable = true;
                     throw new Error(`RainViewer API HTTP ${response.status} ${response.statusText}`);
                 }
                 const data = await response.json();
@@ -364,12 +374,20 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                 }
             } catch (error) {
                 const errorMessage = error && error.message ? error.message : 'Errore sconosciuto';
-                const isNetworkOrApiError = error instanceof TypeError || errorMessage.startsWith('RainViewer API HTTP');
                 console.error(`Error loading RainViewer radar data: ${errorMessage}`, error);
-                document.getElementById('radarInfo').innerHTML = 
-                    isNetworkOrApiError
-                        ? '<small><i class="bi bi-x-circle text-danger"></i> Errore di rete/API RainViewer non raggiungibile.<br>Riprova con "Aggiorna".</small>'
-                        : '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile al momento.<br>Riprova con "Aggiorna".</small>';
+                if (rainViewerApiUnavailable) {
+                    document.getElementById('radarInfo').innerHTML =
+                        '<small><i class="bi bi-x-circle text-danger"></i> Errore API RainViewer: risposta HTTP non valida.<br>Riprova con "Aggiorna".</small>';
+                } else if (error instanceof SyntaxError) {
+                    document.getElementById('radarInfo').innerHTML =
+                        '<small><i class="bi bi-x-circle text-danger"></i> Errore API RainViewer: risposta non valida.<br>Riprova con "Aggiorna".</small>';
+                } else if (error instanceof TypeError) {
+                    document.getElementById('radarInfo').innerHTML =
+                        '<small><i class="bi bi-x-circle text-danger"></i> Errore di rete: API RainViewer non raggiungibile.<br>Riprova con "Aggiorna".</small>';
+                } else {
+                    document.getElementById('radarInfo').innerHTML =
+                        '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile al momento.<br>Riprova con "Aggiorna".</small>';
+                }
             } finally {
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
