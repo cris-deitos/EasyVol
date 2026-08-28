@@ -214,7 +214,7 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         const optionColorScheme = 2; // Universal Blue
         const optionSmoothData = 1;
         const optionSnowColors = 1;
-        const optionExtension = 'webp';
+        const optionExtension = 'png';
         
         // Animation settings
         const frameDuration = 500; // Total time per frame in ms (faster for smoother feel)
@@ -225,13 +225,32 @@ $pageTitle = 'Radar Meteo - Nord Italia';
         // onLoad: optional callback fired when all visible tiles in the current viewport are loaded
         function addRadarLayer(frame, onLoad = null) {
             if (!radarLayers[frame.path]) {
-                const tileUrl = `${apiData.host}${frame.path}/${optionTileSize}/{z}/{x}/{y}/${optionColorScheme}/${optionSmoothData}_${optionSnowColors}.${optionExtension}`;
+                const radarHost = (apiData.host || '')
+                    .replace(/^http:\/\//i, 'https://')
+                    .replace(/^\/\//, 'https://');
+                const tileUrl = `${radarHost}${frame.path}/${optionTileSize}/{z}/{x}/{y}/${optionColorScheme}/${optionSmoothData}_${optionSnowColors}.${optionExtension}`;
                 
                 const layer = L.tileLayer(tileUrl, {
                     opacity: 0,
                     maxZoom: 19,
                     zIndex: frame.time,
                     attribution: '&copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
+                });
+                let visibleLayerTileErrorShown = false;
+
+                layer.on('tileerror', (event) => {
+                    const failedUrl = (event && event.tile && (event.tile.currentSrc || event.tile.src)) || tileUrl;
+                    console.error('RainViewer tile load error:', {
+                        url: failedUrl,
+                        framePath: frame.path,
+                        coords: event ? event.coords : null
+                    });
+
+                    if (!visibleLayerTileErrorShown && visibleFramePath === frame.path) {
+                        visibleLayerTileErrorShown = true;
+                        document.getElementById('radarInfo').innerHTML =
+                            '<small><i class="bi bi-exclamation-triangle text-warning"></i> Alcuni tile radar non sono stati caricati.<br>Riprova con "Aggiorna".</small>';
+                    }
                 });
                 
                 // Add load event listener if callback provided
@@ -259,6 +278,9 @@ $pageTitle = 'Radar Meteo - Nord Italia';
             
             try {
                 const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+                if (!response.ok) {
+                    throw new Error(`RainViewer API HTTP ${response.status} ${response.statusText}`);
+                }
                 const data = await response.json();
                 
                 if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
@@ -332,13 +354,22 @@ $pageTitle = 'Radar Meteo - Nord Italia';
                         }
                     });
                 } else {
+                    const pastLength = data && data.radar && Array.isArray(data.radar.past) ? data.radar.past.length : 0;
+                    console.warn('RainViewer returned no past radar frames', {
+                        hasRadar: !!(data && data.radar),
+                        pastLength: pastLength
+                    });
                     document.getElementById('radarInfo').innerHTML = 
-                        '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile</small>';
+                        '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile al momento.<br>Riprova con "Aggiorna".</small>';
                 }
             } catch (error) {
-                console.error('Error loading radar data:', error);
+                const errorMessage = error && error.message ? error.message : 'Errore sconosciuto';
+                const isNetworkOrApiError = error instanceof TypeError || errorMessage.startsWith('RainViewer API HTTP');
+                console.error(`Error loading RainViewer radar data: ${errorMessage}`, error);
                 document.getElementById('radarInfo').innerHTML = 
-                    '<small><i class="bi bi-x-circle text-danger"></i> Errore caricamento dati</small>';
+                    isNetworkOrApiError
+                        ? '<small><i class="bi bi-x-circle text-danger"></i> Errore di rete/API RainViewer non raggiungibile.<br>Riprova con "Aggiorna".</small>'
+                        : '<small><i class="bi bi-exclamation-triangle text-warning"></i> Nessun dato radar disponibile al momento.<br>Riprova con "Aggiorna".</small>';
             } finally {
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
