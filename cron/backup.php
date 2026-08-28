@@ -182,8 +182,18 @@ try {
 
         [$numericColumns, $binaryColumns] = getColumnTypeMaps($pdo, $tableName);
         $rowsExported = 0;
-        $previousBuffered = $pdo->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
-        $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+        $usingUnbufferedQuery = false;
+        $previousBuffered = null;
+
+        if ($pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'mysql') {
+            try {
+                $previousBuffered = $pdo->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
+                $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+                $usingUnbufferedQuery = true;
+            } catch (\Throwable $bufferingError) {
+                $usingUnbufferedQuery = false;
+            }
+        }
 
         try {
             $dataStmt = $pdo->query('SELECT * FROM ' . $quotedTable);
@@ -210,7 +220,9 @@ try {
             if (isset($dataStmt) && $dataStmt instanceof \PDOStatement) {
                 $dataStmt->closeCursor();
             }
-            $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $previousBuffered);
+            if ($usingUnbufferedQuery) {
+                $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $previousBuffered);
+            }
         }
 
         writeBackupChunk($handle, "\n", $useGzip);
@@ -262,6 +274,10 @@ try {
         } elseif (is_resource($handle)) {
             fclose($handle);
         }
+    }
+
+    if (isset($filepath) && is_file($filepath)) {
+        unlink($filepath);
     }
 
     if (defined('CRON_JOB_NAME')) {
