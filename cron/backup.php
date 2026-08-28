@@ -183,11 +183,12 @@ try {
         [$numericColumns, $binaryColumns] = getColumnTypeMaps($pdo, $tableName);
         $rowsExported = 0;
         $usingUnbufferedQuery = false;
-        $previousBuffered = null;
+        $previousBuffered = true;
 
         if ($pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'mysql') {
             try {
-                $previousBuffered = $pdo->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
+                $bufferedAttribute = $pdo->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
+                $previousBuffered = $bufferedAttribute === null ? true : (bool) $bufferedAttribute;
                 $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
                 $usingUnbufferedQuery = true;
             } catch (\Throwable $bufferingError) {
@@ -197,6 +198,7 @@ try {
 
         try {
             $dataStmt = $pdo->query('SELECT * FROM ' . $quotedTable);
+            $insertPrefix = null;
 
             while (($row = $dataStmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
                 $values = [];
@@ -209,9 +211,14 @@ try {
                     );
                 }
 
+                if ($insertPrefix === null) {
+                    $columns = array_map(static fn(string $columnName): string => quoteIdentifier($columnName), array_keys($row));
+                    $insertPrefix = 'INSERT INTO ' . $quotedTable . ' (' . implode(', ', $columns) . ') VALUES ';
+                }
+
                 writeBackupChunk(
                     $handle,
-                    'INSERT INTO ' . $quotedTable . ' VALUES (' . implode(', ', $values) . ");\n",
+                    $insertPrefix . '(' . implode(', ', $values) . ");\n",
                     $useGzip
                 );
                 $rowsExported++;
