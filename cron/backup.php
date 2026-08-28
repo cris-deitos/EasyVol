@@ -181,26 +181,36 @@ try {
         writeBackupChunk($handle, $createTableSql . ";\n\n", $useGzip);
 
         [$numericColumns, $binaryColumns] = getColumnTypeMaps($pdo, $tableName);
-        $dataStmt = $pdo->query('SELECT * FROM ' . $quotedTable);
         $rowsExported = 0;
+        $previousBuffered = $pdo->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
+        $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
 
-        while (($row = $dataStmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
-            $values = [];
-            foreach ($row as $column => $value) {
-                $values[] = toSqlLiteral(
-                    $pdo,
-                    $value,
-                    isset($numericColumns[$column]),
-                    isset($binaryColumns[$column])
+        try {
+            $dataStmt = $pdo->query('SELECT * FROM ' . $quotedTable);
+
+            while (($row = $dataStmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
+                $values = [];
+                foreach ($row as $column => $value) {
+                    $values[] = toSqlLiteral(
+                        $pdo,
+                        $value,
+                        isset($numericColumns[$column]),
+                        isset($binaryColumns[$column])
+                    );
+                }
+
+                writeBackupChunk(
+                    $handle,
+                    'INSERT INTO ' . $quotedTable . ' VALUES (' . implode(', ', $values) . ");\n",
+                    $useGzip
                 );
+                $rowsExported++;
             }
-
-            writeBackupChunk(
-                $handle,
-                'INSERT INTO ' . $quotedTable . ' VALUES (' . implode(', ', $values) . ");\n",
-                $useGzip
-            );
-            $rowsExported++;
+        } finally {
+            if (isset($dataStmt) && $dataStmt instanceof \PDOStatement) {
+                $dataStmt->closeCursor();
+            }
+            $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $previousBuffered);
         }
 
         writeBackupChunk($handle, "\n", $useGzip);
@@ -223,10 +233,10 @@ try {
     echo "Backup creato con successo: {$filename} (" . round($filesize / 1024 / 1024, 2) . " MB)\n";
 
     // Delete old backups (keep last 30 days) per file .sql e .sql.gz
-    $files = array_merge(
+    $files = array_unique(array_merge(
         glob($backupDir . '/backup_*.sql') ?: [],
         glob($backupDir . '/backup_*.sql.gz') ?: []
-    );
+    ));
     $now = time();
 
     foreach ($files as $file) {
