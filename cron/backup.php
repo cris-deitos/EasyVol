@@ -123,7 +123,10 @@ try {
     // Protegge la directory backup da accessi web diretti (se applicabile)
     $htaccessPath = $backupDir . '/.htaccess';
     if (!file_exists($htaccessPath)) {
-        file_put_contents($htaccessPath, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
+        $written = file_put_contents($htaccessPath, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
+        if ($written === false) {
+            error_log("Impossibile creare .htaccess nella directory backup: {$htaccessPath}");
+        }
     }
 
     // Generate filename with timestamp (.gz solo se zlib disponibile)
