@@ -9,7 +9,22 @@ class App {
      * Default password for new users and password resets
      */
     const DEFAULT_PASSWORD = 'Pw@12345678';
-    
+
+    /**
+     * Genera una password casuale per il reset di account esistenti.
+     * Solo lettere e numeri, lunghezza massima 8 caratteri.
+     */
+    public static function generateResetPassword(): string {
+        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        $length = 8;
+        $password = '';
+        $max = strlen($chars) - 1;
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $chars[random_int(0, $max)];
+        }
+        return $password;
+    }
+
     /**
      * Optional email configuration fields that can have empty values
      */

@@ -93,7 +93,7 @@ if (!isset($_FILES['attachment_file']) || $_FILES['attachment_file']['error'] ==
         'text/csv', 'text/plain'
     ];
 
-    if (!in_array($fileExtension, $allowedExtensions) && !in_array($mimeType, $allowedMimes)) {
+    if (!in_array($fileExtension, $allowedExtensions) || !in_array($mimeType, $allowedMimes)) {
         $errors[] = 'Tipo di file non consentito. Formati ammessi: PDF, P7M, Word, immagini, Excel, testo.';
     }
 

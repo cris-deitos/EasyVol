@@ -68,7 +68,7 @@ EasyVol è un sistema di gestione completo progettato specificamente per le asso
 
 3. **Upload via FTP**
    - Carica tutti i file nella directory del tuo hosting (inclusa la cartella `vendor/` generata da Composer)
-   - Assicurati che la cartella `uploads/` sia scrivibile (chmod 755 o 777)
+   - Assicurati che la cartella `uploads/` sia scrivibile (chmod 755)
    - Assicurati che la cartella `config/` sia scrivibile per la configurazione iniziale
 
 4. **Installazione Web**

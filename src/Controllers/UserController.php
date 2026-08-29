@@ -428,7 +428,7 @@ public function index($filters = [], $page = 1, $perPage = 20) {
             }
             
             // Reset password to default and set must_change_password flag
-            $newPassword = \EasyVol\App::DEFAULT_PASSWORD;
+            $newPassword = \EasyVol\App::generateResetPassword();
             $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
             
             $sql = "UPDATE users SET password = ?, must_change_password = 1, updated_at = NOW() WHERE id = ?";
@@ -508,8 +508,8 @@ public function index($filters = [], $page = 1, $perPage = 20) {
                 return ['error' => 'Utente non trovato'];
             }
             
-            // Set default password
-            $newPassword = \EasyVol\App::DEFAULT_PASSWORD;
+            // Set random password for reset
+            $newPassword = \EasyVol\App::generateResetPassword();
             $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
             
             // Update password and set must_change_password flag
