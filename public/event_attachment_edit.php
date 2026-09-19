@@ -124,7 +124,9 @@ if ($result['success']) {
         $oldPath = __DIR__ . '/../' . $result['old_file_path'];
         $realOldPath = realpath($oldPath);
         $uploadDir = realpath(__DIR__ . '/../uploads/events/');
-        if ($realOldPath !== false && $uploadDir !== false && strpos($realOldPath, $uploadDir) === 0 && file_exists($realOldPath)) {
+        if ($realOldPath !== false && $uploadDir !== false
+            && ($realOldPath === $uploadDir || strpos($realOldPath, $uploadDir . DIRECTORY_SEPARATOR) === 0)
+            && file_exists($realOldPath)) {
             @unlink($realOldPath);
         }
     }
@@ -134,7 +136,9 @@ if ($result['success']) {
         $newPath = __DIR__ . '/../' . $data['file_path'];
         $realNewPath = realpath($newPath);
         $uploadDir = realpath(__DIR__ . '/../uploads/events/');
-        if ($realNewPath !== false && $uploadDir !== false && strpos($realNewPath, $uploadDir) === 0 && file_exists($realNewPath)) {
+        if ($realNewPath !== false && $uploadDir !== false
+            && ($realNewPath === $uploadDir || strpos($realNewPath, $uploadDir . DIRECTORY_SEPARATOR) === 0)
+            && file_exists($realNewPath)) {
             @unlink($realNewPath);
         }
     }

@@ -51,7 +51,9 @@ $filePath = __DIR__ . '/../' . $attachment['file_path'];
 $realPath = realpath($filePath);
 $uploadDir = realpath(__DIR__ . '/../uploads/events/');
 
-if ($realPath === false || $uploadDir === false || strpos($realPath, $uploadDir) !== 0 || !file_exists($filePath)) {
+if ($realPath === false || $uploadDir === false
+    || ($realPath !== $uploadDir && strpos($realPath, $uploadDir . DIRECTORY_SEPARATOR) !== 0)
+    || !file_exists($realPath)) {
     http_response_code(404);
     die('File non trovato o accesso negato');
 }

@@ -496,7 +496,7 @@ class EventController {
                 return ['success' => false, 'message' => 'Percorso file non valido', 'has_signature' => false];
             }
 
-            $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+            $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
 
             $updateSql = "UPDATE event_attachments SET
                           has_signature = ?, signature_format = ?, signature_count = ?,
