@@ -34,9 +34,8 @@ class ApplicationController {
      */
     public function create($data, $isJunior = false) {
         try {
-            $this->db->beginTransaction();
-
             $this->validateProvinceData($data);
+            $this->db->beginTransaction();
             $data = $this->uppercaseApplicationData($data);
 
             // Genera codice univoco
@@ -98,7 +97,11 @@ class ApplicationController {
             ];
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            try {
+                $this->db->rollBack();
+            } catch (\Exception $rollbackException) {
+                // Ignore rollback errors and preserve original failure details
+            }
             error_log("Errore creazione domanda: " . $e->getMessage());
             return [
                 'success' => false,
@@ -115,6 +118,8 @@ class ApplicationController {
      */
     public function createAdult($data) {
         try {
+            $this->validateProvinceData($data);
+
             // Verifica se il codice fiscale è già registrato tra soci o cadetti attivi
             if (!empty($data['tax_code'])) {
                 $taxCodeCheck = $this->checkTaxCodeAlreadyRegistered($data['tax_code']);
@@ -135,8 +140,6 @@ class ApplicationController {
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
 
-            // Validate and normalize province fields
-            $this->validateProvinceData($data);
             $data = $this->uppercaseApplicationData($data);
 
             // Prepara i dati JSON
@@ -212,7 +215,11 @@ class ApplicationController {
             ];
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            try {
+                $this->db->rollBack();
+            } catch (\Exception $rollbackException) {
+                // Ignore rollback errors and preserve original failure details
+            }
             error_log("Errore creazione domanda adulto: " . $e->getMessage());
             return [
                 'success' => false,
@@ -229,6 +236,8 @@ class ApplicationController {
      */
     public function createJunior($data) {
         try {
+            $this->validateProvinceData($data);
+
             // Verifica se il codice fiscale è già registrato tra soci o cadetti attivi
             if (!empty($data['tax_code'])) {
                 $taxCodeCheck = $this->checkTaxCodeAlreadyRegistered($data['tax_code']);
@@ -249,8 +258,6 @@ class ApplicationController {
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
 
-            // Validate and normalize province fields
-            $this->validateProvinceData($data);
             $data = $this->uppercaseApplicationData($data);
 
             // Prepara i dati JSON
@@ -326,7 +333,11 @@ class ApplicationController {
             ];
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            try {
+                $this->db->rollBack();
+            } catch (\Exception $rollbackException) {
+                // Ignore rollback errors and preserve original failure details
+            }
             error_log("Errore creazione domanda minorenne: " . $e->getMessage());
             return [
                 'success' => false,
