@@ -52,49 +52,33 @@ if (!$attachment || intval($attachment['event_id']) !== $eventId) {
     exit;
 }
 
+$fileBackupContent = null;
+$fileRealPath = null;
+if (!empty($attachment['file_path'])) {
+    $filePath = __DIR__ . '/../' . $attachment['file_path'];
+    $realPath = realpath($filePath);
+    $uploadDir = realpath(__DIR__ . '/../uploads/events/');
+    if ($realPath !== false && $uploadDir !== false
+        && strpos($realPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
+        && is_file($realPath)) {
+        $fileBackupContent = @file_get_contents($realPath);
+        if ($fileBackupContent === false || !@unlink($realPath)) {
+            $_SESSION['error'] = 'Impossibile eliminare il file allegato dal disco';
+            header('Location: event_view.php?id=' . $eventId . '#attachments');
+            exit;
+        }
+        $fileRealPath = $realPath;
+    }
+}
+
 $result = $controller->deleteAttachment($attachmentId, $app->getUserId());
 
 if ($result['success']) {
-    $fileDeleted = true;
-    if (!empty($attachment['file_path'])) {
-        $filePath = __DIR__ . '/../' . $attachment['file_path'];
-        $realPath = realpath($filePath);
-        $uploadDir = realpath(__DIR__ . '/../uploads/events/');
-        if ($realPath !== false && $uploadDir !== false
-            && strpos($realPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
-            && is_file($realPath)) {
-            $fileDeleted = @unlink($realPath);
-        }
-    }
-
-    if ($fileDeleted) {
-        $_SESSION['success'] = 'Allegato eliminato con successo';
-    } else {
-        $restoreSql = "INSERT INTO event_attachments
-            (event_id, file_name, file_path, file_type, file_size, title, description, document_type, uploaded_by, uploaded_at,
-             has_signature, signature_format, signature_count, signature_data, signature_validity, signature_checked_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $db->execute($restoreSql, [
-            $attachment['event_id'],
-            $attachment['file_name'],
-            $attachment['file_path'],
-            $attachment['file_type'],
-            $attachment['file_size'],
-            $attachment['title'] ?? null,
-            $attachment['description'] ?? null,
-            $attachment['document_type'] ?? null,
-            $attachment['uploaded_by'] ?? null,
-            $attachment['uploaded_at'],
-            $attachment['has_signature'] ?? 0,
-            $attachment['signature_format'] ?? null,
-            $attachment['signature_count'] ?? 0,
-            $attachment['signature_data'] ?? null,
-            $attachment['signature_validity'] ?? 'unknown',
-            $attachment['signature_checked_at'] ?? null
-        ]);
-        $_SESSION['error'] = 'Impossibile eliminare il file allegato dal disco';
-    }
+    $_SESSION['success'] = 'Allegato eliminato con successo';
 } else {
+    if ($fileRealPath !== null && $fileBackupContent !== null) {
+        @file_put_contents($fileRealPath, $fileBackupContent);
+    }
     $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'eliminazione';
 }
 

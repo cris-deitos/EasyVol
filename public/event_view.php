@@ -790,7 +790,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                                     <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                                                                     <input type="hidden" name="id" value="<?php echo $att['id']; ?>">
                                                                     <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Download">
+                                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Download" aria-label="Scarica allegato <?php echo htmlspecialchars($att['file_name']); ?>">
                                                                         <i class="bi bi-download"></i>
                                                                     </button>
                                                                 </form>
@@ -798,6 +798,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                                     <button type="button"
                                                                             class="btn btn-sm btn-outline-warning"
                                                                             title="Modifica"
+                                                                            aria-label="Modifica allegato <?php echo htmlspecialchars($att['file_name']); ?>"
                                                                             data-bs-toggle="modal"
                                                                             data-bs-target="#editEventAttachmentModal"
                                                                             data-attachment-id="<?php echo $att['id']; ?>"
@@ -810,7 +811,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                                         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                                                                         <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
                                                                         <input type="hidden" name="id" value="<?php echo $att['id']; ?>">
-                                                                        <button type="submit" class="btn btn-sm btn-outline-info" title="Ricontrolla firma digitale">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-info" title="Ricontrolla firma digitale" aria-label="Ricontrolla firma digitale allegato <?php echo htmlspecialchars($att['file_name']); ?>">
                                                                             <i class="bi bi-shield-check"></i>
                                                                         </button>
                                                                     </form>
@@ -818,7 +819,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                                         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                                                                         <input type="hidden" name="attachment_id" value="<?php echo $att['id']; ?>">
                                                                         <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina" aria-label="Elimina allegato <?php echo htmlspecialchars($att['file_name']); ?>">
                                                                             <i class="bi bi-trash"></i>
                                                                         </button>
                                                                     </form>

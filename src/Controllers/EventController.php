@@ -397,6 +397,9 @@ class EventController {
             $newFileType = $data['file_type'] ?? $attachment['file_type'];
             $newFileSize = $data['file_size'] ?? $attachment['file_size'];
             $isReplacingFile = !empty($data['file_path']);
+            $newTitle = array_key_exists('title', $data) ? $data['title'] : ($attachment['title'] ?? null);
+            $newDescription = array_key_exists('description', $data) ? $data['description'] : ($attachment['description'] ?? null);
+            $newDocumentType = array_key_exists('document_type', $data) ? $data['document_type'] : ($attachment['document_type'] ?? null);
 
             $signatureInfo = [
                 'has_signature' => !empty($attachment['has_signature']),
@@ -431,9 +434,9 @@ class EventController {
                 $newFilePath,
                 $newFileType,
                 $newFileSize,
-                $data['title'] ?? null,
-                $data['description'] ?? null,
-                $data['document_type'] ?? null,
+                $newTitle,
+                $newDescription,
+                $newDocumentType,
                 !empty($signatureInfo['has_signature']) ? 1 : 0,
                 $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
                 $signatureInfo['count'] ?? 0,
