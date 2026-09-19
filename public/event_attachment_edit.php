@@ -73,8 +73,13 @@ if ($replaceFile) {
         }
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+        if ($finfo === false) {
+            $errors[] = 'Impossibile determinare il tipo MIME del file';
+            $mimeType = 'application/octet-stream';
+        } else {
+            $mimeType = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+        }
 
         $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $allowedExtensions = ['pdf', 'p7m', 'doc', 'docx', 'odt', 'rtf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'xls', 'xlsx', 'csv', 'txt'];
@@ -124,7 +129,7 @@ if (!empty($errors)) {
 $result = $controller->updateAttachment($attachmentId, $data, $app->getUserId());
 
 if ($result['success']) {
-    if (!empty($result['old_file_path'])) {
+    if (!empty($result['old_file_path']) && $result['old_file_path'] !== ($result['new_file_path'] ?? null)) {
         $oldPath = __DIR__ . '/../' . $result['old_file_path'];
         $realOldPath = realpath($oldPath);
         $uploadDir = realpath(__DIR__ . '/../uploads/events/');

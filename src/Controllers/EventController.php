@@ -396,6 +396,7 @@ class EventController {
             $newFileName = $data['file_name'] ?? $attachment['file_name'];
             $newFileType = $data['file_type'] ?? $attachment['file_type'];
             $newFileSize = $data['file_size'] ?? $attachment['file_size'];
+            $isReplacingFile = !empty($data['file_path']);
 
             $signatureInfo = [
                 'has_signature' => !empty($attachment['has_signature']),
@@ -406,7 +407,7 @@ class EventController {
                 'checked_at' => $attachment['signature_checked_at'] ?? null
             ];
 
-            if (!empty($data['file_path'])) {
+            if ($isReplacingFile) {
                 $filePath = __DIR__ . '/../../' . $newFilePath;
                 $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
                 $realPath = $this->resolveEventUploadPath($filePath);
@@ -417,14 +418,13 @@ class EventController {
                 if (in_array($extension, ['pdf', 'p7m'])) {
                     $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
                 }
-                $signatureInfo['checked_at'] = date('Y-m-d H:i:s');
             }
 
             $sql = "UPDATE event_attachments SET
                     file_name = ?, file_path = ?, file_type = ?, file_size = ?,
                     title = ?, description = ?, document_type = ?,
                     has_signature = ?, signature_format = ?, signature_count = ?,
-                    signature_data = ?, signature_validity = ?, signature_checked_at = ?
+                    signature_data = ?, signature_validity = ?, signature_checked_at = " . ($isReplacingFile ? "NOW()" : "?") . "
                     WHERE id = ?";
             $params = [
                 $newFileName,
@@ -438,10 +438,12 @@ class EventController {
                 $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
                 $signatureInfo['count'] ?? 0,
                 !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
-                $signatureInfo['validity'] ?? 'unknown',
-                $signatureInfo['checked_at'],
-                $attachmentId
+                $signatureInfo['validity'] ?? 'unknown'
             ];
+            if (!$isReplacingFile) {
+                $params[] = $signatureInfo['checked_at'];
+            }
+            $params[] = $attachmentId;
             $this->db->execute($sql, $params);
 
             $this->logActivity($userId, 'event', 'update_attachment', $attachment['event_id'],
@@ -449,7 +451,8 @@ class EventController {
 
             return [
                 'success' => true,
-                'old_file_path' => !empty($data['file_path']) ? $attachment['file_path'] : null
+                'old_file_path' => $isReplacingFile ? $attachment['file_path'] : null,
+                'new_file_path' => $newFilePath
             ];
         } catch (\Throwable $e) {
             error_log("Errore aggiornamento allegato evento: " . $e->getMessage());

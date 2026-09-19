@@ -69,8 +69,13 @@ if (!isset($_FILES['attachment_file']) || $_FILES['attachment_file']['error'] ==
     }
 
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $file['tmp_name']);
-    finfo_close($finfo);
+    if ($finfo === false) {
+        $errors[] = 'Impossibile determinare il tipo MIME del file';
+        $mimeType = 'application/octet-stream';
+    } else {
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+    }
 
     $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $allowedExtensions = ['pdf', 'p7m', 'doc', 'docx', 'odt', 'rtf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'xls', 'xlsx', 'csv', 'txt'];
