@@ -1733,8 +1733,26 @@ class ApplicationController {
                 if (isset($guardian['birth_place']) && is_string($guardian['birth_place'])) {
                     $guardian['birth_place'] = mb_strtoupper($guardian['birth_place'], 'UTF-8');
                 }
+                if (array_key_exists('birth_province', $guardian)) {
+                    $guardian['birth_province'] = $this->normalizeProvince($guardian['birth_province']);
+                }
             }
             unset($guardian);
+        }
+
+        if (isset($data['guardian_data']) && is_array($data['guardian_data'])) {
+            if (isset($data['guardian_data']['last_name']) && is_string($data['guardian_data']['last_name'])) {
+                $data['guardian_data']['last_name'] = mb_strtoupper($data['guardian_data']['last_name'], 'UTF-8');
+            }
+            if (isset($data['guardian_data']['first_name']) && is_string($data['guardian_data']['first_name'])) {
+                $data['guardian_data']['first_name'] = mb_strtoupper($data['guardian_data']['first_name'], 'UTF-8');
+            }
+            if (isset($data['guardian_data']['birth_place']) && is_string($data['guardian_data']['birth_place'])) {
+                $data['guardian_data']['birth_place'] = mb_strtoupper($data['guardian_data']['birth_place'], 'UTF-8');
+            }
+            if (array_key_exists('birth_province', $data['guardian_data'])) {
+                $data['guardian_data']['birth_province'] = $this->normalizeProvince($data['guardian_data']['birth_province']);
+            }
         }
 
         // Handle employment data
@@ -1793,7 +1811,8 @@ class ApplicationController {
             return 'Impossibile approvare la domanda: una provincia non è valida. Correggi la sigla di 2 lettere nella domanda e riprova.';
         }
 
-        if ((int) $e->getCode() === 22001) {
+        $previous = $e->getPrevious();
+        if ($previous instanceof \PDOException && $previous->getCode() === '22001') {
             return 'Impossibile approvare la domanda: alcuni dati sono troppo lunghi o non nel formato previsto. Verifica in particolare le sigle delle province e riprova.';
         }
 
