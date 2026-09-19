@@ -176,6 +176,14 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                             <i class="bi bi-truck"></i> Mezzi
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="attachments-tab" data-bs-toggle="tab" data-bs-target="#attachments" type="button">
+                            <i class="bi bi-paperclip"></i> Allegati
+                            <?php if (!empty($event['attachments'])): ?>
+                                <span class="badge bg-secondary ms-1"><?php echo count($event['attachments']); ?></span>
+                            <?php endif; ?>
+                        </button>
+                    </li>
                 </ul>
                 
                 <div class="tab-content" id="eventTabContent">
@@ -628,11 +636,244 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                             </div>
                         </div>
                     </div>
+
+                    <!-- Tab Allegati -->
+                    <div class="tab-pane fade" id="attachments" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-paperclip"></i> Allegati Evento</h5>
+                                <div class="d-flex gap-2">
+                                    <?php if ($app->checkPermission('events', 'edit') && !empty($event['attachments'])): ?>
+                                        <a href="event_attachment_recheck.php?event_id=<?php echo $eventId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
+                                           class="btn btn-sm btn-outline-info"
+                                           onclick="return confirm('Ricontrollare le firme digitali di tutti gli allegati?')"
+                                           title="Ri-analizza tutti i documenti per estrarre informazioni sulle firme digitali PAdES/CAdES">
+                                            <i class="bi bi-shield-check"></i> Ricontrolla Firme
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if ($app->checkPermission('events', 'edit')): ?>
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#eventAttachmentUploadForm">
+                                            <i class="bi bi-upload"></i> Carica Allegato
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <?php if (isset($_SESSION['success'])): ?>
+                                    <div class="alert alert-success alert-dismissible fade show">
+                                        <?php echo htmlspecialchars($_SESSION['success']); ?>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                    <?php unset($_SESSION['success']); ?>
+                                <?php endif; ?>
+
+                                <?php if (isset($_SESSION['error'])): ?>
+                                    <div class="alert alert-danger alert-dismissible fade show">
+                                        <?php echo htmlspecialchars($_SESSION['error']); ?>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                    <?php unset($_SESSION['error']); ?>
+                                <?php endif; ?>
+
+                                <?php if ($app->checkPermission('events', 'edit')): ?>
+                                    <div class="collapse mb-3" id="eventAttachmentUploadForm">
+                                        <form action="event_attachment_upload.php" method="POST" enctype="multipart/form-data" class="border rounded p-3 bg-light">
+                                            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                            <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                            <div class="row g-2 mb-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">File <small class="text-muted">(PDF, P7M, Word, immagini, max 20MB)</small></label>
+                                                    <input type="file" name="attachment_file" class="form-control form-control-sm" required
+                                                           accept=".pdf,.p7m,.doc,.docx,.odt,.rtf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.tif,.webp,.xls,.xlsx,.csv,.txt">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Titolo</label>
+                                                    <input type="text" name="title" class="form-control form-control-sm" maxlength="255" placeholder="Titolo allegato">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Tipo Documento</label>
+                                                    <input type="text" name="document_type" class="form-control form-control-sm" maxlength="100" placeholder="es. Verbale">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Descrizione</label>
+                                                    <input type="text" name="description" class="form-control form-control-sm" placeholder="Descrizione opzionale">
+                                                </div>
+                                                <div class="col-md-1 d-flex align-items-end">
+                                                    <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-upload"></i></button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (empty($event['attachments'])): ?>
+                                    <p class="text-muted mb-0">Nessun allegato caricato.</p>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>File</th>
+                                                    <th>Titolo</th>
+                                                    <th>Tipo Documento</th>
+                                                    <th>Firma Digitale</th>
+                                                    <th>Caricato da</th>
+                                                    <th>Data</th>
+                                                    <th>Azioni</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($event['attachments'] as $att): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <?php
+                                                            $ext = strtolower(pathinfo($att['file_name'], PATHINFO_EXTENSION));
+                                                            $iconClass = 'bi-file-earmark';
+                                                            if ($ext === 'pdf' || $ext === 'p7m') $iconClass = 'bi-file-earmark-pdf';
+                                                            elseif (in_array($ext, ['doc','docx','odt','rtf'])) $iconClass = 'bi-file-earmark-word';
+                                                            elseif (in_array($ext, ['jpg','jpeg','png','gif','bmp','tiff','tif','webp'])) $iconClass = 'bi-file-earmark-image';
+                                                            elseif (in_array($ext, ['xls','xlsx','csv'])) $iconClass = 'bi-file-earmark-spreadsheet';
+                                                            ?>
+                                                            <i class="bi <?php echo $iconClass; ?>"></i>
+                                                            <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>"><?php echo htmlspecialchars($att['file_name']); ?></a>
+                                                            <?php if ($att['file_size'] > 0): ?>
+                                                                <small class="text-muted">(<?php echo number_format($att['file_size'] / 1024, 0); ?> KB)</small>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($att['description'])): ?>
+                                                                <br><small class="text-muted"><?php echo htmlspecialchars($att['description']); ?></small>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($att['title'] ?? '-'); ?></td>
+                                                        <td><?php echo htmlspecialchars($att['document_type'] ?? '-'); ?></td>
+                                                        <td>
+                                                            <?php if (!empty($att['has_signature'])): ?>
+                                                                <?php
+                                                                $validityBadge = 'bg-secondary';
+                                                                $validityText = 'Sconosciuta';
+                                                                if ($att['signature_validity'] === 'valid') { $validityBadge = 'bg-success'; $validityText = 'Valida'; }
+                                                                elseif ($att['signature_validity'] === 'invalid') { $validityBadge = 'bg-danger'; $validityText = 'Non valida'; }
+                                                                ?>
+                                                                <span class="badge bg-info"><?php echo htmlspecialchars($att['signature_format']); ?></span>
+                                                                <span class="badge <?php echo $validityBadge; ?>"><?php echo $validityText; ?></span>
+                                                                <br>
+                                                                <?php
+                                                                $signatures = json_decode($att['signature_data'] ?? '[]', true);
+                                                                if (!empty($signatures)):
+                                                                    foreach ($signatures as $sig): ?>
+                                                                        <small class="d-block text-muted">
+                                                                            <i class="bi bi-person-badge"></i>
+                                                                            <?php echo htmlspecialchars($sig['signer_name'] ?? 'Sconosciuto'); ?>
+                                                                            <?php if (!empty($sig['fiscal_code'])): ?> (CF: <?php echo htmlspecialchars($sig['fiscal_code']); ?>)<?php endif; ?>
+                                                                            <?php if (!empty($sig['signature_date'])): ?> - <?php echo htmlspecialchars($sig['signature_date']); ?><?php endif; ?>
+                                                                        </small>
+                                                                    <?php endforeach;
+                                                                endif; ?>
+                                                            <?php elseif (!empty($att['signature_checked_at'])): ?>
+                                                                <span class="badge bg-secondary"><i class="bi bi-shield-x"></i> Non firmato</span>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-light text-dark border"><i class="bi bi-question-circle"></i> Non verificato</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($att['uploaded_by_name'] ?? '-'); ?></td>
+                                                        <td>
+                                                            <?php echo date('d/m/Y H:i', strtotime($att['uploaded_at'])); ?>
+                                                            <?php if (!empty($att['signature_checked_at'])): ?>
+                                                                <br><small class="text-muted">Verifica: <?php echo date('d/m/Y H:i', strtotime($att['signature_checked_at'])); ?></small>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <div class="d-flex gap-1">
+                                                                <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>" class="btn btn-sm btn-outline-primary" title="Download">
+                                                                    <i class="bi bi-download"></i>
+                                                                </a>
+                                                                <?php if ($app->checkPermission('events', 'edit')): ?>
+                                                                    <button type="button"
+                                                                            class="btn btn-sm btn-outline-warning"
+                                                                            title="Modifica"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#editEventAttachmentModal"
+                                                                            data-attachment-id="<?php echo $att['id']; ?>"
+                                                                            data-attachment-title="<?php echo htmlspecialchars($att['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                                            data-attachment-type="<?php echo htmlspecialchars($att['document_type'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                                            data-attachment-description="<?php echo htmlspecialchars($att['description'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                                                                        <i class="bi bi-pencil"></i>
+                                                                    </button>
+                                                                    <a href="event_attachment_recheck.php?id=<?php echo $att['id']; ?>&event_id=<?php echo $eventId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
+                                                                       class="btn btn-sm btn-outline-info" title="Ricontrolla firma digitale">
+                                                                        <i class="bi bi-shield-check"></i>
+                                                                    </a>
+                                                                    <form action="event_attachment_delete.php" method="POST" class="d-inline" onsubmit="return confirm('Eliminare questo allegato?')">
+                                                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                                                        <input type="hidden" name="attachment_id" value="<?php echo $att['id']; ?>">
+                                                                        <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
     
+    <!-- Edit Event Attachment Modal -->
+    <div class="modal fade" id="editEventAttachmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="event_attachment_edit.php" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Modifica Allegato</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                        <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                        <input type="hidden" name="attachment_id" id="edit_attachment_id">
+
+                        <div class="mb-3">
+                            <label for="edit_attachment_title" class="form-label">Titolo</label>
+                            <input type="text" class="form-control" id="edit_attachment_title" name="title" maxlength="255">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_attachment_type" class="form-label">Tipo Documento</label>
+                            <input type="text" class="form-control" id="edit_attachment_type" name="document_type" maxlength="100">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_attachment_description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="edit_attachment_description" name="description" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-0">
+                            <label for="edit_attachment_file" class="form-label">Sostituisci file (opzionale)</label>
+                            <input type="file" class="form-control" id="edit_attachment_file" name="attachment_file"
+                                   accept=".pdf,.p7m,.doc,.docx,.odt,.rtf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.tif,.webp,.xls,.xlsx,.csv,.txt">
+                            <div class="form-text">Formati supportati: PDF, P7M, Word, immagini, Excel, testo (max 20MB)</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Salva modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Intervention Modal -->
     <div class="modal fade" id="addInterventionModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -1081,11 +1322,38 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                 }, 100);
             }
         }
+
+        function showTabFromHash() {
+            const hash = window.location.hash;
+            if (hash === '#attachments') {
+                const tabElement = document.getElementById('attachments-tab');
+                if (tabElement) {
+                    const tab = new bootstrap.Tab(tabElement);
+                    tab.show();
+                }
+            }
+        }
         
         // Restore tab on page load
         document.addEventListener('DOMContentLoaded', function() {
             restoreActiveTab();
+            showTabFromHash();
+
+            const editAttachmentModal = document.getElementById('editEventAttachmentModal');
+            if (editAttachmentModal) {
+                editAttachmentModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    if (!button) return;
+
+                    document.getElementById('edit_attachment_id').value = button.getAttribute('data-attachment-id') || '';
+                    document.getElementById('edit_attachment_title').value = button.getAttribute('data-attachment-title') || '';
+                    document.getElementById('edit_attachment_type').value = button.getAttribute('data-attachment-type') || '';
+                    document.getElementById('edit_attachment_description').value = button.getAttribute('data-attachment-description') || '';
+                });
+            }
         });
+
+        window.addEventListener('hashchange', showTabFromHash);
         
         // Helper function to reload page while preserving active tab
         function reloadWithActiveTab() {

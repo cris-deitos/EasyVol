@@ -1,0 +1,73 @@
+<?php
+/**
+ * Eventi - Ricontrollo Firme Digitali Allegati
+ */
+
+require_once __DIR__ . '/../src/Autoloader.php';
+EasyVol\Autoloader::register();
+
+use EasyVol\App;
+use EasyVol\Controllers\EventController;
+use EasyVol\Middleware\CsrfProtection;
+
+$app = App::getInstance();
+
+if (!$app->isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+if (!$app->checkPermission('events', 'edit')) {
+    die('Accesso negato');
+}
+
+$eventId = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
+$attachmentId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$csrfToken = $_GET['csrf_token'] ?? '';
+
+if (!CsrfProtection::validateToken($csrfToken)) {
+    $_SESSION['error'] = 'Token di sicurezza non valido';
+    if ($eventId > 0) {
+        header('Location: event_view.php?id=' . $eventId . '#attachments');
+    } else {
+        header('Location: events.php');
+    }
+    exit;
+}
+
+if ($eventId <= 0) {
+    $_SESSION['error'] = 'ID evento non valido';
+    header('Location: events.php');
+    exit;
+}
+
+$db = $app->getDb();
+$config = $app->getConfig();
+$controller = new EventController($db, $config);
+
+$event = $db->fetchOne("SELECT id FROM events WHERE id = ?", [$eventId]);
+if (!$event) {
+    $_SESSION['error'] = 'Evento non trovato';
+    header('Location: events.php');
+    exit;
+}
+
+if ($attachmentId > 0) {
+    $result = $controller->recheckAttachmentSignatures($attachmentId, $app->getUserId());
+    if ($result['success']) {
+        $_SESSION['success'] = $result['message'];
+    } else {
+        $_SESSION['error'] = $result['message'];
+    }
+} else {
+    $result = $controller->recheckAllAttachmentSignatures($eventId, $app->getUserId());
+    if ($result['success']) {
+        $_SESSION['success'] = 'Controllati ' . $result['checked'] . ' documenti, '
+            . $result['signatures_found'] . ' con firma digitale rilevata.';
+    } else {
+        $_SESSION['error'] = 'Errore durante il controllo delle firme';
+    }
+}
+
+header('Location: event_view.php?id=' . $eventId . '#attachments');
+exit;
