@@ -103,7 +103,7 @@ if (!isset($_FILES['attachment_file']) || $_FILES['attachment_file']['error'] ==
     if (!in_array($fileExtension, $allowedExtensions)) {
         $errors[] = 'Tipo di file non consentito. Formati ammessi: PDF, P7M, Word, immagini, Excel, testo.';
     } elseif (!in_array($mimeType, $allowedMimesByExtension[$fileExtension] ?? [], true)) {
-        $errors[] = 'Tipo MIME non consentito per il file selezionato.';
+        $errors[] = 'Tipo MIME non consentito per "' . $file['name'] . '" (rilevato: ' . $mimeType . ').';
     }
 
     $title = trim($_POST['title'] ?? '');

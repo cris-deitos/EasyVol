@@ -152,16 +152,28 @@ if ($result['success']) {
             && strpos($realOldPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
             && is_file($realOldPath)
             && !@unlink($realOldPath)) {
-            $rollbackData = [
-                'file_name' => $attachment['file_name'],
-                'file_path' => $attachment['file_path'],
-                'file_type' => $attachment['file_type'],
-                'file_size' => $attachment['file_size'],
-                'title' => $attachment['title'] ?? null,
-                'description' => $attachment['description'] ?? null,
-                'document_type' => $attachment['document_type'] ?? null
-            ];
-            $controller->updateAttachment($attachmentId, $rollbackData, $app->getUserId());
+            $rollbackSql = "UPDATE event_attachments SET
+                            file_name = ?, file_path = ?, file_type = ?, file_size = ?,
+                            title = ?, description = ?, document_type = ?,
+                            has_signature = ?, signature_format = ?, signature_count = ?,
+                            signature_data = ?, signature_validity = ?, signature_checked_at = ?
+                            WHERE id = ?";
+            $db->execute($rollbackSql, [
+                $attachment['file_name'],
+                $attachment['file_path'],
+                $attachment['file_type'],
+                $attachment['file_size'],
+                $attachment['title'] ?? null,
+                $attachment['description'] ?? null,
+                $attachment['document_type'] ?? null,
+                $attachment['has_signature'] ?? 0,
+                $attachment['signature_format'] ?? null,
+                $attachment['signature_count'] ?? 0,
+                $attachment['signature_data'] ?? null,
+                $attachment['signature_validity'] ?? 'unknown',
+                $attachment['signature_checked_at'] ?? null,
+                $attachmentId
+            ]);
             if (!empty($uploadedAbsolutePath) && is_file($uploadedAbsolutePath)) {
                 @unlink($uploadedAbsolutePath);
             }
