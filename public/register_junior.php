@@ -1,7 +1,7 @@
 <?php
 /**
  * Registrazione Pubblica Soci Minorenni (Cadetti)
- * 
+ *
  * Pagina pubblica per la registrazione di nuovi soci minorenni
  * Include: anagrafica, recapiti, indirizzi, dati genitori/tutori
  */
@@ -13,6 +13,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\ApplicationController;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\ProvinceHelper;
 
 $app = App::getInstance(); // Public page - no authentication required
 
@@ -26,6 +27,8 @@ AutoLogger::logPageAccess();
 $errors = [];
 $success = false;
 $applicationCode = '';
+$provinceHint = 'Usa la sigla di 2 lettere (es. BS).';
+$provinceTitle = 'Inserisci la sigla di 2 lettere della provincia (es. BS)';
 
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -44,18 +47,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'privacy_accepted' => 'Normativa Privacy',
             'privacy_foto' => 'Autorizzazione foto e video'
         ];
-        
+
         foreach ($requiredConsents as $field => $label) {
             if (empty($_POST[$field])) {
                 $errors[] = "Devi accettare: $label";
             }
         }
-        
+
+        foreach ([
+            ['birth_province', 'Provincia di nascita', true],
+            ['residence_province', 'Provincia di residenza', true],
+            ['domicile_province', 'Provincia di domicilio', false]
+        ] as [$field, $label, $required]) {
+            $error = ProvinceHelper::getValidationError($_POST[$field] ?? '', $label, $required);
+            if ($error !== null) {
+                $errors[] = $error;
+            }
+        }
+
         // Verifica CAPTCHA (se abilitato)
         if (!empty($config['recaptcha']['enabled'])) {
             $recaptchaSecret = $config['recaptcha']['secret_key'] ?? '';
             $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
-            
+
             if (empty($recaptchaResponse)) {
                 $errors[] = 'Completa la verifica CAPTCHA';
             } else {
@@ -66,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        
+
         if (empty($errors)) {
             // Prepara i dati dell'applicazione
             $data = [
@@ -79,35 +93,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'tax_code' => strtoupper(trim($_POST['tax_code'] ?? '')),
                 'gender' => $_POST['gender'] ?? '',
                 'nationality' => trim($_POST['nationality'] ?? 'Italiana'),
-                
+
                 // Indirizzo residenza
                 'residence_street' => trim($_POST['residence_street'] ?? ''),
                 'residence_number' => trim($_POST['residence_number'] ?? ''),
                 'residence_city' => trim($_POST['residence_city'] ?? ''),
                 'residence_province' => trim($_POST['residence_province'] ?? ''),
                 'residence_cap' => trim($_POST['residence_cap'] ?? ''),
-                
+
                 // Indirizzo domicilio (se diverso)
                 'domicile_street' => trim($_POST['domicile_street'] ?? ''),
                 'domicile_number' => trim($_POST['domicile_number'] ?? ''),
                 'domicile_city' => trim($_POST['domicile_city'] ?? ''),
                 'domicile_province' => trim($_POST['domicile_province'] ?? ''),
                 'domicile_cap' => trim($_POST['domicile_cap'] ?? ''),
-                
+
                 // Recapiti minore
                 'phone' => trim($_POST['phone'] ?? ''),
                 'mobile' => trim($_POST['mobile'] ?? ''),
                 'email' => trim($_POST['email'] ?? ''),
-                
+
                 // Informazioni alimentari
                 'health_vegetarian' => !empty($_POST['health_vegetarian']),
                 'health_vegan' => !empty($_POST['health_vegan']),
                 'health_allergies' => trim($_POST['health_allergies'] ?? ''),
                 'health_intolerances' => trim($_POST['health_intolerances'] ?? ''),
-                
+
                 // Genitori/Tutori
                 'guardians' => [],
-                
+
                 // Consensi
                 'dlgs_volontariato' => !empty($_POST['dlgs_volontariato']),
                 'dlgs_certificato' => !empty($_POST['dlgs_certificato']),
@@ -117,12 +131,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'dichiarazione_sostitutiva' => !empty($_POST['dichiarazione_sostitutiva']),
                 'privacy_accepted' => !empty($_POST['privacy_accepted']),
                 'privacy_foto' => !empty($_POST['privacy_foto']),
-                
+
                 // Data e luogo compilazione
                 'compilation_place' => trim($_POST['compilation_place'] ?? ''),
                 'compilation_date' => $_POST['compilation_date'] ?? date('Y-m-d')
             ];
-            
+
             // Aggiungi dati padre se compilati
             if (!empty($_POST['father_last_name']) || !empty($_POST['father_first_name'])) {
                 $data['guardians'][] = [
@@ -136,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => trim($_POST['father_email'] ?? '')
                 ];
             }
-            
+
             // Aggiungi dati madre se compilati
             if (!empty($_POST['mother_last_name']) || !empty($_POST['mother_first_name'])) {
                 $data['guardians'][] = [
@@ -150,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => trim($_POST['mother_email'] ?? '')
                 ];
             }
-            
+
             // Aggiungi dati tutore se compilati
             if (!empty($_POST['tutor_last_name']) || !empty($_POST['tutor_first_name'])) {
                 $data['guardians'][] = [
@@ -164,20 +178,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => trim($_POST['tutor_email'] ?? '')
                 ];
             }
-            
+
             // Verifica che ci sia almeno un genitore/tutore
             if (empty($data['guardians'])) {
                 $errors[] = 'È necessario inserire almeno i dati di un genitore o tutore';
             }
-            
+
             if (empty($errors)) {
                 $result = $controller->createJunior($data);
-                
+
                 if ($result['success']) {
                     $success = true;
                     $applicationCode = $result['code'];
                     $pdfToken = $result['pdf_token'] ?? '';
-                    
+
                     // Show warnings if PDF or email failed
                     if (!empty($result['processing_errors'])) {
                         foreach ($result['processing_errors'] as $error) {
@@ -241,7 +255,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
             </a>
         </div>
     </nav>
-    
+
     <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-10">
@@ -255,18 +269,18 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                 <strong>Codice Domanda:</strong> <?php echo htmlspecialchars($applicationCode); ?><br>
                                 <small>Conserva questo codice per future comunicazioni</small>
                             </div>
-                            
+
                             <?php if (!empty($pdfToken)): ?>
                             <div class="alert alert-primary mt-3">
                                 <h5><i class="bi bi-file-pdf"></i> Scarica il Modulo PDF</h5>
                                 <p class="mb-2">Clicca il pulsante per scaricare il modulo PDF da stampare e firmare:</p>
-                                <a href="application_pdf.php?token=<?php echo htmlspecialchars($pdfToken); ?>&download=1" 
+                                <a href="application_pdf.php?token=<?php echo htmlspecialchars($pdfToken); ?>&download=1"
                                    class="btn btn-danger btn-lg" target="_blank">
                                     <i class="bi bi-download"></i> Scarica PDF Domanda
                                 </a>
                             </div>
                             <?php endif; ?>
-                            
+
                             <div class="alert alert-success mt-3">
                                 <p class="mb-2">
                                     <i class="bi bi-envelope-check"></i>
@@ -275,7 +289,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                 </p>
                                 <small class="text-muted">Se non la trovi, controlla anche nella cartella spam.</small>
                             </div>
-                            
+
                             <div class="alert alert-warning mt-4">
                                 <h5><i class="bi bi-list-check"></i> Prossimi Passi:</h5>
                                 <ol class="text-start mt-3">
@@ -290,7 +304,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                     <li><strong>Consegna il modulo firmato</strong> presso la nostra sede</li>
                                 </ol>
                             </div>
-                            
+
                             <p class="mt-3">Il nostro team esaminerà la domanda e ti contatterà a breve.</p>
                             <a href="index.php" class="btn btn-primary mt-3">Torna alla Home</a>
                         </div>
@@ -311,44 +325,44 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                     </ul>
                                 </div>
                             <?php endif; ?>
-                            
+
                             <form method="POST" action="" id="registrationForm">
                                 <?php echo CsrfProtection::getHiddenField(); ?>
-                                
+
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i>
-                                    <strong>Attenzione:</strong> Compila tutti i campi obbligatori contrassegnati con <span class="required-star">*</span>. 
+                                    <strong>Attenzione:</strong> Compila tutti i campi obbligatori contrassegnati con <span class="required-star">*</span>.
                                     Dopo l'invio riceverai un PDF via email che dovrà essere stampato, firmato dal minore e dai genitori, e consegnato in sede.
                                 </div>
-                                
+
                                 <!-- DATI ANAGRAFICI MINORE -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-person"></i> Dati Anagrafici del Minore</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="last_name" class="form-label">Cognome <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="last_name" name="last_name" 
+                                        <input type="text" class="form-control" id="last_name" name="last_name"
                                                value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="first_name" class="form-label">Nome <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="first_name" name="first_name" 
+                                        <input type="text" class="form-control" id="first_name" name="first_name"
                                                value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="tax_code" class="form-label">Codice Fiscale <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control text-uppercase" id="tax_code" name="tax_code" 
-                                               value="<?php echo htmlspecialchars($_POST['tax_code'] ?? ''); ?>" 
+                                        <input type="text" class="form-control text-uppercase" id="tax_code" name="tax_code"
+                                               value="<?php echo htmlspecialchars($_POST['tax_code'] ?? ''); ?>"
                                                maxlength="16" pattern="[A-Z0-9]{16}" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label for="birth_date" class="form-label">Data di Nascita <span class="required-star">*</span></label>
-                                        <input type="date" class="form-control" id="birth_date" name="birth_date" 
+                                        <input type="date" class="form-control" id="birth_date" name="birth_date"
                                                value="<?php echo htmlspecialchars($_POST['birth_date'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-3">
@@ -360,141 +374,144 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-8">
                                         <label for="birth_place" class="form-label">Luogo di Nascita <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="birth_place" name="birth_place" 
+                                        <input type="text" class="form-control" id="birth_place" name="birth_place"
                                                value="<?php echo htmlspecialchars($_POST['birth_place'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="birth_province" class="form-label">Provincia <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control text-uppercase" id="birth_province" name="birth_province" 
-                                               value="<?php echo htmlspecialchars($_POST['birth_province'] ?? ''); ?>" 
-                                               maxlength="2" required>
+                                        <input type="text" class="form-control text-uppercase" id="birth_province" name="birth_province"
+                                               value="<?php echo htmlspecialchars($_POST['birth_province'] ?? ''); ?>"
+                                               maxlength="2" pattern="[A-Za-z]{2}" title="<?php echo htmlspecialchars($provinceTitle); ?>" required>
+                                        <div class="form-text"><?php echo htmlspecialchars($provinceHint); ?></div>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="nationality" class="form-label">Nazionalità</label>
-                                        <input type="text" class="form-control" id="nationality" name="nationality" 
+                                        <input type="text" class="form-control" id="nationality" name="nationality"
                                                value="<?php echo htmlspecialchars($_POST['nationality'] ?? 'Italiana'); ?>">
                                     </div>
                                 </div>
-                                
+
                                 <!-- INDIRIZZO RESIDENZA -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-house"></i> Indirizzo di Residenza</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-8">
                                         <label for="residence_street" class="form-label">Via <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_street" name="residence_street" 
+                                        <input type="text" class="form-control" id="residence_street" name="residence_street"
                                                value="<?php echo htmlspecialchars($_POST['residence_street'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-4">
                                         <label for="residence_number" class="form-label">Numero <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_number" name="residence_number" 
+                                        <input type="text" class="form-control" id="residence_number" name="residence_number"
                                                value="<?php echo htmlspecialchars($_POST['residence_number'] ?? ''); ?>" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-5">
                                         <label for="residence_city" class="form-label">Città <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_city" name="residence_city" 
+                                        <input type="text" class="form-control" id="residence_city" name="residence_city"
                                                value="<?php echo htmlspecialchars($_POST['residence_city'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="residence_province" class="form-label">Provincia <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control text-uppercase" id="residence_province" name="residence_province" 
-                                               value="<?php echo htmlspecialchars($_POST['residence_province'] ?? ''); ?>" 
-                                               maxlength="2" required>
+                                        <input type="text" class="form-control text-uppercase" id="residence_province" name="residence_province"
+                                               value="<?php echo htmlspecialchars($_POST['residence_province'] ?? ''); ?>"
+                                               maxlength="2" pattern="[A-Za-z]{2}" title="<?php echo htmlspecialchars($provinceTitle); ?>" required>
+                                        <div class="form-text"><?php echo htmlspecialchars($provinceHint); ?></div>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="residence_cap" class="form-label">CAP <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_cap" name="residence_cap" 
-                                               value="<?php echo htmlspecialchars($_POST['residence_cap'] ?? ''); ?>" 
+                                        <input type="text" class="form-control" id="residence_cap" name="residence_cap"
+                                               value="<?php echo htmlspecialchars($_POST['residence_cap'] ?? ''); ?>"
                                                maxlength="5" pattern="[0-9]{5}" required>
                                     </div>
                                 </div>
-                                
+
                                 <!-- INDIRIZZO DOMICILIO -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Indirizzo di Domicilio (se diverso dalla residenza)</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-8">
                                         <label for="domicile_street" class="form-label">Via</label>
-                                        <input type="text" class="form-control" id="domicile_street" name="domicile_street" 
+                                        <input type="text" class="form-control" id="domicile_street" name="domicile_street"
                                                value="<?php echo htmlspecialchars($_POST['domicile_street'] ?? ''); ?>">
                                     </div>
                                     <div class="col-md-4">
                                         <label for="domicile_number" class="form-label">Numero</label>
-                                        <input type="text" class="form-control" id="domicile_number" name="domicile_number" 
+                                        <input type="text" class="form-control" id="domicile_number" name="domicile_number"
                                                value="<?php echo htmlspecialchars($_POST['domicile_number'] ?? ''); ?>">
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-5">
                                         <label for="domicile_city" class="form-label">Città</label>
-                                        <input type="text" class="form-control" id="domicile_city" name="domicile_city" 
+                                        <input type="text" class="form-control" id="domicile_city" name="domicile_city"
                                                value="<?php echo htmlspecialchars($_POST['domicile_city'] ?? ''); ?>">
                                     </div>
                                     <div class="col-md-2">
                                         <label for="domicile_province" class="form-label">Provincia</label>
-                                        <input type="text" class="form-control text-uppercase" id="domicile_province" name="domicile_province" 
-                                               value="<?php echo htmlspecialchars($_POST['domicile_province'] ?? ''); ?>" 
-                                               maxlength="2">
+                                        <input type="text" class="form-control text-uppercase" id="domicile_province" name="domicile_province"
+                                               value="<?php echo htmlspecialchars($_POST['domicile_province'] ?? ''); ?>"
+                                               maxlength="2" pattern="[A-Za-z]{2}" title="<?php echo htmlspecialchars($provinceTitle); ?>">
+                                        <div class="form-text"><?php echo htmlspecialchars($provinceHint); ?></div>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="domicile_cap" class="form-label">CAP</label>
-                                        <input type="text" class="form-control" id="domicile_cap" name="domicile_cap" 
-                                               value="<?php echo htmlspecialchars($_POST['domicile_cap'] ?? ''); ?>" 
+                                        <input type="text" class="form-control" id="domicile_cap" name="domicile_cap"
+                                               value="<?php echo htmlspecialchars($_POST['domicile_cap'] ?? ''); ?>"
                                                maxlength="5" pattern="[0-9]{5}">
                                     </div>
                                 </div>
-                                
+
                                 <!-- RECAPITI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-telephone"></i> Recapiti del Minore</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-4">
                                         <label for="phone" class="form-label">Telefono Fisso</label>
-                                        <input type="tel" class="form-control" id="phone" name="phone" 
+                                        <input type="tel" class="form-control" id="phone" name="phone"
                                                value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>">
                                     </div>
                                     <div class="col-md-4">
                                         <label for="mobile" class="form-label">Cellulare</label>
-                                        <input type="tel" class="form-control" id="mobile" name="mobile" 
+                                        <input type="tel" class="form-control" id="mobile" name="mobile"
                                                value="<?php echo htmlspecialchars($_POST['mobile'] ?? ''); ?>">
                                     </div>
                                     <div class="col-md-4">
                                         <label for="email" class="form-label">Email</label>
-                                        <input type="email" class="form-control" id="email" name="email" 
+                                        <input type="email" class="form-control" id="email" name="email"
                                                value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
                                     </div>
                                 </div>
-                                
+
                                 <!-- INFORMAZIONI ALIMENTARI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Informazioni Alimentari</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="health_vegetarian" name="health_vegetarian" 
+                                            <input class="form-check-input" type="checkbox" id="health_vegetarian" name="health_vegetarian"
                                                    <?php echo !empty($_POST['health_vegetarian']) ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="health_vegetarian">
                                                 Vegetariano
                                             </label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="health_vegan" name="health_vegan" 
+                                            <input class="form-check-input" type="checkbox" id="health_vegan" name="health_vegan"
                                                    <?php echo !empty($_POST['health_vegan']) ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="health_vegan">
                                                 Vegano
@@ -502,189 +519,189 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="health_allergies" class="form-label">Allergie Alimentari</label>
                                     <textarea class="form-control" id="health_allergies" name="health_allergies" rows="2"><?php echo htmlspecialchars($_POST['health_allergies'] ?? ''); ?></textarea>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="health_intolerances" class="form-label">Intolleranze Alimentari</label>
                                     <textarea class="form-control" id="health_intolerances" name="health_intolerances" rows="2"><?php echo htmlspecialchars($_POST['health_intolerances'] ?? ''); ?></textarea>
                                 </div>
-                                
+
                                 <!-- DATI PADRE -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dati del Padre</h5>
                                 </div>
-                                
+
                                 <div class="guardian-box">
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="father_last_name" class="form-label">Cognome</label>
-                                            <input type="text" class="form-control" id="father_last_name" name="father_last_name" 
+                                            <input type="text" class="form-control" id="father_last_name" name="father_last_name"
                                                    value="<?php echo htmlspecialchars($_POST['father_last_name'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-6">
                                             <label for="father_first_name" class="form-label">Nome</label>
-                                            <input type="text" class="form-control" id="father_first_name" name="father_first_name" 
+                                            <input type="text" class="form-control" id="father_first_name" name="father_first_name"
                                                    value="<?php echo htmlspecialchars($_POST['father_first_name'] ?? ''); ?>">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="father_tax_code" class="form-label">Codice Fiscale</label>
-                                            <input type="text" class="form-control text-uppercase" id="father_tax_code" name="father_tax_code" 
-                                                   value="<?php echo htmlspecialchars($_POST['father_tax_code'] ?? ''); ?>" 
+                                            <input type="text" class="form-control text-uppercase" id="father_tax_code" name="father_tax_code"
+                                                   value="<?php echo htmlspecialchars($_POST['father_tax_code'] ?? ''); ?>"
                                                    maxlength="16" pattern="[A-Z0-9]{16}">
                                         </div>
                                         <div class="col-md-6">
                                             <label for="father_birth_date" class="form-label">Data di Nascita</label>
-                                            <input type="date" class="form-control" id="father_birth_date" name="father_birth_date" 
+                                            <input type="date" class="form-control" id="father_birth_date" name="father_birth_date"
                                                    value="<?php echo htmlspecialchars($_POST['father_birth_date'] ?? ''); ?>">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row mb-3">
                                         <div class="col-md-4">
                                             <label for="father_birth_place" class="form-label">Luogo di Nascita</label>
-                                            <input type="text" class="form-control" id="father_birth_place" name="father_birth_place" 
+                                            <input type="text" class="form-control" id="father_birth_place" name="father_birth_place"
                                                    value="<?php echo htmlspecialchars($_POST['father_birth_place'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-4">
                                             <label for="father_phone" class="form-label">Telefono</label>
-                                            <input type="tel" class="form-control" id="father_phone" name="father_phone" 
+                                            <input type="tel" class="form-control" id="father_phone" name="father_phone"
                                                    value="<?php echo htmlspecialchars($_POST['father_phone'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-4">
                                             <label for="father_email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="father_email" name="father_email" 
+                                            <input type="email" class="form-control" id="father_email" name="father_email"
                                                    value="<?php echo htmlspecialchars($_POST['father_email'] ?? ''); ?>">
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- DATI MADRE -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dati della Madre</h5>
                                 </div>
-                                
+
                                 <div class="guardian-box">
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="mother_last_name" class="form-label">Cognome</label>
-                                            <input type="text" class="form-control" id="mother_last_name" name="mother_last_name" 
+                                            <input type="text" class="form-control" id="mother_last_name" name="mother_last_name"
                                                    value="<?php echo htmlspecialchars($_POST['mother_last_name'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-6">
                                             <label for="mother_first_name" class="form-label">Nome</label>
-                                            <input type="text" class="form-control" id="mother_first_name" name="mother_first_name" 
+                                            <input type="text" class="form-control" id="mother_first_name" name="mother_first_name"
                                                    value="<?php echo htmlspecialchars($_POST['mother_first_name'] ?? ''); ?>">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="mother_tax_code" class="form-label">Codice Fiscale</label>
-                                            <input type="text" class="form-control text-uppercase" id="mother_tax_code" name="mother_tax_code" 
-                                                   value="<?php echo htmlspecialchars($_POST['mother_tax_code'] ?? ''); ?>" 
+                                            <input type="text" class="form-control text-uppercase" id="mother_tax_code" name="mother_tax_code"
+                                                   value="<?php echo htmlspecialchars($_POST['mother_tax_code'] ?? ''); ?>"
                                                    maxlength="16" pattern="[A-Z0-9]{16}">
                                         </div>
                                         <div class="col-md-6">
                                             <label for="mother_birth_date" class="form-label">Data di Nascita</label>
-                                            <input type="date" class="form-control" id="mother_birth_date" name="mother_birth_date" 
+                                            <input type="date" class="form-control" id="mother_birth_date" name="mother_birth_date"
                                                    value="<?php echo htmlspecialchars($_POST['mother_birth_date'] ?? ''); ?>">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row mb-3">
                                         <div class="col-md-4">
                                             <label for="mother_birth_place" class="form-label">Luogo di Nascita</label>
-                                            <input type="text" class="form-control" id="mother_birth_place" name="mother_birth_place" 
+                                            <input type="text" class="form-control" id="mother_birth_place" name="mother_birth_place"
                                                    value="<?php echo htmlspecialchars($_POST['mother_birth_place'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-4">
                                             <label for="mother_phone" class="form-label">Telefono</label>
-                                            <input type="tel" class="form-control" id="mother_phone" name="mother_phone" 
+                                            <input type="tel" class="form-control" id="mother_phone" name="mother_phone"
                                                    value="<?php echo htmlspecialchars($_POST['mother_phone'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-4">
                                             <label for="mother_email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="mother_email" name="mother_email" 
+                                            <input type="email" class="form-control" id="mother_email" name="mother_email"
                                                    value="<?php echo htmlspecialchars($_POST['mother_email'] ?? ''); ?>">
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- DATI TUTORE (opzionale, se non ci sono i genitori) -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dati del Tutore (se non ci sono i genitori)</h5>
                                 </div>
-                                
+
                                 <div class="guardian-box">
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="tutor_last_name" class="form-label">Cognome</label>
-                                            <input type="text" class="form-control" id="tutor_last_name" name="tutor_last_name" 
+                                            <input type="text" class="form-control" id="tutor_last_name" name="tutor_last_name"
                                                    value="<?php echo htmlspecialchars($_POST['tutor_last_name'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-6">
                                             <label for="tutor_first_name" class="form-label">Nome</label>
-                                            <input type="text" class="form-control" id="tutor_first_name" name="tutor_first_name" 
+                                            <input type="text" class="form-control" id="tutor_first_name" name="tutor_first_name"
                                                    value="<?php echo htmlspecialchars($_POST['tutor_first_name'] ?? ''); ?>">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="tutor_tax_code" class="form-label">Codice Fiscale</label>
-                                            <input type="text" class="form-control text-uppercase" id="tutor_tax_code" name="tutor_tax_code" 
-                                                   value="<?php echo htmlspecialchars($_POST['tutor_tax_code'] ?? ''); ?>" 
+                                            <input type="text" class="form-control text-uppercase" id="tutor_tax_code" name="tutor_tax_code"
+                                                   value="<?php echo htmlspecialchars($_POST['tutor_tax_code'] ?? ''); ?>"
                                                    maxlength="16" pattern="[A-Z0-9]{16}">
                                         </div>
                                         <div class="col-md-6">
                                             <label for="tutor_birth_date" class="form-label">Data di Nascita</label>
-                                            <input type="date" class="form-control" id="tutor_birth_date" name="tutor_birth_date" 
+                                            <input type="date" class="form-control" id="tutor_birth_date" name="tutor_birth_date"
                                                    value="<?php echo htmlspecialchars($_POST['tutor_birth_date'] ?? ''); ?>">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row mb-3">
                                         <div class="col-md-4">
                                             <label for="tutor_birth_place" class="form-label">Luogo di Nascita</label>
-                                            <input type="text" class="form-control" id="tutor_birth_place" name="tutor_birth_place" 
+                                            <input type="text" class="form-control" id="tutor_birth_place" name="tutor_birth_place"
                                                    value="<?php echo htmlspecialchars($_POST['tutor_birth_place'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-4">
                                             <label for="tutor_phone" class="form-label">Telefono</label>
-                                            <input type="tel" class="form-control" id="tutor_phone" name="tutor_phone" 
+                                            <input type="tel" class="form-control" id="tutor_phone" name="tutor_phone"
                                                    value="<?php echo htmlspecialchars($_POST['tutor_phone'] ?? ''); ?>">
                                         </div>
                                         <div class="col-md-4">
                                             <label for="tutor_email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="tutor_email" name="tutor_email" 
+                                            <input type="email" class="form-control" id="tutor_email" name="tutor_email"
                                                    value="<?php echo htmlspecialchars($_POST['tutor_email'] ?? ''); ?>">
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- DICHIARAZIONI E CONSENSI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-file-text"></i> Dichiarazioni Obbligatorie</h5>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>D.Lgs. 3 luglio 2017, n. 117 – Codice del Terzo Settore</h6>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="dlgs_volontariato" name="dlgs_volontariato" required>
                                         <label class="form-check-label" for="dlgs_volontariato">
-                                            Sono informato che l'attività di volontariato è svolta in modo personale, spontaneo e gratuito e che non è prevista l'erogazione di alcun compenso. 
+                                            Sono informato che l'attività di volontariato è svolta in modo personale, spontaneo e gratuito e che non è prevista l'erogazione di alcun compenso.
                                             Autorizzo esclusivamente il rimborso delle sole spese effettivamente sostenute e documentate <span class="required-star">*</span>
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Regolamento D.Lgs. 81/2008 - Tutela della Salute e della Sicurezza</h6>
                                     <div class="form-check">
@@ -694,7 +711,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Statuto Associativo e Regolamento Interno</h6>
                                     <div class="form-check">
@@ -704,7 +721,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Conoscenza dei Rischi</h6>
                                     <div class="form-check">
@@ -714,19 +731,19 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Esenzione di Responsabilità</h6>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="esenzione_responsabilita" name="esenzione_responsabilita" required>
                                         <label class="form-check-label" for="esenzione_responsabilita">
-                                            Si solleva da qualunque responsabilità e si rinuncia ad ogni azione di rivalsa l'Associazione, il Presidente, 
-                                            il Consiglio Direttivo e gli Istruttori per la partecipazione alle attività associative, compreso il viaggio 
+                                            Si solleva da qualunque responsabilità e si rinuncia ad ogni azione di rivalsa l'Associazione, il Presidente,
+                                            il Consiglio Direttivo e gli Istruttori per la partecipazione alle attività associative, compreso il viaggio
                                             di trasferimento alla località prestabilita e ritorno, con qualsiasi mezzo di locomozione <span class="required-star">*</span>
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Dichiarazione Sostitutiva di Certificazione</h6>
                                     <div class="form-check">
@@ -736,7 +753,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Normativa sulla Privacy</h6>
                                     <div class="form-check">
@@ -748,42 +765,42 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="privacy_foto" name="privacy_foto" required>
                                         <label class="form-check-label" for="privacy_foto">
-                                            Acconsento alla pubblicazione di fotografie e riprese video su pubblicazioni, sito internet e social media dell'Associazione. 
+                                            Acconsento alla pubblicazione di fotografie e riprese video su pubblicazioni, sito internet e social media dell'Associazione.
                                             Sollevo l'Associazione da responsabilità per uso improprio da parte di terzi <span class="required-star">*</span>
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <!-- LUOGO E DATA -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Luogo e Data di Compilazione</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="compilation_place" class="form-label">Luogo <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="compilation_place" name="compilation_place" 
+                                        <input type="text" class="form-control" id="compilation_place" name="compilation_place"
                                                value="<?php echo htmlspecialchars($_POST['compilation_place'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="compilation_date" class="form-label">Data <span class="required-star">*</span></label>
-                                        <input type="date" class="form-control" id="compilation_date" name="compilation_date" 
+                                        <input type="date" class="form-control" id="compilation_date" name="compilation_date"
                                                value="<?php echo htmlspecialchars($_POST['compilation_date'] ?? date('Y-m-d')); ?>" required>
                                     </div>
                                 </div>
-                                
+
                                 <?php if (!empty($config['recaptcha']['enabled'])): ?>
                                     <div class="mb-3">
                                         <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($config['recaptcha']['site_key']); ?>"></div>
                                     </div>
                                 <?php endif; ?>
-                                
+
                                 <div class="d-grid gap-2 mt-4">
                                     <button type="submit" class="btn btn-primary btn-lg">
                                         <i class="bi bi-send"></i> Invia Domanda di Iscrizione
                                     </button>
                                 </div>
-                                
+
                                 <p class="text-muted small mt-3">
                                     <span class="required-star">*</span> Campi obbligatori<br>
                                     Dopo l'invio riceverai un PDF via email che dovrà essere stampato, firmato dal minore e dai genitori/tutore, e consegnato in sede.
@@ -795,13 +812,13 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
             </div>
         </div>
     </div>
-    
+
     <footer class="bg-light py-4 mt-5">
         <div class="container text-center text-muted">
             <p class="mb-0">&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($config['association']['name'] ?? 'EasyVol'); ?>. Tutti i diritti riservati.</p>
         </div>
     </footer>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Force uppercase on text fields for better data consistency
@@ -816,7 +833,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Minorenne (Cadetto)';
                 'mother_last_name', 'mother_first_name', 'mother_birth_place',
                 'tutor_last_name', 'tutor_first_name', 'tutor_birth_place'
             ];
-            
+
             uppercaseFields.forEach(function(fieldName) {
                 const field = document.getElementById(fieldName);
                 if (field) {

@@ -1,7 +1,7 @@
 <?php
 /**
  * Registrazione Pubblica Soci Maggiorenni
- * 
+ *
  * Pagina pubblica per la registrazione di nuovi soci maggiorenni con tutti i dati richiesti
  * Include: anagrafica, recapiti, indirizzi, patenti, corsi, informazioni alimentari, informazioni professionali
  */
@@ -13,6 +13,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\ApplicationController;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\ProvinceHelper;
 
 $app = App::getInstance(); // Public page - no authentication required
 
@@ -26,6 +27,8 @@ AutoLogger::logPageAccess();
 $errors = [];
 $success = false;
 $applicationCode = '';
+$provinceHint = 'Usa la sigla di 2 lettere (es. BS).';
+$provinceTitle = 'Inserisci la sigla di 2 lettere della provincia (es. BS)';
 
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -49,18 +52,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'privacy_foto' => 'Autorizzazione foto e video',
             'dichiarazione_sostitutiva' => 'Dichiarazione sostitutiva di certificazione'
         ];
-        
+
         foreach ($requiredConsents as $field => $label) {
             if (empty($_POST[$field])) {
                 $errors[] = "Devi accettare: $label";
             }
         }
-        
+
+        foreach ([
+            ['birth_province', 'Provincia di nascita', true],
+            ['residence_province', 'Provincia di residenza', true],
+            ['domicile_province', 'Provincia di domicilio', false]
+        ] as [$field, $label, $required]) {
+            $error = ProvinceHelper::getValidationError($_POST[$field] ?? '', $label, $required);
+            if ($error !== null) {
+                $errors[] = $error;
+            }
+        }
+
         // Verifica CAPTCHA (se abilitato)
         if (!empty($config['recaptcha']['enabled'])) {
             $recaptchaSecret = $config['recaptcha']['secret_key'] ?? '';
             $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
-            
+
             if (empty($recaptchaResponse)) {
                 $errors[] = 'Completa la verifica CAPTCHA';
             } else {
@@ -71,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        
+
         if (empty($errors)) {
             // Prepara i dati dell'applicazione
             $data = [
@@ -84,26 +98,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'tax_code' => strtoupper(trim($_POST['tax_code'] ?? '')),
                 'gender' => $_POST['gender'] ?? '',
                 'nationality' => trim($_POST['nationality'] ?? 'Italiana'),
-                
+
                 // Indirizzi
                 'residence_street' => trim($_POST['residence_street'] ?? ''),
                 'residence_number' => trim($_POST['residence_number'] ?? ''),
                 'residence_city' => trim($_POST['residence_city'] ?? ''),
                 'residence_province' => trim($_POST['residence_province'] ?? ''),
                 'residence_cap' => trim($_POST['residence_cap'] ?? ''),
-                
+
                 'domicile_street' => trim($_POST['domicile_street'] ?? ''),
                 'domicile_number' => trim($_POST['domicile_number'] ?? ''),
                 'domicile_city' => trim($_POST['domicile_city'] ?? ''),
                 'domicile_province' => trim($_POST['domicile_province'] ?? ''),
                 'domicile_cap' => trim($_POST['domicile_cap'] ?? ''),
-                
+
                 // Recapiti
                 'phone' => trim($_POST['phone'] ?? ''),
                 'mobile' => trim($_POST['mobile'] ?? ''),
                 'email' => trim($_POST['email'] ?? ''),
                 'pec' => trim($_POST['pec'] ?? ''),
-                
+
                 // Patenti
                 'licenses' => array_filter([
                     ['type' => 'A', 'number' => trim($_POST['license_a_number'] ?? ''), 'issue_date' => $_POST['license_a_issue'] ?? '', 'expiry_date' => $_POST['license_a_expiry'] ?? ''],
@@ -115,28 +129,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ['type' => 'Muletto', 'number' => trim($_POST['license_muletto_number'] ?? ''), 'issue_date' => $_POST['license_muletto_issue'] ?? '', 'expiry_date' => $_POST['license_muletto_expiry'] ?? ''],
                     ['type' => 'Altro', 'description' => trim($_POST['license_altro_desc'] ?? ''), 'number' => trim($_POST['license_altro_number'] ?? ''), 'issue_date' => $_POST['license_altro_issue'] ?? '', 'expiry_date' => $_POST['license_altro_expiry'] ?? ''],
                 ], function($license) { return !empty($license['number']) || !empty($license['description']); }),
-                
+
                 // Corso Base Protezione Civile Regione Lombardia
                 'corso_base_pc' => !empty($_POST['corso_base_pc']),
                 'corso_base_pc_anno' => !empty($_POST['corso_base_pc_anno']) ? intval($_POST['corso_base_pc_anno']) : null,
-                
+
                 // Corsi e specializzazioni
                 'courses' => array_filter([
                     ['name' => trim($_POST['course_1_name'] ?? ''), 'completion_date' => $_POST['course_1_date'] ?? '', 'expiry_date' => $_POST['course_1_expiry'] ?? ''],
                     ['name' => trim($_POST['course_2_name'] ?? ''), 'completion_date' => $_POST['course_2_date'] ?? '', 'expiry_date' => $_POST['course_2_expiry'] ?? ''],
                     ['name' => trim($_POST['course_3_name'] ?? ''), 'completion_date' => $_POST['course_3_date'] ?? '', 'expiry_date' => $_POST['course_3_expiry'] ?? ''],
                 ], function($course) { return !empty($course['name']); }),
-                
+
                 // Informazioni alimentari
                 'health_vegetarian' => !empty($_POST['health_vegetarian']),
                 'health_vegan' => !empty($_POST['health_vegan']),
                 'health_allergies' => trim($_POST['health_allergies'] ?? ''),
                 'health_intolerances' => trim($_POST['health_intolerances'] ?? ''),
-                
+
                 // Informazioni professionali e formative
                 'worker_type' => !empty($_POST['worker_type']) ? $_POST['worker_type'] : null,
                 'education_level' => !empty($_POST['education_level']) ? $_POST['education_level'] : null,
-                
+
                 // Consensi
                 'art6_operativo' => !empty($_POST['art6_operativo']),
                 'art6_unica_org' => !empty($_POST['art6_unica_org']),
@@ -151,19 +165,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'privacy_accepted' => !empty($_POST['privacy_accepted']),
                 'privacy_foto' => !empty($_POST['privacy_foto']),
                 'dichiarazione_sostitutiva' => !empty($_POST['dichiarazione_sostitutiva']),
-                
+
                 // Data e luogo compilazione
                 'compilation_place' => trim($_POST['compilation_place'] ?? ''),
                 'compilation_date' => $_POST['compilation_date'] ?? date('Y-m-d')
             ];
-            
+
             $result = $controller->createAdult($data);
-            
+
             if ($result['success']) {
                 $success = true;
                 $applicationCode = $result['code'];
                 $pdfToken = $result['pdf_token'] ?? '';
-                
+
                 // Show warnings if PDF or email failed
                 if (!empty($result['processing_errors'])) {
                     foreach ($result['processing_errors'] as $error) {
@@ -219,7 +233,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
             </a>
         </div>
     </nav>
-    
+
     <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-10">
@@ -233,18 +247,18 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                 <strong>Codice Domanda:</strong> <?php echo htmlspecialchars($applicationCode); ?><br>
                                 <small>Conserva questo codice per future comunicazioni</small>
                             </div>
-                            
+
                             <?php if (!empty($pdfToken)): ?>
                             <div class="alert alert-primary mt-3">
                                 <h5><i class="bi bi-file-pdf"></i> Scarica il Modulo PDF</h5>
                                 <p class="mb-2">Clicca il pulsante per scaricare il modulo PDF da stampare e firmare:</p>
-                                <a href="application_pdf.php?token=<?php echo htmlspecialchars($pdfToken); ?>&download=1" 
+                                <a href="application_pdf.php?token=<?php echo htmlspecialchars($pdfToken); ?>&download=1"
                                    class="btn btn-danger btn-lg" target="_blank">
                                     <i class="bi bi-download"></i> Scarica PDF Domanda
                                 </a>
                             </div>
                             <?php endif; ?>
-                            
+
                             <div class="alert alert-success mt-3">
                                 <p class="mb-2">
                                     <i class="bi bi-envelope-check"></i>
@@ -253,7 +267,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                 </p>
                                 <small class="text-muted">Se non la trovi, controlla anche nella cartella spam.</small>
                             </div>
-                            
+
                             <div class="alert alert-warning mt-4">
                                 <h5><i class="bi bi-list-check"></i> Prossimi Passi:</h5>
                                 <ol class="text-start mt-3">
@@ -267,7 +281,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                     </li>
                                 </ol>
                             </div>
-                            
+
                             <p class="mt-3">Il nostro team esaminerà la tua domanda e ti contatterà a breve.</p>
                             <a href="index.php" class="btn btn-primary mt-3">Torna alla Home</a>
                         </div>
@@ -288,44 +302,44 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                     </ul>
                                 </div>
                             <?php endif; ?>
-                            
+
                             <form method="POST" action="" id="registrationForm">
                                 <?php echo CsrfProtection::getHiddenField(); ?>
-                                
+
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i>
-                                    <strong>Attenzione:</strong> Compila tutti i campi obbligatori contrassegnati con <span class="required-star">*</span>. 
+                                    <strong>Attenzione:</strong> Compila tutti i campi obbligatori contrassegnati con <span class="required-star">*</span>.
                                     Dopo l'invio riceverai un PDF via email che dovrà essere stampato, firmato e consegnato in sede con i documenti allegati.
                                 </div>
-                                
+
                                 <!-- DATI ANAGRAFICI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-person"></i> Dati Anagrafici</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="last_name" class="form-label">Cognome <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="last_name" name="last_name" 
+                                        <input type="text" class="form-control" id="last_name" name="last_name"
                                                value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="first_name" class="form-label">Nome <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="first_name" name="first_name" 
+                                        <input type="text" class="form-control" id="first_name" name="first_name"
                                                value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="tax_code" class="form-label">Codice Fiscale <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control text-uppercase" id="tax_code" name="tax_code" 
-                                               value="<?php echo htmlspecialchars($_POST['tax_code'] ?? ''); ?>" 
+                                        <input type="text" class="form-control text-uppercase" id="tax_code" name="tax_code"
+                                               value="<?php echo htmlspecialchars($_POST['tax_code'] ?? ''); ?>"
                                                maxlength="16" pattern="[A-Z0-9]{16}" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label for="birth_date" class="form-label">Data di Nascita <span class="required-star">*</span></label>
-                                        <input type="date" class="form-control" id="birth_date" name="birth_date" 
+                                        <input type="date" class="form-control" id="birth_date" name="birth_date"
                                                value="<?php echo htmlspecialchars($_POST['birth_date'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-3">
@@ -337,137 +351,140 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-8">
                                         <label for="birth_place" class="form-label">Luogo di Nascita <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="birth_place" name="birth_place" 
+                                        <input type="text" class="form-control" id="birth_place" name="birth_place"
                                                value="<?php echo htmlspecialchars($_POST['birth_place'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="birth_province" class="form-label">Provincia <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control text-uppercase" id="birth_province" name="birth_province" 
-                                               value="<?php echo htmlspecialchars($_POST['birth_province'] ?? ''); ?>" 
-                                               maxlength="2" required>
+                                        <input type="text" class="form-control text-uppercase" id="birth_province" name="birth_province"
+                                               value="<?php echo htmlspecialchars($_POST['birth_province'] ?? ''); ?>"
+                                               maxlength="2" pattern="[A-Za-z]{2}" title="<?php echo htmlspecialchars($provinceTitle); ?>" required>
+                                        <div class="form-text"><?php echo htmlspecialchars($provinceHint); ?></div>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="nationality" class="form-label">Nazionalità</label>
-                                        <input type="text" class="form-control" id="nationality" name="nationality" 
+                                        <input type="text" class="form-control" id="nationality" name="nationality"
                                                value="<?php echo htmlspecialchars($_POST['nationality'] ?? 'Italiana'); ?>">
                                     </div>
                                 </div>
-                                
+
                                 <!-- INDIRIZZO RESIDENZA -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-house"></i> Indirizzo di Residenza</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-8">
                                         <label for="residence_street" class="form-label">Via <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_street" name="residence_street" 
+                                        <input type="text" class="form-control" id="residence_street" name="residence_street"
                                                value="<?php echo htmlspecialchars($_POST['residence_street'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-4">
                                         <label for="residence_number" class="form-label">Numero <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_number" name="residence_number" 
+                                        <input type="text" class="form-control" id="residence_number" name="residence_number"
                                                value="<?php echo htmlspecialchars($_POST['residence_number'] ?? ''); ?>" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-5">
                                         <label for="residence_city" class="form-label">Città <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_city" name="residence_city" 
+                                        <input type="text" class="form-control" id="residence_city" name="residence_city"
                                                value="<?php echo htmlspecialchars($_POST['residence_city'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="residence_province" class="form-label">Provincia <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control text-uppercase" id="residence_province" name="residence_province" 
-                                               value="<?php echo htmlspecialchars($_POST['residence_province'] ?? ''); ?>" 
-                                               maxlength="2" required>
+                                        <input type="text" class="form-control text-uppercase" id="residence_province" name="residence_province"
+                                               value="<?php echo htmlspecialchars($_POST['residence_province'] ?? ''); ?>"
+                                               maxlength="2" pattern="[A-Za-z]{2}" title="<?php echo htmlspecialchars($provinceTitle); ?>" required>
+                                        <div class="form-text"><?php echo htmlspecialchars($provinceHint); ?></div>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="residence_cap" class="form-label">CAP <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="residence_cap" name="residence_cap" 
-                                               value="<?php echo htmlspecialchars($_POST['residence_cap'] ?? ''); ?>" 
+                                        <input type="text" class="form-control" id="residence_cap" name="residence_cap"
+                                               value="<?php echo htmlspecialchars($_POST['residence_cap'] ?? ''); ?>"
                                                maxlength="5" pattern="[0-9]{5}" required>
                                     </div>
                                 </div>
-                                
+
                                 <!-- INDIRIZZO DOMICILIO -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Indirizzo di Domicilio (se diverso dalla residenza)</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-8">
                                         <label for="domicile_street" class="form-label">Via</label>
-                                        <input type="text" class="form-control" id="domicile_street" name="domicile_street" 
+                                        <input type="text" class="form-control" id="domicile_street" name="domicile_street"
                                                value="<?php echo htmlspecialchars($_POST['domicile_street'] ?? ''); ?>">
                                     </div>
                                     <div class="col-md-4">
                                         <label for="domicile_number" class="form-label">Numero</label>
-                                        <input type="text" class="form-control" id="domicile_number" name="domicile_number" 
+                                        <input type="text" class="form-control" id="domicile_number" name="domicile_number"
                                                value="<?php echo htmlspecialchars($_POST['domicile_number'] ?? ''); ?>">
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-5">
                                         <label for="domicile_city" class="form-label">Città</label>
-                                        <input type="text" class="form-control" id="domicile_city" name="domicile_city" 
+                                        <input type="text" class="form-control" id="domicile_city" name="domicile_city"
                                                value="<?php echo htmlspecialchars($_POST['domicile_city'] ?? ''); ?>">
                                     </div>
                                     <div class="col-md-2">
                                         <label for="domicile_province" class="form-label">Provincia</label>
-                                        <input type="text" class="form-control text-uppercase" id="domicile_province" name="domicile_province" 
-                                               value="<?php echo htmlspecialchars($_POST['domicile_province'] ?? ''); ?>" 
-                                               maxlength="2">
+                                        <input type="text" class="form-control text-uppercase" id="domicile_province" name="domicile_province"
+                                               value="<?php echo htmlspecialchars($_POST['domicile_province'] ?? ''); ?>"
+                                               maxlength="2" pattern="[A-Za-z]{2}" title="<?php echo htmlspecialchars($provinceTitle); ?>">
+                                        <div class="form-text"><?php echo htmlspecialchars($provinceHint); ?></div>
                                     </div>
                                     <div class="col-md-2">
                                         <label for="domicile_cap" class="form-label">CAP</label>
-                                        <input type="text" class="form-control" id="domicile_cap" name="domicile_cap" 
-                                               value="<?php echo htmlspecialchars($_POST['domicile_cap'] ?? ''); ?>" 
+                                        <input type="text" class="form-control" id="domicile_cap" name="domicile_cap"
+                                               value="<?php echo htmlspecialchars($_POST['domicile_cap'] ?? ''); ?>"
                                                maxlength="5" pattern="[0-9]{5}">
                                     </div>
                                 </div>
-                                
+
                                 <!-- RECAPITI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-telephone"></i> Recapiti</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-3">
                                         <label for="phone" class="form-label">Telefono Fisso</label>
-                                        <input type="tel" class="form-control" id="phone" name="phone" 
+                                        <input type="tel" class="form-control" id="phone" name="phone"
                                                value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>">
                                     </div>
                                     <div class="col-md-3">
                                         <label for="mobile" class="form-label">Cellulare <span class="required-star">*</span></label>
-                                        <input type="tel" class="form-control" id="mobile" name="mobile" 
+                                        <input type="tel" class="form-control" id="mobile" name="mobile"
                                                value="<?php echo htmlspecialchars($_POST['mobile'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label for="email" class="form-label">Email <span class="required-star">*</span></label>
-                                        <input type="email" class="form-control" id="email" name="email" 
+                                        <input type="email" class="form-control" id="email" name="email"
                                                value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label for="pec" class="form-label">PEC</label>
-                                        <input type="email" class="form-control" id="pec" name="pec" 
+                                        <input type="email" class="form-control" id="pec" name="pec"
                                                value="<?php echo htmlspecialchars($_POST['pec'] ?? ''); ?>">
                                     </div>
                                 </div>
-                                
+
                                 <!-- PATENTI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-card-heading"></i> Patenti e Abilitazioni</h5>
                                 </div>
-                                
+
                                 <p class="text-muted small">Compila solo le patenti che possiedi</p>
-                                
+
                                 <?php
                                 $licenseTypes = [
                                     'a' => 'Patente A',
@@ -479,7 +496,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                     'muletto' => 'Patentino Muletto',
                                     'altro' => 'Altro (specificare)'
                                 ];
-                                
+
                                 foreach ($licenseTypes as $key => $label):
                                 ?>
                                 <div class="card mb-2">
@@ -489,35 +506,35 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                             <?php if ($key === 'altro'): ?>
                                             <div class="col-md-3">
                                                 <label class="form-label">Descrizione</label>
-                                                <input type="text" class="form-control" name="license_<?php echo $key; ?>_desc" 
+                                                <input type="text" class="form-control" name="license_<?php echo $key; ?>_desc"
                                                        value="<?php echo htmlspecialchars($_POST["license_{$key}_desc"] ?? ''); ?>">
                                             </div>
                                             <?php endif; ?>
                                             <div class="col-md-3">
                                                 <label class="form-label">Numero</label>
-                                                <input type="text" class="form-control" name="license_<?php echo $key; ?>_number" 
+                                                <input type="text" class="form-control" name="license_<?php echo $key; ?>_number"
                                                        value="<?php echo htmlspecialchars($_POST["license_{$key}_number"] ?? ''); ?>">
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Data Rilascio</label>
-                                                <input type="date" class="form-control" name="license_<?php echo $key; ?>_issue" 
+                                                <input type="date" class="form-control" name="license_<?php echo $key; ?>_issue"
                                                        value="<?php echo htmlspecialchars($_POST["license_{$key}_issue"] ?? ''); ?>">
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Data Scadenza</label>
-                                                <input type="date" class="form-control" name="license_<?php echo $key; ?>_expiry" 
+                                                <input type="date" class="form-control" name="license_<?php echo $key; ?>_expiry"
                                                        value="<?php echo htmlspecialchars($_POST["license_{$key}_expiry"] ?? ''); ?>">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
-                                
+
                                 <!-- CORSI E SPECIALIZZAZIONI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Corsi e Specializzazioni</h5>
                                 </div>
-                                
+
                                 <!-- Corso Base Protezione Civile Regione Lombardia -->
                                 <div class="card mb-3">
                                     <div class="card-body">
@@ -525,7 +542,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="corso_base_pc" name="corso_base_pc" 
+                                                    <input class="form-check-input" type="checkbox" id="corso_base_pc" name="corso_base_pc"
                                                            <?php echo !empty($_POST['corso_base_pc']) ? 'checked' : ''; ?>>
                                                     <label class="form-check-label" for="corso_base_pc">
                                                         Ho già effettuato il Corso Base di Protezione Civile riconosciuto da Regione Lombardia
@@ -534,16 +551,16 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Anno di completamento</label>
-                                                <input type="number" class="form-control" name="corso_base_pc_anno" 
+                                                <input type="number" class="form-control" name="corso_base_pc_anno"
                                                        value="<?php echo htmlspecialchars($_POST['corso_base_pc_anno'] ?? ''); ?>"
                                                        min="1990" max="<?php echo date('Y'); ?>" placeholder="es. 2020">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <p class="text-muted small">Indica eventuali altri corsi di Protezione Civile o specializzazioni già in possesso</p>
-                                
+
                                 <?php for ($i = 1; $i <= 3; $i++): ?>
                                 <div class="card mb-2">
                                     <div class="card-body">
@@ -551,40 +568,40 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <label class="form-label">Nome Corso</label>
-                                                <input type="text" class="form-control" name="course_<?php echo $i; ?>_name" 
+                                                <input type="text" class="form-control" name="course_<?php echo $i; ?>_name"
                                                        value="<?php echo htmlspecialchars($_POST["course_{$i}_name"] ?? ''); ?>">
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Data Completamento</label>
-                                                <input type="date" class="form-control" name="course_<?php echo $i; ?>_date" 
+                                                <input type="date" class="form-control" name="course_<?php echo $i; ?>_date"
                                                        value="<?php echo htmlspecialchars($_POST["course_{$i}_date"] ?? ''); ?>">
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Data Scadenza</label>
-                                                <input type="date" class="form-control" name="course_<?php echo $i; ?>_expiry" 
+                                                <input type="date" class="form-control" name="course_<?php echo $i; ?>_expiry"
                                                        value="<?php echo htmlspecialchars($_POST["course_{$i}_expiry"] ?? ''); ?>">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <?php endfor; ?>
-                                
+
                                 <!-- INFORMAZIONI ALIMENTARI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Informazioni Alimentari</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="health_vegetarian" name="health_vegetarian" 
+                                            <input class="form-check-input" type="checkbox" id="health_vegetarian" name="health_vegetarian"
                                                    <?php echo !empty($_POST['health_vegetarian']) ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="health_vegetarian">
                                                 Vegetariano
                                             </label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="health_vegan" name="health_vegan" 
+                                            <input class="form-check-input" type="checkbox" id="health_vegan" name="health_vegan"
                                                    <?php echo !empty($_POST['health_vegan']) ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="health_vegan">
                                                 Vegano
@@ -592,22 +609,22 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="health_allergies" class="form-label">Allergie Alimentari</label>
                                     <textarea class="form-control" id="health_allergies" name="health_allergies" rows="2"><?php echo htmlspecialchars($_POST['health_allergies'] ?? ''); ?></textarea>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="health_intolerances" class="form-label">Intolleranze Alimentari</label>
                                     <textarea class="form-control" id="health_intolerances" name="health_intolerances" rows="2"><?php echo htmlspecialchars($_POST['health_intolerances'] ?? ''); ?></textarea>
                                 </div>
-                                
+
                                 <!-- INFORMAZIONI PROFESSIONALI E FORMATIVE -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Informazioni Professionali e Formative</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="worker_type" class="form-label">Tipo di Lavoratore</label>
@@ -633,12 +650,12 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <!-- DICHIARAZIONI E CONSENSI -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-file-text"></i> Dichiarazioni Obbligatorie</h5>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Art. 6 - Regolamento Regionale del 18 Ottobre 2010</h6>
                                     <div class="form-check">
@@ -654,7 +671,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Art. 7 - Regolamento Regionale del 18 Ottobre 2010</h6>
                                     <div class="form-check">
@@ -664,18 +681,18 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>D.Lgs. 3 luglio 2017, n. 117 – Codice del Terzo Settore</h6>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="dlgs_volontariato" name="dlgs_volontariato" required>
                                         <label class="form-check-label" for="dlgs_volontariato">
-                                            Sono informato che l'attività di volontariato è svolta in modo personale, spontaneo e gratuito e che non è prevista l'erogazione di alcun compenso. 
+                                            Sono informato che l'attività di volontariato è svolta in modo personale, spontaneo e gratuito e che non è prevista l'erogazione di alcun compenso.
                                             Autorizzo esclusivamente il rimborso delle sole spese effettivamente sostenute e documentate <span class="required-star">*</span>
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Regolamento D.Lgs. 81/2008 - Tutela della Salute e della Sicurezza</h6>
                                     <div class="form-check">
@@ -691,7 +708,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Statuto Associativo e Regolamento Interno</h6>
                                     <div class="form-check">
@@ -701,7 +718,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Conoscenza dei Rischi</h6>
                                     <div class="form-check">
@@ -723,7 +740,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Dichiarazione Sostitutiva di Certificazione</h6>
                                     <div class="form-check">
@@ -733,7 +750,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="declaration-box mb-3">
                                     <h6>Normativa sulla Privacy</h6>
                                     <div class="form-check">
@@ -745,42 +762,42 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="privacy_foto" name="privacy_foto" required>
                                         <label class="form-check-label" for="privacy_foto">
-                                            Acconsento alla pubblicazione di fotografie e riprese video su pubblicazioni, sito internet e social media dell'Associazione. 
+                                            Acconsento alla pubblicazione di fotografie e riprese video su pubblicazioni, sito internet e social media dell'Associazione.
                                             Sollevo l'Associazione da responsabilità per uso improprio da parte di terzi <span class="required-star">*</span>
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 <!-- LUOGO E DATA -->
                                 <div class="section-header">
                                     <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Luogo e Data di Compilazione</h5>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="compilation_place" class="form-label">Luogo <span class="required-star">*</span></label>
-                                        <input type="text" class="form-control" id="compilation_place" name="compilation_place" 
+                                        <input type="text" class="form-control" id="compilation_place" name="compilation_place"
                                                value="<?php echo htmlspecialchars($_POST['compilation_place'] ?? ''); ?>" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="compilation_date" class="form-label">Data <span class="required-star">*</span></label>
-                                        <input type="date" class="form-control" id="compilation_date" name="compilation_date" 
+                                        <input type="date" class="form-control" id="compilation_date" name="compilation_date"
                                                value="<?php echo htmlspecialchars($_POST['compilation_date'] ?? date('Y-m-d')); ?>" required>
                                     </div>
                                 </div>
-                                
+
                                 <?php if (!empty($config['recaptcha']['enabled'])): ?>
                                     <div class="mb-3">
                                         <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($config['recaptcha']['site_key']); ?>"></div>
                                     </div>
                                 <?php endif; ?>
-                                
+
                                 <div class="d-grid gap-2 mt-4">
                                     <button type="submit" class="btn btn-primary btn-lg">
                                         <i class="bi bi-send"></i> Invia Domanda di Iscrizione
                                     </button>
                                 </div>
-                                
+
                                 <p class="text-muted small mt-3">
                                     <span class="required-star">*</span> Campi obbligatori<br>
                                     Dopo l'invio riceverai un PDF via email che dovrà essere stampato, firmato e consegnato in sede insieme agli allegati richiesti.
@@ -792,13 +809,13 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
             </div>
         </div>
     </div>
-    
+
     <footer class="bg-light py-4 mt-5">
         <div class="container text-center text-muted">
             <p class="mb-0">&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($config['association']['name'] ?? 'EasyVol'); ?>. Tutti i diritti riservati.</p>
         </div>
     </footer>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Force uppercase on text fields for better data consistency
@@ -810,7 +827,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                 'domicile_street', 'domicile_city', 'domicile_province',
                 'compilation_place'
             ];
-            
+
             uppercaseFields.forEach(function(fieldName) {
                 const field = document.getElementById(fieldName);
                 if (field) {
@@ -822,7 +839,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                     });
                 }
             });
-            
+
             // Also handle course name fields
             for (let i = 1; i <= 3; i++) {
                 const courseField = document.querySelector(`input[name="course_${i}_name"]`);
@@ -835,7 +852,7 @@ $pageTitle = 'Domanda di Iscrizione - Socio Maggiorenne';
                     });
                 }
             }
-            
+
             // Handle license description fields
             const licenseDescField = document.querySelector('input[name="license_altro_desc"]');
             if (licenseDescField) {

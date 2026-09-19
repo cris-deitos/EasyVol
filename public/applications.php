@@ -43,10 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         }
         $result = $controller->approve($applicationId, $app->getUserId());
-        if ($result) {
+        if (!empty($result['success'])) {
             header('Location: applications.php?success=approved');
         } else {
-            header('Location: applications.php?error=approve_failed');
+            $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'approvazione della domanda. Riprova.';
+            header('Location: applications.php');
         }
         exit;
     } elseif ($_POST['action'] === 'reject' && $app->checkPermission('applications', 'edit')) {
