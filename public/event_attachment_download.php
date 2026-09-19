@@ -84,9 +84,14 @@ if ($fallbackFilename === '') {
 }
 $utf8Filename = rawurlencode($filename);
 $filesize = filesize($realPath);
-$mimeType = $attachment['file_type'] ?? 'application/octet-stream';
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mimeType = ($finfo !== false) ? (finfo_file($finfo, $realPath) ?: 'application/octet-stream') : 'application/octet-stream';
+if ($finfo !== false) {
+    finfo_close($finfo);
+}
 
 header('Content-Type: ' . $mimeType);
+header('X-Content-Type-Options: nosniff');
 header('Content-Disposition: attachment; filename="' . $fallbackFilename . '"; filename*=UTF-8\'\'' . $utf8Filename);
 header('Content-Length: ' . $filesize);
 header('Cache-Control: no-cache, must-revalidate');

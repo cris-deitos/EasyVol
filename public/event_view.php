@@ -153,6 +153,22 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                         </div>
                     </div>
                 </div>
+
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <?php echo htmlspecialchars($_SESSION['success']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['success']); ?>
+                <?php endif; ?>
+
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <?php echo htmlspecialchars($_SESSION['error']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['error']); ?>
+                <?php endif; ?>
                 
                 <!-- Tabs -->
                 <ul class="nav nav-tabs mb-3" id="eventTab" role="tablist">
@@ -662,22 +678,6 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                 </div>
                             </div>
                             <div class="card-body">
-                                <?php if (isset($_SESSION['success'])): ?>
-                                    <div class="alert alert-success alert-dismissible fade show">
-                                        <?php echo htmlspecialchars($_SESSION['success']); ?>
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                    <?php unset($_SESSION['success']); ?>
-                                <?php endif; ?>
-
-                                <?php if (isset($_SESSION['error'])): ?>
-                                    <div class="alert alert-danger alert-dismissible fade show">
-                                        <?php echo htmlspecialchars($_SESSION['error']); ?>
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                    <?php unset($_SESSION['error']); ?>
-                                <?php endif; ?>
-
                                 <?php if ($app->checkPermission('events', 'edit')): ?>
                                     <div class="collapse mb-3" id="eventAttachmentUploadForm">
                                         <form action="event_attachment_upload.php" method="POST" enctype="multipart/form-data" class="border rounded p-3 bg-light">
