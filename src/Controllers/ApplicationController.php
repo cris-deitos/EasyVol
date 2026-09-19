@@ -8,25 +8,25 @@ use EasyVol\Models\Member;
 
 /**
  * Application Controller
- * 
+ *
  * Gestisce le domande di iscrizione pubbliche
  */
 class ApplicationController {
     private $db;
     private $config;
-    
+
     // Kept for backward compatibility, but delegates to Member class constants
     const MIN_COURSE_YEAR = Member::MIN_COURSE_YEAR; // Anno minimo accettabile per corsi
     const MAX_COURSE_YEAR_OFFSET = Member::MAX_COURSE_YEAR_OFFSET; // Offset anni futuri accettabili
-    
+
     public function __construct(Database $db, $config) {
         $this->db = $db;
         $this->config = $config;
     }
-    
+
     /**
      * Crea nuova domanda di iscrizione
-     * 
+     *
      * @param array $data Dati domanda
      * @param bool $isJunior Se è un minorenne
      * @return array ['success' => bool, 'id' => int, 'code' => string, 'error' => string]
@@ -34,10 +34,12 @@ class ApplicationController {
     public function create($data, $isJunior = false) {
         try {
             $this->db->beginTransaction();
-            
+
+            $data = $this->uppercaseApplicationData($data);
+
             // Genera codice univoco
             $code = $this->generateUniqueCode();
-            
+
             // Inserisci domanda
             $sql = "INSERT INTO member_applications (
                 application_code, application_type, status,
@@ -47,7 +49,7 @@ class ApplicationController {
                 privacy_accepted, terms_accepted, photo_release_accepted,
                 created_at
             ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-            
+
             $params = [
                 $code,
                 $isJunior ? 'junior' : 'adult',
@@ -65,34 +67,34 @@ class ApplicationController {
                 $data['terms_accepted'] ? 1 : 0,
                 $data['photo_release_accepted'] ? 1 : 0
             ];
-            
+
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
-            
+
             // Guardian data for junior members is already stored in application_data JSON
             // It will be extracted and saved to junior_member_guardians table upon approval
-            
+
             // Genera PDF
             $pdfPath = $this->generateApplicationPdf($applicationId, $data, $isJunior);
-            
+
             // Aggiorna con path PDF
             $this->db->execute(
                 "UPDATE member_applications SET pdf_path = ? WHERE id = ?",
                 [$pdfPath, $applicationId]
             );
-            
+
             // Invia email
             $this->sendApplicationEmails($applicationId, $data, $pdfPath, $isJunior);
-            
+
             $this->db->commit();
-            
+
             return [
                 'success' => true,
                 'id' => $applicationId,
                 'code' => $code,
                 'error' => null
             ];
-            
+
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("Errore creazione domanda: " . $e->getMessage());
@@ -102,10 +104,10 @@ class ApplicationController {
             ];
         }
     }
-    
+
     /**
      * Crea nuova domanda di iscrizione per adulto
-     * 
+     *
      * @param array $data Dati domanda completa
      * @return array ['success' => bool, 'id' => int, 'code' => string, 'error' => string]
      */
@@ -122,40 +124,40 @@ class ApplicationController {
                     ];
                 }
             }
-            
+
             $this->db->beginTransaction();
-            
+
             // Genera codice univoco
             $code = $this->generateUniqueCode();
-            
+
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
-            
+
             // Force uppercase on text fields
             $data = $this->uppercaseApplicationData($data);
-            
+
             // Prepara i dati JSON
             $applicationData = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-            
+
             // Inserisci domanda con token
             $sql = "INSERT INTO member_applications (
                 application_code, application_type, status,
                 application_data, pdf_download_token, submitted_at
             ) VALUES (?, 'adult', 'pending', ?, ?, NOW())";
-            
+
             $params = [$code, $applicationData, $pdfToken];
-            
+
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
-            
+
             $this->db->commit();
-            
+
             // After successful insert, generate PDF and send email
             // Use try-catch to ensure application is saved even if PDF/email fails
             $pdfGenerated = false;
             $emailSent = false;
             $processingErrors = [];
-            
+
             if ($applicationId) {
                 try {
                     // Generate PDF using new TCPDF-based generator
@@ -164,25 +166,25 @@ class ApplicationController {
                     $pdfPath = $pdfGenerator->generateApplicationPdf($applicationId);
                     $pdfGenerated = true;
                     error_log("Application PDF generated successfully for application ID: $applicationId");
-                    
+
                     // Reload application with pdf_file path
                     $application = $this->db->fetchOne(
                         "SELECT * FROM member_applications WHERE id = ?",
                         [$applicationId]
                     );
-                    
+
                     // Send email with PDF link (and attempt attachment)
                     require_once __DIR__ . '/../Utils/EmailSender.php';
                     $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
                     $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
-                    
+
                     if ($emailSent) {
                         error_log("Application email sent successfully for application ID: $applicationId");
                     } else {
                         error_log("Application PDF generated but email failed for application ID: $applicationId");
                         $processingErrors[] = "Email non inviata. Verifica configurazione email.";
                     }
-                    
+
                 } catch (\Exception $e) {
                     // Don't fail the whole application if PDF/email fails
                     error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
@@ -194,7 +196,7 @@ class ApplicationController {
                     // Application is still saved, PDF can be regenerated later
                 }
             }
-            
+
             return [
                 'success' => true,
                 'id' => $applicationId,
@@ -205,7 +207,7 @@ class ApplicationController {
                 'processing_errors' => $processingErrors,
                 'error' => null
             ];
-            
+
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("Errore creazione domanda adulto: " . $e->getMessage());
@@ -215,10 +217,10 @@ class ApplicationController {
             ];
         }
     }
-    
+
     /**
      * Crea nuova domanda di iscrizione per minorenne
-     * 
+     *
      * @param array $data Dati domanda completa
      * @return array ['success' => bool, 'id' => int, 'code' => string, 'error' => string]
      */
@@ -235,40 +237,40 @@ class ApplicationController {
                     ];
                 }
             }
-            
+
             $this->db->beginTransaction();
-            
+
             // Genera codice univoco
             $code = $this->generateUniqueCode();
-            
+
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
-            
+
             // Force uppercase on text fields
             $data = $this->uppercaseApplicationData($data);
-            
+
             // Prepara i dati JSON
             $applicationData = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-            
+
             // Inserisci domanda con token
             $sql = "INSERT INTO member_applications (
                 application_code, application_type, status,
                 application_data, pdf_download_token, submitted_at
             ) VALUES (?, 'junior', 'pending', ?, ?, NOW())";
-            
+
             $params = [$code, $applicationData, $pdfToken];
-            
+
             $this->db->execute($sql, $params);
             $applicationId = $this->db->lastInsertId();
-            
+
             $this->db->commit();
-            
+
             // After successful insert, generate PDF and send email
             // Use try-catch to ensure application is saved even if PDF/email fails
             $pdfGenerated = false;
             $emailSent = false;
             $processingErrors = [];
-            
+
             if ($applicationId) {
                 try {
                     // Generate PDF using new TCPDF-based generator
@@ -277,25 +279,25 @@ class ApplicationController {
                     $pdfPath = $pdfGenerator->generateApplicationPdf($applicationId);
                     $pdfGenerated = true;
                     error_log("Application PDF generated successfully for application ID: $applicationId");
-                    
+
                     // Reload application with pdf_file path
                     $application = $this->db->fetchOne(
                         "SELECT * FROM member_applications WHERE id = ?",
                         [$applicationId]
                     );
-                    
+
                     // Send email with PDF link (and attempt attachment)
                     require_once __DIR__ . '/../Utils/EmailSender.php';
                     $emailSender = new \EasyVol\Utils\EmailSender($this->config, $this->db);
                     $emailSent = $emailSender->sendApplicationEmail($application, $pdfPath);
-                    
+
                     if ($emailSent) {
                         error_log("Application email sent successfully for application ID: $applicationId");
                     } else {
                         error_log("Application PDF generated but email failed for application ID: $applicationId");
                         $processingErrors[] = "Email non inviata. Verifica configurazione email.";
                     }
-                    
+
                 } catch (\Exception $e) {
                     // Don't fail the whole application if PDF/email fails
                     error_log("Error generating PDF or sending email for application $applicationId: " . $e->getMessage());
@@ -307,7 +309,7 @@ class ApplicationController {
                     // Application is still saved, PDF can be regenerated later
                 }
             }
-            
+
             return [
                 'success' => true,
                 'id' => $applicationId,
@@ -318,7 +320,7 @@ class ApplicationController {
                 'processing_errors' => $processingErrors,
                 'error' => null
             ];
-            
+
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("Errore creazione domanda minorenne: " . $e->getMessage());
@@ -328,10 +330,10 @@ class ApplicationController {
             ];
         }
     }
-    
+
     /**
      * Ottieni lista domande
-     * 
+     *
      * @param array $filters Filtri
      * @param int $page Pagina
      * @param int $perPage Elementi per pagina
@@ -340,20 +342,20 @@ class ApplicationController {
     public function getAll($filters = [], $page = 1, $perPage = 20) {
         $sql = "SELECT * FROM member_applications WHERE 1=1";
         $params = [];
-        
+
         if (!empty($filters['status'])) {
             $sql .= " AND status = ?";
             $params[] = $filters['status'];
         }
-        
+
         if (!empty($filters['type'])) {
             $sql .= " AND application_type = ?";
             $params[] = $filters['type'];
         }
-        
+
         if (!empty($filters['search'])) {
             // Use JSON functions for more efficient searching
-            $sql .= " AND (application_code LIKE ? 
+            $sql .= " AND (application_code LIKE ?
                       OR JSON_EXTRACT(application_data, '$.last_name') LIKE ?
                       OR JSON_EXTRACT(application_data, '$.first_name') LIKE ?
                       OR JSON_EXTRACT(application_data, '$.email') LIKE ?)";
@@ -363,14 +365,14 @@ class ApplicationController {
             $params[] = $search;
             $params[] = $search;
         }
-        
+
         $sql .= " ORDER BY submitted_at DESC";
-        
+
         $offset = ($page - 1) * $perPage;
         $sql .= " LIMIT $perPage OFFSET $offset";
-        
+
         $applications = $this->db->fetchAll($sql, $params);
-        
+
         // Decode JSON data and extract basic info
         foreach ($applications as &$app) {
             $data = json_decode($app['application_data'], true);
@@ -383,42 +385,42 @@ class ApplicationController {
                 $app['phone'] = $data['mobile'] ?? $data['phone'] ?? '';
             }
         }
-        
+
         return $applications;
     }
-    
+
     /**
      * Ottieni singola domanda
-     * 
+     *
      * @param int $id ID domanda
      * @return array|false
      */
     public function get($id) {
         return $this->db->fetchOne("SELECT * FROM member_applications WHERE id = ?", [$id]);
     }
-    
+
     /**
      * Approva domanda e crea socio
-     * 
+     *
      * @param int $id ID domanda
      * @param int $userId ID utente che approva
-     * @return bool
+     * @return array ['success' => bool, 'message' => string|null]
      */
     public function approve($id, $userId) {
         try {
             $this->db->beginTransaction();
-            
+
             $application = $this->get($id);
             if (!$application || $application['status'] !== 'pending') {
                 throw new \Exception('Domanda non valida');
             }
-            
+
             // Decode application data
             $data = json_decode($application['application_data'], true);
             if (!$data) {
                 throw new \Exception('Dati domanda non validi');
             }
-            
+
             // Crea socio o cadetto
             $registrationNumber = '';
             if ($application['application_type'] === 'junior') {
@@ -434,37 +436,47 @@ class ApplicationController {
                     $registrationNumber = $member['registration_number'] ?? '';
                 }
             }
-            
+
             // Aggiorna domanda con timestamp unico
             // processed_at e approved_at hanno lo stesso valore per domande approvate
             // processed_at viene usato anche per le domande rifiutate, mentre approved_at solo per approvate
             $now = date('Y-m-d H:i:s');
-            $sql = "UPDATE member_applications SET 
+            $sql = "UPDATE member_applications SET
                     status = 'approved',
                     processed_by = ?,
                     processed_at = ?,
                     approved_at = ?,
                     member_id = ?
                     WHERE id = ?";
-            
+
             $this->db->execute($sql, [$userId, $now, $now, $memberId, $id]);
-            
+
             // Invia email approvazione
             $this->sendApprovalEmailFromData($data, $application['application_type'], $registrationNumber);
-            
+
             $this->db->commit();
-            return true;
-            
+            return [
+                'success' => true,
+                'message' => null
+            ];
+
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            try {
+                $this->db->rollBack();
+            } catch (\Exception $rollbackException) {
+                // Ignore rollback errors and preserve original failure details
+            }
             error_log("Errore approvazione domanda: " . $e->getMessage());
-            return false;
+            return [
+                'success' => false,
+                'message' => $this->getApprovalErrorMessage($e)
+            ];
         }
     }
-    
+
     /**
      * Rifiuta domanda
-     * 
+     *
      * @param int $id ID domanda
      * @param int $userId ID utente
      * @param string $reason Motivazione
@@ -476,8 +488,8 @@ class ApplicationController {
             if (!$application || $application['status'] !== 'pending') {
                 return false;
             }
-            
-            $sql = "UPDATE member_applications SET 
+
+            $sql = "UPDATE member_applications SET
                     status = 'rejected',
                     processed_by = ?,
                     processed_at = NOW(),
@@ -485,27 +497,27 @@ class ApplicationController {
                     rejected_at = NOW(),
                     rejection_reason = ?
                     WHERE id = ?";
-            
+
             $this->db->execute($sql, [$userId, $userId, $reason, $id]);
-            
+
             // Invia email rifiuto (best effort - don't fail rejection if email fails)
             try {
                 $this->sendRejectionEmail($application, $reason);
             } catch (\Exception $emailEx) {
                 error_log("Errore invio email rifiuto domanda: " . $emailEx->getMessage());
             }
-            
+
             return true;
-            
+
         } catch (\Exception $e) {
             error_log("Errore rifiuto domanda: " . $e->getMessage());
             return false;
         }
     }
-    
+
     /**
      * Genera codice univoco per domanda
-     * 
+     *
      * @return string
      */
     private function generateUniqueCode() {
@@ -516,13 +528,13 @@ class ApplicationController {
                 [$code]
             );
         } while ($existing);
-        
+
         return $code;
     }
-    
+
     /**
      * Verifica se il codice fiscale è già presente in soci o cadetti attivi
-     * 
+     *
      * @param string $taxCode Codice fiscale da verificare
      * @return array ['exists' => bool, 'type' => 'socio'|'cadetto'|null]
      */
@@ -530,38 +542,38 @@ class ApplicationController {
         if (empty($taxCode)) {
             return ['exists' => false, 'type' => null];
         }
-        
+
         $taxCode = strtoupper(trim($taxCode));
-        
+
         // Controlla se esiste tra i soci attivi
         $existingMember = $this->db->fetchOne(
             "SELECT id FROM members WHERE tax_code = ? AND member_status = 'attivo'",
             [$taxCode]
         );
-        
+
         if ($existingMember) {
             return ['exists' => true, 'type' => 'socio'];
         }
-        
+
         // Controlla se esiste tra i cadetti attivi
         $existingJunior = $this->db->fetchOne(
             "SELECT id FROM junior_members WHERE tax_code = ? AND member_status = 'attivo'",
             [$taxCode]
         );
-        
+
         if ($existingJunior) {
             return ['exists' => true, 'type' => 'cadetto'];
         }
-        
+
         return ['exists' => false, 'type' => null];
     }
-    
+
     /**
      * DEPRECATED: Old mPDF-based PDF generation
      * Replaced by ApplicationPdfGenerator (TCPDF)
-     * 
+     *
      * Genera PDF domanda adulto
-     * 
+     *
      * @param int $id ID domanda
      * @param array $data Dati domanda
      * @param string $code Codice domanda
@@ -570,12 +582,12 @@ class ApplicationController {
     /* DEPRECATED - Commented out in favor of new TCPDF generator
     private function generateAdultApplicationPdf($id, $data, $code) {
         $pdfGen = new PdfGenerator($this->config);
-        
+
         $html = $pdfGen->getHeaderHtml();
         $html .= '<h2 style="text-align: center; color: #0d6efd;">DOMANDA DI ISCRIZIONE<br>SOCIO MAGGIORENNE</h2>';
         $html .= '<p style="text-align: center;"><strong>Codice domanda:</strong> ' . htmlspecialchars($code) . '</p>';
         $html .= '<hr>';
-        
+
         // Dati anagrafici
         $html .= '<h3 style="background: #f0f0f0; padding: 5px;">DATI ANAGRAFICI</h3>';
         $html .= '<table style="width: 100%; border-collapse: collapse;">';
@@ -587,19 +599,19 @@ class ApplicationController {
         $html .= '<tr><td style="padding: 5px;"><strong>Sesso:</strong></td><td>' . htmlspecialchars($data['gender']) . '</td></tr>';
         $html .= '<tr><td style="padding: 5px;"><strong>Nazionalità:</strong></td><td>' . htmlspecialchars($data['nationality']) . '</td></tr>';
         $html .= '</table>';
-        
+
         // Residenza
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">RESIDENZA</h3>';
         $html .= '<p>' . htmlspecialchars($data['residence_street']) . ' ' . htmlspecialchars($data['residence_number']) . ', ';
         $html .= htmlspecialchars($data['residence_city']) . ' (' . htmlspecialchars($data['residence_province']) . ') - ' . htmlspecialchars($data['residence_cap']) . '</p>';
-        
+
         // Domicilio se presente
         if (!empty($data['domicile_street'])) {
             $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">DOMICILIO</h3>';
             $html .= '<p>' . htmlspecialchars($data['domicile_street']) . ' ' . htmlspecialchars($data['domicile_number']) . ', ';
             $html .= htmlspecialchars($data['domicile_city']) . ' (' . htmlspecialchars($data['domicile_province']) . ') - ' . htmlspecialchars($data['domicile_cap']) . '</p>';
         }
-        
+
         // Recapiti
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">RECAPITI</h3>';
         $html .= '<p><strong>Cellulare:</strong> ' . htmlspecialchars($data['mobile']) . '<br>';
@@ -607,7 +619,7 @@ class ApplicationController {
         $html .= '<strong>Email:</strong> ' . htmlspecialchars($data['email']) . '<br>';
         if (!empty($data['pec'])) $html .= '<strong>PEC:</strong> ' . htmlspecialchars($data['pec']) . '<br>';
         $html .= '</p>';
-        
+
         // Patenti
         if (!empty($data['licenses'])) {
             $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">PATENTI E ABILITAZIONI</h3>';
@@ -619,7 +631,7 @@ class ApplicationController {
                 $html .= '</p>';
             }
         }
-        
+
         // Corsi
         if (!empty($data['courses'])) {
             $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">CORSI E SPECIALIZZAZIONI</h3>';
@@ -630,7 +642,7 @@ class ApplicationController {
                 $html .= '</p>';
             }
         }
-        
+
         // Salute
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">INFORMAZIONI SANITARIE</h3>';
         if ($data['health_vegetarian']) $html .= '<p>Vegetariano</p>';
@@ -638,7 +650,7 @@ class ApplicationController {
         if (!empty($data['health_allergies'])) $html .= '<p><strong>Allergie:</strong> ' . htmlspecialchars($data['health_allergies']) . '</p>';
         if (!empty($data['health_intolerances'])) $html .= '<p><strong>Intolleranze:</strong> ' . htmlspecialchars($data['health_intolerances']) . '</p>';
         if (!empty($data['health_conditions'])) $html .= '<p><strong>Patologie:</strong> ' . htmlspecialchars($data['health_conditions']) . '</p>';
-        
+
         // Datore di lavoro
         if (!empty($data['employer_name'])) {
             $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">DATORE DI LAVORO</h3>';
@@ -648,7 +660,7 @@ class ApplicationController {
             if (!empty($data['employer_phone'])) $html .= 'Tel: ' . htmlspecialchars($data['employer_phone']) . '<br>';
             $html .= '</p>';
         }
-        
+
         // Dichiarazioni
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">DICHIARAZIONI</h3>';
         $html .= '<p style="font-size: 10px;"><strong>Il sottoscritto dichiara:</strong></p>';
@@ -665,41 +677,41 @@ class ApplicationController {
         $html .= '☑ Autorizzazione trattamento dati personali (GDPR 2016/679)<br>';
         $html .= '☑ Autorizzazione pubblicazione foto e video<br>';
         $html .= '</p>';
-        
+
         // Allegati
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">ALLEGATI DA CONSEGNARE</h3>';
         $html .= '<p style="font-size: 10px;">';
         $html .= '• Copie di Attestati e Specializzazioni personali in campi inerenti alla Protezione Civile<br>';
         $html .= '• Copie Patenti di Guida per conduzione di mezzi speciali, Brevetti o Patentini per natanti o velivoli<br>';
         $html .= '</p>';
-        
+
         // Firma
         $html .= '<div style="margin-top: 30px;">';
         $html .= '<p><strong>Luogo e data:</strong> ' . htmlspecialchars($data['compilation_place']) . ', ' . date('d/m/Y', strtotime($data['compilation_date'])) . '</p>';
         $html .= '<p style="margin-top: 30px;">Firma del richiedente: _______________________________</p>';
         $html .= '</div>';
-        
+
         $html .= $pdfGen->getFooterHtml();
-        
+
         $filename = 'domanda_adulto_' . $code . '.pdf';
         $path = __DIR__ . '/../../uploads/applications/' . $filename;
-        
+
         if (!is_dir(dirname($path))) {
             mkdir(dirname($path), 0755, true);
         }
-        
+
         $pdfGen->generate($html, $path, 'F');
-        
+
         return 'uploads/applications/' . $filename;
     }
     */ // End of deprecated generateAdultApplicationPdf
-    
+
     /**
      * DEPRECATED: Old mPDF-based PDF generation
      * Replaced by ApplicationPdfGenerator (TCPDF)
-     * 
+     *
      * Genera PDF domanda minorenne
-     * 
+     *
      * @param int $id ID domanda
      * @param array $data Dati domanda
      * @param string $code Codice domanda
@@ -708,12 +720,12 @@ class ApplicationController {
     /* DEPRECATED - Commented out in favor of new TCPDF generator
     private function generateJuniorApplicationPdf($id, $data, $code) {
         $pdfGen = new PdfGenerator($this->config);
-        
+
         $html = $pdfGen->getHeaderHtml();
         $html .= '<h2 style="text-align: center; color: #0d6efd;">DOMANDA DI ISCRIZIONE<br>SOCIO MINORENNE (CADETTO)</h2>';
         $html .= '<p style="text-align: center;"><strong>Codice domanda:</strong> ' . htmlspecialchars($code) . '</p>';
         $html .= '<hr>';
-        
+
         // Dati anagrafici minore
         $html .= '<h3 style="background: #f0f0f0; padding: 5px;">DATI ANAGRAFICI DEL MINORE</h3>';
         $html .= '<table style="width: 100%; border-collapse: collapse;">';
@@ -724,12 +736,12 @@ class ApplicationController {
         $html .= '<tr><td style="padding: 5px;"><strong>Luogo di Nascita:</strong></td><td>' . htmlspecialchars($data['birth_place']) . ' (' . htmlspecialchars($data['birth_province']) . ')</td></tr>';
         $html .= '<tr><td style="padding: 5px;"><strong>Sesso:</strong></td><td>' . htmlspecialchars($data['gender']) . '</td></tr>';
         $html .= '</table>';
-        
+
         // Residenza
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">RESIDENZA</h3>';
         $html .= '<p>' . htmlspecialchars($data['residence_street']) . ' ' . htmlspecialchars($data['residence_number']) . ', ';
         $html .= htmlspecialchars($data['residence_city']) . ' (' . htmlspecialchars($data['residence_province']) . ') - ' . htmlspecialchars($data['residence_cap']) . '</p>';
-        
+
         // Recapiti
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">RECAPITI</h3>';
         $html .= '<p>';
@@ -737,7 +749,7 @@ class ApplicationController {
         if (!empty($data['phone'])) $html .= '<strong>Telefono:</strong> ' . htmlspecialchars($data['phone']) . '<br>';
         if (!empty($data['email'])) $html .= '<strong>Email:</strong> ' . htmlspecialchars($data['email']) . '<br>';
         $html .= '</p>';
-        
+
         // Salute
         if (!empty($data['health_allergies']) || !empty($data['health_intolerances']) || !empty($data['health_conditions'])) {
             $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">INFORMAZIONI SANITARIE</h3>';
@@ -747,7 +759,7 @@ class ApplicationController {
             if (!empty($data['health_intolerances'])) $html .= '<p><strong>Intolleranze:</strong> ' . htmlspecialchars($data['health_intolerances']) . '</p>';
             if (!empty($data['health_conditions'])) $html .= '<p><strong>Patologie:</strong> ' . htmlspecialchars($data['health_conditions']) . '</p>';
         }
-        
+
         // Genitori/Tutori
         if (!empty($data['guardians'])) {
             foreach ($data['guardians'] as $guardian) {
@@ -764,7 +776,7 @@ class ApplicationController {
                 $html .= '</table>';
             }
         }
-        
+
         // Dichiarazioni
         $html .= '<h3 style="background: #f0f0f0; padding: 5px; margin-top: 10px;">DICHIARAZIONI</h3>';
         $html .= '<p style="font-size: 10px;"><strong>I sottoscritti dichiarano:</strong></p>';
@@ -778,7 +790,7 @@ class ApplicationController {
         $html .= '☑ Autorizzazione trattamento dati personali (GDPR 2016/679)<br>';
         $html .= '☑ Autorizzazione pubblicazione foto e video<br>';
         $html .= '</p>';
-        
+
         // Firme
         $html .= '<div style="margin-top: 30px;">';
         $html .= '<p><strong>Luogo e data:</strong> ' . htmlspecialchars($data['compilation_place']) . ', ' . date('d/m/Y', strtotime($data['compilation_date'])) . '</p>';
@@ -786,28 +798,28 @@ class ApplicationController {
         $html .= '<p style="margin-top: 20px;">Firma del padre: _______________________________</p>';
         $html .= '<p style="margin-top: 20px;">Firma della madre: _______________________________</p>';
         $html .= '</div>';
-        
+
         $html .= $pdfGen->getFooterHtml();
-        
+
         $filename = 'domanda_cadetto_' . $code . '.pdf';
         $path = __DIR__ . '/../../uploads/applications/' . $filename;
-        
+
         if (!is_dir(dirname($path))) {
             mkdir(dirname($path), 0755, true);
         }
-        
+
         $pdfGen->generate($html, $path, 'F');
-        
+
         return 'uploads/applications/' . $filename;
     }
     */ // End of deprecated generateJuniorApplicationPdf
-    
+
     /**
      * DEPRECATED: Old email sending method
      * Replaced by EmailSender->sendApplicationEmail()
-     * 
+     *
      * Invia email domanda adulto
-     * 
+     *
      * @param array $data Dati
      * @param string $code Codice
      * @param string $pdfPath Path PDF
@@ -817,9 +829,9 @@ class ApplicationController {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
-        
+
         $emailSender = new EmailSender($this->config, $this->db);
-        
+
         // Email al richiedente
         $subject = 'Domanda di iscrizione ricevuta - Codice ' . $code;
         $body = '<p>Gentile ' . htmlspecialchars($data['first_name']) . ' ' . htmlspecialchars($data['last_name']) . ',</p>';
@@ -831,10 +843,10 @@ class ApplicationController {
         $body .= '<li>Copie Patenti di Guida per conduzione di mezzi speciali, Brevetti o Patentini per natanti o velivoli</li>';
         $body .= '</ul>';
         $body .= '<p>Ti contatteremo presto per aggiornamenti.</p>';
-        
+
         $fullPdfPath = __DIR__ . '/../../' . $pdfPath;
         $emailSender->queue($data['email'], $subject, $body, [$fullPdfPath]);
-        
+
         // Email all'associazione
         if (!empty($this->config['association']['email'])) {
             $subject = 'Nuova domanda di iscrizione socio maggiorenne - ' . $code;
@@ -843,18 +855,18 @@ class ApplicationController {
             $body .= '<p><strong>Nome:</strong> ' . htmlspecialchars($data['first_name'] . ' ' . $data['last_name']) . '</p>';
             $body .= '<p><strong>Email:</strong> ' . htmlspecialchars($data['email']) . '</p>';
             $body .= '<p>In allegato il PDF della domanda.</p>';
-            
+
             $emailSender->queue($this->config['association']['email'], $subject, $body, [$fullPdfPath]);
         }
     }
     */ // End of deprecated sendAdultApplicationEmails
-    
+
     /**
      * DEPRECATED: Old email sending method
      * Replaced by EmailSender->sendApplicationEmail()
-     * 
+     *
      * Invia email domanda minorenne
-     * 
+     *
      * @param array $data Dati
      * @param string $code Codice
      * @param string $pdfPath Path PDF
@@ -864,9 +876,9 @@ class ApplicationController {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
-        
+
         $emailSender = new EmailSender($this->config, $this->db);
-        
+
         // Trova email destinatario (genitore o minore)
         $recipientEmail = $data['email'];
         if (empty($recipientEmail) && !empty($data['guardians'])) {
@@ -877,12 +889,12 @@ class ApplicationController {
                 }
             }
         }
-        
+
         if (empty($recipientEmail)) {
             error_log("Nessuna email trovata per domanda cadetto $code");
             return;
         }
-        
+
         // Email al richiedente
         $subject = 'Domanda di iscrizione cadetto ricevuta - Codice ' . $code;
         $body = '<p>Gentile famiglia ' . htmlspecialchars($data['last_name']) . ',</p>';
@@ -890,10 +902,10 @@ class ApplicationController {
         $body .= '<p><strong>Codice domanda:</strong> ' . htmlspecialchars($code) . '</p>';
         $body .= '<p>In allegato troverai il PDF della domanda che <strong>deve essere stampato, firmato dal minore e dai genitori (o tutore), e consegnato in originale</strong> presso la sede dell\'associazione.</p>';
         $body .= '<p>Vi contatteremo presto per aggiornamenti.</p>';
-        
+
         $fullPdfPath = __DIR__ . '/../../' . $pdfPath;
         $emailSender->queue($recipientEmail, $subject, $body, [$fullPdfPath]);
-        
+
         // Email all'associazione
         if (!empty($this->config['association']['email'])) {
             $subject = 'Nuova domanda di iscrizione cadetto - ' . $code;
@@ -902,15 +914,15 @@ class ApplicationController {
             $body .= '<p><strong>Nome:</strong> ' . htmlspecialchars($data['first_name'] . ' ' . $data['last_name']) . '</p>';
             $body .= '<p><strong>Email:</strong> ' . htmlspecialchars($recipientEmail) . '</p>';
             $body .= '<p>In allegato il PDF della domanda.</p>';
-            
+
             $emailSender->queue($this->config['association']['email'], $subject, $body, [$fullPdfPath]);
         }
     }
     */ // End of deprecated sendJuniorApplicationEmails
-    
+
     /**
      * Genera PDF domanda
-     * 
+     *
      * @param int $id ID domanda
      * @param array $data Dati domanda
      * @param bool $isJunior Se minorenne
@@ -918,7 +930,7 @@ class ApplicationController {
      */
     private function generateApplicationPdf($id, $data, $isJunior) {
         $pdfGen = new PdfGenerator($this->config);
-        
+
         // TODO: Create proper PDF template
         $html = $pdfGen->getHeaderHtml();
         $html .= '<h2 style="text-align: center;">Domanda di Iscrizione</h2>';
@@ -926,22 +938,22 @@ class ApplicationController {
         $html .= '<p><strong>Cognome:</strong> ' . htmlspecialchars($data['last_name']) . '</p>';
         $html .= '<p><strong>Nome:</strong> ' . htmlspecialchars($data['first_name']) . '</p>';
         $html .= $pdfGen->getFooterHtml();
-        
+
         $filename = 'domanda_' . $id . '.pdf';
         $path = __DIR__ . '/../../uploads/applications/' . $filename;
-        
+
         if (!is_dir(dirname($path))) {
             mkdir(dirname($path), 0755, true);
         }
-        
+
         $pdfGen->generate($html, $filename, 'F');
-        
+
         return $path;
     }
-    
+
     /**
      * Invia email domanda
-     * 
+     *
      * @param int $id ID domanda
      * @param array $data Dati
      * @param string $pdfPath Path PDF
@@ -951,31 +963,31 @@ class ApplicationController {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
-        
+
         $emailSender = new EmailSender($this->config, $this->db);
-        
+
         // Email al richiedente
         $subject = 'Domanda di iscrizione ricevuta';
         $body = '<p>Gentile ' . htmlspecialchars($data['first_name']) . ',</p>';
         $body .= '<p>La tua domanda di iscrizione è stata ricevuta correttamente.</p>';
         $body .= '<p>Ti contatteremo presto per gli aggiornamenti.</p>';
-        
+
         $emailSender->queue($data['email'], $subject, $body, [$pdfPath]);
-        
+
         // Email all'associazione
         if (!empty($this->config['association']['email'])) {
             $subject = 'Nuova domanda di iscrizione';
             $body = '<p>È stata ricevuta una nuova domanda di iscrizione.</p>';
             $body .= '<p><strong>Nome:</strong> ' . htmlspecialchars($data['first_name'] . ' ' . $data['last_name']) . '</p>';
-            
+
             $emailSender->queue($this->config['association']['email'], $subject, $body, [$pdfPath]);
         }
-        
+
         // Telegram notification
         try {
             require_once __DIR__ . '/../Services/TelegramService.php';
             $telegramService = new \EasyVol\Services\TelegramService($this->db, $this->config);
-            
+
             if ($telegramService->isEnabled()) {
                 $actionType = $isJunior ? 'junior_application' : 'member_application';
                 $message = "🆕 <b>Nuova domanda di iscrizione " . ($isJunior ? "cadetto" : "socio") . "</b>\n\n";
@@ -988,37 +1000,37 @@ class ApplicationController {
                     $message .= "📞 <b>Telefono:</b> " . htmlspecialchars($data['phone']) . "\n";
                 }
                 $message .= "\n📄 Controlla il sistema per approvare o rifiutare la domanda.";
-                
+
                 $telegramService->sendNotification($actionType, $message);
             }
         } catch (\Exception $e) {
             error_log("Errore invio notifica Telegram per domanda: " . $e->getMessage());
         }
     }
-    
+
     /**
      * Invia email approvazione
-     * 
+     *
      * @param array $application Dati domanda
      */
     private function sendApprovalEmail($application) {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
-        
+
         $emailSender = new EmailSender($this->config, $this->db);
-        
+
         $subject = 'Domanda di iscrizione approvata';
         $body = '<p>Gentile ' . htmlspecialchars($application['first_name']) . ',</p>';
         $body .= '<p>La tua domanda di iscrizione è stata approvata!</p>';
         $body .= '<p>Benvenuto nella nostra associazione.</p>';
-        
+
         $emailSender->queue($application['email'], $subject, $body);
     }
-    
+
     /**
      * Invia email rifiuto
-     * 
+     *
      * @param array $application Dati domanda
      * @param string $reason Motivazione
      */
@@ -1026,22 +1038,22 @@ class ApplicationController {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
-        
+
         $emailSender = new EmailSender($this->config, $this->db);
-        
+
         $subject = 'Domanda di iscrizione';
         $body = '<p>Gentile ' . htmlspecialchars($application['first_name']) . ',</p>';
         $body .= '<p>Ci dispiace informarti che la tua domanda di iscrizione non può essere accettata.</p>';
         if ($reason) {
             $body .= '<p><strong>Motivazione:</strong> ' . htmlspecialchars($reason) . '</p>';
         }
-        
+
         $emailSender->queue($application['email'], $subject, $body);
     }
-    
+
     /**
      * Crea socio maggiorenne da domanda approvata
-     * 
+     *
      * @param array $data Dati completi dalla domanda
      * @param int $userId ID utente
      * @return int ID socio creato
@@ -1049,10 +1061,10 @@ class ApplicationController {
     private function createMemberFromApplication($data, $userId) {
         // Force uppercase on data before creating member
         $data = $this->uppercaseApplicationData($data);
-        
+
         // Genera numero registrazione
         $regNumber = $this->generateRegistrationNumber('member');
-        
+
         // Inserisci socio
         $sql = "INSERT INTO members (
             registration_number, member_type, member_status, volunteer_status,
@@ -1063,7 +1075,7 @@ class ApplicationController {
             corso_base_completato, corso_base_anno,
             created_at
         ) VALUES (?, 'ordinario', 'attivo', 'in_formazione', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-        
+
         $params = [
             $regNumber,
             $data['last_name'],
@@ -1081,13 +1093,13 @@ class ApplicationController {
             !empty($data['corso_base_pc']) ? 1 : 0,
             !empty($data['corso_base_pc_anno']) ? intval($data['corso_base_pc_anno']) : null
         ];
-        
+
         $this->db->execute($sql, $params);
         $memberId = $this->db->lastInsertId();
-        
+
         // Inserisci indirizzo residenza
         if (!empty($data['residence_street'])) {
-            $sql = "INSERT INTO member_addresses (member_id, address_type, street, number, city, province, cap) 
+            $sql = "INSERT INTO member_addresses (member_id, address_type, street, number, city, province, cap)
                     VALUES (?, 'residenza', ?, ?, ?, ?, ?)";
             $this->db->execute($sql, [
                 $memberId,
@@ -1098,10 +1110,10 @@ class ApplicationController {
                 $data['residence_cap']
             ]);
         }
-        
+
         // Inserisci indirizzo domicilio se diverso
         if (!empty($data['domicile_street'])) {
-            $sql = "INSERT INTO member_addresses (member_id, address_type, street, number, city, province, cap) 
+            $sql = "INSERT INTO member_addresses (member_id, address_type, street, number, city, province, cap)
                     VALUES (?, 'domicilio', ?, ?, ?, ?, ?)";
             $this->db->execute($sql, [
                 $memberId,
@@ -1112,7 +1124,7 @@ class ApplicationController {
                 $data['domicile_cap']
             ]);
         }
-        
+
         // Inserisci recapiti
         if (!empty($data['phone'])) {
             $this->db->execute("INSERT INTO member_contacts (member_id, contact_type, value) VALUES (?, 'telefono_fisso', ?)", [$memberId, $data['phone']]);
@@ -1126,7 +1138,7 @@ class ApplicationController {
         if (!empty($data['pec'])) {
             $this->db->execute("INSERT INTO member_contacts (member_id, contact_type, value) VALUES (?, 'pec', ?)", [$memberId, $data['pec']]);
         }
-        
+
         // Inserisci patenti
         if (!empty($data['licenses'])) {
             foreach ($data['licenses'] as $license) {
@@ -1135,7 +1147,7 @@ class ApplicationController {
                     if (!empty($license['description'])) {
                         $licenseType .= ' - ' . $license['description'];
                     }
-                    $sql = "INSERT INTO member_licenses (member_id, license_type, license_number, issue_date, expiry_date) 
+                    $sql = "INSERT INTO member_licenses (member_id, license_type, license_number, issue_date, expiry_date)
                             VALUES (?, ?, ?, ?, ?)";
                     $this->db->execute($sql, [
                         $memberId,
@@ -1147,12 +1159,12 @@ class ApplicationController {
                 }
             }
         }
-        
+
         // Inserisci corsi
         if (!empty($data['courses'])) {
             foreach ($data['courses'] as $course) {
                 if (!empty($course['name'])) {
-                    $sql = "INSERT INTO member_courses (member_id, course_name, completion_date, expiry_date) 
+                    $sql = "INSERT INTO member_courses (member_id, course_name, completion_date, expiry_date)
                             VALUES (?, ?, ?, ?)";
                     $this->db->execute($sql, [
                         $memberId,
@@ -1163,13 +1175,13 @@ class ApplicationController {
                 }
             }
         }
-        
+
         // Inserisci Corso Base Protezione Civile (se presente)
         if (!empty($data['corso_base_pc'])) {
             $courseName = Member::CORSO_BASE_A1_NAME;
             $courseType = Member::CORSO_BASE_A1_CODE;
             $completionDate = null;
-            
+
             // If year is provided, validate and use January 1st as completion date
             // Note: We use January 1st because the application form only collects the year,
             // not the exact completion date. This provides a consistent date representation
@@ -1182,8 +1194,8 @@ class ApplicationController {
                     $completionDate = sprintf('%04d-01-01', $year);
                 }
             }
-            
-            $sql = "INSERT INTO member_courses (member_id, course_name, course_type, completion_date, expiry_date) 
+
+            $sql = "INSERT INTO member_courses (member_id, course_name, course_type, completion_date, expiry_date)
                     VALUES (?, ?, ?, ?, NULL)";
             $this->db->execute($sql, [
                 $memberId,
@@ -1192,7 +1204,7 @@ class ApplicationController {
                 $completionDate
             ]);
         }
-        
+
         // Inserisci informazioni salute
         if (!empty($data['health_vegetarian'])) {
             $this->db->execute("INSERT INTO member_health (member_id, health_type, description) VALUES (?, 'vegetariano', '')", [$memberId]);
@@ -1209,10 +1221,10 @@ class ApplicationController {
         if (!empty($data['health_conditions'])) {
             $this->db->execute("INSERT INTO member_health (member_id, health_type, description) VALUES (?, 'patologie', ?)", [$memberId, $data['health_conditions']]);
         }
-        
+
         // Inserisci datore di lavoro
         if (!empty($data['employer_name'])) {
-            $sql = "INSERT INTO member_employment (member_id, employer_name, employer_address, employer_city, employer_phone) 
+            $sql = "INSERT INTO member_employment (member_id, employer_name, employer_address, employer_city, employer_phone)
                     VALUES (?, ?, ?, ?, ?)";
             $this->db->execute($sql, [
                 $memberId,
@@ -1222,13 +1234,13 @@ class ApplicationController {
                 $data['employer_phone'] ?? null
             ]);
         }
-        
+
         return $memberId;
     }
-    
+
     /**
      * Crea cadetto da domanda approvata
-     * 
+     *
      * @param array $data Dati completi dalla domanda
      * @param int $userId ID utente
      * @return int ID cadetto creato
@@ -1236,10 +1248,10 @@ class ApplicationController {
     private function createJuniorMemberFromApplication($data, $userId) {
         // Force uppercase on data before creating junior member
         $data = $this->uppercaseApplicationData($data);
-        
+
         // Genera numero registrazione
         $regNumber = $this->generateRegistrationNumber('junior');
-        
+
         // Inserisci cadetto
         $sql = "INSERT INTO junior_members (
             registration_number, member_status,
@@ -1248,7 +1260,7 @@ class ApplicationController {
             registration_date, approval_date,
             created_at
         ) VALUES (?, 'attivo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-        
+
         $params = [
             $regNumber,
             $data['last_name'],
@@ -1262,13 +1274,13 @@ class ApplicationController {
             date('Y-m-d'),
             date('Y-m-d')
         ];
-        
+
         $this->db->execute($sql, $params);
         $juniorMemberId = $this->db->lastInsertId();
-        
+
         // Inserisci indirizzo residenza
         if (!empty($data['residence_street'])) {
-            $sql = "INSERT INTO junior_member_addresses (junior_member_id, address_type, street, number, city, province, cap) 
+            $sql = "INSERT INTO junior_member_addresses (junior_member_id, address_type, street, number, city, province, cap)
                     VALUES (?, 'residenza', ?, ?, ?, ?, ?)";
             $this->db->execute($sql, [
                 $juniorMemberId,
@@ -1279,10 +1291,10 @@ class ApplicationController {
                 $data['residence_cap']
             ]);
         }
-        
+
         // Inserisci indirizzo domicilio se diverso
         if (!empty($data['domicile_street'])) {
-            $sql = "INSERT INTO junior_member_addresses (junior_member_id, address_type, street, number, city, province, cap) 
+            $sql = "INSERT INTO junior_member_addresses (junior_member_id, address_type, street, number, city, province, cap)
                     VALUES (?, 'domicilio', ?, ?, ?, ?, ?)";
             $this->db->execute($sql, [
                 $juniorMemberId,
@@ -1293,7 +1305,7 @@ class ApplicationController {
                 $data['domicile_cap']
             ]);
         }
-        
+
         // Inserisci recapiti
         if (!empty($data['phone'])) {
             $this->db->execute("INSERT INTO junior_member_contacts (junior_member_id, contact_type, value) VALUES (?, 'telefono_fisso', ?)", [$juniorMemberId, $data['phone']]);
@@ -1304,7 +1316,7 @@ class ApplicationController {
         if (!empty($data['email'])) {
             $this->db->execute("INSERT INTO junior_member_contacts (junior_member_id, contact_type, value) VALUES (?, 'email', ?)", [$juniorMemberId, $data['email']]);
         }
-        
+
         // Inserisci informazioni salute
         if (!empty($data['health_vegetarian'])) {
             $this->db->execute("INSERT INTO junior_member_health (junior_member_id, health_type, description) VALUES (?, 'vegetariano', '')", [$juniorMemberId]);
@@ -1321,7 +1333,7 @@ class ApplicationController {
         if (!empty($data['health_conditions'])) {
             $this->db->execute("INSERT INTO junior_member_health (junior_member_id, health_type, description) VALUES (?, 'patologie', ?)", [$juniorMemberId, $data['health_conditions']]);
         }
-        
+
         // Inserisci tutori/genitori
         if (!empty($data['guardians'])) {
             foreach ($data['guardians'] as $guardian) {
@@ -1329,7 +1341,7 @@ class ApplicationController {
                     junior_member_id, guardian_type,
                     last_name, first_name, birth_date, birth_place, tax_code, phone, email
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                
+
                 $this->db->execute($sql, [
                     $juniorMemberId,
                     $guardian['type'],
@@ -1343,13 +1355,13 @@ class ApplicationController {
                 ]);
             }
         }
-        
+
         return $juniorMemberId;
     }
-    
+
     /**
      * Invia email approvazione da dati
-     * 
+     *
      * @param array $data Dati domanda
      * @param string $type Tipo applicazione
      * @param string $registrationNumber Matricola assegnata
@@ -1358,9 +1370,9 @@ class ApplicationController {
         if (!($this->config['email']['enabled'] ?? false)) {
             return;
         }
-        
+
         $emailSender = new EmailSender($this->config, $this->db);
-        
+
         $email = $data['email'] ?? '';
         if ($type === 'junior' && empty($email) && !empty($data['guardians'])) {
             foreach ($data['guardians'] as $guardian) {
@@ -1370,18 +1382,18 @@ class ApplicationController {
                 }
             }
         }
-        
+
         if (empty($email)) {
             return;
         }
-        
+
         $assocName = htmlspecialchars($this->config['association']['name'] ?? 'Associazione');
         $baseUrl = rtrim($this->config['email']['base_url'] ?? $this->config['app']['base_url'] ?? $this->config['app']['url'] ?? 'http://localhost', '/');
         $payFeeUrl = $baseUrl . '/public/pay_fee.php';
         $regNumberDisplay = htmlspecialchars($registrationNumber);
-        
+
         $subject = 'Domanda di iscrizione approvata - Benvenuto/a in ' . ($this->config['association']['name'] ?? 'Associazione');
-        
+
         $body = "
         <!DOCTYPE html>
         <html lang='it'>
@@ -1405,13 +1417,13 @@ class ApplicationController {
                 <div class='header'>
                     <h2>🎉 Benvenuto/a in $assocName!</h2>
                 </div>
-                
+
                 <div class='content'>
                     <p>Gentile <strong>" . htmlspecialchars($data['first_name']) . " " . htmlspecialchars($data['last_name']) . "</strong>,</p>
-                    
+
                     <p>Siamo lieti di comunicarti che la tua domanda di iscrizione è stata <strong>approvata</strong>!</p>
                     <p>Benvenuto/a nella nostra associazione.</p>";
-        
+
         if (!empty($registrationNumber)) {
             $body .= "
                     <div class='matricola-box'>
@@ -1419,22 +1431,22 @@ class ApplicationController {
                         <div class='number'>$regNumberDisplay</div>
                     </div>";
         }
-        
+
         $body .= "
                     <div class='info-box'>
                         <p style='margin: 0;'><strong>📋 IMPORTANTE - Quota Associativa:</strong></p>
                         <p style='margin: 10px 0 0 0;'>Per completare l'iscrizione, è necessario provvedere al <strong>pagamento della quota associativa annuale</strong> e caricare la ricevuta di pagamento tramite il portale.</p>
                     </div>
-                    
+
                     <p style='text-align: center;'>
                         <a href='$payFeeUrl' class='button'>Carica Ricevuta Pagamento</a>
                     </p>
-                    
+
                     <p>Per qualsiasi domanda o necessità, non esitare a contattarci.</p>
-                    
+
                     <p>Cordiali saluti,<br><strong>$assocName</strong></p>
                 </div>
-                
+
                 <div class='footer'>
                     <p>&copy; " . date('Y') . " $assocName</p>
                     <p>Questa è un'email automatica, non rispondere a questo messaggio.</p>
@@ -1442,20 +1454,20 @@ class ApplicationController {
             </div>
         </body>
         </html>";
-        
+
         $emailSender->queue($email, $subject, $body);
     }
-    
+
     /**
      * Crea socio da domanda approvata (DEPRECATO - mantenuto per compatibilità)
-     * 
+     *
      * @param array $application Dati domanda
      * @param int $userId ID utente
      * @return int ID socio creato
      */
     private function createMember($application, $userId) {
         $memberController = new MemberController($this->db, $this->config);
-        
+
         $data = [
             'last_name' => $application['last_name'],
             'first_name' => $application['first_name'],
@@ -1470,13 +1482,13 @@ class ApplicationController {
             'volunteer_status' => 'in_formazione',
             'registration_date' => date('Y-m-d')
         ];
-        
+
         return $memberController->create($data, $userId);
     }
-    
+
     /**
      * Crea cadetto da domanda approvata
-     * 
+     *
      * @param array $application Dati domanda
      * @param int $userId ID utente
      * @return int ID cadetto creato
@@ -1490,10 +1502,10 @@ class ApplicationController {
             registration_date,
             created_at, created_by
         ) VALUES (?, 'attivo', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
-        
+
         // Generate registration number
         $regNumber = $this->generateRegistrationNumber('junior');
-        
+
         $params = [
             $regNumber,
             $application['last_name'],
@@ -1507,21 +1519,21 @@ class ApplicationController {
             date('Y-m-d'),
             $userId
         ];
-        
+
         $this->db->execute($sql, $params);
         $juniorMemberId = $this->db->lastInsertId();
-        
+
         // Extract and add guardian data from application_data JSON
         $applicationData = json_decode($application['application_data'], true);
         if (!empty($applicationData['guardian_data'])) {
             $guardianData = $applicationData['guardian_data'];
-            
+
             $sql = "INSERT INTO junior_member_guardians (
                 junior_member_id, guardian_type,
                 last_name, first_name, birth_date, birth_place,
                 tax_code, phone, email
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
+
             $params = [
                 $juniorMemberId,
                 $guardianData['type'] ?? 'tutore',
@@ -1533,55 +1545,55 @@ class ApplicationController {
                 $guardianData['phone'] ?? null,
                 $guardianData['email'] ?? null
             ];
-            
+
             $this->db->execute($sql, $params);
         }
-        
+
         return $juniorMemberId;
     }
-    
+
     /**
      * Genera numero registrazione per soci o cadetti
-     * 
+     *
      * @param string $type 'member' o 'junior'
      * @return string
      */
     private function generateRegistrationNumber($type = 'member') {
         if ($type === 'junior') {
             // For cadetti: C-1, C-2, C-33, etc.
-            $sql = "SELECT registration_number FROM junior_members 
+            $sql = "SELECT registration_number FROM junior_members
                     WHERE registration_number LIKE 'C-%'
-                    ORDER BY CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) DESC 
+                    ORDER BY CAST(SUBSTRING(registration_number, 3) AS UNSIGNED) DESC
                     LIMIT 1";
-            
+
             $last = $this->db->fetchOne($sql);
-            
+
             if ($last && preg_match('/^C-(\d+)$/', $last['registration_number'], $matches)) {
                 $nextNumber = intval($matches[1]) + 1;
             } else {
                 $nextNumber = 1;
             }
-            
+
             return 'C-' . $nextNumber;
         } else {
             // For soci: 1, 2, 3, 20, 33, 101, etc.
-            $sql = "SELECT registration_number FROM members 
-                    WHERE registration_number REGEXP '^[0-9]+$' 
-                    ORDER BY CAST(registration_number AS UNSIGNED) DESC 
+            $sql = "SELECT registration_number FROM members
+                    WHERE registration_number REGEXP '^[0-9]+$'
+                    ORDER BY CAST(registration_number AS UNSIGNED) DESC
                     LIMIT 1";
-            
+
             $last = $this->db->fetchOne($sql);
-            
+
             if ($last && is_numeric($last['registration_number'])) {
                 $nextNumber = intval($last['registration_number']) + 1;
             } else {
                 $nextNumber = 1;
             }
-            
+
             return (string)$nextNumber;
         }
     }
-    
+
     /**
      * Elimina domanda di iscrizione
      */
@@ -1592,41 +1604,41 @@ class ApplicationController {
             if (!$application) {
                 return ['success' => false, 'message' => 'Domanda non trovata'];
             }
-            
+
             // Prevent deletion of approved applications
             if ($application['status'] === 'approved') {
                 return ['success' => false, 'message' => 'Impossibile eliminare: domanda già approvata'];
             }
-            
+
             // Delete application
             $sql = "DELETE FROM member_applications WHERE id = ?";
             $this->db->execute($sql, [$id]);
-            
+
             // Log activity
             $this->logActivity(
-                $userId, 
-                'applications', 
-                'delete', 
-                $id, 
+                $userId,
+                'applications',
+                'delete',
+                $id,
                 "Eliminata domanda: {$application['first_name']} {$application['last_name']}"
             );
-            
+
             return ['success' => true];
         } catch (\Exception $e) {
             error_log("Errore eliminazione domanda: " . $e->getMessage());
             return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
         }
     }
-    
+
     /**
      * Registra attività nel log
      */
     private function logActivity($userId, $module, $action, $recordId, $details, $oldData = null, $newData = null) {
         try {
-            $sql = "INSERT INTO activity_logs 
-                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at) 
+            $sql = "INSERT INTO activity_logs
+                    (user_id, module, action, record_id, description, ip_address, user_agent, old_data, new_data, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-            
+
             $params = [
                 $userId,
                 $module,
@@ -1638,16 +1650,16 @@ class ApplicationController {
                 is_array($oldData) ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : $oldData,
                 is_array($newData) ? json_encode($newData, JSON_UNESCAPED_UNICODE) : $newData,
             ];
-            
+
             $this->db->execute($sql, $params);
         } catch (\Exception $e) {
             error_log("Errore log attività: " . $e->getMessage());
         }
     }
-    
+
     /**
      * Force uppercase on text fields in application data
-     * 
+     *
      * @param array $data Application data
      * @return array Modified data with uppercase fields
      */
@@ -1659,14 +1671,20 @@ class ApplicationController {
             'domicile_street', 'domicile_city', 'domicile_province',
             'compilation_place', 'tax_code'
         ];
-        
+
         // Apply uppercase to main fields
         foreach ($textFields as $field) {
             if (isset($data[$field]) && is_string($data[$field])) {
                 $data[$field] = mb_strtoupper($data[$field], 'UTF-8');
             }
         }
-        
+
+        foreach (['birth_province', 'residence_province', 'domicile_province'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = $this->normalizeProvince($data[$field]);
+            }
+        }
+
         // Handle licenses array
         if (isset($data['licenses']) && is_array($data['licenses'])) {
             foreach ($data['licenses'] as &$license) {
@@ -1676,7 +1694,7 @@ class ApplicationController {
             }
             unset($license);
         }
-        
+
         // Handle courses array
         if (isset($data['courses']) && is_array($data['courses'])) {
             foreach ($data['courses'] as &$course) {
@@ -1686,7 +1704,7 @@ class ApplicationController {
             }
             unset($course);
         }
-        
+
         // Handle guardians array (for junior members)
         if (isset($data['guardians']) && is_array($data['guardians'])) {
             foreach ($data['guardians'] as &$guardian) {
@@ -1702,7 +1720,7 @@ class ApplicationController {
             }
             unset($guardian);
         }
-        
+
         // Handle employment data
         if (isset($data['employer_name']) && is_string($data['employer_name'])) {
             $data['employer_name'] = mb_strtoupper($data['employer_name'], 'UTF-8');
@@ -1713,7 +1731,39 @@ class ApplicationController {
         if (isset($data['employer_city']) && is_string($data['employer_city'])) {
             $data['employer_city'] = mb_strtoupper($data['employer_city'], 'UTF-8');
         }
-        
+
         return $data;
+    }
+
+    /**
+     * Normalizza una sigla provincia: trim, maiuscolo, solo lettere A-Z, max 2 caratteri
+     */
+    private function normalizeProvince($value) {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $value = strtoupper(trim($value));
+        $value = preg_replace('/[^A-Z]/', '', $value);
+        $value = substr($value, 0, 2);
+
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * Restituisce un messaggio leggibile per gli errori di approvazione
+     */
+    private function getApprovalErrorMessage(\Exception $e) {
+        $message = $e->getMessage();
+
+        if (stripos($message, 'province') !== false) {
+            return 'Impossibile approvare la domanda: una provincia non è valida. Correggi la sigla di 2 lettere nella domanda e riprova.';
+        }
+
+        if ($message === 'Domanda non valida' || $message === 'Dati domanda non validi') {
+            return $message . '.';
+        }
+
+        return 'Errore durante l\'approvazione della domanda. Verifica i dati inseriti e riprova.';
     }
 }
