@@ -342,7 +342,11 @@ class EventController {
             $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
             if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
-                $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+                $realPath = $this->resolveEventUploadPath($filePath);
+                if ($realPath === false) {
+                    throw new \RuntimeException('Percorso file allegato non valido');
+                }
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
             }
 
             $sql = "INSERT INTO event_attachments
@@ -407,7 +411,11 @@ class EventController {
                 $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
                 $signatureInfo = PDFSignatureExtractor::getEmptyResult();
                 if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
-                    $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+                    $realPath = $this->resolveEventUploadPath($filePath);
+                    if ($realPath === false) {
+                        return ['success' => false, 'message' => 'Percorso file allegato non valido'];
+                    }
+                    $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
                 }
                 $signatureInfo['checked_at'] = date('Y-m-d H:i:s');
             }
@@ -553,6 +561,21 @@ class EventController {
     private function normalizeSignatureFormat($format) {
         $normalized = strtoupper(trim((string)$format));
         return in_array($normalized, ['CADES', 'PADES', 'UNKNOWN']) ? $normalized : 'UNKNOWN';
+    }
+
+    /**
+     * Risolve e valida che il percorso sia dentro uploads/events
+     */
+    private function resolveEventUploadPath($path) {
+        $realPath = realpath($path);
+        $uploadsDir = realpath(__DIR__ . '/../../uploads/events');
+        if ($realPath === false || $uploadsDir === false) {
+            return false;
+        }
+        if (strpos($realPath, $uploadsDir . DIRECTORY_SEPARATOR) !== 0 && $realPath !== $uploadsDir) {
+            return false;
+        }
+        return $realPath;
     }
     
     /**

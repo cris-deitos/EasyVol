@@ -66,7 +66,9 @@ if ($attachmentId > 0) {
     }
 
     if ($eventId !== intval($attachment['event_id'])) {
-        $eventId = intval($attachment['event_id']);
+        $_SESSION['error'] = 'Allegato non associato all\'evento richiesto';
+        header('Location: event_view.php?id=' . $eventId . '#attachments');
+        exit;
     }
 
     $result = $controller->recheckAttachmentSignatures($attachmentId, $app->getUserId());
