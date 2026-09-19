@@ -2,6 +2,7 @@
 namespace EasyVol\Controllers;
 
 use EasyVol\Database;
+use EasyVol\Utils\PDFSignatureExtractor;
 
 /**
  * Event Controller
@@ -104,6 +105,9 @@ class EventController {
         
         // Carica mezzi
         $event['vehicles'] = $this->getVehicles($id);
+
+        // Carica allegati
+        $event['attachments'] = $this->getAttachments($id);
         
         return $event;
     }
@@ -303,6 +307,290 @@ class EventController {
                 JOIN vehicles v ON ev.vehicle_id = v.id
                 WHERE ev.event_id = ?";
         return $this->db->fetchAll($sql, [$eventId]);
+    }
+
+    /**
+     * Ottieni allegati di un evento
+     */
+    public function getAttachments($eventId) {
+        $sql = "SELECT ea.*, u.full_name as uploaded_by_name
+                FROM event_attachments ea
+                LEFT JOIN users u ON ea.uploaded_by = u.id
+                WHERE ea.event_id = ?
+                ORDER BY ea.uploaded_at DESC";
+        return $this->db->fetchAll($sql, [$eventId]);
+    }
+
+    /**
+     * Ottieni singolo allegato evento
+     */
+    public function getAttachment($attachmentId) {
+        $sql = "SELECT ea.*, u.full_name as uploaded_by_name
+                FROM event_attachments ea
+                LEFT JOIN users u ON ea.uploaded_by = u.id
+                WHERE ea.id = ?";
+        return $this->db->fetchOne($sql, [$attachmentId]);
+    }
+
+    /**
+     * Aggiungi allegato a un evento con rilevamento firma digitale
+     */
+    public function addAttachment($eventId, $data, $userId) {
+        try {
+            $signatureInfo = PDFSignatureExtractor::getEmptyResult();
+            $filePath = __DIR__ . '/../../' . $data['file_path'];
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $realPath = $this->resolveEventUploadPath($filePath);
+            if ($realPath === false) {
+                throw new \RuntimeException('Percorso file allegato non valido');
+            }
+
+            if (in_array($extension, ['pdf', 'p7m'])) {
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
+            }
+
+            $sql = "INSERT INTO event_attachments
+                    (event_id, file_name, file_path, file_type, file_size, title, description, document_type, uploaded_by,
+                     has_signature, signature_format, signature_count, signature_data, signature_validity, signature_checked_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            $params = [
+                $eventId,
+                $data['file_name'],
+                $data['file_path'],
+                $data['file_type'] ?? null,
+                $data['file_size'] ?? 0,
+                $data['title'] ?? null,
+                $data['description'] ?? null,
+                $data['document_type'] ?? null,
+                $userId,
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown'
+            ];
+            $this->db->execute($sql, $params);
+            $attachmentId = $this->db->lastInsertId();
+
+            $this->logActivity($userId, 'event', 'add_attachment', $eventId,
+                'Aggiunto allegato evento: ' . $data['file_name']);
+
+            return $attachmentId;
+        } catch (\Throwable $e) {
+            error_log("Errore aggiunta allegato evento: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Aggiorna metadati allegato evento e opzionalmente sostituisce il file
+     */
+    public function updateAttachment($attachmentId, $data, $userId) {
+        try {
+            $attachment = $this->getAttachment($attachmentId);
+            if (!$attachment) {
+                return ['success' => false, 'message' => 'Allegato non trovato'];
+            }
+
+            $newFilePath = $data['file_path'] ?? $attachment['file_path'];
+            $newFileName = $data['file_name'] ?? $attachment['file_name'];
+            $newFileType = $data['file_type'] ?? $attachment['file_type'];
+            $newFileSize = $data['file_size'] ?? $attachment['file_size'];
+            $isReplacingFile = !empty($data['file_path']);
+            $newTitle = array_key_exists('title', $data) ? $data['title'] : ($attachment['title'] ?? null);
+            $newDescription = array_key_exists('description', $data) ? $data['description'] : ($attachment['description'] ?? null);
+            $newDocumentType = array_key_exists('document_type', $data) ? $data['document_type'] : ($attachment['document_type'] ?? null);
+
+            $signatureInfo = [
+                'has_signature' => !empty($attachment['has_signature']),
+                'format' => $attachment['signature_format'] ?? null,
+                'count' => $attachment['signature_count'] ?? 0,
+                'signatures' => !empty($attachment['signature_data']) ? json_decode($attachment['signature_data'], true) : [],
+                'validity' => $attachment['signature_validity'] ?? 'unknown',
+                'checked_at' => $attachment['signature_checked_at'] ?? null
+            ];
+
+            if ($isReplacingFile) {
+                $filePath = __DIR__ . '/../../' . $newFilePath;
+                $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                $realPath = $this->resolveEventUploadPath($filePath);
+                if ($realPath === false) {
+                    return ['success' => false, 'message' => 'Percorso file allegato non valido'];
+                }
+                $signatureInfo = PDFSignatureExtractor::getEmptyResult();
+                if (in_array($extension, ['pdf', 'p7m'])) {
+                    $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
+                }
+            }
+
+            $sql = "UPDATE event_attachments SET
+                    file_name = ?, file_path = ?, file_type = ?, file_size = ?,
+                    title = ?, description = ?, document_type = ?,
+                    has_signature = ?, signature_format = ?, signature_count = ?,
+                    signature_data = ?, signature_validity = ?, signature_checked_at = " . ($isReplacingFile ? "NOW()" : "?") . "
+                    WHERE id = ?";
+            $params = [
+                $newFileName,
+                $newFilePath,
+                $newFileType,
+                $newFileSize,
+                $newTitle,
+                $newDescription,
+                $newDocumentType,
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown'
+            ];
+            if (!$isReplacingFile) {
+                $params[] = $signatureInfo['checked_at'];
+            }
+            $params[] = $attachmentId;
+            $this->db->execute($sql, $params);
+
+            $this->logActivity($userId, 'event', 'update_attachment', $attachment['event_id'],
+                'Aggiornato allegato evento: ' . $newFileName, $attachment, $this->getAttachment($attachmentId));
+
+            return [
+                'success' => true,
+                'old_file_path' => $isReplacingFile ? $attachment['file_path'] : null,
+                'new_file_path' => $newFilePath
+            ];
+        } catch (\Throwable $e) {
+            error_log("Errore aggiornamento allegato evento: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'aggiornamento'];
+        }
+    }
+
+    /**
+     * Elimina allegato evento
+     */
+    public function deleteAttachment($attachmentId, $userId) {
+        try {
+            $attachment = $this->getAttachment($attachmentId);
+            if (!$attachment) {
+                return ['success' => false, 'message' => 'Allegato non trovato'];
+            }
+
+            $this->db->execute("DELETE FROM event_attachments WHERE id = ?", [$attachmentId]);
+            $this->logActivity($userId, 'event', 'delete_attachment', $attachment['event_id'],
+                'Eliminato allegato evento: ' . $attachment['file_name']);
+
+            return ['success' => true, 'file_path' => $attachment['file_path']];
+        } catch (\Throwable $e) {
+            error_log("Errore eliminazione allegato evento: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+        }
+    }
+
+    /**
+     * Ricontrolla firme digitali di un allegato evento
+     */
+    public function recheckAttachmentSignatures($attachmentId, $userId, $logActivity = true) {
+        try {
+            $attachment = $this->getAttachment($attachmentId);
+            if (!$attachment) {
+                return ['success' => false, 'message' => 'Allegato non trovato', 'has_signature' => false];
+            }
+
+            $filePath = __DIR__ . '/../../' . $attachment['file_path'];
+            $realPath = realpath($filePath);
+            $uploadsDir = realpath(__DIR__ . '/../../uploads/events');
+            if ($realPath === false || $uploadsDir === false
+                || (strpos($realPath, $uploadsDir . DIRECTORY_SEPARATOR) !== 0 && $realPath !== $uploadsDir)) {
+                return ['success' => false, 'message' => 'Percorso file non valido', 'has_signature' => false];
+            }
+
+            $extension = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
+            $signatureInfo = PDFSignatureExtractor::getEmptyResult();
+            if (in_array($extension, ['pdf', 'p7m'])) {
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
+            }
+
+            $updateSql = "UPDATE event_attachments SET
+                          has_signature = ?, signature_format = ?, signature_count = ?,
+                          signature_data = ?, signature_validity = ?, signature_checked_at = NOW()
+                          WHERE id = ?";
+            $this->db->execute($updateSql, [
+                !empty($signatureInfo['has_signature']) ? 1 : 0,
+                $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
+                $signatureInfo['count'] ?? 0,
+                !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
+                $signatureInfo['validity'] ?? 'unknown',
+                $attachmentId
+            ]);
+
+            if ($logActivity) {
+                $this->logActivity($userId, 'event', 'recheck_attachment_signature', $attachment['event_id'],
+                    'Ricontrollata firma allegato evento: ' . $attachment['file_name']);
+            }
+
+            return [
+                'success' => true,
+                'message' => !empty($signatureInfo['has_signature'])
+                    ? 'Firma digitale rilevata (' . ($signatureInfo['format'] ?? 'sconosciuto') . ', ' . ($signatureInfo['count'] ?? 0) . ' firme)'
+                    : 'Nessuna firma digitale rilevata nel documento',
+                'has_signature' => !empty($signatureInfo['has_signature'])
+            ];
+        } catch (\Throwable $e) {
+            error_log("Errore ricontrollo firma allegato evento: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Errore durante il controllo delle firme', 'has_signature' => false];
+        }
+    }
+
+    /**
+     * Ricontrolla firme digitali di tutti gli allegati evento
+     */
+    public function recheckAllAttachmentSignatures($eventId, $userId) {
+        $attachments = $this->getAttachments($eventId);
+        $checked = 0;
+        $signaturesFound = 0;
+        $failed = 0;
+
+        foreach ($attachments as $attachment) {
+            $result = $this->recheckAttachmentSignatures($attachment['id'], $userId, false);
+            $checked++;
+            if (!empty($result['success']) && !empty($result['has_signature'])) {
+                $signaturesFound++;
+            }
+            if (empty($result['success'])) {
+                $failed++;
+            }
+        }
+
+        $this->logActivity($userId, 'event', 'recheck_all_attachment_signatures', $eventId,
+            'Ricontrollate firme allegati evento: controllati ' . $checked . ', con firma ' . $signaturesFound . ', falliti ' . $failed);
+
+        return [
+            'success' => $failed === 0,
+            'checked' => $checked,
+            'signatures_found' => $signaturesFound,
+            'failed' => $failed
+        ];
+    }
+
+    /**
+     * Normalizza il formato firma al valore ENUM atteso dal DB
+     */
+    private function normalizeSignatureFormat($format) {
+        $normalized = strtoupper(trim((string)$format));
+        return in_array($normalized, ['CADES', 'PADES', 'UNKNOWN']) ? $normalized : 'UNKNOWN';
+    }
+
+    /**
+     * Risolve e valida che il percorso sia dentro uploads/events
+     */
+    private function resolveEventUploadPath($path) {
+        $realPath = realpath($path);
+        $uploadsDir = realpath(__DIR__ . '/../../uploads/events');
+        if ($realPath === false || $uploadsDir === false) {
+            return false;
+        }
+        if (strpos($realPath, $uploadsDir . DIRECTORY_SEPARATOR) !== 0 && $realPath !== $uploadsDir) {
+            return false;
+        }
+        return $realPath;
     }
     
     /**
