@@ -13,6 +13,7 @@ use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Controllers\ApplicationController;
 use EasyVol\Middleware\CsrfProtection;
+use EasyVol\Utils\ProvinceHelper;
 
 $app = App::getInstance(); // Public page - no authentication required
 
@@ -28,21 +29,6 @@ $success = false;
 $applicationCode = '';
 $provinceHint = 'Usa la sigla di 2 lettere (es. BS).';
 $provinceTitle = 'Inserisci la sigla di 2 lettere della provincia (es. BS)';
-
-function validateProvinceField($value, $label, &$errors, $required = true) {
-    $value = trim((string) $value);
-
-    if ($value === '') {
-        if ($required) {
-            $errors[] = "La $label è obbligatoria.";
-        }
-        return;
-    }
-
-    if (!preg_match('/^[A-Za-z]{2}$/', $value)) {
-        $errors[] = "La $label deve essere indicata con la sigla di 2 lettere (es. BS).";
-    }
-}
 
 // Gestione submit form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -73,9 +59,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        validateProvinceField($_POST['birth_province'] ?? '', 'Provincia di nascita', $errors);
-        validateProvinceField($_POST['residence_province'] ?? '', 'Provincia di residenza', $errors);
-        validateProvinceField($_POST['domicile_province'] ?? '', 'Provincia di domicilio', $errors, false);
+        foreach ([
+            ['birth_province', 'Provincia di nascita', true],
+            ['residence_province', 'Provincia di residenza', true],
+            ['domicile_province', 'Provincia di domicilio', false]
+        ] as [$field, $label, $required]) {
+            $error = ProvinceHelper::getValidationError($_POST[$field] ?? '', $label, $required);
+            if ($error !== null) {
+                $errors[] = $error;
+            }
+        }
 
         // Verifica CAPTCHA (se abilitato)
         if (!empty($config['recaptcha']['enabled'])) {

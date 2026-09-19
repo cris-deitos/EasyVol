@@ -4,6 +4,7 @@ namespace EasyVol\Controllers;
 use EasyVol\Database;
 use EasyVol\Utils\PdfGenerator;
 use EasyVol\Utils\EmailSender;
+use EasyVol\Utils\ProvinceHelper;
 use EasyVol\Models\Member;
 
 /**
@@ -1754,15 +1755,7 @@ class ApplicationController {
      * Normalizza una sigla provincia: trim, maiuscolo, solo lettere A-Z, max 2 caratteri
      */
     private function normalizeProvince($value) {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        $value = strtoupper(trim($value));
-        $value = preg_replace('/[^A-Z]/', '', $value);
-        $value = substr($value, 0, 2);
-
-        return $value !== '' ? $value : null;
+        return ProvinceHelper::normalize($value);
     }
 
     /**
@@ -1778,16 +1771,16 @@ class ApplicationController {
         ];
 
         foreach ($requiredFields as $field => $label) {
-            $value = trim((string) ($data[$field] ?? ''));
-            if ($value === '' || !preg_match('/^[A-Za-z]{2}$/', $value)) {
-                throw new \InvalidArgumentException("La $label deve essere indicata con la sigla di 2 lettere (es. BS).", self::ERROR_INVALID_PROVINCE);
+            $error = ProvinceHelper::getValidationError($data[$field] ?? '', $label);
+            if ($error !== null) {
+                throw new \InvalidArgumentException($error, self::ERROR_INVALID_PROVINCE);
             }
         }
 
         foreach ($optionalFields as $field => $label) {
-            $value = trim((string) ($data[$field] ?? ''));
-            if ($value !== '' && !preg_match('/^[A-Za-z]{2}$/', $value)) {
-                throw new \InvalidArgumentException("La $label deve essere indicata con la sigla di 2 lettere (es. BS).", self::ERROR_INVALID_PROVINCE);
+            $error = ProvinceHelper::getValidationError($data[$field] ?? '', $label, false);
+            if ($error !== null) {
+                throw new \InvalidArgumentException($error, self::ERROR_INVALID_PROVINCE);
             }
         }
     }
