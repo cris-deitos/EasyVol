@@ -58,6 +58,7 @@ $data = [
     'description' => trim($_POST['description'] ?? ''),
     'document_type' => trim($_POST['document_type'] ?? '')
 ];
+$uploadedAbsolutePath = null;
 
 $replaceFile = isset($_FILES['attachment_file']) && $_FILES['attachment_file']['error'] !== UPLOAD_ERR_NO_FILE;
 
@@ -100,6 +101,7 @@ if ($replaceFile) {
             $filename = uniqid('att_', true) . '.' . $fileExtension;
             $filepath = $uploadDir . '/' . $filename;
             if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                $uploadedAbsolutePath = $filepath;
                 $data['file_name'] = $file['name'];
                 $data['file_path'] = 'uploads/events/' . $eventId . '/' . $filename;
                 $data['file_type'] = $mimeType;
@@ -125,21 +127,19 @@ if ($result['success']) {
         $realOldPath = realpath($oldPath);
         $uploadDir = realpath(__DIR__ . '/../uploads/events/');
         if ($realOldPath !== false && $uploadDir !== false
-            && ($realOldPath === $uploadDir || strpos($realOldPath, $uploadDir . DIRECTORY_SEPARATOR) === 0)
-            && file_exists($realOldPath)) {
+            && strpos($realOldPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
+            && is_file($realOldPath)) {
             @unlink($realOldPath);
         }
     }
     $_SESSION['success'] = 'Allegato aggiornato con successo';
 } else {
-    if (!empty($data['file_path'])) {
-        $newPath = __DIR__ . '/../' . $data['file_path'];
-        $realNewPath = realpath($newPath);
+    if (!empty($uploadedAbsolutePath)) {
         $uploadDir = realpath(__DIR__ . '/../uploads/events/');
-        if ($realNewPath !== false && $uploadDir !== false
-            && ($realNewPath === $uploadDir || strpos($realNewPath, $uploadDir . DIRECTORY_SEPARATOR) === 0)
-            && file_exists($realNewPath)) {
-            @unlink($realNewPath);
+        if ($uploadDir !== false
+            && strpos($uploadedAbsolutePath, $uploadDir . DIRECTORY_SEPARATOR) === 0
+            && is_file($uploadedAbsolutePath)) {
+            @unlink($uploadedAbsolutePath);
         }
     }
     $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'aggiornamento';

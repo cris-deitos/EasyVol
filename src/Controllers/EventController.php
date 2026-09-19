@@ -340,12 +340,12 @@ class EventController {
             $signatureInfo = PDFSignatureExtractor::getEmptyResult();
             $filePath = __DIR__ . '/../../' . $data['file_path'];
             $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $realPath = $this->resolveEventUploadPath($filePath);
+            if ($realPath === false) {
+                throw new \RuntimeException('Percorso file allegato non valido');
+            }
 
-            if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
-                $realPath = $this->resolveEventUploadPath($filePath);
-                if ($realPath === false) {
-                    throw new \RuntimeException('Percorso file allegato non valido');
-                }
+            if (in_array($extension, ['pdf', 'p7m'])) {
                 $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
             }
 
@@ -409,12 +409,12 @@ class EventController {
             if (!empty($data['file_path'])) {
                 $filePath = __DIR__ . '/../../' . $newFilePath;
                 $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                $realPath = $this->resolveEventUploadPath($filePath);
+                if ($realPath === false) {
+                    return ['success' => false, 'message' => 'Percorso file allegato non valido'];
+                }
                 $signatureInfo = PDFSignatureExtractor::getEmptyResult();
-                if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
-                    $realPath = $this->resolveEventUploadPath($filePath);
-                    if ($realPath === false) {
-                        return ['success' => false, 'message' => 'Percorso file allegato non valido'];
-                    }
+                if (in_array($extension, ['pdf', 'p7m'])) {
                     $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
                 }
                 $signatureInfo['checked_at'] = date('Y-m-d H:i:s');

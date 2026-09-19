@@ -60,8 +60,8 @@ if ($result['success']) {
         $realPath = realpath($filePath);
         $uploadDir = realpath(__DIR__ . '/../uploads/events/');
         if ($realPath !== false && $uploadDir !== false
-            && ($realPath === $uploadDir || strpos($realPath, $uploadDir . DIRECTORY_SEPARATOR) === 0)
-            && file_exists($realPath)) {
+            && strpos($realPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
+            && is_file($realPath)) {
             @unlink($realPath);
         }
     }
