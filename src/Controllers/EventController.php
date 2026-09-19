@@ -484,7 +484,7 @@ class EventController {
     /**
      * Ricontrolla firme digitali di un allegato evento
      */
-    public function recheckAttachmentSignatures($attachmentId, $userId) {
+    public function recheckAttachmentSignatures($attachmentId, $userId, $logActivity = true) {
         try {
             $attachment = $this->getAttachment($attachmentId);
             if (!$attachment) {
@@ -518,8 +518,10 @@ class EventController {
                 $attachmentId
             ]);
 
-            $this->logActivity($userId, 'event', 'recheck_attachment_signature', $attachment['event_id'],
-                'Ricontrollata firma allegato evento: ' . $attachment['file_name']);
+            if ($logActivity) {
+                $this->logActivity($userId, 'event', 'recheck_attachment_signature', $attachment['event_id'],
+                    'Ricontrollata firma allegato evento: ' . $attachment['file_name']);
+            }
 
             return [
                 'success' => true,
@@ -544,7 +546,7 @@ class EventController {
         $failed = 0;
 
         foreach ($attachments as $attachment) {
-            $result = $this->recheckAttachmentSignatures($attachment['id'], $userId);
+            $result = $this->recheckAttachmentSignatures($attachment['id'], $userId, false);
             $checked++;
             if (!empty($result['success']) && !empty($result['has_signature'])) {
                 $signaturesFound++;
@@ -553,6 +555,9 @@ class EventController {
                 $failed++;
             }
         }
+
+        $this->logActivity($userId, 'event', 'recheck_all_attachment_signatures', $eventId,
+            'Ricontrollate firme allegati evento: controllati ' . $checked . ', con firma ' . $signaturesFound . ', falliti ' . $failed);
 
         return [
             'success' => $failed === 0,

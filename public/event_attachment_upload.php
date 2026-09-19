@@ -78,20 +78,31 @@ if (!isset($_FILES['attachment_file']) || $_FILES['attachment_file']['error'] ==
     }
 
     $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowedExtensions = ['pdf', 'p7m', 'doc', 'docx', 'odt', 'rtf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'xls', 'xlsx', 'csv', 'txt'];
-    $allowedMimes = [
-        'application/pdf',
-        'application/pkcs7-mime', 'application/x-pkcs7-mime', 'application/octet-stream',
-        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.oasis.opendocument.text', 'application/rtf', 'text/rtf',
-        'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff', 'image/webp',
-        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/csv', 'text/plain'
+    $allowedMimesByExtension = [
+        'pdf' => ['application/pdf', 'application/octet-stream'],
+        'p7m' => ['application/pkcs7-mime', 'application/x-pkcs7-mime', 'application/octet-stream', 'text/plain'],
+        'doc' => ['application/msword', 'application/octet-stream'],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
+        'odt' => ['application/vnd.oasis.opendocument.text', 'application/zip', 'application/octet-stream'],
+        'rtf' => ['application/rtf', 'text/rtf', 'application/octet-stream'],
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'gif' => ['image/gif'],
+        'bmp' => ['image/bmp'],
+        'tiff' => ['image/tiff'],
+        'tif' => ['image/tiff'],
+        'webp' => ['image/webp'],
+        'xls' => ['application/vnd.ms-excel', 'application/octet-stream'],
+        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip', 'application/octet-stream'],
+        'csv' => ['text/csv', 'text/plain', 'application/csv', 'application/octet-stream'],
+        'txt' => ['text/plain', 'application/octet-stream']
     ];
+    $allowedExtensions = array_keys($allowedMimesByExtension);
 
     if (!in_array($fileExtension, $allowedExtensions)) {
         $errors[] = 'Tipo di file non consentito. Formati ammessi: PDF, P7M, Word, immagini, Excel, testo.';
-    } elseif ($fileExtension !== 'p7m' && !in_array($mimeType, $allowedMimes)) {
+    } elseif (!in_array($mimeType, $allowedMimesByExtension[$fileExtension] ?? [], true)) {
         $errors[] = 'Tipo MIME non consentito per il file selezionato.';
     }
 
