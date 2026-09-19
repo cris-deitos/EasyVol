@@ -738,7 +738,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                             elseif (in_array($ext, ['xls','xlsx','csv'])) $iconClass = 'bi-file-earmark-spreadsheet';
                                                             ?>
                                                             <i class="bi <?php echo $iconClass; ?>"></i>
-                                                            <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>&event_id=<?php echo $eventId; ?>"><?php echo htmlspecialchars($att['file_name']); ?></a>
+                                                            <?php echo htmlspecialchars($att['file_name']); ?>
                                                             <?php if ($att['file_size'] > 0): ?>
                                                                 <small class="text-muted">(<?php echo number_format($att['file_size'] / 1024, 0); ?> KB)</small>
                                                             <?php endif; ?>
@@ -786,9 +786,14 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         </td>
                                                         <td>
                                                             <div class="d-flex gap-1">
-                                                                <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>&event_id=<?php echo $eventId; ?>" class="btn btn-sm btn-outline-primary" title="Download">
-                                                                    <i class="bi bi-download"></i>
-                                                                </a>
+                                                                <form action="event_attachment_download.php" method="POST" class="d-inline">
+                                                                    <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                                                    <input type="hidden" name="id" value="<?php echo $att['id']; ?>">
+                                                                    <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Download">
+                                                                        <i class="bi bi-download"></i>
+                                                                    </button>
+                                                                </form>
                                                                 <?php if ($app->checkPermission('events', 'edit')): ?>
                                                                     <button type="button"
                                                                             class="btn btn-sm btn-outline-warning"

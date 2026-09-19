@@ -7,6 +7,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
 
@@ -21,8 +22,18 @@ if (!$app->checkPermission('events', 'view')) {
 }
 
 $db = $app->getDb();
-$attachmentId = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$eventId = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    die('Metodo non consentito');
+}
+
+if (!CsrfProtection::validateToken($_POST['csrf_token'] ?? '')) {
+    http_response_code(403);
+    die('Token di sicurezza non valido');
+}
+
+$attachmentId = isset($_POST['id']) ? intval($_POST['id']) : 0;
+$eventId = isset($_POST['event_id']) ? intval($_POST['event_id']) : 0;
 
 if ($attachmentId <= 0 || $eventId <= 0) {
     http_response_code(400);
