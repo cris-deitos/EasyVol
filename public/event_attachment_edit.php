@@ -113,19 +113,23 @@ if ($replaceFile) {
         if (empty($errors)) {
             $uploadDir = __DIR__ . '/../uploads/events/' . $eventId;
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+                if (!mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                    $errors[] = 'Impossibile creare la cartella di upload';
+                }
             }
 
-            $filename = uniqid('att_', true) . '.' . $fileExtension;
-            $filepath = $uploadDir . '/' . $filename;
-            if (move_uploaded_file($file['tmp_name'], $filepath)) {
-                $uploadedAbsolutePath = $filepath;
-                $data['file_name'] = $file['name'];
-                $data['file_path'] = 'uploads/events/' . $eventId . '/' . $filename;
-                $data['file_type'] = $mimeType;
-                $data['file_size'] = $file['size'];
-            } else {
-                $errors[] = 'Errore durante il salvataggio del file';
+            if (empty($errors)) {
+                $filename = uniqid('att_', true) . '.' . $fileExtension;
+                $filepath = $uploadDir . '/' . $filename;
+                if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                    $uploadedAbsolutePath = $filepath;
+                    $data['file_name'] = $file['name'];
+                    $data['file_path'] = 'uploads/events/' . $eventId . '/' . $filename;
+                    $data['file_type'] = $mimeType;
+                    $data['file_size'] = $file['size'];
+                } else {
+                    $errors[] = 'Errore durante il salvataggio del file';
+                }
             }
         }
     }
@@ -146,8 +150,24 @@ if ($result['success']) {
         $uploadDir = realpath(__DIR__ . '/../uploads/events/');
         if ($realOldPath !== false && $uploadDir !== false
             && strpos($realOldPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
-            && is_file($realOldPath)) {
-            @unlink($realOldPath);
+            && is_file($realOldPath)
+            && !@unlink($realOldPath)) {
+            $rollbackData = [
+                'file_name' => $attachment['file_name'],
+                'file_path' => $attachment['file_path'],
+                'file_type' => $attachment['file_type'],
+                'file_size' => $attachment['file_size'],
+                'title' => $attachment['title'] ?? null,
+                'description' => $attachment['description'] ?? null,
+                'document_type' => $attachment['document_type'] ?? null
+            ];
+            $controller->updateAttachment($attachmentId, $rollbackData, $app->getUserId());
+            if (!empty($uploadedAbsolutePath) && is_file($uploadedAbsolutePath)) {
+                @unlink($uploadedAbsolutePath);
+            }
+            $_SESSION['error'] = 'Impossibile finalizzare la sostituzione file. Operazione annullata.';
+            header('Location: event_view.php?id=' . $eventId . '#attachments');
+            exit;
         }
     }
     $_SESSION['success'] = 'Allegato aggiornato con successo';

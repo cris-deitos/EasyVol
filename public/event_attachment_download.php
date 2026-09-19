@@ -7,6 +7,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Controllers\EventController;
 use EasyVol\Middleware\CsrfProtection;
 
 $app = App::getInstance();
@@ -22,6 +23,7 @@ if (!$app->checkPermission('events', 'view')) {
 }
 
 $db = $app->getDb();
+$controller = new EventController($db, $app->getConfig());
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     die('Metodo non consentito');
@@ -48,6 +50,12 @@ $attachment = $db->fetchOne($sql, [$attachmentId, $eventId]);
 if (!$attachment) {
     http_response_code(404);
     die('Allegato non trovato');
+}
+
+$event = $controller->get($eventId);
+if (!$event) {
+    http_response_code(404);
+    die('Evento non trovato o accesso negato');
 }
 
 $filePath = __DIR__ . '/../' . $attachment['file_path'];

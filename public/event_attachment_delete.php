@@ -52,19 +52,27 @@ if (!$attachment || intval($attachment['event_id']) !== $eventId) {
     exit;
 }
 
-$result = $controller->deleteAttachment($attachmentId, $app->getUserId());
-
-if ($result['success']) {
-    if (!empty($result['file_path'])) {
-        $filePath = __DIR__ . '/../' . $result['file_path'];
-        $realPath = realpath($filePath);
-        $uploadDir = realpath(__DIR__ . '/../uploads/events/');
-        if ($realPath !== false && $uploadDir !== false
-            && strpos($realPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
-            && is_file($realPath)) {
-            @unlink($realPath);
-        }
+$fileDeletionFailed = false;
+$result = ['success' => false, 'message' => 'Errore durante l\'eliminazione'];
+if (!empty($attachment['file_path'])) {
+    $filePath = __DIR__ . '/../' . $attachment['file_path'];
+    $realPath = realpath($filePath);
+    $uploadDir = realpath(__DIR__ . '/../uploads/events/');
+    if ($realPath !== false && $uploadDir !== false
+        && strpos($realPath, $uploadDir . DIRECTORY_SEPARATOR) === 0
+        && is_file($realPath)
+        && !@unlink($realPath)) {
+        $fileDeletionFailed = true;
     }
+}
+
+if ($fileDeletionFailed) {
+    $_SESSION['error'] = 'Impossibile eliminare il file allegato dal disco';
+} else {
+    $result = $controller->deleteAttachment($attachmentId, $app->getUserId());
+}
+
+if (!$fileDeletionFailed && $result['success']) {
     $_SESSION['success'] = 'Allegato eliminato con successo';
 } else {
     $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'eliminazione';

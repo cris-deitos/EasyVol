@@ -114,7 +114,9 @@ if (!isset($_FILES['attachment_file']) || $_FILES['attachment_file']['error'] ==
         try {
             $uploadDir = __DIR__ . '/../uploads/events/' . $eventId;
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+                if (!mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                    throw new \RuntimeException('Impossibile creare la cartella di upload');
+                }
             }
 
             $filename = uniqid('att_', true) . '.' . $fileExtension;
