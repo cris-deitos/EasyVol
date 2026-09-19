@@ -71,11 +71,10 @@ if ($result['success']) {
         $_SESSION['success'] = 'Allegato eliminato con successo';
     } else {
         $restoreSql = "INSERT INTO event_attachments
-            (id, event_id, file_name, file_path, file_type, file_size, title, description, document_type, uploaded_by, uploaded_at,
+            (event_id, file_name, file_path, file_type, file_size, title, description, document_type, uploaded_by, uploaded_at,
              has_signature, signature_format, signature_count, signature_data, signature_validity, signature_checked_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $db->execute($restoreSql, [
-            $attachment['id'],
             $attachment['event_id'],
             $attachment['file_name'],
             $attachment['file_path'],
