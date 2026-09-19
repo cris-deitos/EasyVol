@@ -21,9 +21,14 @@ if (!$app->checkPermission('events', 'edit')) {
     die('Accesso negato');
 }
 
-$eventId = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
-$attachmentId = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$csrfToken = $_GET['csrf_token'] ?? '';
+$eventId = isset($_POST['event_id']) ? intval($_POST['event_id']) : 0;
+$attachmentId = isset($_POST['id']) ? intval($_POST['id']) : 0;
+$csrfToken = $_POST['csrf_token'] ?? '';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: events.php');
+    exit;
+}
 
 if (!CsrfProtection::validateToken($csrfToken)) {
     $_SESSION['error'] = 'Token di sicurezza non valido';

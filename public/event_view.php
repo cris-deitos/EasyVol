@@ -644,15 +644,18 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                 <h5 class="mb-0"><i class="bi bi-paperclip"></i> Allegati Evento</h5>
                                 <div class="d-flex gap-2">
                                     <?php if ($app->checkPermission('events', 'edit') && !empty($event['attachments'])): ?>
-                                        <a href="event_attachment_recheck.php?event_id=<?php echo $eventId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
-                                           class="btn btn-sm btn-outline-info"
-                                           onclick="return confirm('Ricontrollare le firme digitali di tutti gli allegati?')"
-                                           title="Ri-analizza tutti i documenti per estrarre informazioni sulle firme digitali PAdES/CAdES">
-                                            <i class="bi bi-shield-check"></i> Ricontrolla Firme
-                                        </a>
+                                        <form action="event_attachment_recheck.php" method="POST" class="d-inline" onsubmit="return confirm('Ricontrollare le firme digitali di tutti gli allegati?')">
+                                            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                            <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-info"
+                                                    title="Ri-analizza tutti i documenti per estrarre informazioni sulle firme digitali PAdES/CAdES">
+                                                <i class="bi bi-shield-check"></i> Ricontrolla Firme
+                                            </button>
+                                        </form>
                                     <?php endif; ?>
                                     <?php if ($app->checkPermission('events', 'edit')): ?>
-                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#eventAttachmentUploadForm">
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#eventAttachmentUploadForm" aria-expanded="false" aria-controls="eventAttachmentUploadForm">
                                             <i class="bi bi-upload"></i> Carica Allegato
                                         </button>
                                     <?php endif; ?>
@@ -798,10 +801,14 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                                             data-attachment-description="<?php echo htmlspecialchars($att['description'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                                                                         <i class="bi bi-pencil"></i>
                                                                     </button>
-                                                                    <a href="event_attachment_recheck.php?id=<?php echo $att['id']; ?>&event_id=<?php echo $eventId; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>"
-                                                                       class="btn btn-sm btn-outline-info" title="Ricontrolla firma digitale">
-                                                                        <i class="bi bi-shield-check"></i>
-                                                                    </a>
+                                                                    <form action="event_attachment_recheck.php" method="POST" class="d-inline">
+                                                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                                                        <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                                        <input type="hidden" name="id" value="<?php echo $att['id']; ?>">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-info" title="Ricontrolla firma digitale">
+                                                                            <i class="bi bi-shield-check"></i>
+                                                                        </button>
+                                                                    </form>
                                                                     <form action="event_attachment_delete.php" method="POST" class="d-inline" onsubmit="return confirm('Eliminare questo allegato?')">
                                                                         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                                                                         <input type="hidden" name="attachment_id" value="<?php echo $att['id']; ?>">

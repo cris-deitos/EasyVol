@@ -33,18 +33,12 @@ if ($attachmentId <= 0 || $eventId <= 0) {
 
 $sql = "SELECT ea.* FROM event_attachments ea
         JOIN events e ON ea.event_id = e.id
-        WHERE ea.id = ?";
-$attachment = $db->fetchOne($sql, [$attachmentId]);
+        WHERE ea.id = ? AND ea.event_id = ?";
+$attachment = $db->fetchOne($sql, [$attachmentId, $eventId]);
 
 if (!$attachment) {
     http_response_code(404);
     die('Allegato non trovato');
-}
-
-$attachmentEventId = intval($attachment['event_id']);
-if ($eventId !== $attachmentEventId) {
-    http_response_code(403);
-    die('Accesso negato');
 }
 
 $event = $controller->get(intval($attachment['event_id']));
@@ -78,11 +72,17 @@ try {
 }
 
 $filename = $attachment['file_name'] ?? 'allegato';
+$fallbackFilename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+$fallbackFilename = trim((string)$fallbackFilename, '._');
+if ($fallbackFilename === '') {
+    $fallbackFilename = 'allegato';
+}
+$utf8Filename = rawurlencode($filename);
 $filesize = filesize($realPath);
 $mimeType = $attachment['file_type'] ?? 'application/octet-stream';
 
 header('Content-Type: ' . $mimeType);
-header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
+header('Content-Disposition: attachment; filename="' . $fallbackFilename . '"; filename*=UTF-8\'\'' . $utf8Filename);
 header('Content-Length: ' . $filesize);
 header('Cache-Control: no-cache, must-revalidate');
 header('Expires: 0');
