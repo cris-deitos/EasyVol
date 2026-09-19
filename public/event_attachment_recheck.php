@@ -53,6 +53,17 @@ if (!$event) {
 }
 
 if ($attachmentId > 0) {
+    $attachment = $controller->getAttachment($attachmentId);
+    if (!$attachment) {
+        $_SESSION['error'] = 'Allegato non trovato';
+        header('Location: event_view.php?id=' . $eventId . '#attachments');
+        exit;
+    }
+
+    if ($eventId !== intval($attachment['event_id'])) {
+        $eventId = intval($attachment['event_id']);
+    }
+
     $result = $controller->recheckAttachmentSignatures($attachmentId, $app->getUserId());
     if ($result['success']) {
         $_SESSION['success'] = $result['message'];

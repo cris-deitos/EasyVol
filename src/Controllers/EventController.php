@@ -342,7 +342,7 @@ class EventController {
             $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
             if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
-                $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
             }
 
             $sql = "INSERT INTO event_attachments

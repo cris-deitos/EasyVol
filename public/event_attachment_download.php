@@ -7,6 +7,7 @@ require_once __DIR__ . '/../src/Autoloader.php';
 EasyVol\Autoloader::register();
 
 use EasyVol\App;
+use EasyVol\Controllers\EventController;
 
 $app = App::getInstance();
 
@@ -21,6 +22,7 @@ if (!$app->checkPermission('events', 'view')) {
 }
 
 $db = $app->getDb();
+$controller = new EventController($db, $app->getConfig());
 $attachmentId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 if ($attachmentId <= 0) {
@@ -36,6 +38,12 @@ $attachment = $db->fetchOne($sql, [$attachmentId]);
 if (!$attachment) {
     http_response_code(404);
     die('Allegato non trovato');
+}
+
+$event = $controller->get(intval($attachment['event_id']));
+if (!$event) {
+    http_response_code(404);
+    die('Evento non trovato o accesso negato');
 }
 
 $filePath = __DIR__ . '/../' . $attachment['file_path'];
@@ -63,7 +71,7 @@ try {
 }
 
 $filename = $attachment['file_name'] ?? 'allegato';
-$filesize = filesize($filePath);
+$filesize = filesize($realPath);
 $mimeType = $attachment['file_type'] ?? 'application/octet-stream';
 
 header('Content-Type: ' . $mimeType);
@@ -72,5 +80,5 @@ header('Content-Length: ' . $filesize);
 header('Cache-Control: no-cache, must-revalidate');
 header('Expires: 0');
 
-readfile($filePath);
+readfile($realPath);
 exit;
