@@ -342,7 +342,7 @@ class EventController {
             $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
             if (file_exists($filePath) && in_array($extension, ['pdf', 'p7m'])) {
-                $signatureInfo = PDFSignatureExtractor::extractSignatures($realPath);
+                $signatureInfo = PDFSignatureExtractor::extractSignatures($filePath);
             }
 
             $sql = "INSERT INTO event_attachments
@@ -360,7 +360,7 @@ class EventController {
                 $data['document_type'] ?? null,
                 $userId,
                 !empty($signatureInfo['has_signature']) ? 1 : 0,
-                $signatureInfo['format'] ?? null,
+                $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
                 $signatureInfo['count'] ?? 0,
                 !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
                 $signatureInfo['validity'] ?? 'unknown'
@@ -427,7 +427,7 @@ class EventController {
                 $data['description'] ?? null,
                 $data['document_type'] ?? null,
                 !empty($signatureInfo['has_signature']) ? 1 : 0,
-                $signatureInfo['format'] ?? null,
+                $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
                 $signatureInfo['count'] ?? 0,
                 !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
                 $signatureInfo['validity'] ?? 'unknown',
@@ -496,7 +496,7 @@ class EventController {
                           WHERE id = ?";
             $this->db->execute($updateSql, [
                 !empty($signatureInfo['has_signature']) ? 1 : 0,
-                $signatureInfo['format'] ?? null,
+                $this->normalizeSignatureFormat($signatureInfo['format'] ?? null),
                 $signatureInfo['count'] ?? 0,
                 !empty($signatureInfo['signatures']) ? json_encode($signatureInfo['signatures'], JSON_UNESCAPED_UNICODE) : null,
                 $signatureInfo['validity'] ?? 'unknown',
@@ -526,20 +526,33 @@ class EventController {
         $attachments = $this->getAttachments($eventId);
         $checked = 0;
         $signaturesFound = 0;
+        $failed = 0;
 
         foreach ($attachments as $attachment) {
             $result = $this->recheckAttachmentSignatures($attachment['id'], $userId);
             $checked++;
-            if (!empty($result['has_signature'])) {
+            if (!empty($result['success']) && !empty($result['has_signature'])) {
                 $signaturesFound++;
+            }
+            if (empty($result['success'])) {
+                $failed++;
             }
         }
 
         return [
-            'success' => true,
+            'success' => $failed === 0,
             'checked' => $checked,
-            'signatures_found' => $signaturesFound
+            'signatures_found' => $signaturesFound,
+            'failed' => $failed
         ];
+    }
+
+    /**
+     * Normalizza il formato firma al valore ENUM atteso dal DB
+     */
+    private function normalizeSignatureFormat($format) {
+        $normalized = strtoupper(trim((string)$format));
+        return in_array($normalized, ['CADES', 'PADES', 'UNKNOWN']) ? $normalized : 'UNKNOWN';
     }
     
     /**

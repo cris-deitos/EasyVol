@@ -76,7 +76,8 @@ if ($attachmentId > 0) {
         $_SESSION['success'] = 'Controllati ' . $result['checked'] . ' documenti, '
             . $result['signatures_found'] . ' con firma digitale rilevata.';
     } else {
-        $_SESSION['error'] = 'Errore durante il controllo delle firme';
+        $_SESSION['error'] = 'Controllati ' . $result['checked'] . ' documenti, '
+            . $result['failed'] . ' non analizzabili.';
     }
 }
 

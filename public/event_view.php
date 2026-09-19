@@ -735,7 +735,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                             elseif (in_array($ext, ['xls','xlsx','csv'])) $iconClass = 'bi-file-earmark-spreadsheet';
                                                             ?>
                                                             <i class="bi <?php echo $iconClass; ?>"></i>
-                                                            <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>"><?php echo htmlspecialchars($att['file_name']); ?></a>
+                                                            <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>&event_id=<?php echo $eventId; ?>"><?php echo htmlspecialchars($att['file_name']); ?></a>
                                                             <?php if ($att['file_size'] > 0): ?>
                                                                 <small class="text-muted">(<?php echo number_format($att['file_size'] / 1024, 0); ?> KB)</small>
                                                             <?php endif; ?>
@@ -783,7 +783,7 @@ $pageTitle = 'Dettaglio Evento: ' . $event['title'];
                                                         </td>
                                                         <td>
                                                             <div class="d-flex gap-1">
-                                                                <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>" class="btn btn-sm btn-outline-primary" title="Download">
+                                                                <a href="event_attachment_download.php?id=<?php echo $att['id']; ?>&event_id=<?php echo $eventId; ?>" class="btn btn-sm btn-outline-primary" title="Download">
                                                                     <i class="bi bi-download"></i>
                                                                 </a>
                                                                 <?php if ($app->checkPermission('events', 'edit')): ?>

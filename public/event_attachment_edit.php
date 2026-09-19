@@ -122,16 +122,20 @@ $result = $controller->updateAttachment($attachmentId, $data, $app->getUserId())
 if ($result['success']) {
     if (!empty($result['old_file_path'])) {
         $oldPath = __DIR__ . '/../' . $result['old_file_path'];
-        if (file_exists($oldPath)) {
-            @unlink($oldPath);
+        $realOldPath = realpath($oldPath);
+        $uploadDir = realpath(__DIR__ . '/../uploads/events/');
+        if ($realOldPath !== false && $uploadDir !== false && strpos($realOldPath, $uploadDir) === 0 && file_exists($realOldPath)) {
+            @unlink($realOldPath);
         }
     }
     $_SESSION['success'] = 'Allegato aggiornato con successo';
 } else {
     if (!empty($data['file_path'])) {
         $newPath = __DIR__ . '/../' . $data['file_path'];
-        if (file_exists($newPath)) {
-            @unlink($newPath);
+        $realNewPath = realpath($newPath);
+        $uploadDir = realpath(__DIR__ . '/../uploads/events/');
+        if ($realNewPath !== false && $uploadDir !== false && strpos($realNewPath, $uploadDir) === 0 && file_exists($realNewPath)) {
+            @unlink($realNewPath);
         }
     }
     $_SESSION['error'] = $result['message'] ?? 'Errore durante l\'aggiornamento';

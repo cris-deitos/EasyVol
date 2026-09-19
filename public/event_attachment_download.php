@@ -24,8 +24,9 @@ if (!$app->checkPermission('events', 'view')) {
 $db = $app->getDb();
 $controller = new EventController($db, $app->getConfig());
 $attachmentId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$eventId = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
 
-if ($attachmentId <= 0) {
+if ($attachmentId <= 0 || $eventId <= 0) {
     http_response_code(400);
     die('Parametri non validi');
 }
@@ -38,6 +39,12 @@ $attachment = $db->fetchOne($sql, [$attachmentId]);
 if (!$attachment) {
     http_response_code(404);
     die('Allegato non trovato');
+}
+
+$attachmentEventId = intval($attachment['event_id']);
+if ($eventId !== $attachmentEventId) {
+    http_response_code(403);
+    die('Accesso negato');
 }
 
 $event = $controller->get(intval($attachment['event_id']));

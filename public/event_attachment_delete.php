@@ -57,8 +57,10 @@ $result = $controller->deleteAttachment($attachmentId, $app->getUserId());
 if ($result['success']) {
     if (!empty($result['file_path'])) {
         $filePath = __DIR__ . '/../' . $result['file_path'];
-        if (file_exists($filePath)) {
-            @unlink($filePath);
+        $realPath = realpath($filePath);
+        $uploadDir = realpath(__DIR__ . '/../uploads/events/');
+        if ($realPath !== false && $uploadDir !== false && strpos($realPath, $uploadDir) === 0 && file_exists($realPath)) {
+            @unlink($realPath);
         }
     }
     $_SESSION['success'] = 'Allegato eliminato con successo';
