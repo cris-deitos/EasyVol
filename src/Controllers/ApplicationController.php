@@ -18,6 +18,7 @@ class ApplicationController {
     // Kept for backward compatibility, but delegates to Member class constants
     const MIN_COURSE_YEAR = Member::MIN_COURSE_YEAR; // Anno minimo accettabile per corsi
     const MAX_COURSE_YEAR_OFFSET = Member::MAX_COURSE_YEAR_OFFSET; // Offset anni futuri accettabili
+    const ERROR_INVALID_PROVINCE = 1001;
 
     public function __construct(Database $db, $config) {
         $this->db = $db;
@@ -35,6 +36,7 @@ class ApplicationController {
         try {
             $this->db->beginTransaction();
 
+            $this->validateProvinceData($data);
             $data = $this->uppercaseApplicationData($data);
 
             // Genera codice univoco
@@ -133,7 +135,8 @@ class ApplicationController {
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
 
-            // Force uppercase on text fields
+            // Validate and normalize province fields
+            $this->validateProvinceData($data);
             $data = $this->uppercaseApplicationData($data);
 
             // Prepara i dati JSON
@@ -246,7 +249,8 @@ class ApplicationController {
             // Generate PDF download token (never expires for convenience)
             $pdfToken = bin2hex(random_bytes(32));
 
-            // Force uppercase on text fields
+            // Validate and normalize province fields
+            $this->validateProvinceData($data);
             $data = $this->uppercaseApplicationData($data);
 
             // Prepara i dati JSON
@@ -1751,15 +1755,45 @@ class ApplicationController {
     }
 
     /**
+     * Valida i campi provincia presenti nei dati domanda
+     */
+    private function validateProvinceData($data) {
+        $requiredFields = [
+            'birth_province' => 'Provincia di nascita',
+            'residence_province' => 'Provincia di residenza'
+        ];
+        $optionalFields = [
+            'domicile_province' => 'Provincia di domicilio'
+        ];
+
+        foreach ($requiredFields as $field => $label) {
+            $value = trim((string) ($data[$field] ?? ''));
+            if ($value === '' || !preg_match('/^[A-Za-z]{2}$/', $value)) {
+                throw new \InvalidArgumentException("La $label deve essere indicata con la sigla di 2 lettere (es. BS).", self::ERROR_INVALID_PROVINCE);
+            }
+        }
+
+        foreach ($optionalFields as $field => $label) {
+            $value = trim((string) ($data[$field] ?? ''));
+            if ($value !== '' && !preg_match('/^[A-Za-z]{2}$/', $value)) {
+                throw new \InvalidArgumentException("La $label deve essere indicata con la sigla di 2 lettere (es. BS).", self::ERROR_INVALID_PROVINCE);
+            }
+        }
+    }
+
+    /**
      * Restituisce un messaggio leggibile per gli errori di approvazione
      */
     private function getApprovalErrorMessage(\Exception $e) {
-        $message = $e->getMessage();
-
-        if (stripos($message, 'province') !== false) {
+        if ((int) $e->getCode() === self::ERROR_INVALID_PROVINCE) {
             return 'Impossibile approvare la domanda: una provincia non è valida. Correggi la sigla di 2 lettere nella domanda e riprova.';
         }
 
+        if ((int) $e->getCode() === 22001) {
+            return 'Impossibile approvare la domanda: alcuni dati sono troppo lunghi o non nel formato previsto. Verifica in particolare le sigle delle province e riprova.';
+        }
+
+        $message = $e->getMessage();
         if ($message === 'Domanda non valida' || $message === 'Dati domanda non validi') {
             return $message . '.';
         }

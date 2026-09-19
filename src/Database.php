@@ -58,7 +58,7 @@ class Database {
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            throw new \Exception("Query failed: " . $e->getMessage());
+            throw new \Exception("Query failed: " . $e->getMessage(), (int) $e->getCode(), $e);
         }
     }
     
