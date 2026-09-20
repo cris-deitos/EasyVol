@@ -236,14 +236,21 @@ class SanctionService {
      */
     public static function synchronizeApprovalDate($memberModel, $memberId) {
         $allSanctions = $memberModel->getSanctions($memberId);
-        $approvalDate = null;
+        $approvalSanctions = array_values(array_filter($allSanctions, function ($sanction) {
+            return ($sanction['sanction_type'] ?? null) === self::BOARD_APPROVAL_SANCTION_TYPE
+                && !empty($sanction['sanction_date']);
+        }));
 
-        foreach ($allSanctions as $sanction) {
-            if (($sanction['sanction_type'] ?? null) === self::BOARD_APPROVAL_SANCTION_TYPE) {
-                $approvalDate = $sanction['sanction_date'] ?? null;
-                break;
+        usort($approvalSanctions, function ($left, $right) {
+            $dateComparison = strcmp($right['sanction_date'], $left['sanction_date']);
+            if ($dateComparison !== 0) {
+                return $dateComparison;
             }
-        }
+
+            return ($right['id'] ?? 0) <=> ($left['id'] ?? 0);
+        });
+
+        $approvalDate = $approvalSanctions[0]['sanction_date'] ?? null;
 
         $memberModel->update($memberId, ['approval_date' => $approvalDate]);
     }
