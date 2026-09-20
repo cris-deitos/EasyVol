@@ -244,4 +244,29 @@ class SanctionService {
 
         $memberModel->setApprovalDate($memberId, $approvalDate);
     }
+
+    /**
+     * Delete a sanction scoped to the current member and resync approval_date only when needed.
+     *
+     * @param object $memberModel
+     * @param int $memberId
+     * @param int $sanctionId
+     * @return void
+     */
+    public static function deleteSanctionAndSyncApprovalDate($memberModel, $memberId, $sanctionId) {
+        $syncApprovalDate = false;
+        foreach ($memberModel->getSanctions($memberId) as $sanction) {
+            if ((int) ($sanction['id'] ?? 0) === (int) $sanctionId
+                && ($sanction['sanction_type'] ?? null) === self::BOARD_APPROVAL_SANCTION_TYPE) {
+                $syncApprovalDate = true;
+                break;
+            }
+        }
+
+        $memberModel->deleteSanction($sanctionId, $memberId);
+
+        if ($syncApprovalDate) {
+            self::synchronizeApprovalDate($memberModel, $memberId);
+        }
+    }
 }

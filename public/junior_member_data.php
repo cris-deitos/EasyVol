@@ -95,18 +95,7 @@ try {
         case 'delete_sanction':
             $id = intval($_GET['id'] ?? 0);
             if ($id > 0) {
-                $syncApprovalDate = false;
-                foreach ($memberModel->getSanctions($memberId) as $sanction) {
-                    if ((int) $sanction['id'] === $id && ($sanction['sanction_type'] ?? null) === SanctionService::BOARD_APPROVAL_SANCTION_TYPE) {
-                        $syncApprovalDate = true;
-                        break;
-                    }
-                }
-
-                $memberModel->deleteSanction($id, $memberId);
-                if ($syncApprovalDate) {
-                    SanctionService::synchronizeApprovalDate($memberModel, $memberId);
-                }
+                SanctionService::deleteSanctionAndSyncApprovalDate($memberModel, $memberId, $id);
             }
             break;
             
