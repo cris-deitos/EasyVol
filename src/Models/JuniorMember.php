@@ -299,6 +299,17 @@ class JuniorMember implements SanctionModelInterface {
         );
     }
 
+    public function getSanctionOwnerId($sanctionId) {
+        $result = $this->db->fetchOne(
+            "SELECT junior_member_id
+             FROM junior_member_sanctions
+             WHERE id = ?",
+            [$sanctionId]
+        );
+
+        return isset($result['junior_member_id']) ? (int) $result['junior_member_id'] : null;
+    }
+
     public function setApprovalDate($juniorMemberId, $approvalDate) {
         return $this->update($juniorMemberId, ['approval_date' => $approvalDate]);
     }

@@ -95,7 +95,12 @@ try {
         case 'delete_sanction':
             $id = intval($_GET['id'] ?? 0);
             if ($id > 0) {
-                SanctionService::deleteSanctionAndSyncApprovalDate($memberModel, $memberId, $id);
+                $ownerId = $memberModel->getSanctionOwnerId($id);
+                if ($ownerId === null || $ownerId !== $memberId) {
+                    throw new \RuntimeException('Provvedimento non trovato per il socio specificato');
+                }
+
+                SanctionService::deleteSanctionAndSyncApprovalDate($memberModel, $ownerId, $id);
             }
             break;
             

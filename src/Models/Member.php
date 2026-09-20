@@ -612,6 +612,17 @@ class Member implements SanctionModelInterface {
         );
     }
 
+    public function getSanctionOwnerId($sanctionId) {
+        $result = $this->db->fetchOne(
+            "SELECT member_id
+             FROM member_sanctions
+             WHERE id = ?",
+            [$sanctionId]
+        );
+
+        return isset($result['member_id']) ? (int) $result['member_id'] : null;
+    }
+
     public function setApprovalDate($memberId, $approvalDate) {
         return $this->update($memberId, ['approval_date' => $approvalDate]);
     }
