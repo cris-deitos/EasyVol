@@ -9,6 +9,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Models\Member;
+use EasyVol\Services\SanctionService;
 
 $app = App::getInstance();
 
@@ -135,6 +136,7 @@ try {
             $id = intval($_GET['id'] ?? 0);
             if ($id > 0) {
                 $memberModel->deleteSanction($id);
+                SanctionService::synchronizeApprovalDate($memberModel, $memberId);
             }
             break;
             

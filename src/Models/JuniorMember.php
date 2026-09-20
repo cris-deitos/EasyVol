@@ -2,6 +2,7 @@
 namespace EasyVol\Models;
 
 use EasyVol\Database;
+use EasyVol\Services\SanctionService;
 
 /**
  * Junior Member Model
@@ -28,8 +29,11 @@ class JuniorMember {
         $params = [];
         
         if (!empty($filters['status'])) {
-            $sql .= " AND jm.member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'jm', 'junior_member_sanctions', 'junior_member_id');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         if (!empty($filters['search'])) {
@@ -60,8 +64,11 @@ class JuniorMember {
         $params = [];
         
         if (!empty($filters['status'])) {
-            $sql .= " AND member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'junior_members', 'junior_member_sanctions', 'junior_member_id');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         // Hide dismissed/lapsed filter

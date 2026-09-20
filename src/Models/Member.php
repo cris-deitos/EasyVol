@@ -2,6 +2,7 @@
 namespace EasyVol\Models;
 
 use EasyVol\Database;
+use EasyVol\Services\SanctionService;
 
 /**
  * Member Model
@@ -130,8 +131,11 @@ class Member {
         }
         
         if (!empty($filters['status'])) {
-            $sql .= " AND m.member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         // Hide dismissed/lapsed filter
@@ -193,8 +197,11 @@ class Member {
         }
         
         if (!empty($filters['status'])) {
-            $sql .= " AND m.member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         // Hide dismissed/lapsed filter

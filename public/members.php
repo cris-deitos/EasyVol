@@ -11,6 +11,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Controllers\MemberController;
 use EasyVol\Controllers\PrintTemplateController;
+use EasyVol\Services\SanctionService;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Utils\PathHelper;
 
@@ -73,6 +74,13 @@ if (!empty($filters['search'])) {
 // Note: in_aspettativa and in_congedo are counted as sospeso
 $statusCounts = [
     'attivo' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status = 'attivo'")['count'] ?? 0,
+    'attivo_senza_approvazione' => $db->fetchOne(
+        "SELECT COUNT(*) as count
+         FROM members m
+         WHERE m.member_status = 'attivo'
+           AND " . SanctionService::getMissingApprovalCondition('m', 'member_sanctions', 'member_id'),
+        [SanctionService::BOARD_APPROVAL_SANCTION_TYPE]
+    )['count'] ?? 0,
     'sospeso' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status IN ('sospeso', 'in_aspettativa', 'in_congedo')")['count'] ?? 0,
     'dimessi_decaduti' => $db->fetchOne("SELECT COUNT(*) as count FROM members WHERE member_status IN ('dimesso', 'decaduto', 'escluso')")['count'] ?? 0,
 ];
@@ -153,15 +161,27 @@ $pageTitle = 'Gestione Soci';
                 
                 <!-- Statistiche Rapide -->
                 <div class="row mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <a href="?<?php echo http_build_query(array_merge($_GET, ['status' => 'attivo', 'page' => 1])); ?>" class="text-decoration-none">
                         <div class="card bg-success text-white">
                             <div class="card-body">
                                 <h5 class="card-title">Soci Attivi</h5>
                                 <h2><?php echo number_format($statusCounts['attivo']); ?></h2>
                             </div>
                         </div>
+                        </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <a href="?<?php echo http_build_query(array_merge($_GET, ['status' => SanctionService::FILTER_ACTIVE_WITHOUT_APPROVAL, 'page' => 1])); ?>" class="text-decoration-none">
+                        <div class="card bg-info text-dark">
+                            <div class="card-body">
+                                <h5 class="card-title">Attivi senza Approvazione</h5>
+                                <h2><?php echo number_format($statusCounts['attivo_senza_approvazione']); ?></h2>
+                            </div>
+                        </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
                         <div class="card bg-warning text-dark">
                             <div class="card-body">
                                 <h5 class="card-title">Soci Sospesi</h5>
@@ -170,7 +190,7 @@ $pageTitle = 'Gestione Soci';
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card bg-secondary text-white">
                             <div class="card-body">
                                 <h5 class="card-title">Dimessi/Decaduti</h5>
@@ -195,6 +215,7 @@ $pageTitle = 'Gestione Soci';
                                 <select class="form-select" id="status" name="status">
                                     <option value="">Tutti</option>
                                     <option value="attivo" <?php echo $filters['status'] === 'attivo' ? 'selected' : ''; ?>>Attivo</option>
+                                    <option value="<?php echo SanctionService::FILTER_ACTIVE_WITHOUT_APPROVAL; ?>" <?php echo $filters['status'] === SanctionService::FILTER_ACTIVE_WITHOUT_APPROVAL ? 'selected' : ''; ?>>Attivo senza Approvazione</option>
                                     <option value="sospeso" <?php echo $filters['status'] === 'sospeso' ? 'selected' : ''; ?>>Sospeso</option>
                                     <option value="dimesso" <?php echo $filters['status'] === 'dimesso' ? 'selected' : ''; ?>>Dimesso</option>
                                     <option value="decaduto" <?php echo $filters['status'] === 'decaduto' ? 'selected' : ''; ?>>Decaduto</option>

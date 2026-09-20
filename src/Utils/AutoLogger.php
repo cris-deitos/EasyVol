@@ -253,6 +253,7 @@ class AutoLogger {
             if (isset($params['status']) && $params['status']) {
                 $statusLabels = [
                     'attivo' => 'Attivo',
+                    'attivo_senza_approvazione' => 'Attivo senza Approvazione',
                     'decaduto' => 'Decaduto',
                     'dimesso' => 'Dimesso',
                     'escluso' => 'Escluso',
