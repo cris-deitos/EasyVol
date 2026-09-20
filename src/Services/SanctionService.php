@@ -79,21 +79,22 @@ class SanctionService {
      * @param string $memberAlias
      * @param string $sanctionsTable
      * @param string $memberForeignKey
+     * @param string $statusColumn
      * @return void
      */
-    public static function appendStatusFilter(array &$conditions, array &$params, $status, $memberAlias, $sanctionsTable, $memberForeignKey) {
+    public static function appendStatusFilter(array &$conditions, array &$params, $status, $memberAlias, $sanctionsTable, $memberForeignKey, $statusColumn = 'member_status') {
         if (empty($status)) {
             return;
         }
 
         if (self::isActiveWithoutApprovalFilter($status)) {
-            $conditions[] = "{$memberAlias}.member_status = 'attivo'";
+            $conditions[] = "{$memberAlias}.{$statusColumn} = 'attivo'";
             $conditions[] = self::getMissingApprovalCondition($memberAlias, $sanctionsTable, $memberForeignKey);
             $params[] = self::BOARD_APPROVAL_SANCTION_TYPE;
             return;
         }
 
-        $conditions[] = "{$memberAlias}.member_status = ?";
+        $conditions[] = "{$memberAlias}.{$statusColumn} = ?";
         $params[] = $status;
     }
     
