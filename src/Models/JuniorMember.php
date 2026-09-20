@@ -275,6 +275,19 @@ class JuniorMember {
     public function getSanctions($juniorMemberId) {
         return $this->db->fetchAll("SELECT * FROM junior_member_sanctions WHERE junior_member_id = ? ORDER BY sanction_date DESC", [$juniorMemberId]);
     }
+
+    public function getLatestSanctionDateByType($juniorMemberId, $sanctionType) {
+        $result = $this->db->fetchOne(
+            "SELECT sanction_date
+             FROM junior_member_sanctions
+             WHERE junior_member_id = ? AND sanction_type = ?
+             ORDER BY sanction_date DESC, id DESC
+             LIMIT 1",
+            [$juniorMemberId, $sanctionType]
+        );
+
+        return $result['sanction_date'] ?? null;
+    }
     
     public function addSanction($juniorMemberId, $data) {
         $data['junior_member_id'] = $juniorMemberId;

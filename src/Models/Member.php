@@ -588,6 +588,19 @@ class Member {
     public function getSanctions($memberId) {
         return $this->db->fetchAll("SELECT * FROM member_sanctions WHERE member_id = ? ORDER BY sanction_date DESC", [$memberId]);
     }
+
+    public function getLatestSanctionDateByType($memberId, $sanctionType) {
+        $result = $this->db->fetchOne(
+            "SELECT sanction_date
+             FROM member_sanctions
+             WHERE member_id = ? AND sanction_type = ?
+             ORDER BY sanction_date DESC, id DESC
+             LIMIT 1",
+            [$memberId, $sanctionType]
+        );
+
+        return $result['sanction_date'] ?? null;
+    }
     
     public function addSanction($memberId, $data) {
         $data['member_id'] = $memberId;
