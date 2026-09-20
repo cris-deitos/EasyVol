@@ -2,12 +2,14 @@
 namespace EasyVol\Models;
 
 use EasyVol\Database;
+use EasyVol\Services\SanctionModelInterface;
+use EasyVol\Services\SanctionService;
 
 /**
  * Member Model
  * Handles all database operations for members (adult members)
  */
-class Member {
+class Member implements SanctionModelInterface {
     private $db;
     
     // Course name constants
@@ -130,8 +132,11 @@ class Member {
         }
         
         if (!empty($filters['status'])) {
-            $sql .= " AND m.member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id', 'member_status', 'attivo');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         // Hide dismissed/lapsed filter
@@ -193,8 +198,11 @@ class Member {
         }
         
         if (!empty($filters['status'])) {
-            $sql .= " AND m.member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id', 'member_status', 'attivo');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         // Hide dismissed/lapsed filter
@@ -581,6 +589,43 @@ class Member {
     public function getSanctions($memberId) {
         return $this->db->fetchAll("SELECT * FROM member_sanctions WHERE member_id = ? ORDER BY sanction_date DESC", [$memberId]);
     }
+
+    public function getLatestSanctionDateByType($memberId, $sanctionType) {
+        $result = $this->db->fetchOne(
+            "SELECT sanction_date
+             FROM member_sanctions
+             WHERE member_id = ? AND sanction_type = ?
+             ORDER BY sanction_date DESC, id DESC
+             LIMIT 1",
+            [$memberId, $sanctionType]
+        );
+
+        return $result['sanction_date'] ?? null;
+    }
+
+    public function getSanctionById($memberId, $sanctionId) {
+        return $this->db->fetchOne(
+            "SELECT *
+             FROM member_sanctions
+             WHERE member_id = ? AND id = ?",
+            [$memberId, $sanctionId]
+        );
+    }
+
+    public function getSanctionOwnerId($sanctionId) {
+        $result = $this->db->fetchOne(
+            "SELECT member_id
+             FROM member_sanctions
+             WHERE id = ?",
+            [$sanctionId]
+        );
+
+        return isset($result['member_id']) ? (int) $result['member_id'] : null;
+    }
+
+    public function setApprovalDate($memberId, $approvalDate) {
+        return $this->update($memberId, ['approval_date' => $approvalDate]);
+    }
     
     public function addSanction($memberId, $data) {
         $data['member_id'] = $memberId;
@@ -632,7 +677,11 @@ class Member {
         return $this->db->update('member_sanctions', $data, 'id = ?', [$id]);
     }
     
-    public function deleteSanction($id) {
+    public function deleteSanction($id, $memberId = null) {
+        if ($memberId !== null) {
+            return $this->db->delete('member_sanctions', 'id = ? AND member_id = ?', [$id, $memberId]);
+        }
+
         return $this->db->delete('member_sanctions', 'id = ?', [$id]);
     }
     

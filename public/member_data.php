@@ -9,6 +9,7 @@ EasyVol\Autoloader::register();
 use EasyVol\App;
 use EasyVol\Utils\AutoLogger;
 use EasyVol\Models\Member;
+use EasyVol\Services\SanctionService;
 
 $app = App::getInstance();
 
@@ -134,7 +135,12 @@ try {
         case 'delete_sanction':
             $id = intval($_GET['id'] ?? 0);
             if ($id > 0) {
-                $memberModel->deleteSanction($id);
+                $ownerId = $memberModel->getSanctionOwnerId($id);
+                if ($ownerId === null || $ownerId !== $memberId) {
+                    throw new \RuntimeException('Provvedimento non trovato per il socio specificato');
+                }
+
+                SanctionService::deleteSanctionAndSyncApprovalDate($memberModel, $ownerId, $id);
             }
             break;
             

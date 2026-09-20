@@ -1,6 +1,7 @@
 <?php
 namespace EasyVol\Utils;
 
+use EasyVol\Services\SanctionService;
 use Mpdf\Mpdf;
 use Mpdf\MpdfException;
 
@@ -226,38 +227,47 @@ class SimplePdfGenerator {
      */
     private function loadRecords($entityType, $filters = [], $dataScope = 'all') {
         $table = $this->getTableName($entityType);
-        $sql = "SELECT * FROM {$table} WHERE 1=1";
+        $recordAlias = 'base_record';
+        $sql = "SELECT * FROM {$table} {$recordAlias} WHERE 1=1";
         $params = [];
+        $hasExplicitStatus = array_key_exists('status', $filters) && $filters['status'] !== '';
+        $hasExplicitMemberStatus = array_key_exists('member_status', $filters) && $filters['member_status'] !== '';
+        $hasExplicitMemberStatusFilter = ($entityType === 'members' || $entityType === 'junior_members')
+            && ($hasExplicitStatus || $hasExplicitMemberStatus);
         
         // When data_scope is 'filtered', only include active members/junior_members
         // 'all' scope exports everyone (for Libro Soci template)
-        if ($dataScope === 'filtered') {
+        if ($dataScope === 'filtered' && !$hasExplicitMemberStatusFilter) {
             if ($entityType === 'members') {
-                $sql .= " AND member_status = ?";
+                $sql .= " AND {$recordAlias}.member_status = ?";
                 $params[] = self::MEMBER_ACTIVE_STATUS;
             } elseif ($entityType === 'junior_members') {
-                $sql .= " AND member_status = ?";
+                $sql .= " AND {$recordAlias}.member_status = ?";
                 $params[] = self::JUNIOR_MEMBER_ACTIVE_STATUS;
             }
         }
-        
+
         // Apply filters based on entity type
-        if (isset($filters['status'])) {
-            // For members and junior_members, use member_status column; for others use status
-            if ($entityType === 'members' || $entityType === 'junior_members') {
-                $sql .= " AND member_status = ?";
-            } else {
-                $sql .= " AND status = ?";
+        if ($entityType === 'members' || $entityType === 'junior_members') {
+            $effectiveStatusFilter = $hasExplicitMemberStatus
+                ? $filters['member_status']
+                : ($filters['status'] ?? null);
+
+            if ($effectiveStatusFilter !== null) {
+                $conditions = [];
+                if ($entityType === 'members') {
+                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'member_sanctions', 'member_id', 'member_status', self::MEMBER_ACTIVE_STATUS);
+                } else {
+                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id', 'member_status', self::JUNIOR_MEMBER_ACTIVE_STATUS);
+                }
+                if (!empty($conditions)) {
+                    $sql .= " AND " . implode(' AND ', $conditions);
+                }
             }
+        } elseif (isset($filters['status'])) {
+            // For members and junior_members, use centralized member status filtering logic.
+            $sql .= " AND status = ?";
             $params[] = $filters['status'];
-        }
-        
-        if (isset($filters['member_status'])) {
-            // member_status filter works for both members and junior_members
-            if ($entityType === 'members' || $entityType === 'junior_members') {
-                $sql .= " AND member_status = ?";
-                $params[] = $filters['member_status'];
-            }
         }
         
         if (isset($filters['member_type']) && $entityType === 'members') {
@@ -1639,4 +1649,3 @@ $card['association_logo_src'] = $record['association_logo_src'] ?? '';
         return !isset($record[$fieldName]) || empty($record[$fieldName]);
     }
 }
-

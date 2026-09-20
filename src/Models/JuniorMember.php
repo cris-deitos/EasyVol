@@ -2,12 +2,14 @@
 namespace EasyVol\Models;
 
 use EasyVol\Database;
+use EasyVol\Services\SanctionModelInterface;
+use EasyVol\Services\SanctionService;
 
 /**
  * Junior Member Model
  * Handles all database operations for junior members (minors)
  */
-class JuniorMember {
+class JuniorMember implements SanctionModelInterface {
     private $db;
     
     public function __construct(Database $db) {
@@ -28,8 +30,11 @@ class JuniorMember {
         $params = [];
         
         if (!empty($filters['status'])) {
-            $sql .= " AND jm.member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'jm', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         if (!empty($filters['search'])) {
@@ -56,21 +61,24 @@ class JuniorMember {
      * Get total count for pagination
      */
     public function getCount($filters = []) {
-        $sql = "SELECT COUNT(*) as total FROM junior_members WHERE 1=1";
+        $sql = "SELECT COUNT(*) as total FROM junior_members jm WHERE 1=1";
         $params = [];
         
         if (!empty($filters['status'])) {
-            $sql .= " AND member_status = ?";
-            $params[] = $filters['status'];
+            $conditions = [];
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'jm', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
         }
         
         // Hide dismissed/lapsed filter
         if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
-            $sql .= " AND member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
+            $sql .= " AND jm.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
         }
         
         if (!empty($filters['search'])) {
-            $sql .= " AND (last_name LIKE ? OR first_name LIKE ? OR registration_number LIKE ?)";
+            $sql .= " AND (jm.last_name LIKE ? OR jm.first_name LIKE ? OR jm.registration_number LIKE ?)";
             $search = "%{$filters['search']}%";
             $params[] = $search;
             $params[] = $search;
@@ -268,6 +276,43 @@ class JuniorMember {
     public function getSanctions($juniorMemberId) {
         return $this->db->fetchAll("SELECT * FROM junior_member_sanctions WHERE junior_member_id = ? ORDER BY sanction_date DESC", [$juniorMemberId]);
     }
+
+    public function getLatestSanctionDateByType($juniorMemberId, $sanctionType) {
+        $result = $this->db->fetchOne(
+            "SELECT sanction_date
+             FROM junior_member_sanctions
+             WHERE junior_member_id = ? AND sanction_type = ?
+             ORDER BY sanction_date DESC, id DESC
+             LIMIT 1",
+            [$juniorMemberId, $sanctionType]
+        );
+
+        return $result['sanction_date'] ?? null;
+    }
+
+    public function getSanctionById($juniorMemberId, $sanctionId) {
+        return $this->db->fetchOne(
+            "SELECT *
+             FROM junior_member_sanctions
+             WHERE junior_member_id = ? AND id = ?",
+            [$juniorMemberId, $sanctionId]
+        );
+    }
+
+    public function getSanctionOwnerId($sanctionId) {
+        $result = $this->db->fetchOne(
+            "SELECT junior_member_id
+             FROM junior_member_sanctions
+             WHERE id = ?",
+            [$sanctionId]
+        );
+
+        return isset($result['junior_member_id']) ? (int) $result['junior_member_id'] : null;
+    }
+
+    public function setApprovalDate($juniorMemberId, $approvalDate) {
+        return $this->update($juniorMemberId, ['approval_date' => $approvalDate]);
+    }
     
     public function addSanction($juniorMemberId, $data) {
         $data['junior_member_id'] = $juniorMemberId;
@@ -278,7 +323,11 @@ class JuniorMember {
         return $this->db->update('junior_member_sanctions', $data, 'id = ?', [$id]);
     }
     
-    public function deleteSanction($id) {
+    public function deleteSanction($id, $juniorMemberId = null) {
+        if ($juniorMemberId !== null) {
+            return $this->db->delete('junior_member_sanctions', 'id = ? AND junior_member_id = ?', [$id, $juniorMemberId]);
+        }
+
         return $this->db->delete('junior_member_sanctions', 'id = ?', [$id]);
     }
     
