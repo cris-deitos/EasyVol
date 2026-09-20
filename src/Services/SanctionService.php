@@ -163,7 +163,7 @@ class SanctionService {
      * @param array $data The sanction data
      * @return array Result array with 'success' and optional 'error' keys
      */
-    public static function processSanction($memberModel, $memberId, $sanctionId, $data) {
+    public static function processSanction(SanctionModelInterface $memberModel, $memberId, $sanctionId, $data) {
         try {
             // Validate sanction type
             if (!self::isValidType($data['sanction_type'])) {
@@ -235,11 +235,7 @@ class SanctionService {
      * @param int $memberId
      * @return void
      */
-    public static function synchronizeApprovalDate($memberModel, $memberId) {
-        if (!method_exists($memberModel, 'getLatestSanctionDateByType') || !method_exists($memberModel, 'setApprovalDate')) {
-            throw new \LogicException('Model must implement getLatestSanctionDateByType() and setApprovalDate() for approval-date synchronization');
-        }
-
+    public static function synchronizeApprovalDate(SanctionModelInterface $memberModel, $memberId) {
         $approvalDate = $memberModel->getLatestSanctionDateByType($memberId, self::BOARD_APPROVAL_SANCTION_TYPE);
 
         $memberModel->setApprovalDate($memberId, $approvalDate);
@@ -253,11 +249,7 @@ class SanctionService {
      * @param int $sanctionId
      * @return void
      */
-    public static function deleteSanctionAndSyncApprovalDate($memberModel, $memberId, $sanctionId) {
-        $sanction = null;
-        if (!method_exists($memberModel, 'getSanctionById')) {
-            throw new \LogicException('Model must implement getSanctionById() for scoped sanction deletion');
-        }
+    public static function deleteSanctionAndSyncApprovalDate(SanctionModelInterface $memberModel, $memberId, $sanctionId) {
         $sanction = $memberModel->getSanctionById($memberId, $sanctionId);
         if (!$sanction) {
             throw new \RuntimeException('Provvedimento non trovato per il socio specificato');

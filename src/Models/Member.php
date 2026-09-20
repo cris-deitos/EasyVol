@@ -2,13 +2,14 @@
 namespace EasyVol\Models;
 
 use EasyVol\Database;
+use EasyVol\Services\SanctionModelInterface;
 use EasyVol\Services\SanctionService;
 
 /**
  * Member Model
  * Handles all database operations for members (adult members)
  */
-class Member {
+class Member implements SanctionModelInterface {
     private $db;
     
     // Course name constants

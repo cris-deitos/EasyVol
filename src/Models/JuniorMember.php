@@ -2,13 +2,14 @@
 namespace EasyVol\Models;
 
 use EasyVol\Database;
+use EasyVol\Services\SanctionModelInterface;
 use EasyVol\Services\SanctionService;
 
 /**
  * Junior Member Model
  * Handles all database operations for junior members (minors)
  */
-class JuniorMember {
+class JuniorMember implements SanctionModelInterface {
     private $db;
     
     public function __construct(Database $db) {
