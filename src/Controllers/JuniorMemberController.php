@@ -49,7 +49,7 @@ class JuniorMemberController {
         $params = [];
         
         // Filtro status
-        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'jm', 'junior_member_sanctions', 'junior_member_id');
+        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'jm', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
         
         // Hide dismissed/lapsed filter
         if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
@@ -115,7 +115,7 @@ class JuniorMemberController {
         $params = [];
         
         // Filtro status
-        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'junior_members', 'junior_member_sanctions', 'junior_member_id');
+        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'junior_members', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
         
         // Hide dismissed/lapsed filter
         if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
@@ -914,7 +914,7 @@ class JuniorMemberController {
         $params = [];
         
         // Apply same filters as index method
-        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'jm', 'junior_member_sanctions', 'junior_member_id');
+        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'jm', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
         
         if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
             $where[] = "jm.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";

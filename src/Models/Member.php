@@ -133,7 +133,7 @@ class Member implements SanctionModelInterface {
         
         if (!empty($filters['status'])) {
             $conditions = [];
-            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id');
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id', 'member_status', 'attivo');
             if (!empty($conditions)) {
                 $sql .= " AND " . implode(' AND ', $conditions);
             }
@@ -199,7 +199,7 @@ class Member implements SanctionModelInterface {
         
         if (!empty($filters['status'])) {
             $conditions = [];
-            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id');
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'm', 'member_sanctions', 'member_id', 'member_status', 'attivo');
             if (!empty($conditions)) {
                 $sql .= " AND " . implode(' AND ', $conditions);
             }

@@ -254,9 +254,9 @@ class SimplePdfGenerator {
             if ($effectiveStatusFilter !== null) {
                 $conditions = [];
                 if ($entityType === 'members') {
-                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'member_sanctions', 'member_id');
+                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'member_sanctions', 'member_id', 'member_status', self::MEMBER_ACTIVE_STATUS);
                 } else {
-                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id');
+                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id', 'member_status', self::JUNIOR_MEMBER_ACTIVE_STATUS);
                 }
                 if (!empty($conditions)) {
                     $sql .= " AND " . implode(' AND ', $conditions);

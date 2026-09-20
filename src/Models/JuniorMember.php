@@ -31,7 +31,7 @@ class JuniorMember implements SanctionModelInterface {
         
         if (!empty($filters['status'])) {
             $conditions = [];
-            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'jm', 'junior_member_sanctions', 'junior_member_id');
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'jm', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
             if (!empty($conditions)) {
                 $sql .= " AND " . implode(' AND ', $conditions);
             }
@@ -66,7 +66,7 @@ class JuniorMember implements SanctionModelInterface {
         
         if (!empty($filters['status'])) {
             $conditions = [];
-            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'junior_members', 'junior_member_sanctions', 'junior_member_id');
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'junior_members', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
             if (!empty($conditions)) {
                 $sql .= " AND " . implode(' AND ', $conditions);
             }

@@ -701,7 +701,7 @@ class MemberController {
         $params = [];
         
         // Apply same filters as index method
-        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'm', 'member_sanctions', 'member_id');
+        SanctionService::appendStatusFilter($where, $params, $filters['status'] ?? '', 'm', 'member_sanctions', 'member_id', 'member_status', 'attivo');
         
         if (!empty($filters['volunteer_status'])) {
             $where[] = "m.volunteer_status = ?";
