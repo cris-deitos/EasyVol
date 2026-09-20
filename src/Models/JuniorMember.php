@@ -302,7 +302,11 @@ class JuniorMember {
         return $this->db->update('junior_member_sanctions', $data, 'id = ?', [$id]);
     }
     
-    public function deleteSanction($id) {
+    public function deleteSanction($id, $juniorMemberId = null) {
+        if ($juniorMemberId !== null) {
+            return $this->db->delete('junior_member_sanctions', 'id = ? AND junior_member_id = ?', [$id, $juniorMemberId]);
+        }
+
         return $this->db->delete('junior_member_sanctions', 'id = ?', [$id]);
     }
     

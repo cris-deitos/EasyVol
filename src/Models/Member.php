@@ -656,7 +656,11 @@ class Member {
         return $this->db->update('member_sanctions', $data, 'id = ?', [$id]);
     }
     
-    public function deleteSanction($id) {
+    public function deleteSanction($id, $memberId = null) {
+        if ($memberId !== null) {
+            return $this->db->delete('member_sanctions', 'id = ? AND member_id = ?', [$id, $memberId]);
+        }
+
         return $this->db->delete('member_sanctions', 'id = ?', [$id]);
     }
     

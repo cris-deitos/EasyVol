@@ -143,7 +143,7 @@ try {
                     }
                 }
 
-                $memberModel->deleteSanction($id);
+                $memberModel->deleteSanction($id, $memberId);
                 if ($syncApprovalDate) {
                     SanctionService::synchronizeApprovalDate($memberModel, $memberId);
                 }
