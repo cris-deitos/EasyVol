@@ -254,14 +254,12 @@ class SanctionService {
      * @return void
      */
     public static function deleteSanctionAndSyncApprovalDate($memberModel, $memberId, $sanctionId) {
-        $syncApprovalDate = false;
-        foreach ($memberModel->getSanctions($memberId) as $sanction) {
-            if ((int) ($sanction['id'] ?? 0) === (int) $sanctionId
-                && ($sanction['sanction_type'] ?? null) === self::BOARD_APPROVAL_SANCTION_TYPE) {
-                $syncApprovalDate = true;
-                break;
-            }
+        $sanction = null;
+        if (method_exists($memberModel, 'getSanctionById')) {
+            $sanction = $memberModel->getSanctionById($memberId, $sanctionId);
         }
+
+        $syncApprovalDate = ($sanction['sanction_type'] ?? null) === self::BOARD_APPROVAL_SANCTION_TYPE;
 
         $memberModel->deleteSanction($sanctionId, $memberId);
 

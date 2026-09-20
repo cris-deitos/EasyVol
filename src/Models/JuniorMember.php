@@ -289,6 +289,15 @@ class JuniorMember {
         return $result['sanction_date'] ?? null;
     }
 
+    public function getSanctionById($juniorMemberId, $sanctionId) {
+        return $this->db->fetchOne(
+            "SELECT *
+             FROM junior_member_sanctions
+             WHERE junior_member_id = ? AND id = ?",
+            [$juniorMemberId, $sanctionId]
+        );
+    }
+
     public function setApprovalDate($juniorMemberId, $approvalDate) {
         return $this->update($juniorMemberId, ['approval_date' => $approvalDate]);
     }

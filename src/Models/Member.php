@@ -602,6 +602,15 @@ class Member {
         return $result['sanction_date'] ?? null;
     }
 
+    public function getSanctionById($memberId, $sanctionId) {
+        return $this->db->fetchOne(
+            "SELECT *
+             FROM member_sanctions
+             WHERE member_id = ? AND id = ?",
+            [$memberId, $sanctionId]
+        );
+    }
+
     public function setApprovalDate($memberId, $approvalDate) {
         return $this->update($memberId, ['approval_date' => $approvalDate]);
     }
