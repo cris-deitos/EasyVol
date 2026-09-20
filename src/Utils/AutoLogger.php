@@ -2,6 +2,7 @@
 namespace EasyVol\Utils;
 
 use EasyVol\App;
+use EasyVol\Services\SanctionService;
 
 /**
  * Automatic Activity Logger
@@ -253,7 +254,7 @@ class AutoLogger {
             if (isset($params['status']) && $params['status']) {
                 $statusLabels = [
                     'attivo' => 'Attivo',
-                    'attivo_senza_approvazione' => 'Attivo senza Approvazione',
+                    SanctionService::FILTER_ACTIVE_WITHOUT_APPROVAL => 'Attivo senza Approvazione',
                     'decaduto' => 'Decaduto',
                     'dimesso' => 'Dimesso',
                     'escluso' => 'Escluso',
