@@ -259,6 +259,9 @@ class SanctionService {
             throw new \LogicException('Model must implement getSanctionById() for scoped sanction deletion');
         }
         $sanction = $memberModel->getSanctionById($memberId, $sanctionId);
+        if (!$sanction) {
+            throw new \RuntimeException('Provvedimento non trovato per il socio specificato');
+        }
 
         $syncApprovalDate = ($sanction['sanction_type'] ?? null) === self::BOARD_APPROVAL_SANCTION_TYPE;
 
