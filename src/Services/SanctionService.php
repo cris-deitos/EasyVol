@@ -237,7 +237,7 @@ class SanctionService {
      */
     public static function synchronizeApprovalDate($memberModel, $memberId) {
         if (!method_exists($memberModel, 'getLatestSanctionDateByType') || !method_exists($memberModel, 'setApprovalDate')) {
-            return;
+            throw new \LogicException('Model must implement getLatestSanctionDateByType() and setApprovalDate() for approval-date synchronization');
         }
 
         $approvalDate = $memberModel->getLatestSanctionDateByType($memberId, self::BOARD_APPROVAL_SANCTION_TYPE);
@@ -255,9 +255,10 @@ class SanctionService {
      */
     public static function deleteSanctionAndSyncApprovalDate($memberModel, $memberId, $sanctionId) {
         $sanction = null;
-        if (method_exists($memberModel, 'getSanctionById')) {
-            $sanction = $memberModel->getSanctionById($memberId, $sanctionId);
+        if (!method_exists($memberModel, 'getSanctionById')) {
+            throw new \LogicException('Model must implement getSanctionById() for scoped sanction deletion');
         }
+        $sanction = $memberModel->getSanctionById($memberId, $sanctionId);
 
         $syncApprovalDate = ($sanction['sanction_type'] ?? null) === self::BOARD_APPROVAL_SANCTION_TYPE;
 
