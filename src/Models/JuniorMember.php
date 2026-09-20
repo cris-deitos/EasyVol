@@ -61,12 +61,12 @@ class JuniorMember implements SanctionModelInterface {
      * Get total count for pagination
      */
     public function getCount($filters = []) {
-        $sql = "SELECT COUNT(*) as total FROM junior_members WHERE 1=1";
+        $sql = "SELECT COUNT(*) as total FROM junior_members jm WHERE 1=1";
         $params = [];
         
         if (!empty($filters['status'])) {
             $conditions = [];
-            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'junior_members', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
+            SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'jm', 'junior_member_sanctions', 'junior_member_id', 'member_status', 'attivo');
             if (!empty($conditions)) {
                 $sql .= " AND " . implode(' AND ', $conditions);
             }
@@ -74,11 +74,11 @@ class JuniorMember implements SanctionModelInterface {
         
         // Hide dismissed/lapsed filter
         if (isset($filters['hide_dismissed']) && $filters['hide_dismissed'] === '1') {
-            $sql .= " AND member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
+            $sql .= " AND jm.member_status NOT IN ('dimesso', 'decaduto', 'escluso')";
         }
         
         if (!empty($filters['search'])) {
-            $sql .= " AND (last_name LIKE ? OR first_name LIKE ? OR registration_number LIKE ?)";
+            $sql .= " AND (jm.last_name LIKE ? OR jm.first_name LIKE ? OR jm.registration_number LIKE ?)";
             $search = "%{$filters['search']}%";
             $params[] = $search;
             $params[] = $search;
