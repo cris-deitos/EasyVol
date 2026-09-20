@@ -230,10 +230,12 @@ class SimplePdfGenerator {
         $recordAlias = 'base_record';
         $sql = "SELECT * FROM {$table} {$recordAlias} WHERE 1=1";
         $params = [];
+        $hasExplicitMemberStatusFilter = ($entityType === 'members' || $entityType === 'junior_members')
+            && (isset($filters['status']) || isset($filters['member_status']));
         
         // When data_scope is 'filtered', only include active members/junior_members
         // 'all' scope exports everyone (for Libro Soci template)
-        if ($dataScope === 'filtered') {
+        if ($dataScope === 'filtered' && !$hasExplicitMemberStatusFilter) {
             if ($entityType === 'members') {
                 $sql .= " AND {$recordAlias}.member_status = ?";
                 $params[] = self::MEMBER_ACTIVE_STATUS;
