@@ -245,22 +245,14 @@ class SimplePdfGenerator {
 
         // Apply filters based on entity type
         if ($entityType === 'members' || $entityType === 'junior_members') {
-            $statusFilters = [];
+            $effectiveStatusFilter = $filters['status'] ?? ($filters['member_status'] ?? null);
 
-            if (isset($filters['status'])) {
-                $statusFilters[] = $filters['status'];
-            }
-
-            if (isset($filters['member_status']) && !in_array($filters['member_status'], $statusFilters, true)) {
-                $statusFilters[] = $filters['member_status'];
-            }
-
-            foreach ($statusFilters as $statusFilter) {
+            if ($effectiveStatusFilter !== null) {
                 $conditions = [];
                 if ($entityType === 'members') {
-                    SanctionService::appendStatusFilter($conditions, $params, $statusFilter, $recordAlias, 'member_sanctions', 'member_id');
+                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'member_sanctions', 'member_id');
                 } else {
-                    SanctionService::appendStatusFilter($conditions, $params, $statusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id');
+                    SanctionService::appendStatusFilter($conditions, $params, $effectiveStatusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id');
                 }
                 if (!empty($conditions)) {
                     $sql .= " AND " . implode(' AND ', $conditions);
