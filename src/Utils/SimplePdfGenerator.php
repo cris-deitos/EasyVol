@@ -249,7 +249,9 @@ class SimplePdfGenerator {
 
         // Apply filters based on entity type
         if ($entityType === 'members' || $entityType === 'junior_members') {
-            $effectiveStatusFilter = $filters['status'] ?? ($filters['member_status'] ?? null);
+            $effectiveStatusFilter = $hasExplicitMemberStatus
+                ? $filters['member_status']
+                : ($filters['status'] ?? null);
 
             if ($effectiveStatusFilter !== null) {
                 $conditions = [];
