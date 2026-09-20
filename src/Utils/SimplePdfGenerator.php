@@ -243,21 +243,28 @@ class SimplePdfGenerator {
             }
         }
 
-        $memberStatusFilter = null;
-        if ($entityType === 'members' || $entityType === 'junior_members') {
-            $memberStatusFilter = $filters['member_status'] ?? $filters['status'] ?? null;
-        }
-        
         // Apply filters based on entity type
-        if ($memberStatusFilter !== null) {
-            $conditions = [];
-            if ($entityType === 'members') {
-                SanctionService::appendStatusFilter($conditions, $params, $memberStatusFilter, $recordAlias, 'member_sanctions', 'member_id');
-            } elseif ($entityType === 'junior_members') {
-                SanctionService::appendStatusFilter($conditions, $params, $memberStatusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id');
+        if ($entityType === 'members' || $entityType === 'junior_members') {
+            $statusFilters = [];
+
+            if (isset($filters['status'])) {
+                $statusFilters[] = $filters['status'];
             }
-            if (!empty($conditions)) {
-                $sql .= " AND " . implode(' AND ', $conditions);
+
+            if (isset($filters['member_status']) && !in_array($filters['member_status'], $statusFilters, true)) {
+                $statusFilters[] = $filters['member_status'];
+            }
+
+            foreach ($statusFilters as $statusFilter) {
+                $conditions = [];
+                if ($entityType === 'members') {
+                    SanctionService::appendStatusFilter($conditions, $params, $statusFilter, $recordAlias, 'member_sanctions', 'member_id');
+                } else {
+                    SanctionService::appendStatusFilter($conditions, $params, $statusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id');
+                }
+                if (!empty($conditions)) {
+                    $sql .= " AND " . implode(' AND ', $conditions);
+                }
             }
         } elseif (isset($filters['status'])) {
             // For members and junior_members, use centralized member status filtering logic.
