@@ -227,17 +227,18 @@ class SimplePdfGenerator {
      */
     private function loadRecords($entityType, $filters = [], $dataScope = 'all') {
         $table = $this->getTableName($entityType);
-        $sql = "SELECT * FROM {$table} WHERE 1=1";
+        $recordAlias = 'base_record';
+        $sql = "SELECT * FROM {$table} {$recordAlias} WHERE 1=1";
         $params = [];
         
         // When data_scope is 'filtered', only include active members/junior_members
         // 'all' scope exports everyone (for Libro Soci template)
         if ($dataScope === 'filtered') {
             if ($entityType === 'members') {
-                $sql .= " AND member_status = ?";
+                $sql .= " AND {$recordAlias}.member_status = ?";
                 $params[] = self::MEMBER_ACTIVE_STATUS;
             } elseif ($entityType === 'junior_members') {
-                $sql .= " AND member_status = ?";
+                $sql .= " AND {$recordAlias}.member_status = ?";
                 $params[] = self::JUNIOR_MEMBER_ACTIVE_STATUS;
             }
         }
@@ -247,13 +248,13 @@ class SimplePdfGenerator {
             // For members and junior_members, use centralized member status filtering logic.
             if ($entityType === 'members') {
                 $conditions = [];
-                SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'members', 'member_sanctions', 'member_id');
+                SanctionService::appendStatusFilter($conditions, $params, $filters['status'], $recordAlias, 'member_sanctions', 'member_id');
                 if (!empty($conditions)) {
                     $sql .= " AND " . implode(' AND ', $conditions);
                 }
             } elseif ($entityType === 'junior_members') {
                 $conditions = [];
-                SanctionService::appendStatusFilter($conditions, $params, $filters['status'], 'junior_members', 'junior_member_sanctions', 'junior_member_id');
+                SanctionService::appendStatusFilter($conditions, $params, $filters['status'], $recordAlias, 'junior_member_sanctions', 'junior_member_id');
                 if (!empty($conditions)) {
                     $sql .= " AND " . implode(' AND ', $conditions);
                 }
@@ -268,9 +269,9 @@ class SimplePdfGenerator {
             if ($entityType === 'members' || $entityType === 'junior_members') {
                 $conditions = [];
                 if ($entityType === 'members') {
-                    SanctionService::appendStatusFilter($conditions, $params, $filters['member_status'], 'members', 'member_sanctions', 'member_id');
+                    SanctionService::appendStatusFilter($conditions, $params, $filters['member_status'], $recordAlias, 'member_sanctions', 'member_id');
                 } else {
-                    SanctionService::appendStatusFilter($conditions, $params, $filters['member_status'], 'junior_members', 'junior_member_sanctions', 'junior_member_id');
+                    SanctionService::appendStatusFilter($conditions, $params, $filters['member_status'], $recordAlias, 'junior_member_sanctions', 'junior_member_id');
                 }
                 if (!empty($conditions)) {
                     $sql .= " AND " . implode(' AND ', $conditions);
