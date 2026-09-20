@@ -235,10 +235,11 @@ class SanctionService {
      * @return void
      */
     public static function synchronizeApprovalDate($memberModel, $memberId) {
-        $approvalDate = null;
-        if (method_exists($memberModel, 'getLatestSanctionDateByType')) {
-            $approvalDate = $memberModel->getLatestSanctionDateByType($memberId, self::BOARD_APPROVAL_SANCTION_TYPE);
+        if (!method_exists($memberModel, 'getLatestSanctionDateByType')) {
+            return;
         }
+
+        $approvalDate = $memberModel->getLatestSanctionDateByType($memberId, self::BOARD_APPROVAL_SANCTION_TYPE);
 
         $memberModel->update($memberId, ['approval_date' => $approvalDate]);
     }
