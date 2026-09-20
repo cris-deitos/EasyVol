@@ -242,41 +242,27 @@ class SimplePdfGenerator {
                 $params[] = self::JUNIOR_MEMBER_ACTIVE_STATUS;
             }
         }
-        
-        // Apply filters based on entity type
-        if (isset($filters['status'])) {
-            // For members and junior_members, use centralized member status filtering logic.
-            if ($entityType === 'members') {
-                $conditions = [];
-                SanctionService::appendStatusFilter($conditions, $params, $filters['status'], $recordAlias, 'member_sanctions', 'member_id');
-                if (!empty($conditions)) {
-                    $sql .= " AND " . implode(' AND ', $conditions);
-                }
-            } elseif ($entityType === 'junior_members') {
-                $conditions = [];
-                SanctionService::appendStatusFilter($conditions, $params, $filters['status'], $recordAlias, 'junior_member_sanctions', 'junior_member_id');
-                if (!empty($conditions)) {
-                    $sql .= " AND " . implode(' AND ', $conditions);
-                }
-            } else {
-                $sql .= " AND status = ?";
-                $params[] = $filters['status'];
-            }
+
+        $memberStatusFilter = null;
+        if ($entityType === 'members' || $entityType === 'junior_members') {
+            $memberStatusFilter = $filters['member_status'] ?? $filters['status'] ?? null;
         }
         
-        if (isset($filters['member_status'])) {
-            // member_status filter works for both members and junior_members
-            if ($entityType === 'members' || $entityType === 'junior_members') {
-                $conditions = [];
-                if ($entityType === 'members') {
-                    SanctionService::appendStatusFilter($conditions, $params, $filters['member_status'], $recordAlias, 'member_sanctions', 'member_id');
-                } else {
-                    SanctionService::appendStatusFilter($conditions, $params, $filters['member_status'], $recordAlias, 'junior_member_sanctions', 'junior_member_id');
-                }
-                if (!empty($conditions)) {
-                    $sql .= " AND " . implode(' AND ', $conditions);
-                }
+        // Apply filters based on entity type
+        if ($memberStatusFilter !== null) {
+            $conditions = [];
+            if ($entityType === 'members') {
+                SanctionService::appendStatusFilter($conditions, $params, $memberStatusFilter, $recordAlias, 'member_sanctions', 'member_id');
+            } elseif ($entityType === 'junior_members') {
+                SanctionService::appendStatusFilter($conditions, $params, $memberStatusFilter, $recordAlias, 'junior_member_sanctions', 'junior_member_id');
             }
+            if (!empty($conditions)) {
+                $sql .= " AND " . implode(' AND ', $conditions);
+            }
+        } elseif (isset($filters['status'])) {
+            // For members and junior_members, use centralized member status filtering logic.
+            $sql .= " AND status = ?";
+            $params[] = $filters['status'];
         }
         
         if (isset($filters['member_type']) && $entityType === 'members') {
