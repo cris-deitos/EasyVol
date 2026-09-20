@@ -288,6 +288,10 @@ class JuniorMember {
 
         return $result['sanction_date'] ?? null;
     }
+
+    public function setApprovalDate($juniorMemberId, $approvalDate) {
+        return $this->update($juniorMemberId, ['approval_date' => $approvalDate]);
+    }
     
     public function addSanction($juniorMemberId, $data) {
         $data['junior_member_id'] = $juniorMemberId;

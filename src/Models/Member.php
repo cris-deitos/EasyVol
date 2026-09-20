@@ -601,6 +601,10 @@ class Member {
 
         return $result['sanction_date'] ?? null;
     }
+
+    public function setApprovalDate($memberId, $approvalDate) {
+        return $this->update($memberId, ['approval_date' => $approvalDate]);
+    }
     
     public function addSanction($memberId, $data) {
         $data['member_id'] = $memberId;
